@@ -14,7 +14,7 @@ import { AgentTestGroupNode, AgentTestNode, AiEvaluationDefinition, TestNode } f
 const NO_TESTS_MESSAGE = 'no tests found';
 const NO_TESTS_DESCRIPTION = 'no test description';
 const AGENT_TESTS = 'AgentTests';
-const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTestGroupNode>> => {
+export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTestGroupNode>> => {
   const aiTestDefs = await vscode.workspace.findFiles('**/*.aiEvaluationDefinition-meta.xml');
   //from the aiTestDef files, parse the xml using fast-xml-parser, find the testSetName that it points to
   const aggregator = new Map<string, AgentTestGroupNode>();

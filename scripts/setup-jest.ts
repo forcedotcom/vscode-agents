@@ -21,6 +21,11 @@ const getMockVSCode = () => {
       Invoke: 0,
       Automatic: 1
     },
+    TreeItemCollapsibleState: {
+      None: 0,
+      Collapsed: 1,
+      Expanded: 2
+    },
     CancellationTokenSource: class {
       public listeners: any[] = [];
       public token = {
@@ -61,8 +66,10 @@ const getMockVSCode = () => {
     EventEmitter,
     ExtensionMode: { Production: 1, Development: 2, Test: 3 },
     extensions: {
-      getExtension: jest.fn(),
-      all: []
+      getExtension: jest.fn(() => ({
+        extensionUri: { fsPath: '/fake/path/to/extension' }
+      })),
+      all: [{ id: 'salesforce.salesforcedx-vscode-agents' }]
     },
     FileType: {
       File: 1,
@@ -186,7 +193,11 @@ const getMockWebviewApi = () => {
 jest.mock(
   'vscode',
   () => {
-    return getMockVSCode();
+    const vscodeMock = getMockVSCode();
+    vscodeMock.extensions.getExtension = jest.fn(() => ({
+      extensionUri: { fsPath: '/fake/path/to/extension' }
+    }));
+    return vscodeMock;
   },
   { virtual: true }
 );
@@ -204,57 +215,3 @@ jest.mock(
   },
   { virtual: true }
 );
-
-// Mock Orama
-
-jest.mock(
-  '@orama/orama',
-  () => {
-    return {
-      create: jest.fn(),
-      search: jest.fn(),
-      insertMultiple: jest.fn(),
-      update: jest.fn()
-    };
-  },
-  {
-    virtual: true
-  }
-);
-
-jest.mock(
-  '@orama/plugin-data-persistence/server',
-  () => {
-    return {
-      persistToFile: jest.fn(),
-      restoreFromFile: jest.fn()
-    };
-  },
-  {
-    virtual: true
-  }
-);
-
-const mockExperimentService = {
-  getExperiments: jest.fn(),
-  getExperimentState: jest.fn(),
-  getExperimentsState: jest.fn(),
-  registerExperiments: jest.fn()
-};
-
-jest.mock('@salesforce/salesforcedx-vscode-experiments', () => {
-  return {
-    ExperimentType: jest.requireActual('@salesforce/salesforcedx-vscode-experiments').ExperimentType,
-    getExperimentService: () => mockExperimentService
-  };
-});
-
-jest.mock('@sfdc-internal/lgpt-a4d', () => ({
-  get LightningGPT() {
-    const mockConstructor = jest.fn(() => ({ execute: jest.fn() }));
-    return mockConstructor;
-  },
-  StatusCode: {
-    Failure: 'Failure'
-  }
-}));
