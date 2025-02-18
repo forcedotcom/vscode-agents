@@ -1,9 +1,3 @@
----
-
-# :warning: UNDER ACTIVE DEVELOPMENT :warning:
-
----
-
 # Agentforce DX for Visual Studio Code
 
 Agentforce DX is a suite of tools to build and test agents.  This extension provides integrated VS Code commands to easily open an agent in your org's Agent Builder UI and run the tests associated with an agent in the Agent Testing Panel. 
