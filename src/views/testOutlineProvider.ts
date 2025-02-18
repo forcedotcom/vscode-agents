@@ -3,9 +3,9 @@
  * All rights reserved.
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
- */1
+ */ 1;
 import { EOL } from 'os';
-import {basename}from 'path';
+import { basename } from 'path';
 import * as vscode from 'vscode';
 import * as xml from 'fast-xml-parser';
 import { Commands } from '../enums/commands';
@@ -14,7 +14,7 @@ import { AgentTestGroupNode, AgentTestNode, AiEvaluationDefinition, TestNode } f
 const NO_TESTS_MESSAGE = 'no tests found';
 const NO_TESTS_DESCRIPTION = 'no test description';
 const AGENT_TESTS = 'AgentTests';
-const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTestGroupNode>> => {
+export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTestGroupNode>> => {
   const aiTestDefs = await vscode.workspace.findFiles('**/*.aiEvaluationDefinition-meta.xml');
   //from the aiTestDef files, parse the xml using fast-xml-parser, find the testSetName that it points to
   const aggregator = new Map<string, AgentTestGroupNode>();
@@ -23,10 +23,10 @@ const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTestGroupN
     aiTestDefs.map(async definition => {
       const fileContent = (await vscode.workspace.fs.readFile(definition)).toString();
       const testDefinition = parser.parse(fileContent) as AiEvaluationDefinition;
-      const definitionApiName = basename(definition.fsPath, '.aiEvaluationDefinition-meta.xml')
+      const definitionApiName = basename(definition.fsPath, '.aiEvaluationDefinition-meta.xml');
 
       const testDefinitionNode = new AgentTestGroupNode(
-          definitionApiName,
+        definitionApiName,
         new vscode.Location(definition, new vscode.Position(0, 0))
       );
 
