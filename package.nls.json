@@ -5,5 +5,6 @@
   "run_test_title": "Run Test Definition",
   "refresh_test_title": "Refresh Test Definitions",
   "go_to_definition_title": "View Test Definition",
-  "collapse_tests_title": "Collapse All Test Cases"
+  "collapse_tests_title": "Collapse All Test Cases",
+  "show_agent_steps": "SFDX: Show Agent Steps"
 }

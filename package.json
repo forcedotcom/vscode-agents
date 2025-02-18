@@ -153,6 +153,10 @@
     },
     "commandPalette": [
       {
+        "command": "sf.agent.show.steps",
+        "when": "true"
+      },
+      {
         "command": "sf.agent.test.view.goToDefinition",
         "when": "false"
       },
@@ -221,6 +225,10 @@
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
+      },
+      {
+        "command": "sf.agent.show.steps",
+        "title": "%show_agent_steps%"
       }
     ]
   }
