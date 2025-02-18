@@ -9,10 +9,10 @@
    2. View detailed information of a test case by clicking on it
 
 ## Prerequisites
+The Agentforce DX extension depends on the Salesforce Extension Pack and the `agents` plugin for the Salesforce CLI. Before installation, ensure that you do the following.
 
-The Agents extension depends on the Salesforce Extension Pack.
-
-Prior to using the Agents extension, install the [Salesforce Extension Pack](https://marketplace.visualstudio.com/items?itemName=salesforce.salesforcedx-vscode) and its prerequisites.
+1. Install the Salesforce Extension Pack and its prerequisites.
+2. Install the `agents` plugin for the Salesforce CLI by running.
 
 This extension also depends on the agents plugin for the salesforce CLI (`sf`). Install it by running
 
