@@ -4,6 +4,7 @@ import { Commands } from '../../src/enums/commands';
 import { SfProject } from '@salesforce/core-bundle';
 import * as path from 'path';
 import { sync } from 'cross-spawn';
+import {CoreExtensionService} from "../../src/services/coreExtensionService";
 
 jest.mock('cross-spawn', () => ({
   sync: jest.fn()
@@ -15,8 +16,13 @@ describe('registerOpenAgentInOrgCommand', () => {
   let fsSpy: jest.SpyInstance;
   let quickPickSpy: jest.SpyInstance;
   let errorMessageSpy: jest.SpyInstance;
-
+  const fakeTelemetryInstance:any = {
+    sendException: jest.fn(),
+    sendCommandEvent: jest.fn()
+  };
   beforeEach(() => {
+    jest.spyOn(CoreExtensionService, 'getTelemetryService').mockReturnValue(fakeTelemetryInstance);
+
     commandSpy = jest.spyOn(vscode.commands, 'registerCommand');
     projectSpy = jest.spyOn(SfProject, 'getInstance').mockReturnValue({
       getDefaultPackage: jest.fn().mockReturnValue({ fullPath: '/fake/path' })
@@ -40,7 +46,7 @@ describe('registerOpenAgentInOrgCommand', () => {
   });
 
   it('opens selected agent in org', async () => {
-    const disposable = registerOpenAgentInOrgCommand();
+    registerOpenAgentInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
     expect(projectSpy).toHaveBeenCalled();
@@ -51,15 +57,13 @@ describe('registerOpenAgentInOrgCommand', () => {
 
   it('throws error when no agent is selected', async () => {
     quickPickSpy.mockResolvedValue(undefined);
-
-    const disposable = registerOpenAgentInOrgCommand();
+    registerOpenAgentInOrgCommand();
     await expect(commandSpy.mock.calls[0][1]()).rejects.toThrow('No Agent selected');
   });
 
   it('shows error message when command fails', async () => {
     (sync as jest.Mock).mockReturnValue({ status: 1, stderr: Buffer.from('Error opening agent') });
-
-    const disposable = registerOpenAgentInOrgCommand();
+    registerOpenAgentInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
     expect(errorMessageSpy).toHaveBeenCalledWith('Unable to open agent: Error opening agent');

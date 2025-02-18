@@ -5,7 +5,7 @@
 1. We are requiring Node 20 and npm v10 at a minimum. If you need to work with multiple versions of Node, you might consider using [nvm](https://github.com/creationix/nvm).
 2. We use `eslint` so please install it using `npm install --global eslint`.
 3. It is preferred, though not required, that you use the Insiders version of VS
-    Code from [here](https://code.visualstudio.com/insiders).
+   Code from [here](https://code.visualstudio.com/insiders).
 
 ## Pre-requisites for Windows Development
 
@@ -16,16 +16,16 @@ actual extensions that we distribute.
 1. Same as above.
 2. You should use Bash Shell instead of Powershell or the Command Prompt.
 3. If you want to use the integrated terminal in VS Code, you can see that
-    following the instructions
-    [here](https://code.visualstudio.com/docs/editor/integrated-terminal#_windows);
+   following the instructions
+   [here](https://code.visualstudio.com/docs/editor/integrated-terminal#_windows);
 4. You should install VS Code Insiders from
-    [here](https://code.visualstudio.com/insiders). Without this, you won't be
-    able to run the end-to-end tests while VS Code is open. You will see an error
-    of the form "Running extension tests from the command line is currently only
-    supported if no other instance of Code is running." To circumvent that you
-    could close VS Code each time you run the tests. Or, you can install the
-    Insiders version so that it can run the tests in Code while you work in the
-    Insiders version.
+   [here](https://code.visualstudio.com/insiders). Without this, you won't be
+   able to run the end-to-end tests while VS Code is open. You will see an error
+   of the form "Running extension tests from the command line is currently only
+   supported if no other instance of Code is running." To circumvent that you
+   could close VS Code each time you run the tests. Or, you can install the
+   Insiders version so that it can run the tests in Code while you work in the
+   Insiders version.
 
 ## Typical workflow
 
@@ -34,26 +34,26 @@ You would only do this once after you cloned the repository.
 1. Clone this repository from git.
 2. `cd` into `vscode-agents`.
 3. We develop from the `main` branch and release from the `main` branch. At
-    this point, you should do initiate a `git checkout -t origin/develop` unless
-    you are working on releasing.
+   this point, you should do initiate a `git checkout -t origin/develop` unless
+   you are working on releasing.
 4. `npm install` to bring in all the top-level dependencies.
 5. Open the project in VS Code.
 
 You would usually do the following each time you close/reopen VS Code:
 
 1. If you wish to build, you can invoke Command Palette > Build Task
-    (Ctrl+Shift+B or Cmd+Shift+B on Mac). The errors will show in the Problems
-    panel. There is a known issue with the mapping so clicking on the error won't
-    open the file.
+   (Ctrl+Shift+B or Cmd+Shift+B on Mac). The errors will show in the Problems
+   panel. There is a known issue with the mapping so clicking on the error won't
+   open the file.
 2. In VS Code, you can invoke Command Palette. Then type in "debug " (there is
-    space after) and from the launch configuration dropdown, pick "Launch
-    Extensions". This launch extension will actually do a build for you as well.
+   space after) and from the launch configuration dropdown, pick "Launch
+   Extensions". This launch extension will actually do a build for you as well.
 3. In VS Code, you can invoke Command Palette. Then type in "debug " (there is
-    space after) and from the launch configuration dropdown, pick "Launch
-    Extensions without compile" if you had already build locally before.
+   space after) and from the launch configuration dropdown, pick "Launch
+   Extensions without compile" if you had already build locally before.
 4. In VS Code, you can invoke Command Palette. Then type in "debug " (there is
-    space after) and from the launch configuration dropdown, pick any of "Launch
-    - Tests".
+   space after) and from the launch configuration dropdown, pick any of "Launch
+   - Tests".
 
 For more information, consult the VS Code
 [doc](https://code.visualstudio.com/docs/extensions/debugging-extensions) on how
@@ -62,9 +62,9 @@ to run and debug extensions.
 When you are ready to commit
 
 1. Run `npm run lint` to run eslint in more thorough mode to identify any
-    errors.
+   errors.
 2. Some of the items can be fixed using `eslint . --fix`. Some you
-    might need to fix them manually.
+   might need to fix them manually.
 
 This linting steps should be done later as part of the continuous integration
 runs but that is how you would check locally first.
@@ -111,7 +111,7 @@ Runs `markdown-link-check` on all markdown files in the repo to check for any br
 
 - Does not check html files.
 - Ignores [429 Too Many Requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429)
-    - We get 429 mostly from github as there are many URLs pointing to PRs etc in Changelog
+  - We get 429 mostly from github as there are many URLs pointing to PRs etc in Changelog
 
 ### `npm run check:deps`
 

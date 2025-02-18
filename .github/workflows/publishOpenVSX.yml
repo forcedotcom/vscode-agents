@@ -43,8 +43,8 @@ jobs:
           gh release download v${{ env.PUBLISH_VERSION }} -D ./extensions
       - name: Display downloaded vsix files
         run: ls -R ./extensions
-#      - name: Configure Git for private repo access
-#        run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      #      - name: Configure Git for private repo access
+      #        run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
       - run: npm ci
       - run: find ./extensions -type f -name "vscode-agents*.vsix" -exec npx ovsx publish {} -p ${{ env.OVSX_PAT }} \;
       - run: echo "SUCCESSFULLY published"

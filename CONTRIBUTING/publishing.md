@@ -9,6 +9,7 @@ If you just need a refresher:
 - _TL;DR:_ Execute the `Initiate New Release` GitHub Action on the `main` branch. Then, send the generated PR with `CHANGELOG.md` changes to our doc writer. Finalize the `CHANGELOG.md` with the approved text, then move on to Part II.
 
 If you want detailed instructions:
+
 1. Go to the `Actions` tab and click `Initiate New Release` GitHub Action.
    <br/><img src="images%2FinitiateNewRelease_action.png" width="150" alt=""/>
 
@@ -72,7 +73,6 @@ If you want detailed instructions:
    <br/><img src="images%2Fgenerated_artifact.png" width="300" alt=""/>
 
 ---
-
 
 ### Part IV: Publishing the Release and Merging the Changelog
 
