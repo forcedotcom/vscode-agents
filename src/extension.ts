@@ -23,7 +23,10 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // Validate CLI installation in the background
-    await validateCLI();
+    validateCLI().catch((err: Error) => {
+      console.error('CLI validation failed:', err.message);
+      vscode.window.showErrorMessage('CLI validation failed. Some features might not work correctly.');
+    });
 
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
