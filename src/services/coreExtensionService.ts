@@ -27,7 +27,7 @@ export class CoreExtensionService {
       const coreExtensionApi = CoreExtensionService.validateCoreExtension();
 
       CoreExtensionService.initializeChannelService(coreExtensionApi?.services.ChannelService);
-      CoreExtensionService.initializeTelemetryService(coreExtensionApi?.services.TelemetryService, context);
+      await CoreExtensionService.initializeTelemetryService(coreExtensionApi?.services.TelemetryService, context);
 
       CoreExtensionService.initialized = true;
     }
@@ -62,13 +62,16 @@ export class CoreExtensionService {
     CoreExtensionService.channelService = channelService.getInstance(EXTENSION_NAME);
   }
 
-  private static initializeTelemetryService(telemetryService: TelemetryService | undefined, context: ExtensionContext) {
+  private static async initializeTelemetryService(
+    telemetryService: TelemetryService | undefined,
+    context: ExtensionContext
+  ) {
     if (!telemetryService) {
       throw new Error(TELEMETRY_SERVICE_NOT_FOUND);
     }
     const { aiKey, name, version } = context.extension.packageJSON;
     CoreExtensionService.telemetryService = telemetryService.getInstance(name);
-    CoreExtensionService.telemetryService.initializeService(context, name, aiKey, version);
+    await CoreExtensionService.telemetryService.initializeService(context, name, aiKey, version);
   }
 
   public static isAboveMinimumRequiredVersion(minRequiredVersion: string, actualVersion: string): boolean {

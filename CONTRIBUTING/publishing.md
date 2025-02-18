@@ -9,6 +9,7 @@ If you just need a refresher:
 - _TL;DR:_ Execute the `Initiate New Release` GitHub Action on the `main` branch. Then, send the generated PR with `CHANGELOG.md` changes to our doc writer. Finalize the `CHANGELOG.md` with the approved text, then move on to Part II.
 
 If you want detailed instructions:
+
 1. Go to the `Actions` tab and click `Initiate New Release` GitHub Action.
    <br/><img src="images%2FinitiateNewRelease_action.png" width="150" alt=""/>
 
@@ -73,13 +74,11 @@ If you want detailed instructions:
 
 ---
 
-
 ### Part IV: Publishing the Release and Merging the Changelog
 
 This part will run through steps for publishing a new release.
 
 1. Navigate to each GitHub Action below and execute them on the `release/MM-DD-YYYY-#` branch. The typical order is outlined below to ensure things go out in priority order:
-   - `Update Public Repository with New Release`: Copies the release to the public repository.
    - `Publish in Microsoft Marketplace`: Publishes to the VSCode marketplace.
    - `Publish in Open VSX Registry`: Publishes to the openvsix marketplace.
 2. Ensure that the extension release version in Microsoft Marketplace and Open VSX Registry are now updated (they may take a few minutes to update):
