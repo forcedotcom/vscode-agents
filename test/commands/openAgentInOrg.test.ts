@@ -4,7 +4,7 @@ import { Commands } from '../../src/enums/commands';
 import { SfProject } from '@salesforce/core-bundle';
 import * as path from 'path';
 import { sync } from 'cross-spawn';
-import {CoreExtensionService} from "../../src/services/coreExtensionService";
+import { CoreExtensionService } from '../../src/services/coreExtensionService';
 
 jest.mock('cross-spawn', () => ({
   sync: jest.fn()
@@ -15,8 +15,9 @@ describe('registerOpenAgentInOrgCommand', () => {
   let projectSpy: jest.SpyInstance;
   let fsSpy: jest.SpyInstance;
   let quickPickSpy: jest.SpyInstance;
+  let progressSpy: jest.SpyInstance;
   let errorMessageSpy: jest.SpyInstance;
-  const fakeTelemetryInstance:any = {
+  const fakeTelemetryInstance: any = {
     sendException: jest.fn(),
     sendCommandEvent: jest.fn()
   };
@@ -33,6 +34,9 @@ describe('registerOpenAgentInOrgCommand', () => {
     ]);
     quickPickSpy = jest.spyOn(vscode.window, 'showQuickPick').mockResolvedValue([{ title: 'Agent1' }] as any);
     errorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
+    progressSpy = jest
+      .spyOn(vscode.window, 'withProgress')
+      .mockImplementation((_options, task) => task({ report: jest.fn() }, {} as vscode.CancellationToken));
     (sync as jest.Mock).mockReturnValue({ status: 0 });
   });
 
@@ -49,6 +53,7 @@ describe('registerOpenAgentInOrgCommand', () => {
     registerOpenAgentInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
+    expect(progressSpy).toHaveBeenCalled();
     expect(projectSpy).toHaveBeenCalled();
     expect(fsSpy).toHaveBeenCalledWith(vscode.Uri.file(path.join('/fake/path', 'main', 'default', 'bots')));
     expect(quickPickSpy).toHaveBeenCalledWith(['Agent1', 'Agent2'], { title: 'Choose which Agent to open' });
