@@ -122,21 +122,22 @@ export class AgentTestRunner {
                   case 'NEW':
                   case 'IN_PROGRESS':
                     // every time IN_PROGRESS is returned, 10 is added, is possible to 100% progress bar and tests not be done
-                    progress.report({ increment: 10, message: `Status: ${data.status}` });
+                    progress.report({ increment: 10, message: `Status: In Progress` });
                     break;
                   case 'ERROR':
                   case 'TERMINATED':
                     passing = data.passingTestCases;
                     failing = data.failingTestCases;
                     total = data.totalTestCases;
-                    reject();
+                    progress.report({ increment: 100, message: `Status: ${data.status}` });
+                    setTimeout(() => reject(), 1500);
                     break;
                   case 'COMPLETED':
                     passing = data.passingTestCases;
                     failing = data.failingTestCases;
                     total = data.totalTestCases;
                     progress.report({ increment: 100, message: `Status: ${data.status}` });
-                    resolve({});
+                    setTimeout(() => resolve({}), 1500);
                     break;
                 }
               }

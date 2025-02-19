@@ -22,12 +22,16 @@ export class CoreExtensionService {
   private static channelService: ChannelService;
   private static telemetryService: TelemetryService;
 
+  static get isInitialized(): boolean {
+    return CoreExtensionService.initialized;
+  }
+
   static async loadDependencies(context: ExtensionContext): Promise<void> {
     if (!CoreExtensionService.initialized) {
       const coreExtensionApi = CoreExtensionService.validateCoreExtension();
 
       CoreExtensionService.initializeChannelService(coreExtensionApi?.services.ChannelService);
-      await CoreExtensionService.initializeTelemetryService(coreExtensionApi?.services.TelemetryService, context);
+      CoreExtensionService.initializeTelemetryService(coreExtensionApi?.services.TelemetryService, context);
 
       CoreExtensionService.initialized = true;
     }
@@ -55,23 +59,23 @@ export class CoreExtensionService {
     return coreExtension.exports;
   }
 
-  private static initializeChannelService(channelService: ChannelService | undefined) {
+  private static initializeChannelService(channelService: ChannelService | undefined): void {
     if (!channelService) {
       throw new Error(CHANNEL_SERVICE_NOT_FOUND);
     }
     CoreExtensionService.channelService = channelService.getInstance(EXTENSION_NAME);
   }
 
-  private static async initializeTelemetryService(
+  private static initializeTelemetryService(
     telemetryService: TelemetryService | undefined,
     context: ExtensionContext
-  ) {
+  ): void {
     if (!telemetryService) {
       throw new Error(TELEMETRY_SERVICE_NOT_FOUND);
     }
     const { aiKey, name, version } = context.extension.packageJSON;
     CoreExtensionService.telemetryService = telemetryService.getInstance(name);
-    await CoreExtensionService.telemetryService.initializeService(context, name, aiKey, version);
+    void CoreExtensionService.telemetryService.initializeService(context, name, aiKey, version);
   }
 
   public static isAboveMinimumRequiredVersion(minRequiredVersion: string, actualVersion: string): boolean {
