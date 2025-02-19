@@ -27,7 +27,6 @@ export const registerOpenAgentInOrgCommand = () => {
     if (result.status !== 0) {
       vscode.window.showErrorMessage(`Unable to open agent: ${result.stderr.toString()}`);
       telemetryService.sendException('sf_command_failed', `stderr: ${result.stderr.toString()}`);
-
     }
   });
 };
