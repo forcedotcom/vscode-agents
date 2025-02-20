@@ -100,15 +100,30 @@ export class AgentTestRunner {
       channelService.showChannelOutput();
       const tester = new AgentTester(org.getConnection());
       channelService.appendLine(`Starting ${test.name} tests: ${new Date().toLocaleString()}`);
+      let testRunId = '';
       vscode.window.withProgress(
         {
-          //TODO: once we can cancel in progress tests
-          cancellable: false,
+          cancellable: true,
           location: vscode.ProgressLocation.Notification,
           title: `Running ${test.name}`
         },
-        async progress => {
+        async (progress, cancellationToken) => {
           return new Promise((resolve, reject) => {
+            cancellationToken.onCancellationRequested(() => {
+              tester
+                .cancel(testRunId)
+                .then(() => {
+                  progress.report({ increment: 0, message: 'Status: Cancelled' });
+                  channelService.appendLine('Test run cancelled');
+                  this.testOutline.getTestGroup(test.name)?.updateOutcome('TERMINATED', true);
+                  setTimeout(() => reject(), 1500);
+                })
+                .catch(e => {
+                  const error = e as Error;
+                  channelService.appendLine(`Error cancelling test: ${error.message}`);
+                  telemetryService.sendException(error.name, error.message);
+                });
+            });
             lifecycle.on(
               'AGENT_TEST_POLLING_EVENT',
               async (data: {
@@ -147,11 +162,12 @@ export class AgentTestRunner {
       );
 
       const response = await tester.start(test.name);
+      testRunId = response.runId;
       // begin in-progress
       this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
-      channelService.appendLine(`Job Id: ${response.runId}`);
+      channelService.appendLine(`Job Id: ${testRunId}`);
 
-      const result = await tester.poll(response.runId, { timeout: Duration.minutes(100) });
+      const result = await tester.poll(testRunId, { timeout: Duration.minutes(100) });
       this.testGroupNameToResult.set(test.name, result);
       this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
       let hasFailure = false;
