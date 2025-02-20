@@ -8,12 +8,11 @@ jobs:
     name: 'Publish Agentforce DX in Open VSX Start Notification'
     uses: ./.github/workflows/slackNotification.yml
     secrets: inherit
-  #    don't publish to ovsx until stable
-  #    with:
-  #      title: 'Publish Agentforce DX in Open VSX waiting for approval in github.'
-  #      notification: 'New Release triggered publish build and job is ready for approval.'
-  #      type: 'notification'
-  #      workflow: 'publishOpenVSX.yml'
+    with:
+      title: 'Publish Agentforce DX in Open VSX waiting for approval in github.'
+      notification: 'New Release triggered publish build and job is ready for approval.'
+      type: 'notification'
+      workflow: 'publishOpenVSX.yml'
   get-release-version:
     uses: ./.github/workflows/getReleaseVersion.yml
     secrets: inherit
@@ -44,8 +43,8 @@ jobs:
           gh release download v${{ env.PUBLISH_VERSION }} -D ./extensions
       - name: Display downloaded vsix files
         run: ls -R ./extensions
-      - name: Configure Git for private repo access
-        run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      #      - name: Configure Git for private repo access
+      #        run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
       - run: npm ci
       - run: find ./extensions -type f -name "vscode-agents*.vsix" -exec npx ovsx publish {} -p ${{ env.OVSX_PAT }} \;
       - run: echo "SUCCESSFULLY published"

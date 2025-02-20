@@ -11,19 +11,26 @@ import { AgentTestRunner } from './views/testRunner';
 import { Commands } from './enums/commands';
 import type { AgentTestGroupNode, TestNode } from './types';
 import { CoreExtensionService } from './services/coreExtensionService';
+import type { TelemetryService } from './types/TelemetryService';
 
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
   const extensionHRStart = process.hrtime();
 
   try {
+    let telemetryService: TelemetryService | undefined;
     // Load dependencies in the background to avoid blocking activation
-    CoreExtensionService.loadDependencies(context).catch((err: Error) =>
-      console.error('Error loading core dependencies:', err)
-    );
+    CoreExtensionService.loadDependencies(context)
+      .then(() => {
+        telemetryService = CoreExtensionService.getTelemetryService();
+      })
+      .catch((err: Error) => console.error('Error loading core dependencies:', err));
 
     // Validate CLI installation in the background
-    await validateCLI();
+    validateCLI().catch((err: Error) => {
+      console.error('CLI validation failed:', err.message);
+      vscode.window.showErrorMessage('CLI validation failed. Some features might not work correctly.');
+    });
 
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
@@ -33,11 +40,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Update the test view without blocking activation
     setTimeout(() => getTestOutlineProvider().refresh(), 0);
+    telemetryService?.sendExtensionActivationEvent(extensionHRStart);
 
     context.subscriptions.push(...disposables);
-
-    const telemetryService = CoreExtensionService.getTelemetryService();
-    telemetryService.sendExtensionActivationEvent(extensionHRStart);
   } catch (err: unknown) {
     throw new Error(`Failed to initialize: ${(err as Error).message}`);
   }
@@ -49,19 +54,17 @@ const registerTestView = (): vscode.Disposable => {
 
   const testProvider = vscode.window.registerTreeDataProvider('sf.agent.test.view', testOutlineProvider);
   testViewItems.push(testProvider);
+  const testRunner = new AgentTestRunner(testOutlineProvider);
 
-  // Delay the creation of `testRunner` until needed
   testViewItems.push(
     vscode.commands.registerCommand(Commands.goToDefinition, (test: TestNode) => {
-      const testRunner = new AgentTestRunner(testOutlineProvider);
       testRunner.goToTest(test);
     })
   );
 
   testViewItems.push(
     vscode.commands.registerCommand(Commands.runTest, (test: AgentTestGroupNode) => {
-      const testRunner = new AgentTestRunner(testOutlineProvider);
-      testRunner.runAgentTest(test);
+      void testRunner.runAgentTest(test);
     })
   );
   testViewItems.push(vscode.commands.registerCommand(Commands.refreshTestView, () => testOutlineProvider.refresh()));
