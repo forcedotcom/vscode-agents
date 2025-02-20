@@ -34,6 +34,7 @@
     "@types/semver": "7.5.8",
     "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.90.0",
+    "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@vscode/vsce": "^3.2.2",
     "commitizen": "^4.3.1",
