@@ -114,6 +114,23 @@
           "name": "%agent_test_view_name%",
           "when": "sf:project_opened"
         }
+      ],
+      "agent-chat": [
+        {
+          "id": "sf.agent.chat.view",
+          "name": "%agent_chat%",
+          "type": "webview",
+          "when": "sf:project_opened"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agent-chat",
+          "title": "%agentforce_dx%",
+          "icon": "$(chat-editor-label-icon)"
+        }
       ]
     },
     "menus": {
@@ -132,6 +149,16 @@
           "command": "sf.agent.test.view.collapseAll",
           "when": "view == sf.agent.test.view",
           "group": "navigation@3"
+        },
+        {
+          "command": "sf.agent.clearChat",
+          "when": "view == sf.agent.chat.view",
+          "group": "navigation"
+        },
+        {
+          "command": "sf.agent.showChatFlow",
+          "when": "view == sf.agent.chat.view",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -150,38 +177,46 @@
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "sf.agent.test.view.goToDefinition",
+          "when": "false"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+        },
+        {
+          "command": "sf.agent.test.view.runAll",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.runTest",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.refresh",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.collapseAll",
+          "when": "sf:project_opened"
+        },
+        {
+          "command": "sf.agent.openChat",
+          "when": "true"
+        },
+        {
+          "command": "sf.agent.clearChat",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.showChatFlow",
+          "when": "false"
+        }
       ]
     },
-    "commandPalette": [
-      {
-        "command": "sf.agent.show.steps",
-        "when": "true"
-      },
-      {
-        "command": "sf.agent.test.view.goToDefinition",
-        "when": "false"
-      },
-      {
-        "command": "salesforcedx-vscode-agents.openAgentInOrg",
-        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
-      },
-      {
-        "command": "sf.agent.test.view.runAll",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.runTest",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.refresh",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.collapseAll",
-        "when": "sf:project_opened"
-      }
-    ],
     "commands": [
       {
         "command": "sf.agent.test.view.goToDefinition",
@@ -228,8 +263,34 @@
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
       },
       {
-        "command": "sf.agent.show.steps",
-        "title": "%show_agent_steps%"
+        "command": "sf.agent.openChat",
+        "title": "%open_chat_with_agent%",
+        "icon": "$(chat-editor-label-icon)"
+      },
+      {
+        "command": "sf.agent.showChatFlow",
+        "title": "%show_chat_flow%",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "sf.agent.clearChat",
+        "title": "%clear_chat%",
+        "icon": "$(clear-all)"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "sf.agent.showChatFlow",
+        "displayName": "Agentforce DX: Chat Flow",
+        "selector": [
+          {
+            "filenamePattern": "*.chatflow"
+          },
+          {
+            "scheme": "chat-flow"
+          }
+        ],
+        "priority": "default"
       }
     ]
   }

@@ -3,8 +3,12 @@
   "agent_test_view_name": "Agent Tests",
   "run_all_tests_title": "Run All Test Definitions",
   "run_test_title": "Run Test Definition",
+  "agentforce_dx": "Agentforce DX",
+  "agent_chat": "Chat with Agent",
+  "clear_chat": "Clear chat with Agent",
+  "show_chat_flow": "SFDX: Show Chat Flow",
   "refresh_test_title": "Refresh Test Definitions",
   "go_to_definition_title": "View Test Definition",
   "collapse_tests_title": "Collapse All Test Cases",
-  "show_agent_steps": "SFDX: Show Agent Steps"
+  "open_chat_with_agent": "SFDX: Open Chat with Agent"
 }
