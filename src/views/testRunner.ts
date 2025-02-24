@@ -52,15 +52,19 @@ export class AgentTestRunner {
         channelService.appendLine(`"${tc.inputs.utterance}"`);
         channelService.appendLine('');
         tc.testResults.map(tr => {
-          channelService.appendLine(`❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result==='PASS'? '✅':'❌'}`)
+          channelService.appendLine(
+            `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
+          );
           channelService.appendLine('────────────────────────────────────────────────────────────────────────');
           channelService.appendLine(`EXPECTED : ${tr.expectedValue.replaceAll('\n', '')}`);
           channelService.appendLine(`ACTUAL   : ${tr.actualValue.replaceAll('\n', '')}`);
           channelService.appendLine(`SCORE    : ${tr.score}`);
-          channelService.appendLine('')
+          channelService.appendLine('');
         });
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(`TEST CASE SUMMARY: ${tc.testResults.length} tests run | ✅ ${tc.testResults.filter(tc => tc.result==='PASS').length} passed | ❌ ${tc.testResults.filter(tc => tc.result==='FAILURE').length} failed`);
+        channelService.appendLine(
+          `TEST CASE SUMMARY: ${tc.testResults.length} tests run | ✅ ${tc.testResults.filter(tc => tc.result === 'PASS').length} passed | ❌ ${tc.testResults.filter(tc => tc.result === 'FAILURE').length} failed`
+        );
       });
     }
   }
