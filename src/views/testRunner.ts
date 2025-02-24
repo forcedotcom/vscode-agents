@@ -45,25 +45,26 @@ export class AgentTestRunner {
         testInfo.testCases = testInfo.testCases.filter(f => `#${f.testNumber}` === test.name);
       }
       testInfo.testCases.map(tc => {
-        const testCaseTitle = ` ${testInfo.subjectName} (Test Case: ${tc.testNumber}) `;
-        // +4, so there's two extra per side
-        const testCasePadding = this.fillPadding(testCaseTitle.length + 4);
-        channelService.appendLine(`┌${testCasePadding}┐`);
-        channelService.appendLine(` ${testCaseTitle} `);
-        channelService.appendLine(`└${testCasePadding}┘`);
+        channelService.appendLine('════════════════════════════════════════════════════════════════════════');
+        channelService.appendLine(`CASE #${tc.testNumber} - ${testInfo.subjectName}`);
+        channelService.appendLine('════════════════════════════════════════════════════════════════════════');
         channelService.appendLine('');
         channelService.appendLine(`"${tc.inputs.utterance}"`);
         channelService.appendLine('');
         tc.testResults.map(tr => {
-          const title = `${humanFriendlyName(tr.name)} ─ ${tr.result}`;
-          // 37 char width bottom, 20 in top chars (excluding title) => 17 <= 17 is also longest possible combo
-          const padding = this.fillPadding(17 - title.length);
-          channelService.appendLine(`\t┌────────── ${title} ──${padding}────┐`);
-          channelService.appendLine(`\t EXPECTED: ${tr.expectedValue.replaceAll('\n', '')}`);
-          channelService.appendLine(`\t ACTUAL: ${tr.actualValue.replaceAll('\n', '')}`);
-          channelService.appendLine(`\t STATS: ${tr.metricLabel}, ${tr.score}`);
-          channelService.appendLine('\t└───────────────────────────────────┘');
+          channelService.appendLine(
+            `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
+          );
+          channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+          channelService.appendLine(`EXPECTED : ${tr.expectedValue.replaceAll('\n', '')}`);
+          channelService.appendLine(`ACTUAL   : ${tr.actualValue.replaceAll('\n', '')}`);
+          channelService.appendLine(`SCORE    : ${tr.score}`);
+          channelService.appendLine('');
         });
+        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+        channelService.appendLine(
+          `TEST CASE SUMMARY: ${tc.testResults.length} tests run | ✅ ${tc.testResults.filter(tc => tc.result === 'PASS').length} passed | ❌ ${tc.testResults.filter(tc => tc.result === 'FAILURE').length} failed`
+        );
       });
     }
   }
@@ -181,9 +182,5 @@ export class AgentTestRunner {
       channelService.appendLine(`Error running test: ${error.message}`);
       telemetryService.sendException(error.name, error.message);
     }
-  }
-
-  fillPadding(num: number): string {
-    return Array(num).fill('─').join('');
   }
 }
