@@ -45,10 +45,8 @@ export class AgentTestRunner {
         testInfo.testCases = testInfo.testCases.filter(f => `#${f.testNumber}` === test.name);
       }
       testInfo.testCases.map(tc => {
-        const caseHeader = `CASE #${tc.testNumber} `;
-        const padding = new Array(36-caseHeader.length).fill(' ').join('')
         channelService.appendLine('════════════════════════════════════════════════════════════════════════');
-        channelService.appendLine(`${padding}${caseHeader}- ${testInfo.subjectName}`);
+        channelService.appendLine(`CASE #${tc.testNumber} - ${testInfo.subjectName}`);
         channelService.appendLine('════════════════════════════════════════════════════════════════════════');
         channelService.appendLine('');
         channelService.appendLine(`"${tc.inputs.utterance}"`);
