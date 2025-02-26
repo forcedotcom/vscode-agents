@@ -48,7 +48,7 @@ jobs:
       - name: Display downloaded vsix files
         run: ls -R ./extensions
       - run: npm ci
-      - run: find ./extensions -type f -name "vscode-agents*.vsix" -exec npx ovsx publish {} -p ${{ env.OVSX_PAT }} \;
+      - run: find ./extensions -type f -name "*.vsix" -exec npx ovsx publish {} -p ${{ env.OVSX_PAT }} \;
       - run: echo "SUCCESSFULLY published"
   ctcCloseSuccess:
     needs: [ctc-open, publish]
