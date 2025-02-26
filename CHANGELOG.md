@@ -1,6 +1,8 @@
+# [1.0.0](https://github.com/salesforcecli/vsode-agents/compare/v0.1.0...v1.0.0) (2025-02-26)
+
 # 1.0.0 Open Beta Release
 
-Welcome to the first (beta) release of the Agentforce DX VS Code extension!  Agentforce DX is a suite of tools to build, preview, and test agents. 
+Welcome to the first (beta) release of the Agentforce DX VS Code extension! Agentforce DX is a suite of tools to build, preview, and test agents.
 
 This extension depends on the Salesforce Extension Pack, Salesforce CLI, and the Agentforce DX CLI plugin ([@salesforcecli/plugin-agent](https://github.com/salesforcecli/plugin-agent)). For details about installing these prerequisites, see the [README](./README.md).
 

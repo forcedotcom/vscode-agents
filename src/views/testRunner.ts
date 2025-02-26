@@ -16,9 +16,7 @@ import { AgentTestNode } from '../types';
 
 export class AgentTestRunner {
   private testGroupNameToResult = new Map<string, AgentTestResultsResponse>();
-  constructor(
-    private testOutline: AgentTestOutlineProvider
-  ) {}
+  constructor(private testOutline: AgentTestOutlineProvider) {}
 
   public displayTestDetails(test: TestNode) {
     const channelService = CoreExtensionService.getChannelService();
