@@ -1,4 +1,4 @@
-# 1.1.0 Open Beta Release
+# 1.0.0 Open Beta Release
 
 Welcome to the first (beta) release of the Agentforce DX VS Code extension!  Agentforce DX is a suite of tools to build, preview, and test agents. 
 
