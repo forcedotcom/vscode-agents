@@ -1,7 +1,7 @@
 {
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
-  "description": "Agentforce DX is a suite of tools designed to build and test agents. This extension provides integrated VS Code commands to easily open an agent in your org's Agent Builder UI and run the tests associated with an agent in the Agent Testing Panel.",
+  "description": "Provides a suite of tools to build, preview, and test agents",
   "version": "1.0.0",
   "publisher": "salesforce",
   "preview": true,

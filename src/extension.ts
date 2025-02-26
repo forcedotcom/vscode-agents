@@ -29,7 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Validate CLI installation in the background
     validateCLI().catch((err: Error) => {
       console.error('CLI validation failed:', err.message);
-      vscode.window.showErrorMessage('CLI validation failed. Some features might not work correctly.');
+      vscode.window.showErrorMessage(`Failed to validate sf CLI and plugin-agent. ${err.message}`);
     });
 
     // Register commands before initializing `testRunner`
@@ -57,7 +57,7 @@ const registerTestView = (): vscode.Disposable => {
 
   testViewItems.push(
     vscode.commands.registerCommand(Commands.goToDefinition, (test: TestNode) => {
-      testRunner.goToTest(test);
+      testRunner.displayTestDetails(test);
     })
   );
 
