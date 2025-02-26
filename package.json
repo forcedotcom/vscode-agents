@@ -8,7 +8,7 @@
   "repository": {
     "url": "https://github.com/salesforcecli/vsode-agents"
   },
-  "icon": "images/VSCodeBundle.png",
+  "icon": "images/agentforce-dx.png",
   "license": "BSD-3-Clause",
   "engines": {
     "vscode": "^1.90.0"
