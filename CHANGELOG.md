@@ -1,8 +1,10 @@
 # 1.1.0 Open Beta Release
 
-This extension used with the Salesforce CLI Integration Extension and the Agentforce DX CLI plugin, is a suite of tools designed to build and test agents. Find more about requisites in the ([README.md](https://github.com/forcedotcom/vscode-agents/blob/main/README.md))
+Welcome to the first (beta) release of the Agentforce DX VS Code extension!  Agentforce DX is a suite of tools to build, preview, and test agents. The tools include Salesforce CLI commands and this extension. 
 
-### Features
+This extension depends on the Salesforce Extension Pack, Salesforce CLI, and the Agentforce DX CLI plugin ([@salesforcecli/plugin-agent](https://github.com/salesforcecli/plugin-agent)). For details about installing these prerequisites, see the [README](./README.md).
 
-- Open Agent in your Org's Agent Builder UI
+### Features in This Extension
+
 - Run tests associated with an agent in the Agent Testing Panel.
+- Open an agent in your org's Agent Builder UI.
