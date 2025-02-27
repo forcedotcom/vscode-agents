@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   MainContainer,
   ChatContainer,
@@ -9,10 +9,6 @@ import {
   TypingIndicator
 } from '@chatscope/chat-ui-kit-react';
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
-// import { AgentPreview } from '@salesforce/agents';
-// import fs from 'fs';
-// import path from 'path';
-// import { tmpdir } from 'os';
 import salesforceLogo from './assets/salesforce.png';
 import './index.css';
 interface Message {
@@ -21,59 +17,78 @@ interface Message {
   role: 'system' | 'user';
   content: string;
 }
-const initialComment: Message = {
-  content: `Hi, I'm an AI service assistant. How can I help you?`,
-  role: 'system',
-  id: 1,
-  timestamp: new Date()
-};
+// const initialComment: Message = {
+//   content: `Hi, I'm an AI service assistant. How can I help you?`,
+//   role: 'system',
+//   id: 1,
+//   timestamp: new Date()
+// };
+
+const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
 
 const App: React.FC = () => {
-  // Inside your component
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [sendDisabled, setSendDisabled] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([initialComment]);
-  // const vscode = window.acquireVsCodeApi();
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  // const sendMessage = (message: string) => {
-  //   vscode.postMessage({ type: 'NEW_PROMPT', payload: message });
-  // };
+  useEffect(() => {
+    if (vscode) {
+      vscode.postMessage({ command: 'startSession' });
+    } else {
+      console.error('vscode API not available.');
+    }
+  }, []);
 
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  useEffect(() => {
+    window.addEventListener('message', event => {
+      const { command, data, error } = event.data;
+      if (command === 'sessionStarted') {
+        setMessages(prev => [
+          ...prev,
+          { id: prev.length + 1, role: 'system', content: data.message, timestamp: new Date() }
+        ]);
+        setTimeout(() => inputRef.current?.focus(), 0);
+      } else if (command === 'chatResponse') {
+        setIsThinking(false);
+        setMessages(prev => [
+          ...prev,
+          { id: prev.length + 1, role: 'system', content: data.message, timestamp: new Date() }
+        ]);
+        setSendDisabled(false);
+        setTimeout(() => inputRef.current?.focus(), 0);
+      } else if (command === 'chatError') {
+        console.error('Chat Error:', error);
+      }
+    });
+
+    return () => window.removeEventListener('message', () => {});
+  }, []);
+
   const handleSend = async (content: string) => {
     if (!content) return;
     setQuery('');
     setSendDisabled(true);
     setIsThinking(true);
     setMessages(prev => [...prev, { id: prev.length + 1, role: 'user', content: content, timestamp: new Date() }]);
-    await sleep(1500);
-
-    setIsThinking(false);
-    setMessages(prev => {
-      const lastComment = prev[prev.length - 1];
-      // TODO - use agents library for generations
-      return (Math.random() * 2) % 2 > 1
-        ? [
-            ...prev,
-            {
-              id: prev.length + 1,
-              role: 'system',
-              content: "I'm sorry, I can't help with this request",
-              timestamp: new Date()
-            }
-          ]
-        : [
-            ...prev,
-            { ...lastComment, id: prev.length + 1, role: 'system', content: 'We have a scuba class at 9:30 AM' }
-          ];
-    });
-    // sendMessage(content);
-    setSendDisabled(false);
-    // Ensure the input regains focus
-    setTimeout(() => inputRef.current?.focus(), 0);
+    if (vscode) {
+      vscode.postMessage({ command: 'sendChatMessage', text: content });
+    } else {
+      console.error('vscode API not available.');
+    }
   };
+
+  // const handleEndSession = () => {
+  //   setQuery('');
+  //   setSendDisabled(true);
+  //   setIsThinking(false);
+  //   if (vscode) {
+  //     vscode.postMessage({ command: 'endSession' });
+  //   } else {
+  //     console.warn('vscode API not available');
+  //   }
+  // };
 
   return (
     <MainContainer className="chat-wrapper">
