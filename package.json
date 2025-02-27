@@ -1,13 +1,14 @@
 {
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
-  "description": "Agents",
-  "version": "0.1.0",
+  "description": "Provides a suite of tools to build, preview, and test agents",
+  "version": "1.0.0",
   "publisher": "salesforce",
+  "preview": true,
   "repository": {
     "url": "https://github.com/salesforcecli/vsode-agents"
   },
-  "icon": "images/VSCodeBundle.png",
+  "icon": "images/agentforce-dx.png",
   "license": "BSD-3-Clause",
   "engines": {
     "vscode": "^1.90.0"

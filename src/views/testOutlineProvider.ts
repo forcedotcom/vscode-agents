@@ -33,8 +33,8 @@ export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTes
       const splitContent = fileContent.split(EOL);
 
       (Array.isArray(testDefinition.AiEvaluationDefinition.testCase)
-        // xml parser will not parse single node into array
-        ? testDefinition.AiEvaluationDefinition.testCase
+        ? // xml parser will not parse single node into array
+          testDefinition.AiEvaluationDefinition.testCase
         : [testDefinition.AiEvaluationDefinition.testCase]
       ).map(test => {
         const line = splitContent.findIndex(l => l.includes(`<number>${test.number}</number`));

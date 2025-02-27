@@ -8,4 +8,4 @@ dist/
 *.vsix
 /extension
 .idea/
-.sfdx
+.sfdx/

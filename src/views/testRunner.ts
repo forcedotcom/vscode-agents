@@ -5,7 +5,6 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  */
 
-import * as events from 'events';
 import * as vscode from 'vscode';
 import { AgentTestOutlineProvider } from './testOutlineProvider';
 import { AgentTester, TestStatus, AgentTestResultsResponse, humanFriendlyName } from '@salesforce/agents-bundle';
@@ -16,22 +15,10 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentTestNode } from '../types';
 
 export class AgentTestRunner {
-  private eventsEmitter: events.EventEmitter;
   private testGroupNameToResult = new Map<string, AgentTestResultsResponse>();
-  constructor(
-    private testOutline: AgentTestOutlineProvider,
-    eventsEmitter?: events.EventEmitter
-  ) {
-    this.eventsEmitter = eventsEmitter || new events.EventEmitter();
-    this.eventsEmitter.on('sf:update_selection', this.updateSelection);
-  }
+  constructor(private testOutline: AgentTestOutlineProvider) {}
 
-  public goToTest(test: TestNode) {
-    if (test.location) {
-      vscode.window.showTextDocument(test.location.uri).then(() => {
-        this.eventsEmitter.emit('sf:update_selection', test.location?.range);
-      });
-    }
+  public displayTestDetails(test: TestNode) {
     const channelService = CoreExtensionService.getChannelService();
     channelService.showChannelOutput();
     channelService.clear();
@@ -66,21 +53,6 @@ export class AgentTestRunner {
           `TEST CASE SUMMARY: ${tc.testResults.length} tests run | ✅ ${tc.testResults.filter(tc => tc.result === 'PASS').length} passed | ❌ ${tc.testResults.filter(tc => tc.result === 'FAILURE').length} failed`
         );
       });
-    }
-  }
-
-  public updateSelection(index: vscode.Range | number) {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      if (index instanceof vscode.Range) {
-        editor.selection = new vscode.Selection(index.start, index.end);
-        editor.revealRange(index); // Show selection
-      } else {
-        const line = editor.document.lineAt(index);
-        const startPos = new vscode.Position(line.lineNumber, line.firstNonWhitespaceCharacterIndex);
-        editor.selection = new vscode.Selection(startPos, line.range.end);
-        editor.revealRange(line.range); // Show selection
-      }
     }
   }
 
