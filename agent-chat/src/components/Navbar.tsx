@@ -5,10 +5,12 @@ import { useState } from 'react';
 const Navbar = ({
   currentAgent,
   setCurrentAgent,
+  onAgentSelect,
   onEndSession
 }: {
   currentAgent: string;
   setCurrentAgent: (agent: string) => void;
+  onAgentSelect: (agent: string) => void;
   onEndSession: () => void;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -24,6 +26,7 @@ const Navbar = ({
 
   const handleSelectAgent = (agent: string) => {
     setCurrentAgent(agent);
+    onAgentSelect(agent);
     handleMenuClose();
   };
 

@@ -59,6 +59,9 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           this.agentPreview = undefined;
 
           webviewView.webview.postMessage({ command: 'sessionEnded' });
+        } else if (message.command === 'selectAgent') {
+          console.log('Agent selected:', message.agent);
+          // TODO: logic to get bot id from agent name
         }
       } catch (error) {
         console.error('Error:', error);

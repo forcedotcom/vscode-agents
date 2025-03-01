@@ -85,9 +85,21 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAgentSelect = (agent: string) => {
+    console.log('Selected Agent:', agent);
+    if (vscode) {
+      vscode.postMessage({ command: 'selectAgent', agent });
+    }
+  };
+
   return (
     <div className="app-container">
-      <Navbar currentAgent={currentAgent} setCurrentAgent={setCurrentAgent} onEndSession={handleEndSession} />
+      <Navbar
+        currentAgent={currentAgent}
+        setCurrentAgent={setCurrentAgent}
+        onAgentSelect={handleAgentSelect}
+        onEndSession={handleEndSession}
+      />
       <MainContainer className="chat-container">
         <ChatContainer className="chat-container">
           <MessageList
