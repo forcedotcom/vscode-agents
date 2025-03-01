@@ -37,15 +37,30 @@ body {
   color: var(--chat-text);
 }
 
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.navbar {
+  height: 50px;
+  width: 100%;
+  background-color: #c6e3fa !important;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+
 /* Chat Container */
 .chat-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   height: 100%;
   overflow: hidden;
-  border: 1px solid var(--chat-border);
-  border-radius: 8px;
+  border-radius: 0px 0px 8px 8px;
   background-color: #2b2b2b !important;
   padding: 10px;
 }
