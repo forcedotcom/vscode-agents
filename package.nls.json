@@ -4,6 +4,6 @@
   "run_all_tests_title": "Run All Test Definitions",
   "run_test_title": "Run Test Definition",
   "refresh_test_title": "Refresh Test Definitions",
-  "go_to_definition_title": "View Test Definition",
+  "go_to_test_results": "AFDX: View Test Results",
   "collapse_tests_title": "Collapse All Test Cases"
 }
