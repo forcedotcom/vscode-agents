@@ -8,11 +8,14 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 export const registerOpenAgentInOrgCommand = () => {
   return vscode.commands.registerCommand(Commands.openAgentInOrg, async () => {
     const telemetryService = CoreExtensionService.getTelemetryService();
+    const channelService = CoreExtensionService.getChannelService();
     telemetryService.sendCommandEvent(Commands.openAgentInOrg);
     const project = SfProject.getInstance();
     const agents = await Agent.list(project);
     if (agents.length === 0) {
       vscode.window.showErrorMessage(`Could not find agents in the current project.`);
+      channelService.appendLine('Could not find agents in the current project.');
+      channelService.appendLine('Suggestion: retrieve your agents (Bot) metadata locally.');
       return;
     }
     // we need to prompt the user which agent to ope
