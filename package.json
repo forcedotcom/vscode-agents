@@ -117,6 +117,12 @@
       ]
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "sf.agent.test.view.goToTestResults",
+          "when": "false"
+        }
+      ],
       "view/title": [
         {
           "command": "sf.agent.test.view.runAll",
@@ -154,10 +160,6 @@
     },
     "commandPalette": [
       {
-        "command": "sf.agent.test.view.goToTestResults",
-        "when": "false"
-      },
-      {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
       },
@@ -181,11 +183,7 @@
     "commands": [
       {
         "command": "sf.agent.test.view.goToTestResults",
-        "title": "%go_to_test_results%",
-        "icon": {
-          "light": "resources/light/notRun.svg",
-          "dark": "resources/dark/notRun.svg"
-        }
+        "title": "%go_to_test_results%"
       },
       {
         "command": "sf.agent.test.view.refresh",
