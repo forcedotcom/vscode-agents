@@ -28,7 +28,7 @@ Agentforce DX is a suite of tools to build and test agents. This extension provi
 
 ## Documentation
 
-(Coming Soon) For information about Agentforce DX, see the **Agentforce DX** section of the [Agentforce Developer Guide](https://developer.salesforce.com/docs/einstein/genai/guide/get-started.html).
+For information about Agentforce DX, see the **Agentforce DX** section of the [Agentforce Developer Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx.html).
 
 ## Bugs and Feedback
 
