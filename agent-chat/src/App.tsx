@@ -23,14 +23,15 @@ const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : nu
 const App: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
-  const [sendDisabled, setSendDisabled] = useState(false);
+  const [sendDisabled, setSendDisabled] = useState(true);
   const [isThinking, setIsThinking] = useState(false);
-  const [currentAgent, setCurrentAgent] = useState('Select agent');
+  const [agents, setAgents] = useState([]);
+  const [currentAgent, setCurrentAgent] = useState('Select agent to start session');
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
     if (vscode) {
-      vscode.postMessage({ command: 'startSession' });
+      vscode.postMessage({ command: 'queryAgents' });
     } else {
       console.error('vscode API not available.');
     }
@@ -39,11 +40,14 @@ const App: React.FC = () => {
   useEffect(() => {
     window.addEventListener('message', event => {
       const { command, data, error } = event.data;
-      if (command === 'sessionStarted') {
+      if (command === 'setAgents') {
+        setAgents(data);
+      } else if (command === 'sessionStarted') {
         setMessages(prev => [
           ...prev,
           { id: prev.length + 1, role: 'system', content: data.message, timestamp: new Date() }
         ]);
+        setSendDisabled(false);
         setTimeout(() => inputRef.current?.focus(), 0);
       } else if (command === 'chatResponse') {
         setIsThinking(false);
@@ -77,24 +81,25 @@ const App: React.FC = () => {
   const handleEndSession = () => {
     setQuery('');
     setSendDisabled(true);
+    setCurrentAgent('Select agent to start session');
     setIsThinking(false);
     if (vscode) {
-      vscode.postMessage({ command: 'endSession' });
+      vscode.postMessage({ command: 'endSession', data: messages });
     } else {
       console.warn('vscode API not available');
     }
   };
 
-  const handleAgentSelect = (agent: string) => {
-    console.log('Selected Agent:', agent);
+  const handleAgentSelect = (agent: { Id: string; MasterLabel: string }) => {
     if (vscode) {
-      vscode.postMessage({ command: 'selectAgent', agent });
+      vscode.postMessage({ command: 'startSession', data: agent.Id });
     }
   };
 
   return (
     <div className="app-container">
       <Navbar
+        agents={agents}
         currentAgent={currentAgent}
         setCurrentAgent={setCurrentAgent}
         onAgentSelect={handleAgentSelect}
@@ -106,7 +111,7 @@ const App: React.FC = () => {
             className="message-list"
             typingIndicator={isThinking ? <TypingIndicator content="Thinking..." /> : null}
           >
-            {messages.map(msg => (
+            {messages.map((msg: Message) => (
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 {msg.role === 'system' && <Avatar size="md" color="blue" src={salesforceLogo} />}
                 <Message

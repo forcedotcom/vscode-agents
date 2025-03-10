@@ -1,16 +1,18 @@
-import { AppBar, Toolbar, IconButton, Menu, MenuItem, Button, Typography } from '@mui/material';
+import { AppBar, Toolbar, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import { ArrowDropDown, CallEnd } from '@mui/icons-material';
 import { useState } from 'react';
 
 const Navbar = ({
+  agents,
   currentAgent,
   setCurrentAgent,
   onAgentSelect,
   onEndSession
 }: {
+  agents: any[];
   currentAgent: string;
   setCurrentAgent: (agent: string) => void;
-  onAgentSelect: (agent: string) => void;
+  onAgentSelect: (agent: { Id: string; MasterLabel: string }) => void;
   onEndSession: () => void;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -24,8 +26,8 @@ const Navbar = ({
     setAnchorEl(null);
   };
 
-  const handleSelectAgent = (agent: string) => {
-    setCurrentAgent(agent);
+  const handleSelectAgent = (agent: { Id: string; MasterLabel: string }) => {
+    setCurrentAgent(agent.MasterLabel);
     onAgentSelect(agent);
     handleMenuClose();
   };
@@ -33,7 +35,16 @@ const Navbar = ({
   return (
     <AppBar position="static" color="default" elevation={1} className="navbar">
       <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Typography
+          variant="h6"
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}
+        >
           {currentAgent}
         </Typography>
 
@@ -41,18 +52,15 @@ const Navbar = ({
           <ArrowDropDown />
         </IconButton>
         <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
-          <MenuItem onClick={() => handleSelectAgent('Local Info Agent')}>Local Info Agent</MenuItem>
-          <MenuItem onClick={() => handleSelectAgent('Guest Experience Agent')}>Guest Experience Agent</MenuItem>
+          {agents.map(agent => (
+            <MenuItem onClick={() => handleSelectAgent(agent)}>{agent.MasterLabel}</MenuItem>
+          ))}
         </Menu>
-
-        {/* End Session Button */}
-        <Button
-          variant="contained"
-          color="error"
-          startIcon={<CallEnd />}
-          onClick={onEndSession}
-          aria-label="End session"
-        />
+        {currentAgent !== 'Select agent to start session' && (
+          <IconButton color="error" onClick={onEndSession} aria-label="End session">
+            <CallEnd />
+          </IconButton>
+        )}
       </Toolbar>
     </AppBar>
   );
