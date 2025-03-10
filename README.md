@@ -20,7 +20,11 @@ Agentforce DX is a suite of tools to build and test agents. This extension provi
    - GenAiPlanner (file extension `.genAiPlanner-meta.xml`)
    - GenAiDefinition (file extension `.genAiDefinition-meta.xml`)
 
-2. Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
+    ![Open an agent in an org using a VS Code command](images/afdx-open-org.gif)
+   
+3. Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
+
+    ![Run agent tests from the VS Code testing panel](images/afdx-test-panel.gif)
 
 ## Documentation
 
