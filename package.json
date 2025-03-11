@@ -18,7 +18,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents-bundle": "0.12.1",
+    "@salesforce/agents-bundle": "0.13.0",
     "@salesforce/core-bundle": "8.8.5",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
