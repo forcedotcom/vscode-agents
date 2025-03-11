@@ -13,7 +13,11 @@ Agentforce DX is a suite of tools to build and test agents. This extension provi
 
 ## How to Use this Extension
 
-1. Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
+1. Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
+
+    ![Run agent tests from the VS Code testing panel](images/afdx-test-panel.gif)
+
+2. Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
 
    - Bot (file extension `.bot-meta.xml`)
    - BotVersion (file extension `.botVersion-meta.xml`)
@@ -22,9 +26,7 @@ Agentforce DX is a suite of tools to build and test agents. This extension provi
 
     ![Open an agent in an org using a VS Code command](images/afdx-open-org.gif)
    
-3. Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
 
-    ![Run agent tests from the VS Code testing panel](images/afdx-test-panel.gif)
 
 ## Documentation
 
