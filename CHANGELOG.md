@@ -1,3 +1,18 @@
+# [1.1.0](https://github.com/salesforcecli/vsode-agents/compare/v1.0.0...v1.1.0) (2025-03-11)
+
+
+### Bug Fixes
+
+* remove `View Test Results` from command palette ([30a8c98](https://github.com/salesforcecli/vsode-agents/commit/30a8c98c90a252d635e4d7ca87867491560e0cd0))
+* warn user if no test results are available ([37c305c](https://github.com/salesforcecli/vsode-agents/commit/37c305ce5d616eaa650a7b442b42449a71413035))
+
+
+### Features
+
+* support opening agents in MPD projects ([8d66749](https://github.com/salesforcecli/vsode-agents/commit/8d667494fb9e61fb69a710241de27c403785578c))
+
+
+
 # [1.0.0](https://github.com/salesforcecli/vsode-agents/compare/v0.1.0...v1.0.0) (2025-02-26)
 
 # 1.0.0 Open Beta Release
