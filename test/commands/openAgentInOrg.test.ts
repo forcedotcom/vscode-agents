@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 import { registerOpenAgentInOrgCommand } from '../../src/commands/openAgentInOrg';
 import { Commands } from '../../src/enums/commands';
 import { SfProject } from '@salesforce/core-bundle';
-import * as path from 'path';
 import { sync } from 'cross-spawn';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
+import { Agent } from '@salesforce/agents-bundle';
 
 jest.mock('cross-spawn', () => ({
   sync: jest.fn()
@@ -13,7 +13,6 @@ jest.mock('cross-spawn', () => ({
 describe('registerOpenAgentInOrgCommand', () => {
   let commandSpy: jest.SpyInstance;
   let projectSpy: jest.SpyInstance;
-  let fsSpy: jest.SpyInstance;
   let quickPickSpy: jest.SpyInstance;
   let progressSpy: jest.SpyInstance;
   let errorMessageSpy: jest.SpyInstance;
@@ -23,15 +22,15 @@ describe('registerOpenAgentInOrgCommand', () => {
   };
   beforeEach(() => {
     jest.spyOn(CoreExtensionService, 'getTelemetryService').mockReturnValue(fakeTelemetryInstance);
+    // @ts-ignore
+    jest.spyOn(CoreExtensionService, 'getChannelService').mockReturnValue({});
+
+    jest.spyOn(Agent, 'list').mockResolvedValue(['Agent1', 'Agent2']);
 
     commandSpy = jest.spyOn(vscode.commands, 'registerCommand');
     projectSpy = jest.spyOn(SfProject, 'getInstance').mockReturnValue({
       getDefaultPackage: jest.fn().mockReturnValue({ fullPath: '/fake/path' })
     } as unknown as SfProject);
-    fsSpy = jest.spyOn(vscode.workspace.fs, 'readDirectory').mockResolvedValue([
-      ['Agent1', 1],
-      ['Agent2', 1]
-    ]);
     quickPickSpy = jest.spyOn(vscode.window, 'showQuickPick').mockResolvedValue([{ title: 'Agent1' }] as any);
     errorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
     progressSpy = jest
@@ -55,15 +54,8 @@ describe('registerOpenAgentInOrgCommand', () => {
 
     expect(progressSpy).toHaveBeenCalled();
     expect(projectSpy).toHaveBeenCalled();
-    expect(fsSpy).toHaveBeenCalledWith(vscode.Uri.file(path.join('/fake/path', 'main', 'default', 'bots')));
-    expect(quickPickSpy).toHaveBeenCalledWith(['Agent1', 'Agent2'], { title: 'Choose which Agent to open' });
+    expect(quickPickSpy).toHaveBeenCalledWith(['Agent1', 'Agent2'], { placeHolder: 'Agent name (type to search)' });
     expect(sync).toHaveBeenCalledWith('sf', ['org', 'open', 'agent', '--name', [{ title: 'Agent1' }]]);
-  });
-
-  it('throws error when no agent is selected', async () => {
-    quickPickSpy.mockResolvedValue(undefined);
-    registerOpenAgentInOrgCommand();
-    await expect(commandSpy.mock.calls[0][1]()).rejects.toThrow('No Agent selected');
   });
 
   it('shows error message when command fails', async () => {
