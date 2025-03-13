@@ -35,8 +35,8 @@ export class CoreExtensionService {
       const coreExtensionApi = CoreExtensionService.validateCoreExtension();
 
       CoreExtensionService.initializeChannelService(coreExtensionApi?.services.ChannelService);
-      CoreExtensionService.initializeWorkspaceContext(coreExtensionApi?.services.WorkspaceContext);
       CoreExtensionService.initializeTelemetryService(coreExtensionApi?.services.TelemetryService, context);
+      CoreExtensionService.initializeWorkspaceContext(coreExtensionApi?.services.WorkspaceContext);
 
       CoreExtensionService.initialized = true;
     }

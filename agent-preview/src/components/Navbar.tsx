@@ -58,7 +58,7 @@ const Navbar = ({
             <MenuItem onClick={() => handleSelectAgent(agent)}>{agent.MasterLabel}</MenuItem>
           ))}
         </Menu>
-        {currentAgent !== 'Select an Agent to start session' && (
+        {!selectable && (
           <IconButton color="error" onClick={onEndSession} aria-label="End session">
             <CallEnd />
           </IconButton>

@@ -172,7 +172,7 @@
       ],
       "commandPalette": [
         {
-          "command": "sf.agent.test.view.goToDefinition",
+          "command": "sf.agent.test.view.goToTestResults",
           "when": "false"
         },
         {

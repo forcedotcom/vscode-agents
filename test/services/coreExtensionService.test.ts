@@ -10,6 +10,7 @@ import { ChannelService } from '../../src/types';
 import { TelemetryService } from '../../src/types/TelemetryService';
 import { CoreExtensionApi } from '../../src/types/CoreExtension';
 import { satisfies, valid } from 'semver';
+import {WorkspaceContext} from "../../src/types/WorkspaceContext";
 
 jest.mock('vscode', () => ({
   extensions: { getExtension: jest.fn() },
@@ -26,6 +27,7 @@ describe('CoreExtensionService', () => {
   let mockContext: ExtensionContext;
   let channelServiceInstance: ChannelService;
   let telemetryServiceInstance: TelemetryService;
+  let workspaceContextInstance: WorkspaceContext;
 
   beforeEach(() => {
     mockExtension = {
@@ -48,6 +50,11 @@ describe('CoreExtensionService', () => {
         initializeService: jest.fn()
       })
     } as unknown as TelemetryService;
+    workspaceContextInstance = {
+      getInstance: jest.fn().mockReturnValue({
+        initializeService: jest.fn()
+      })
+    } as unknown as WorkspaceContext;
 
     (extensions.getExtension as jest.Mock).mockReturnValue(mockExtension);
     (satisfies as jest.Mock).mockReturnValue(true);
@@ -94,18 +101,21 @@ describe('CoreExtensionService', () => {
     expect(() => CoreExtensionService.getTelemetryService()).toThrow(NOT_INITIALIZED_ERROR);
   });
 
-  it('should initialize channel and telemetry services', async () => {
+  it('should initialize channel/ telemetry/ workspace services', async () => {
     const channelSpy = jest.spyOn(channelServiceInstance, 'getInstance');
     const telemetrySpy = jest.spyOn(telemetryServiceInstance, 'getInstance');
+    const workspaceSpy = jest.spyOn(workspaceContextInstance, 'getInstance');
     jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
       services: {
         ChannelService: channelServiceInstance,
-        TelemetryService: telemetryServiceInstance
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
       }
     } as any);
     await CoreExtensionService.loadDependencies(mockContext);
 
     expect(channelSpy).toHaveBeenCalledWith('Agentforce DX');
     expect(telemetrySpy).toHaveBeenCalledWith('test-extension');
+    expect(workspaceSpy).toHaveBeenCalledWith(false);
   });
 });
