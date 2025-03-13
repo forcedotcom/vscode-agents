@@ -82,10 +82,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "${{ inputs.title }}",
-              "event": "${{ inputs.notification }}, run: ${{ github.event.repository.html_url }}/actions/workflows/${{ inputs.workflow }}",
-              "repo": "${{ github.event.repository.name }}",
-              "result": "Notification"
+              "text": "${{ inputs.title }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.CLI_TEAM_SLACK_WEBHOOK_URL }}

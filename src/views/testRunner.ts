@@ -24,36 +24,38 @@ export class AgentTestRunner {
     channelService.clear();
 
     const resultFromMap = this.testGroupNameToResult.get(test.name) ?? this.testGroupNameToResult.get(test.parentName);
-    if (resultFromMap) {
-      // set to a new var so we can remove test cases and not affect saved information
-      const testInfo = structuredClone(resultFromMap);
-      if (test instanceof AgentTestNode) {
-        // filter to selected test case
-        testInfo.testCases = testInfo.testCases.filter(f => `#${f.testNumber}` === test.name);
-      }
-      testInfo.testCases.map(tc => {
-        channelService.appendLine('════════════════════════════════════════════════════════════════════════');
-        channelService.appendLine(`CASE #${tc.testNumber} - ${testInfo.subjectName}`);
-        channelService.appendLine('════════════════════════════════════════════════════════════════════════');
-        channelService.appendLine('');
-        channelService.appendLine(`"${tc.inputs.utterance}"`);
-        channelService.appendLine('');
-        tc.testResults.map(tr => {
-          channelService.appendLine(
-            `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
-          );
-          channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-          channelService.appendLine(`EXPECTED : ${tr.expectedValue.replaceAll('\n', '')}`);
-          channelService.appendLine(`ACTUAL   : ${tr.actualValue.replaceAll('\n', '')}`);
-          channelService.appendLine(`SCORE    : ${tr.score}`);
-          channelService.appendLine('');
-        });
-        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(
-          `TEST CASE SUMMARY: ${tc.testResults.length} tests run | ✅ ${tc.testResults.filter(tc => tc.result === 'PASS').length} passed | ❌ ${tc.testResults.filter(tc => tc.result === 'FAILURE').length} failed`
-        );
-      });
+    if (!resultFromMap) {
+      vscode.window.showErrorMessage('You need to run the test first to see its results.');
+      return;
     }
+    // set to a new var so we can remove test cases and not affect saved information
+    const testInfo = structuredClone(resultFromMap);
+    if (test instanceof AgentTestNode) {
+      // filter to selected test case
+      testInfo.testCases = testInfo.testCases.filter(f => `#${f.testNumber}` === test.name);
+    }
+    testInfo.testCases.map(tc => {
+      channelService.appendLine('════════════════════════════════════════════════════════════════════════');
+      channelService.appendLine(`CASE #${tc.testNumber} - ${testInfo.subjectName}`);
+      channelService.appendLine('════════════════════════════════════════════════════════════════════════');
+      channelService.appendLine('');
+      channelService.appendLine(`"${tc.inputs.utterance}"`);
+      channelService.appendLine('');
+      tc.testResults.map(tr => {
+        channelService.appendLine(
+          `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
+        );
+        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+        channelService.appendLine(`EXPECTED : ${tr.expectedValue.replaceAll('\n', '')}`);
+        channelService.appendLine(`ACTUAL   : ${tr.actualValue.replaceAll('\n', '')}`);
+        channelService.appendLine(`SCORE    : ${tr.score}`);
+        channelService.appendLine('');
+      });
+      channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+      channelService.appendLine(
+        `TEST CASE SUMMARY: ${tc.testResults.length} tests run | ✅ ${tc.testResults.filter(tc => tc.result === 'PASS').length} passed | ❌ ${tc.testResults.filter(tc => tc.result === 'FAILURE').length} failed`
+      );
+    });
   }
 
   public async runAgentTest(test: AgentTestGroupNode) {

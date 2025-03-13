@@ -25,7 +25,7 @@ export abstract class TestNode extends vscode.TreeItem {
   ) {
     super(name, collapsibleState);
     this.command = {
-      command: `sf.agent.test.view.goToDefinition`,
+      command: `sf.agent.test.view.goToTestResults`,
       title: 'SHOW ERROR',
       arguments: [this]
     };

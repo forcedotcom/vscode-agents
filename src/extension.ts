@@ -60,7 +60,7 @@ const registerTestView = (): vscode.Disposable => {
   const testRunner = new AgentTestRunner(testOutlineProvider);
 
   testViewItems.push(
-    vscode.commands.registerCommand(Commands.goToDefinition, (test: TestNode) => {
+    vscode.commands.registerCommand(Commands.goToTestResults, (test: TestNode) => {
       testRunner.displayTestDetails(test);
     })
   );

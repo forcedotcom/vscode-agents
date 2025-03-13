@@ -4,15 +4,6 @@ on:
   workflow_dispatch: #  Button for publishing from input branch in case there is a failure on the release.
 
 jobs:
-  publish-start-notification:
-    name: 'Publish Agentforce DXs in MS Marketplace Start Notification'
-    uses: ./.github/workflows/slackNotification.yml
-    secrets: inherit
-    with:
-      title: 'Publish Agentforce DXs in MS Marketplace waiting for approval in github.'
-      notification: 'New Release triggered publish build and job is ready for approval.'
-      type: 'notification'
-      workflow: 'publishVSCode.yml'
   get-release-version:
     uses: ./.github/workflows/getReleaseVersion.yml
     secrets: inherit
@@ -67,3 +58,12 @@ jobs:
     with:
       changeCaseId: ${{ needs.ctc-open.outputs.changeCaseId }}
       status: Not Implemented
+  publish-notification:
+    if: ${{ success() }}
+    needs: [publish]
+    name: 'Publish Agentforce DX in MS Marketplace Notification'
+    uses: ./.github/workflows/slackNotification.yml
+    secrets: inherit
+    with:
+      title: 'Agentforce DX was successfully published in MS Marketplace.'
+      type: 'notification'
