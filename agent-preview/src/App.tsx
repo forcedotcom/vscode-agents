@@ -26,8 +26,9 @@ const App: React.FC = () => {
   const [sendDisabled, setSendDisabled] = useState(true);
   const [isThinking, setIsThinking] = useState(false);
   const [agents, setAgents] = useState([]);
-  const [currentAgent, setCurrentAgent] = useState('Select agent to start session');
+  const [currentAgent, setCurrentAgent] = useState('Select an Agent to start session');
   const [messages, setMessages] = useState<Message[]>([]);
+
 
   useEffect(() => {
     if (vscode) {
@@ -42,6 +43,12 @@ const App: React.FC = () => {
       const { command, data, error } = event.data;
       if (command === 'setAgents') {
         setAgents(data);
+      } else if (command === 'sessionStarting') {
+        setMessages(prev => [
+          ...prev,
+          { id: prev.length + 1, role: 'system', content: data.message, timestamp: new Date() }
+        ]);
+        setSendDisabled(true);
       } else if (command === 'sessionStarted') {
         setMessages(prev => [
           ...prev,
@@ -58,7 +65,7 @@ const App: React.FC = () => {
         setSendDisabled(false);
         setTimeout(() => inputRef.current?.focus(), 0);
       } else if (command === 'chatError') {
-        console.error('Chat Error:', error);
+        setMessages(prev => [...prev, { id: 1, role: 'system', content: error, timestamp: new Date() }]);
       }
     });
 
@@ -83,6 +90,7 @@ const App: React.FC = () => {
     setSendDisabled(true);
     setCurrentAgent('Select agent to start session');
     setIsThinking(false);
+    setMessages([]);
     if (vscode) {
       vscode.postMessage({ command: 'endSession', data: messages });
     } else {

@@ -10,8 +10,7 @@ import { Commands } from './enums/commands';
 import { CoreExtensionService } from './services/coreExtensionService';
 import type { AgentTestGroupNode, TestNode } from './types';
 import type { TelemetryService } from './types/TelemetryService';
-import { AgentChatViewProvider } from './views/agentChatViewProvider';
-import { ChatFlowEditorProvider } from './views/chatFlowEditorProvider';
+import { AgentPreviewProvider } from './views/agentPreviewProvider';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 
@@ -80,34 +79,11 @@ const registerTestView = (): vscode.Disposable => {
 const registerAgentChatView = (context: vscode.ExtensionContext): void => {
   // Register webview to be disposed on extension deactivation
   const chatViewDisposable = vscode.window.registerWebviewViewProvider(
-    AgentChatViewProvider.viewType,
-    new AgentChatViewProvider(context)
+    AgentPreviewProvider.viewType,
+    new AgentPreviewProvider(context)
   );
 
-  // Register a content provider for our custom scheme
-  context.subscriptions.push(
-    vscode.workspace.registerTextDocumentContentProvider('chat-flow', {
-      provideTextDocumentContent(_uri: vscode.Uri): string {
-        // You can return an empty string because the custom editor will override it.
-        return '';
-      }
-    })
-  );
-  context.subscriptions.push(ChatFlowEditorProvider.register(context));
-  context.subscriptions.push(
-    vscode.commands.registerCommand('sf.agent.showChatFlow', () => {
-      showChatFlow();
-    })
-  );
   context.subscriptions.push(chatViewDisposable);
-};
-
-const showChatFlow = () => {
-  const uri = vscode.Uri.parse('chat-flow://chatflow/ChatFlow.chatflow');
-  vscode.commands.executeCommand('vscode.openWith', uri, 'sf.agent.showChatFlow', {
-    viewColumn: vscode.ViewColumn.One,
-    preview: false
-  });
 };
 
 const validateCLI = async () => {

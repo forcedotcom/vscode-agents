@@ -11,7 +11,7 @@ export type VSCodeApiValue = {
   postMessage: (message: unknown) => void;
 };
 
-const vscode: VSCodeApiValue = acquireVsCodeApi();
+const vscode = acquireVsCodeApi();
 
 export const VSCodeContext = createContext<VSCodeApiValue>({} as VSCodeApiValue);
 

@@ -7,7 +7,6 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 
 export const registerOpenAgentInOrgCommand = () => {
   return vscode.commands.registerCommand(Commands.openAgentInOrg, async () => {
-    // TODO: maybe an Agent.listLocal() or something similar in the library
     const telemetryService = CoreExtensionService.getTelemetryService();
     telemetryService.sendCommandEvent(Commands.openAgentInOrg);
     const project = SfProject.getInstance();
