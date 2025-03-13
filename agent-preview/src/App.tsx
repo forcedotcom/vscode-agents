@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [agents, setAgents] = useState([]);
   const [currentAgent, setCurrentAgent] = useState('Select an Agent to start session');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [selectable, setSelectable] = useState<boolean>(true);
 
 
   useEffect(() => {
@@ -44,6 +45,7 @@ const App: React.FC = () => {
       if (command === 'setAgents') {
         setAgents(data);
       } else if (command === 'sessionStarting') {
+        setSelectable(false);
         setMessages(prev => [
           ...prev,
           { id: prev.length + 1, role: 'system', content: data.message, timestamp: new Date() }
@@ -66,6 +68,7 @@ const App: React.FC = () => {
         setTimeout(() => inputRef.current?.focus(), 0);
       } else if (command === 'chatError') {
         setMessages(prev => [...prev, { id: 1, role: 'system', content: error, timestamp: new Date() }]);
+        setSelectable(true)
       }
     });
 
@@ -90,6 +93,7 @@ const App: React.FC = () => {
     setSendDisabled(true);
     setCurrentAgent('Select agent to start session');
     setIsThinking(false);
+    setSelectable(true);
     setMessages([]);
     if (vscode) {
       vscode.postMessage({ command: 'endSession', data: messages });
@@ -109,6 +113,7 @@ const App: React.FC = () => {
       <Navbar
         agents={agents}
         currentAgent={currentAgent}
+        selectable={selectable}
         setCurrentAgent={setCurrentAgent}
         onAgentSelect={handleAgentSelect}
         onEndSession={handleEndSession}

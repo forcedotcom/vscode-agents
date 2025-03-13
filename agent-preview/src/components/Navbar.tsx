@@ -5,12 +5,14 @@ import { useState } from 'react';
 const Navbar = ({
   agents,
   currentAgent,
+  selectable,
   setCurrentAgent,
   onAgentSelect,
   onEndSession
 }: {
   agents: any[];
   currentAgent: string;
+  selectable:boolean;
   setCurrentAgent: (agent: string) => void;
   onAgentSelect: (agent: { Id: string; MasterLabel: string }) => void;
   onEndSession: () => void;
@@ -49,7 +51,7 @@ const Navbar = ({
         </Typography>
 
         <IconButton onClick={handleMenuOpen}>
-          <ArrowDropDown />
+          {selectable && <ArrowDropDown /> }
         </IconButton>
         <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
           {agents.map(agent => (
