@@ -111,7 +111,7 @@ describe('CoreExtensionService', () => {
         TelemetryService: telemetryServiceInstance,
         WorkspaceContext: workspaceContextInstance
       }
-    } as any);
+    });
     await CoreExtensionService.loadDependencies(mockContext);
 
     expect(channelSpy).toHaveBeenCalledWith('Agentforce DX');

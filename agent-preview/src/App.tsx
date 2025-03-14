@@ -91,7 +91,7 @@ const App: React.FC = () => {
   const handleEndSession = () => {
     setQuery('');
     setSendDisabled(true);
-    setCurrentAgent('Select agent to start session');
+    setCurrentAgent('Select an Agent to start session');
     setIsThinking(false);
     setSelectable(true);
     setMessages([]);
