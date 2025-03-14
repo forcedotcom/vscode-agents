@@ -6,12 +6,13 @@
  **/
 import * as vscode from 'vscode';
 import * as commands from './commands';
+import { Commands } from './enums/commands';
+import { CoreExtensionService } from './services/coreExtensionService';
+import type { AgentTestGroupNode, TestNode } from './types';
+import type { TelemetryService } from './types/TelemetryService';
+import { AgentPreviewProvider } from './views/agentPreviewProvider';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
-import { Commands } from './enums/commands';
-import type { AgentTestGroupNode, TestNode } from './types';
-import { CoreExtensionService } from './services/coreExtensionService';
-import type { TelemetryService } from './types/TelemetryService';
 
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -38,7 +39,10 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(registerTestView());
 
     // Update the test view without blocking activation
-    setTimeout(() => getTestOutlineProvider().refresh(), 0);
+    setTimeout(() => {
+      getTestOutlineProvider().refresh();
+      registerAgentChatView(context);
+    }, 0);
     telemetryService?.sendExtensionActivationEvent(extensionHRStart);
 
     context.subscriptions.push(...disposables);
@@ -60,7 +64,6 @@ const registerTestView = (): vscode.Disposable => {
       testRunner.displayTestDetails(test);
     })
   );
-
   testViewItems.push(
     vscode.commands.registerCommand(Commands.runTest, (test: AgentTestGroupNode) => {
       void testRunner.runAgentTest(test);
@@ -71,6 +74,16 @@ const registerTestView = (): vscode.Disposable => {
   testViewItems.push(vscode.commands.registerCommand(Commands.collapseAll, () => testOutlineProvider.collapseAll()));
 
   return vscode.Disposable.from(...testViewItems);
+};
+
+const registerAgentChatView = (context: vscode.ExtensionContext): void => {
+  // Register webview to be disposed on extension deactivation
+  const chatViewDisposable = vscode.window.registerWebviewViewProvider(
+    AgentPreviewProvider.viewType,
+    new AgentPreviewProvider(context)
+  );
+
+  context.subscriptions.push(chatViewDisposable);
 };
 
 const validateCLI = async () => {

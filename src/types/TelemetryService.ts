@@ -25,8 +25,7 @@ export type TelemetryReporter = {
 
   sendExceptionEvent(exceptionName: string, exceptionMessage: string, measurements?: { [key: string]: number }): void;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dispose(): Promise<any>;
+  dispose(): Promise<unknown>;
 };
 
 // Note this is a subset of the TelemetryService interface from the core extension

@@ -18,8 +18,8 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents-bundle": "0.13.0",
-    "@salesforce/core-bundle": "8.8.5",
+    "@salesforce/agents-bundle": "^0.13.0",
+    "@salesforce/core-bundle": "^8.8.5",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
     "semver": "^7.7.0",
@@ -35,6 +35,7 @@
     "@types/semver": "7.5.8",
     "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.90.0",
+    "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@vscode/vsce": "^3.2.2",
     "commitizen": "^4.3.1",
@@ -60,7 +61,8 @@
     "vscode-test": "^1.6.1"
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && npm run preview-build",
+    "preview-build": "cd agent-preview && npm run build",
     "build:clean": "tsc --build --clean",
     "compile": "tsc --build",
     "compile:clean": "tsc --build --clean",
@@ -114,15 +116,26 @@
           "name": "%agent_test_view_name%",
           "when": "sf:project_opened"
         }
+      ],
+      "agent-preview": [
+        {
+          "id": "sf.agent.preview.view",
+          "name": "%agent_chat%",
+          "type": "webview",
+          "when": "sf:project_opened"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agent-preview",
+          "title": "%agentforce_dx%",
+          "icon": "$(chat-editor-label-icon)"
+        }
       ]
     },
     "menus": {
-      "commandPalette": [
-        {
-          "command": "sf.agent.test.view.goToTestResults",
-          "when": "false"
-        }
-      ],
       "view/title": [
         {
           "command": "sf.agent.test.view.runAll",
@@ -156,30 +169,38 @@
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "sf.agent.test.view.goToTestResults",
+          "when": "false"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+        },
+        {
+          "command": "sf.agent.test.view.runAll",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.runTest",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.refresh",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.collapseAll",
+          "when": "sf:project_opened"
+        },
+        {
+          "command": "sf.agent.openChat",
+          "when": "true"
+        }
       ]
     },
-    "commandPalette": [
-      {
-        "command": "salesforcedx-vscode-agents.openAgentInOrg",
-        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
-      },
-      {
-        "command": "sf.agent.test.view.runAll",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.runTest",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.refresh",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.collapseAll",
-        "when": "sf:project_opened"
-      }
-    ],
     "commands": [
       {
         "command": "sf.agent.test.view.goToTestResults",
@@ -220,6 +241,11 @@
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
+      },
+      {
+        "command": "sf.agent.openChat",
+        "title": "%open_chat_with_agent%",
+        "icon": "$(chat-editor-label-icon)"
       }
     ]
   }
