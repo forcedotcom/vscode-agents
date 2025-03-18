@@ -1,17 +1,20 @@
 import * as vscode from 'vscode';
-import { Connection, Org } from '@salesforce/core-bundle';
-import { AgentPreview } from '@salesforce/agents';
+import { AgentPreview } from '@salesforce/agents-bundle';
+import { CoreExtensionService } from '../services/coreExtensionService';
+import path from 'path';
 
 export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.chat.view';
   private agentPreview?: AgentPreview;
-  private sessionId?: string;
+  private sessionId = Date.now().toString();
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _context: vscode.WebviewViewResolveContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _token: vscode.CancellationToken
   ) {
     webviewView.webview.options = {
@@ -20,29 +23,28 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     };
     webviewView.webview.onDidReceiveMessage(async message => {
       try {
-        //TODO: Pass default org
-        const org = await Org.create({ aliasOrUsername: 'aliasAgente' });
-        const conn = org.getConnection() as Connection;
         if (message.command === 'startSession') {
-          if (!this.agentPreview) {
-            this.agentPreview = new AgentPreview(conn as any);
+          webviewView.webview.postMessage({
+            command: 'sessionStarting',
+            data: { message: 'Starting session...' }
+          });
+          const conn = await CoreExtensionService.getDefaultConnection();
 
-            const session = await this.agentPreview.start(message.data);
-            this.sessionId = session.sessionId;
-            console.log('Session started:', session);
+          this.agentPreview = new AgentPreview(conn);
 
-            webviewView.webview.postMessage({
-              command: 'sessionStarted',
-              data: session.messages.find(msg => msg.type === 'Inform')
-            });
-          }
+          const session = await this.agentPreview.start(message.data);
+          this.sessionId = session.sessionId;
+
+          webviewView.webview.postMessage({
+            command: 'sessionStarted',
+            data: session.messages.find(msg => msg.type === 'Inform')
+          });
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
             throw new Error('Session has not been started.');
           }
 
           const response = await this.agentPreview.send(this.sessionId, message.text);
-          console.log('Response received:', response);
 
           webviewView.webview.postMessage({
             command: 'chatResponse',
@@ -54,14 +56,13 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           }
 
           await this.agentPreview.end(this.sessionId, 'UserRequest');
-          console.log('Session ended:', this.sessionId);
-          this.saveChatToFile(message.data);
-          this.sessionId = undefined;
+          await this.saveChatToFile(message.data);
           this.agentPreview = undefined;
-
-          webviewView.webview.postMessage({ command: 'sessionEnded' });
         } else if (message.command === 'queryAgents') {
-          const query = await conn.query('SELECT Id, MasterLabel FROM BotDefinition');
+          const conn = await CoreExtensionService.getDefaultConnection();
+          const query = await conn.query(
+            "SELECT Id, MasterLabel FROM BotDefinition WHERE IsDeleted = false AND Id IN (SELECT BotDefinitionId FROM BotVersion WHERE Status='Active') AND DeveloperName \!='Copilot_for_Salesforce'"
+          );
           if (query.records.length > 0) {
             webviewView.webview.postMessage({ command: 'setAgents', data: query.records });
           } else {
@@ -70,6 +71,10 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         }
       } catch (error) {
         console.error('Error:', error);
+        if (error instanceof Error && error.name === 'ERROR_HTTP_404') {
+          error.message =
+            "Unfortunately, we cannot chat. Please ensure you're using JWT authentication and have followed the <a href='https://developer.salesforce.com/docs/einstein/genai/guide/agent-api-get-started.html'>steps</a> to setup your Connected App";
+        }
         webviewView.webview.postMessage({
           command: 'chatError',
           error: error instanceof Error ? error.message : String(error)
@@ -106,7 +111,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     `;
   }
 
-  private async saveChatToFile(messages: any[]) {
+  private async saveChatToFile(messages: string[]): Promise<void> {
     try {
       // Get the current workspace folder
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -116,7 +121,10 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       }
 
       // Define file path inside 'Chats with agents' folder
-      const folderPath = vscode.Uri.joinPath(workspaceFolder.uri, 'Chats with agents');
+      const folderPath = vscode.Uri.joinPath(
+        workspaceFolder.uri,
+        process.env['SF_AGENT_PREVIEW_OUTPUT_DIR'] ?? path.join('temp', 'agent-preview')
+      );
       await vscode.workspace.fs.createDirectory(folderPath);
       const filePath = vscode.Uri.joinPath(folderPath, `${this.sessionId}.json`);
 
@@ -126,7 +134,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       // Write to file
       await vscode.workspace.fs.writeFile(filePath, Buffer.from(fileContent, 'utf8'));
 
-      vscode.window.showInformationMessage(`Chat history successfully saved to ${filePath.path}`);
+      vscode.window.showInformationMessage(`Chat history saved to ${filePath.path}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Error saving chat: ${errorMessage}`);

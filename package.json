@@ -18,9 +18,8 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents-bundle": "0.12.1",
-    "@salesforce/agents": "0.12.7-preview.0",
-    "@salesforce/core-bundle": "^8.8.4",
+    "@salesforce/agents-bundle": "^0.13.1",
+    "@salesforce/core-bundle": "^8.8.5",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
     "semver": "^7.7.0",
@@ -62,9 +61,9 @@
     "vscode-test": "^1.6.1"
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build & cd agent-trace ; npm run build ; cd ../agent-chat &  npm run build ; cd ..",
     "build:clean": "tsc --build --clean",
-    "compile": "tsc --build",
+    "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
     "reinstall": "git checkout -- package-lock.json && git clean -xfd && npm install",
     "watch": "tsc --build --watch",
@@ -153,12 +152,7 @@
           "group": "navigation@3"
         },
         {
-          "command": "sf.agent.clearChat",
-          "when": "view == sf.agent.chat.view",
-          "group": "navigation"
-        },
-        {
-          "command": "sf.agent.showChatFlow",
+          "command": "sf.agent.showChatTracer",
           "when": "view == sf.agent.chat.view",
           "group": "navigation"
         }
@@ -210,11 +204,7 @@
           "when": "true"
         },
         {
-          "command": "sf.agent.clearChat",
-          "when": "false"
-        },
-        {
-          "command": "sf.agent.showChatFlow",
+          "command": "sf.agent.showChatTracer",
           "when": "false"
         }
       ]
@@ -270,26 +260,21 @@
         "icon": "$(chat-editor-label-icon)"
       },
       {
-        "command": "sf.agent.showChatFlow",
-        "title": "%show_chat_flow%",
+        "command": "sf.agent.showChatTracer",
+        "title": "%show_chat_trace%",
         "icon": "$(list-unordered)"
-      },
-      {
-        "command": "sf.agent.clearChat",
-        "title": "%clear_chat%",
-        "icon": "$(clear-all)"
       }
     ],
     "customEditors": [
       {
-        "viewType": "sf.agent.showChatFlow",
-        "displayName": "Agentforce DX: Chat Flow",
+        "viewType": "sf.agent.showChatTracer",
+        "displayName": "Agentforce DX: Agent Tracer",
         "selector": [
           {
-            "filenamePattern": "*.chatflow"
+            "filenamePattern": "*.chattrace"
           },
           {
-            "scheme": "chat-flow"
+            "scheme": "agent-trace"
           }
         ],
         "priority": "default"

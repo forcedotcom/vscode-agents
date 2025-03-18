@@ -8,7 +8,7 @@
 import * as vscode from 'vscode';
 import { AgentTestOutlineProvider } from './testOutlineProvider';
 import { AgentTester, TestStatus, AgentTestResultsResponse, humanFriendlyName } from '@salesforce/agents-bundle';
-import { ConfigAggregator, Lifecycle, Org } from '@salesforce/core-bundle';
+import { Lifecycle } from '@salesforce/core-bundle';
 import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
@@ -64,14 +64,10 @@ export class AgentTestRunner {
       let passing,
         failing,
         total = 0;
-      const configAggregator = await ConfigAggregator.create();
       const lifecycle = await Lifecycle.getInstance();
-      const org = await Org.create({
-        aliasOrUsername: configAggregator.getPropertyValue<string>('target-org') ?? 'undefined'
-      });
       channelService.clear();
       channelService.showChannelOutput();
-      const tester = new AgentTester(org.getConnection());
+      const tester = new AgentTester(await CoreExtensionService.getDefaultConnection());
       channelService.appendLine(`Starting ${test.name} tests: ${new Date().toLocaleString()}`);
       vscode.window.withProgress(
         {

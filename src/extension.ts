@@ -11,7 +11,7 @@ import { CoreExtensionService } from './services/coreExtensionService';
 import type { AgentTestGroupNode, TestNode } from './types';
 import type { TelemetryService } from './types/TelemetryService';
 import { AgentChatViewProvider } from './views/agentChatViewProvider';
-import { ChatFlowEditorProvider } from './views/chatFlowEditorProvider';
+import { ChatTracerViewProvider } from './views/chatTracerViewProvider';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 
@@ -81,30 +81,34 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
   // Register webview to be disposed on extension deactivation
   const chatViewDisposable = vscode.window.registerWebviewViewProvider(
     AgentChatViewProvider.viewType,
-    new AgentChatViewProvider(context)
+    new AgentChatViewProvider(context),
+      {
+        webviewOptions: { retainContextWhenHidden: true }
+      }
   );
 
   // Register a content provider for our custom scheme
   context.subscriptions.push(
-    vscode.workspace.registerTextDocumentContentProvider('chat-flow', {
+    vscode.workspace.registerTextDocumentContentProvider('agent-trace', {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       provideTextDocumentContent(_uri: vscode.Uri): string {
         // You can return an empty string because the custom editor will override it.
         return '';
       }
     })
   );
-  context.subscriptions.push(ChatFlowEditorProvider.register(context));
+  context.subscriptions.push(ChatTracerViewProvider.register(context));
   context.subscriptions.push(
-    vscode.commands.registerCommand('sf.agent.showChatFlow', () => {
-      showChatFlow();
+    vscode.commands.registerCommand('sf.agent.showChatTracer', () => {
+      showChatTracer();
     })
   );
   context.subscriptions.push(chatViewDisposable);
 };
 
-const showChatFlow = () => {
-  const uri = vscode.Uri.parse('chat-flow://chatflow/ChatFlow.chatflow');
-  vscode.commands.executeCommand('vscode.openWith', uri, 'sf.agent.showChatFlow', {
+const showChatTracer = () => {
+  const uri = vscode.Uri.parse('agent-trace://chattrace/ChatTrace.chattrace');
+  vscode.commands.executeCommand('vscode.openWith', uri, 'sf.agent.showChatTracer', {
     viewColumn: vscode.ViewColumn.One,
     preview: false
   });

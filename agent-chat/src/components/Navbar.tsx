@@ -5,12 +5,14 @@ import { useState } from 'react';
 const Navbar = ({
   agents,
   currentAgent,
+  selectable,
   setCurrentAgent,
   onAgentSelect,
   onEndSession
 }: {
   agents: any[];
   currentAgent: string;
+  selectable: boolean;
   setCurrentAgent: (agent: string) => void;
   onAgentSelect: (agent: { Id: string; MasterLabel: string }) => void;
   onEndSession: () => void;
@@ -48,15 +50,13 @@ const Navbar = ({
           {currentAgent}
         </Typography>
 
-        <IconButton onClick={handleMenuOpen}>
-          <ArrowDropDown />
-        </IconButton>
+        <IconButton onClick={handleMenuOpen}>{selectable && <ArrowDropDown />}</IconButton>
         <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}>
           {agents.map(agent => (
             <MenuItem onClick={() => handleSelectAgent(agent)}>{agent.MasterLabel}</MenuItem>
           ))}
         </Menu>
-        {currentAgent !== 'Select agent to start session' && (
+        {!selectable && (
           <IconButton color="error" onClick={onEndSession} aria-label="End session">
             <CallEnd />
           </IconButton>

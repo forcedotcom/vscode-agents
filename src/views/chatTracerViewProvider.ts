@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-export class ChatFlowEditorProvider implements vscode.CustomTextEditorProvider {
+export class ChatTracerViewProvider implements vscode.CustomTextEditorProvider {
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
-    const provider = new ChatFlowEditorProvider(context);
-    return vscode.window.registerCustomEditorProvider('sf.agent.showChatFlow', provider, {
+    const provider = new ChatTracerViewProvider(context);
+    return vscode.window.registerCustomEditorProvider('sf.agent.showChatTracer', provider, {
       webviewOptions: { retainContextWhenHidden: true }
     });
   }
@@ -13,14 +13,14 @@ export class ChatFlowEditorProvider implements vscode.CustomTextEditorProvider {
   public resolveCustomTextEditor(_document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel): void {
     webviewPanel.webview.options = {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'chat-trace', 'dist')]
+      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'agent-trace', 'dist')]
     };
     // Get correct path to the CSS file
     const styleUri = webviewPanel.webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, 'chat-trace', 'dist', 'assets', 'index.css')
+      vscode.Uri.joinPath(this.context.extensionUri, 'agent-trace', 'dist', 'assets', 'index.css')
     );
 
-    const indexPath = vscode.Uri.joinPath(this.context.extensionUri, 'chat-trace', 'dist', 'assets', 'index.js');
+    const indexPath = vscode.Uri.joinPath(this.context.extensionUri, 'agent-trace', 'dist', 'assets', 'index.js');
 
     const indexUri = webviewPanel.webview.asWebviewUri(indexPath);
     webviewPanel.webview.html = this.getWebviewContent(indexUri, styleUri);
