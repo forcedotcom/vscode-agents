@@ -2,7 +2,7 @@
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
   "description": "Provides a suite of tools to build, preview, and test agents",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "salesforce",
   "preview": true,
   "repository": {
@@ -169,7 +169,7 @@
           "group": "inline"
         },
         {
-          "command": "sf.agent.test.view.goToDefinition",
+          "command": "sf.agent.test.view.goToTestResults",
           "when": "view == sf.agent.test.view && viewItem =~ /(agentTest|agentTestGroup)(_Pass|_Skip|\\b)/"
         }
       ],
@@ -216,12 +216,8 @@
     },
     "commands": [
       {
-        "command": "sf.agent.test.view.goToDefinition",
-        "title": "%go_to_definition_title%",
-        "icon": {
-          "light": "resources/light/notRun.svg",
-          "dark": "resources/dark/notRun.svg"
-        }
+        "command": "sf.agent.test.view.goToTestResults",
+        "title": "%go_to_test_results%"
       },
       {
         "command": "sf.agent.test.view.refresh",
