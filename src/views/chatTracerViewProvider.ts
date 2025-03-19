@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
-
+import { Lifecycle } from '@salesforce/core-bundle';
+import { AgentPreviewSendResponse } from '@salesforce/agents-bundle';
 interface TopicDetails {
   name: string;
   description: string;
@@ -16,14 +17,12 @@ interface PromptDetails {
   planId: string;
 }
 
-interface SessionDetails {
+export interface SessionDetails {
   id: string;
   startTime: string;
   prompts: PromptDetails[];
 }
-
 export class ChatTracerViewProvider implements vscode.CustomTextEditorProvider {
-  private id?: string;
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     const provider = new ChatTracerViewProvider(context);
     return vscode.window.registerCustomEditorProvider(Commands.showChatTracer, provider, {
@@ -39,39 +38,39 @@ export class ChatTracerViewProvider implements vscode.CustomTextEditorProvider {
       localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'agent-trace', 'dist')]
     };
 
-    webviewPanel.webview.onDidReceiveMessage(async message => {
-      if (message.command === 'initializeTrace') {
-        // TODO: Add agent trace to library (TD-0244806)
-        //  below is a theoretical snippet, and info/type to use as mock
-        // const conn = await CoreExtensionService.getDefaultConnection()
-        // const agent = new Agent(conn)
-        // const traceInfo = Agent.trace(message.data.id)
-        const traceInfo: SessionDetails = {
-          startTime: new Date().toString(),
-          id: '123-45-21',
-          prompts: [
-            {
-              prompt: "hello, what's the weather like",
-              planId: '123xcfg34xcv',
-              topic: {
-                name: 'Weather Information',
-                description: 'provide information about the weather, like temperature, wind',
-                instructions: [
-                  'If the user inquires about specific weather conditions (e.g., rain, wind), include this information in your response.',
-                  'If a user requests a forecast, imagine a detailed weather forecast for the next 7 days for Coral Cloud Resort and Port Aurelia.'
-                ],
-                actions: []
-              },
-              reasoning:
-                'SMALL_TALK: The response is small talk, as it is asking the user for more information without providing any specific data. Nothing in the response indicates a prompt injection.',
-              response:
-                'I can get you the current weather conditions and temperature for Coral Cloud Resort and Port Aurelia. Which location are you interested in?'
-            }
-          ]
-        };
-        webviewPanel.webview.postMessage({ command: 'setTrace', data: traceInfo });
-      }
+    // @ts-expect-error non-async function
+    Lifecycle.getInstance().on('chatResponse', (data: AgentPreviewSendResponse) => {
+      // TODO: Add agent trace to library (TD-0244806)
+      //  below is a theoretical snippet, and info/type to use as mock
+      // const conn = await CoreExtensionService.getDefaultConnection()
+      // const agent = new Agent(conn)
+      // const traceInfo = Agent.trace(data.messages.get(0).id)
+      const traceInfo: SessionDetails = {
+        startTime: new Date().toString(),
+        id: data.messages?.at(0)?.id ?? 'undefined',
+        prompts: [
+          {
+            prompt: "hello, what's the weather like",
+            planId: data.messages?.at(0)?.planId ?? 'undefined plan id',
+            topic: {
+              name: 'Weather Information',
+              description: 'provide information about the weather, like temperature, wind',
+              instructions: [
+                'If the user inquires about specific weather conditions (e.g., rain, wind), include this information in your response.',
+                'If a user requests a forecast, imagine a detailed weather forecast for the next 7 days for Coral Cloud Resort and Port Aurelia.'
+              ],
+              actions: []
+            },
+            reasoning:
+              'SMALL_TALK: The response is small talk, as it is asking the user for more information without providing any specific data. Nothing in the response indicates a prompt injection.',
+            response: data.messages?.at(0)?.message ?? 'undefined response'
+          }
+        ]
+      };
+
+      webviewPanel.webview.postMessage({ command: 'setTrace', data: traceInfo });
     });
+
     // Get correct path to the CSS file
     const styleUri = webviewPanel.webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'agent-trace', 'dist', 'assets', 'index.css')

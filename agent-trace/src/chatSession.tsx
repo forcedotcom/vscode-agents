@@ -16,8 +16,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Timeline, TimelineItem, TimelineSeparator, TimelineConnector, TimelineContent, TimelineDot } from '@mui/lab';
 
 const ChatSession: React.FC<{ trace?: SessionDetails }> = ({ trace }) => {
-  return (
-    trace && (
+  if (trace) {
+    return (
       <div>
         {/* Card for session start details */}
         <Card sx={{ width: '100%', mx: 'auto', mb: 2, p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -173,8 +173,20 @@ const ChatSession: React.FC<{ trace?: SessionDetails }> = ({ trace }) => {
           </Accordion>
         ))}
       </div>
-    )
-  );
+    );
+  } else {
+    return (
+      <div>
+        <Card sx={{ width: '100%', mx: 'auto', mb: 2, p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <CardContent sx={{ p: 0 }}>
+            <Typography variant="h6" fontWeight="bold">
+              Start a Session before viewing the trace
+            </Typography>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 };
 
 export default ChatSession;

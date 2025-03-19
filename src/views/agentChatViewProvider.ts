@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { AgentPreview } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import path from 'path';
+import { Lifecycle } from '@salesforce/core-bundle';
 
 export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.chat.view';
@@ -46,6 +47,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
 
           const response = await this.agentPreview.send(this.sessionId, message.text);
 
+          await Lifecycle.getInstance().emit('chatResponse', response);
           webviewView.webview.postMessage({
             command: 'chatResponse',
             data: response.messages.find(msg => msg.type === 'Inform')
