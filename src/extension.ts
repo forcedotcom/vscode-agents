@@ -82,9 +82,9 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
   const chatViewDisposable = vscode.window.registerWebviewViewProvider(
     AgentChatViewProvider.viewType,
     new AgentChatViewProvider(context),
-      {
-        webviewOptions: { retainContextWhenHidden: true }
-      }
+    {
+      webviewOptions: { retainContextWhenHidden: true }
+    }
   );
 
   // Register a content provider for our custom scheme
@@ -99,7 +99,7 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
   );
   context.subscriptions.push(ChatTracerViewProvider.register(context));
   context.subscriptions.push(
-    vscode.commands.registerCommand('sf.agent.showChatTracer', () => {
+    vscode.commands.registerCommand(Commands.showChatTracer, () => {
       showChatTracer();
     })
   );
@@ -108,7 +108,7 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
 
 const showChatTracer = () => {
   const uri = vscode.Uri.parse('agent-trace://chattrace/ChatTrace.chattrace');
-  vscode.commands.executeCommand('vscode.openWith', uri, 'sf.agent.showChatTracer', {
+  vscode.commands.executeCommand('vscode.openWith', uri, Commands.showChatTracer, {
     viewColumn: vscode.ViewColumn.One,
     preview: false
   });

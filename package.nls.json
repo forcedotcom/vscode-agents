@@ -6,7 +6,7 @@
   "agentforce_dx": "Agentforce DX",
   "agent_chat": "Chat with Agent",
   "clear_chat": "Clear chat with Agent",
-  "show_chat_trace": "SFDX: Show Chat Flow",
+  "show_chat_trace": "SFDX: Show Chat Trace",
   "refresh_test_title": "Refresh Test Definitions",
   "go_to_definition_title": "View Test Definition",
   "collapse_tests_title": "Collapse All Test Cases",

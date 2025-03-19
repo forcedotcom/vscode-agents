@@ -61,7 +61,9 @@
     "vscode-test": "^1.6.1"
   },
   "scripts": {
-    "build": "tsc --build & cd agent-trace ; npm run build ; cd ../agent-chat &  npm run build ; cd ..",
+    "build": "tsc --build && npm run build:chat && npm run build:tracer",
+    "build:chat": "cd agent-chat && npm run build",
+    "build:tracer": "cd agent-trace && npm run build",
     "build:clean": "tsc --build --clean",
     "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
