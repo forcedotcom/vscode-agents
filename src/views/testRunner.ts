@@ -28,6 +28,14 @@ export class AgentTestRunner {
       vscode.window.showErrorMessage('You need to run the test first to see its results.');
       return;
     }
+    const metrics = [
+      'completeness',
+      'coherence',
+      'conciseness',
+      'output_latency_milliseconds',
+      'instruction_following',
+      'factuality'
+    ];
     // set to a new var so we can remove test cases and not affect saved information
     const testInfo = structuredClone(resultFromMap);
     if (test instanceof AgentTestNode) {
@@ -41,16 +49,41 @@ export class AgentTestRunner {
       channelService.appendLine('');
       channelService.appendLine(`"${tc.inputs.utterance}"`);
       channelService.appendLine('');
-      tc.testResults.map(tr => {
-        channelService.appendLine(
-          `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
-        );
-        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(`EXPECTED : ${tr.expectedValue.replaceAll('\n', '')}`);
-        channelService.appendLine(`ACTUAL   : ${tr.actualValue.replaceAll('\n', '')}`);
-        channelService.appendLine(`SCORE    : ${tr.score}`);
-        channelService.appendLine('');
-      });
+      tc.testResults
+        // this is the output for topics/action/output validation (actual v expected)
+        // filter out other metrics from it
+        .filter(f => !metrics.includes(f.name))
+        .map(tr => {
+          channelService.appendLine(
+            `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
+          );
+          channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+          channelService.appendLine(`EXPECTED : ${tr.expectedValue.replaceAll('\n', '')}`);
+          channelService.appendLine(`ACTUAL   : ${tr.actualValue.replaceAll('\n', '')}`);
+          channelService.appendLine(`SCORE    : ${tr.score}`);
+          channelService.appendLine('');
+        });
+
+      channelService.appendLine(`❯ METRICS (Value/Threshold)`);
+      channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+      tc.testResults
+        // this is the output for metric information
+        // filter out the standard evaluations (topics/action/output)
+        .filter(f => metrics.includes(f.name))
+        .map(tr => {
+          if (tr.name === 'output_latency_milliseconds') {
+            channelService.appendLine(
+              `⏱️ : ${humanFriendlyName(tr.name).toUpperCase()} (${tr.score}ms)  ${tr.metricExplainability ? `: ${tr.metricExplainability}` : ''}`
+            );
+          } else {
+            channelService.appendLine(
+              // 0.6 is the threshold for passing, hardcoded for now
+              `${tr.result === 'PASS' ? '✅' : '❌'} : ${humanFriendlyName(tr.name).toUpperCase()} (${tr.score}/0.6) ${tr.metricExplainability ? `: ${tr.metricExplainability}` : ''}`
+            );
+          }
+        });
+
+      channelService.appendLine('');
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
       channelService.appendLine(
         `TEST CASE SUMMARY: ${tc.testResults.length} tests run | ✅ ${tc.testResults.filter(tc => tc.result === 'PASS').length} passed | ❌ ${tc.testResults.filter(tc => tc.result === 'FAILURE').length} failed`
