@@ -28,6 +28,7 @@ export class AgentTestRunner {
       vscode.window.showErrorMessage('You need to run the test first to see its results.');
       return;
     }
+    // TODO: use 'metric' from /Agents-bundle once released in `latest` - is in `agents@preview` now
     const metrics = [
       'completeness',
       'coherence',
