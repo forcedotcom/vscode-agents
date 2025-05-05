@@ -65,13 +65,14 @@ export class AgentTestRunner {
           channelService.appendLine('');
         });
 
-      channelService.appendLine(`❯ METRICS (Value/Threshold)`);
-      channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-      tc.testResults
+      const metricResults = tc.testResults
         // this is the output for metric information
         // filter out the standard evaluations (topics/action/output)
-        .filter(f => metrics.includes(f.name))
-        .map(tr => {
+        .filter(f => metrics.includes(f.name));
+      if (metricResults.length > 0) {
+        channelService.appendLine(`❯ METRICS (Value/Threshold)`);
+        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+        metricResults.map(tr => {
           if (tr.name === 'output_latency_milliseconds') {
             channelService.appendLine(
               `⏱️ : ${humanFriendlyName(tr.name).toUpperCase()} (${tr.score}ms)  ${tr.metricExplainability ? `: ${tr.metricExplainability}` : ''}`
@@ -83,6 +84,7 @@ export class AgentTestRunner {
             );
           }
         });
+      }
 
       channelService.appendLine('');
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
