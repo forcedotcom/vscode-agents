@@ -1,3 +1,11 @@
+## [1.1.1](https://github.com/salesforcecli/vsode-agents/compare/v1.1.0...v1.1.1) (2025-05-08)
+
+### Bug Fixes
+
+- add metric output, bump library ([4e6e96e](https://github.com/salesforcecli/vsode-agents/commit/4e6e96ecb691f5b94a4c4e62a054690abc9a29d7))
+- only show metric output if in test ([2ebb8e5](https://github.com/salesforcecli/vsode-agents/commit/2ebb8e52c9477a5b03cc82ddcab5bc44f3752306))
+- remove preview ([430d78e](https://github.com/salesforcecli/vsode-agents/commit/430d78e15f1e96341617dcb8ea0ff448b3fcebdc))
+
 # [1.1.0](https://github.com/salesforcecli/vsode-agents/compare/v1.0.0...v1.1.0) (2025-03-11)
 
 ### Bug Fixes
