@@ -4,7 +4,6 @@
   "description": "Provides a suite of tools to build, preview, and test agents",
   "version": "1.1.0",
   "publisher": "salesforce",
-  "preview": true,
   "repository": {
     "url": "https://github.com/salesforcecli/vsode-agents"
   },
@@ -18,8 +17,8 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents-bundle": "0.13.0",
-    "@salesforce/core-bundle": "8.8.5",
+    "@salesforce/agents-bundle": "^0.14.11",
+    "@salesforce/core-bundle": "^8.8.5",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
     "semver": "^7.7.0",
