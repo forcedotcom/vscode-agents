@@ -7,7 +7,13 @@
 
 import * as vscode from 'vscode';
 import { AgentTestOutlineProvider } from './testOutlineProvider';
-import { AgentTester, TestStatus, AgentTestResultsResponse, humanFriendlyName } from '@salesforce/agents-bundle';
+import {
+  AgentTester,
+  TestStatus,
+  AgentTestResultsResponse,
+  humanFriendlyName,
+  metric
+} from '@salesforce/agents-bundle';
 import { ConfigAggregator, Lifecycle, Org } from '@salesforce/core-bundle';
 import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
@@ -28,15 +34,6 @@ export class AgentTestRunner {
       vscode.window.showErrorMessage('You need to run the test first to see its results.');
       return;
     }
-    // TODO: use 'metric' from /Agents-bundle once released in `latest` - is in `agents@preview` now
-    const metrics = [
-      'completeness',
-      'coherence',
-      'conciseness',
-      'output_latency_milliseconds',
-      'instruction_following',
-      'factuality'
-    ];
     // set to a new var so we can remove test cases and not affect saved information
     const testInfo = structuredClone(resultFromMap);
     if (test instanceof AgentTestNode) {
@@ -53,7 +50,7 @@ export class AgentTestRunner {
       tc.testResults
         // this is the output for topics/action/output validation (actual v expected)
         // filter out other metrics from it
-        .filter(f => !metrics.includes(f.name))
+        .filter(f => !metric.includes(f.name as (typeof metric)[number]))
         .map(tr => {
           channelService.appendLine(
             `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
@@ -68,7 +65,7 @@ export class AgentTestRunner {
       const metricResults = tc.testResults
         // this is the output for metric information
         // filter out the standard evaluations (topics/action/output)
-        .filter(f => metrics.includes(f.name));
+        .filter(f => metric.includes(f.name as (typeof metric)[number]));
       if (metricResults.length > 0) {
         channelService.appendLine(`❯ METRICS (Value/Threshold)`);
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
