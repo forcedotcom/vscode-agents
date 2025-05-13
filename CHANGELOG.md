@@ -1,11 +1,8 @@
 ## [1.1.2](https://github.com/salesforcecli/vsode-agents/compare/v1.1.1...v1.1.2) (2025-05-13)
 
-
 ### Bug Fixes
 
-* properties to accommodate O11y reporter initialisation ([babf392](https://github.com/salesforcecli/vsode-agents/commit/babf3925016a36e7ff5f7f652dd8613ec5e445b9))
-
-
+- properties to accommodate O11y reporter initialisation ([babf392](https://github.com/salesforcecli/vsode-agents/commit/babf3925016a36e7ff5f7f652dd8613ec5e445b9))
 
 ## [1.1.1](https://github.com/salesforcecli/vsode-agents/compare/v1.1.0...v1.1.1) (2025-05-08)
 
