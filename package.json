@@ -36,6 +36,7 @@
     "@types/semver": "7.5.8",
     "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.90.0",
+    "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@vscode/vsce": "^3.2.2",
     "commitizen": "^4.3.1",
@@ -61,9 +62,14 @@
     "vscode-test": "^1.6.1"
   },
   "scripts": {
-    "build": "tsc --build",
+    "postinstall": "npm run install:chat && npm run install:trace",
+    "install:chat": "cd agent-chat && npm install",
+    "install:trace": "cd agent-trace && npm install",
+    "build": "tsc --build && npm run build:chat && npm run build:tracer",
+    "build:chat": "cd agent-chat && npm run build",
+    "build:tracer": "cd agent-trace && npm run build",
     "build:clean": "tsc --build --clean",
-    "compile": "tsc --build",
+    "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
     "reinstall": "git checkout -- package-lock.json && git clean -xfd && npm install",
     "watch": "tsc --build --watch",
@@ -115,15 +121,26 @@
           "name": "%agent_test_view_name%",
           "when": "sf:project_opened"
         }
+      ],
+      "agent-chat": [
+        {
+          "id": "sf.agent.chat.view",
+          "name": "%agent_chat%",
+          "type": "webview",
+          "when": "sf:project_opened"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agent-chat",
+          "title": "%agentforce_dx%",
+          "icon": "$(chat-editor-label-icon)"
+        }
       ]
     },
     "menus": {
-      "commandPalette": [
-        {
-          "command": "sf.agent.test.view.goToTestResults",
-          "when": "false"
-        }
-      ],
       "view/title": [
         {
           "command": "sf.agent.test.view.runAll",
@@ -139,6 +156,11 @@
           "command": "sf.agent.test.view.collapseAll",
           "when": "view == sf.agent.test.view",
           "group": "navigation@3"
+        },
+        {
+          "command": "sf.agent.showChatTracer",
+          "when": "view == sf.agent.chat.view",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -157,30 +179,42 @@
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "sf.agent.test.view.goToDefinition",
+          "when": "false"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+        },
+        {
+          "command": "sf.agent.test.view.runAll",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.runTest",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.refresh",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.collapseAll",
+          "when": "sf:project_opened"
+        },
+        {
+          "command": "sf.agent.openChat",
+          "when": "true"
+        },
+        {
+          "command": "sf.agent.showChatTracer",
+          "when": "false"
+        }
       ]
     },
-    "commandPalette": [
-      {
-        "command": "salesforcedx-vscode-agents.openAgentInOrg",
-        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
-      },
-      {
-        "command": "sf.agent.test.view.runAll",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.runTest",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.refresh",
-        "when": "false"
-      },
-      {
-        "command": "sf.agent.test.view.collapseAll",
-        "when": "sf:project_opened"
-      }
-    ],
     "commands": [
       {
         "command": "sf.agent.test.view.goToTestResults",
@@ -221,6 +255,31 @@
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
+      },
+      {
+        "command": "sf.agent.openChat",
+        "title": "%open_chat_with_agent%",
+        "icon": "$(chat-editor-label-icon)"
+      },
+      {
+        "command": "sf.agent.showChatTracer",
+        "title": "%show_chat_trace%",
+        "icon": "$(list-unordered)"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "sf.agent.showChatTracer",
+        "displayName": "Agentforce DX: Agent Tracer",
+        "selector": [
+          {
+            "filenamePattern": "*.chattrace"
+          },
+          {
+            "scheme": "agent-trace"
+          }
+        ],
+        "priority": "default"
       }
     ]
   }
