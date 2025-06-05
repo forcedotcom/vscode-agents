@@ -101,6 +101,14 @@ const App: React.FC = () => {
     }
   };
 
+  const handleApexDebugging = (debugging: boolean) => {
+    if (vscode) {
+      vscode.postMessage({ command: 'setApexDebugging', data: debugging });
+    } else {
+      console.warn('vscode API not available');
+    }
+  };
+
   const handleAgentSelect = (agent: { Id: string; MasterLabel: string }) => {
     if (vscode) {
       vscode.postMessage({ command: 'startSession', data: agent.Id });
@@ -114,6 +122,7 @@ const App: React.FC = () => {
         currentAgent={currentAgent}
         selectable={selectable}
         setCurrentAgent={setCurrentAgent}
+        setApexDebugging={handleApexDebugging}
         onAgentSelect={handleAgentSelect}
         onEndSession={handleEndSession}
       />

@@ -3,11 +3,13 @@ import { AgentPreview } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import path from 'path';
 import { Lifecycle } from '@salesforce/core-bundle';
+import type { ApexLog } from '@salesforce/types/tooling';
 
 export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.chat.view';
   private agentPreview?: AgentPreview;
   private sessionId = Date.now().toString();
+  private apexDebugging = false;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -31,19 +33,24 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           });
           const conn = await CoreExtensionService.getDefaultConnection();
 
-          this.agentPreview = new AgentPreview(conn);
+          this.agentPreview = new AgentPreview(conn, message.data);
 
-          const session = await this.agentPreview.start(message.data);
+          const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
 
           webviewView.webview.postMessage({
             command: 'sessionStarted',
             data: session.messages.find(msg => msg.type === 'Inform')
           });
+        } else if (message.command === 'setApexDebugging') {
+          this.apexDebugging = message.data;
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
             throw new Error('Session has not been started.');
           }
+
+          // Set debug mode
+          this.agentPreview.toggleApexDebugMode(this.apexDebugging);
 
           const response = await this.agentPreview.send(this.sessionId, message.text);
 
@@ -52,6 +59,9 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
             command: 'chatResponse',
             data: response.messages.find(msg => msg.type === 'Inform')
           });
+          if (response.apexDebugLog) {
+            await this.saveApexDebugLog(response.apexDebugLog);
+          }
         } else if (message.command === 'endSession') {
           if (!this.agentPreview || !this.sessionId) {
             throw new Error('No active session to end.');
@@ -111,6 +121,41 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       </body>
       </html>
     `;
+  }
+
+  private async saveApexDebugLog(apexLog: ApexLog): Promise<void> {
+    try {
+      // Get the current workspace folder
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder found to save apex debug logs.');
+        return;
+      }
+
+      const logId = apexLog.Id;
+      if (!logId) {
+        vscode.window.showErrorMessage('No Apex debug log ID found.');
+        return;
+      }
+
+      // Query for the log content
+      const conn = await CoreExtensionService.getDefaultConnection();
+      const url = `${conn.tooling._baseUrl()}/sobjects/ApexLog/${logId}/Body`;
+      const logContent = await conn.tooling.request<string>(url);
+
+      // Apex debug logs are written to: .sfdx/tools/debug/logs
+      const apexDebugLogPath = vscode.Uri.joinPath(workspaceFolder.uri, '.sfdx', 'tools', 'debug', 'logs');
+      await vscode.workspace.fs.createDirectory(apexDebugLogPath);
+      const filePath = vscode.Uri.joinPath(apexDebugLogPath, `${logId}.log`);
+
+      // Write apex debug log to file
+      await vscode.workspace.fs.writeFile(filePath, Buffer.from(logContent, 'utf8'));
+
+      vscode.window.showInformationMessage(`Apex debug log saved to ${filePath.path}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Error saving Apex debug log: ${errorMessage}`);
+    }
   }
 
   private async saveChatToFile(messages: string[]): Promise<void> {
