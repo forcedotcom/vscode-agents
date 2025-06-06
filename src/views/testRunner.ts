@@ -22,12 +22,20 @@ import { AgentTestNode } from '../types';
 
 export class AgentTestRunner {
   private testGroupNameToResult = new Map<string, AgentTestResultsResponse>();
+  private id: string | undefined;
   constructor(private testOutline: AgentTestOutlineProvider) {}
 
   public displayTestDetails(test: TestNode) {
     const channelService = CoreExtensionService.getChannelService();
     channelService.showChannelOutput();
     channelService.clear();
+    if (test.parentName == '') {
+      // this is the parent test group, so we only show the test summary, test id
+      const result = this.testGroupNameToResult.get(test.name);
+      channelService.appendLine(`Job Id: ${this.id}`);
+      this.printTestSummary(result!);
+      return;
+    }
 
     const resultFromMap = this.testGroupNameToResult.get(test.name) ?? this.testGroupNameToResult.get(test.parentName);
     if (!resultFromMap) {
@@ -96,9 +104,6 @@ export class AgentTestRunner {
     const telemetryService = CoreExtensionService.getTelemetryService();
     telemetryService.sendCommandEvent('RunAgentTest');
     try {
-      let passing,
-        failing,
-        total = 0;
       const configAggregator = await ConfigAggregator.create();
       const lifecycle = await Lifecycle.getInstance();
       const org = await Org.create({
@@ -134,16 +139,10 @@ export class AgentTestRunner {
                     break;
                   case 'ERROR':
                   case 'TERMINATED':
-                    passing = data.passingTestCases;
-                    failing = data.failingTestCases;
-                    total = data.totalTestCases;
                     progress.report({ increment: 100, message: `Status: ${data.status}` });
                     setTimeout(() => reject(), 1500);
                     break;
                   case 'COMPLETED':
-                    passing = data.passingTestCases;
-                    failing = data.failingTestCases;
-                    total = data.totalTestCases;
                     progress.report({ increment: 100, message: `Status: ${data.status}` });
                     setTimeout(() => resolve({}), 1500);
                     break;
@@ -157,7 +156,8 @@ export class AgentTestRunner {
       const response = await tester.start(test.name);
       // begin in-progress
       this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
-      channelService.appendLine(`Job Id: ${response.runId}`);
+      this.id = response.runId;
+      channelService.appendLine(`Job Id: ${this.id}`);
 
       const result = await tester.poll(response.runId, { timeout: Duration.minutes(100) });
       this.testGroupNameToResult.set(test.name, result);
@@ -175,13 +175,7 @@ export class AgentTestRunner {
       });
       // update the parent's icon
       this.testOutline.getTestGroup(test.name)?.updateOutcome(hasFailure ? 'ERROR' : 'COMPLETED');
-      channelService.appendLine(result.status);
-      channelService.appendLine('');
-      channelService.appendLine('Test Results');
-      channelService.appendLine(`Passing: ${passing}/${total}`);
-      channelService.appendLine(`Failing: ${failing}/${total}`);
-      channelService.appendLine('');
-      channelService.appendLine(`Select a test case in the Test View panel for more information`);
+      this.printTestSummary(result);
     } catch (e) {
       const error = e as Error;
       void Lifecycle.getInstance().emit('AGENT_TEST_POLLING_EVENT', { status: 'ERROR' });
@@ -189,5 +183,21 @@ export class AgentTestRunner {
       channelService.appendLine(`Error running test: ${error.message}`);
       telemetryService.sendException(error.name, error.message);
     }
+  }
+
+  private printTestSummary(result: AgentTestResultsResponse) {
+    const channelService = CoreExtensionService.getChannelService();
+    channelService.appendLine(result.status);
+    channelService.appendLine('');
+    channelService.appendLine('Test Results');
+    const total = result.testCases.length;
+    channelService.appendLine(
+      `Passing: ${result.testCases.filter(tc => tc.testResults.every(tr => tr.result === 'PASS')).length}/${total}`
+    );
+    channelService.appendLine(
+      `Failing: ${result.testCases.filter(tc => tc.testResults.some(tr => tr.result === 'FAILURE')).length}/${total}`
+    );
+    channelService.appendLine('');
+    channelService.appendLine(`Select a test case in the Test View panel for more information`);
   }
 }
