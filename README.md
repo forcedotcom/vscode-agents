@@ -5,7 +5,7 @@ Agentforce DX is a suite of tools to build and test agents. This extension provi
 ## Prerequisites
 
 1. Install the [Salesforce Extension Pack and Salesforce CLI](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/install.html).
-2. Install the Agentforce DX CLI plugin by running this command from VS Code's integrated terminal:
+2. The Agentforce DX CLI plugin is JIT, which means it's automatically installed the first time you run an `agent` CLI command. But you can also install the plugin manually by running this command from VS Code's integrated terminal:
 
    ```bash
    sf plugins install agent
