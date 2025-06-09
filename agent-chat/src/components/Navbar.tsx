@@ -13,6 +13,11 @@ import {
 import { ArrowDropDown, CallEnd } from '@mui/icons-material';
 import { useState } from 'react';
 
+type AgentOption = {
+  Id: string;
+  MasterLabel: string;
+};
+
 const Navbar = ({
   agents,
   currentAgent,
@@ -22,12 +27,12 @@ const Navbar = ({
   onAgentSelect,
   onEndSession
 }: {
-  agents: any[];
+  agents: Array<AgentOption>;
   currentAgent: string;
   selectable: boolean;
   setCurrentAgent: (agent: string) => void;
   setApexDebugging: (debugging: boolean) => void;
-  onAgentSelect: (agent: { Id: string; MasterLabel: string }) => void;
+  onAgentSelect: (agent: AgentOption) => void;
   onEndSession: () => void;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -47,7 +52,7 @@ const Navbar = ({
     setApexDebugging(event.target.checked);
   };
 
-  const handleSelectAgent = (agent: { Id: string; MasterLabel: string }) => {
+  const handleSelectAgent = (agent: AgentOption) => {
     setCurrentAgent(agent.MasterLabel);
     onAgentSelect(agent);
     handleMenuClose();
@@ -87,7 +92,6 @@ const Navbar = ({
       </AppBar>
       <FormGroup sx={{ pl: '20px', pt: '10px' }}>
         <FormControlLabel
-          // sx={{ fontSize: '0.9rem !important' }}
           control={<Switch checked={apexDebugging} onChange={handleChange} size="small" />}
           label={apexDebugging ? 'Apex Debugging Enabled' : 'Apex Debugging Disabled'}
           slotProps={{ typography: { variant: 'body2' } }}

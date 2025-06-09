@@ -59,8 +59,12 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
             command: 'chatResponse',
             data: response.messages.find(msg => msg.type === 'Inform')
           });
-          if (response.apexDebugLog) {
-            await this.saveApexDebugLog(response.apexDebugLog);
+          if (this.apexDebugging && response.apexDebugLog) {
+            const logPath = await this.saveApexDebugLog(response.apexDebugLog);
+            // run the apex debug log command
+            if (logPath) {
+              vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
+            }
           }
         } else if (message.command === 'endSession') {
           if (!this.agentPreview || !this.sessionId) {
@@ -123,7 +127,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     `;
   }
 
-  private async saveApexDebugLog(apexLog: ApexLog): Promise<void> {
+  private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {
     try {
       // Get the current workspace folder
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -152,6 +156,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       await vscode.workspace.fs.writeFile(filePath, Buffer.from(logContent, 'utf8'));
 
       vscode.window.showInformationMessage(`Apex debug log saved to ${filePath.path}`);
+      return filePath.path;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Error saving Apex debug log: ${errorMessage}`);
