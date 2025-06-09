@@ -20,9 +20,10 @@ import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentTestNode } from '../types';
 
+type AgentTestResults = AgentTestResultsResponse & { id: string };
+
 export class AgentTestRunner {
-  private testGroupNameToResult = new Map<string, AgentTestResultsResponse>();
-  private id: string | undefined;
+  private testGroupNameToResult = new Map<string, AgentTestResults>();
   constructor(private testOutline: AgentTestOutlineProvider) {}
 
   public displayTestDetails(test: TestNode) {
@@ -32,8 +33,13 @@ export class AgentTestRunner {
     if (test.parentName == '') {
       // this is the parent test group, so we only show the test summary, test id
       const result = this.testGroupNameToResult.get(test.name);
-      channelService.appendLine(`Job Id: ${this.id}`);
-      this.printTestSummary(result!);
+      if (result) {
+        channelService.appendLine(`Job Id: ${result.id}`);
+        this.printTestSummary(result!);
+      } else {
+        vscode.window.showErrorMessage('You need to run the test first to see its results.');
+      }
+
       return;
     }
 
@@ -156,10 +162,14 @@ export class AgentTestRunner {
       const response = await tester.start(test.name);
       // begin in-progress
       this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
-      this.id = response.runId;
-      channelService.appendLine(`Job Id: ${this.id}`);
 
-      const result = await tester.poll(response.runId, { timeout: Duration.minutes(100) });
+      const result = {
+        ...(await tester.poll(response.runId, { timeout: Duration.minutes(100) })),
+        id: response.runId
+      };
+      result.id = response.runId;
+      channelService.appendLine(`Job Id: ${result.id}`);
+
       this.testGroupNameToResult.set(test.name, result);
       this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
       let hasFailure = false;
@@ -185,7 +195,7 @@ export class AgentTestRunner {
     }
   }
 
-  private printTestSummary(result: AgentTestResultsResponse) {
+  private printTestSummary(result: AgentTestResults) {
     const channelService = CoreExtensionService.getChannelService();
     channelService.appendLine(result.status);
     channelService.appendLine('');
