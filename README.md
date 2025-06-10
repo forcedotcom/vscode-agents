@@ -1,6 +1,6 @@
 # Agentforce DX for Visual Studio Code
 
-Agentforce DX is a suite of tools to build and test agents. This extension provides integrated VS Code commands to easily open an agent in your org's Agent Builder UI and run the tests associated with an agent in the Agent Testing Panel.
+Agentforce DX is a suite of tools to build, preview, and test agents. This extension provides integrated VS Code commands to easily open an agent in your org's Agent Builder UI and run the tests associated with an agent in the Agent Testing Panel.
 
 ## Prerequisites
 
@@ -21,14 +21,14 @@ Agentforce DX is a suite of tools to build and test agents. This extension provi
 
    - Bot (file extension `.bot-meta.xml`)
    - BotVersion (file extension `.botVersion-meta.xml`)
-   - GenAiPlanner (file extension `.genAiPlanner-meta.xml`)
+   - GenAiPlanner (file extension `.genAiPlannerBundle-meta.xml`)
    - GenAiDefinition (file extension `.genAiDefinition-meta.xml`)
 
    ![Open an agent in an org using a VS Code command](images/afdx-open-org.gif)
 
 ## Documentation
 
-For information about Agentforce DX, see the **Agentforce DX** section of the [Agentforce Developer Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx.html).
+For information about Agentforce DX, see the **Build Agents with Agentforce DX** section of the [Agentforce Developer Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx.html).
 
 ## Bugs and Feedback
 
