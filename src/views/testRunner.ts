@@ -19,6 +19,7 @@ import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentTestNode } from '../types';
+import { ux } from '@oclif/core';
 
 type AgentTestResults = AgentTestResultsResponse & { id: string };
 
@@ -75,6 +76,26 @@ export class AgentTestRunner {
           channelService.appendLine(`SCORE    : ${tr.score}`);
           channelService.appendLine('');
         });
+
+      // it's not a real string[], more like just a string  "[&#39;IdentifyRecordByName&#39;]", so "[]", empty, is 2 characters
+      if (tc.generatedData.actionsSequence.length > 2) {
+        channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
+        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+        channelService.appendLine(JSON.stringify(tc.generatedData.invokedActions, null, 2));
+        channelService.appendLine(
+          ux.colorizeJson(tc.generatedData.invokedActions, {
+            pretty: true,
+            theme: {
+              key: 'blueBright',
+              string: 'greenBright',
+              number: 'redBright',
+              boolean: 'redBright',
+              null: 'blackBright'
+            }
+          })
+        );
+        channelService.appendLine('');
+      }
 
       const metricResults = tc.testResults
         // this is the output for metric information

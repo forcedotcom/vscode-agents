@@ -19,6 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
+    "@oclif/core": "^4.5.2",
     "@salesforce/agents-bundle": "^0.14.11",
     "@salesforce/core-bundle": "^8.8.5",
     "cross-spawn": "^7.0.6",
