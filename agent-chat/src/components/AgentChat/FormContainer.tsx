@@ -11,6 +11,7 @@ interface FormContainerProps {
   sendDisabled: boolean;
   inputRef: React.RefObject<HTMLInputElement>;
   vscode: any;
+  selectedAgentName: string;
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
@@ -19,7 +20,8 @@ const FormContainer: React.FC<FormContainerProps> = ({
   onSendMessage,
   sendDisabled,
   inputRef,
-  vscode
+  vscode,
+  selectedAgentName
 }) => {
   const handleSelectAgent = () => {
     if (vscode) {
@@ -31,7 +33,7 @@ const FormContainer: React.FC<FormContainerProps> = ({
     <div className="form-container">
       <div className="form-controls">
         <div className="agent-select-button" onClick={handleSelectAgent}>
-          <span className="agent-select-text">Select an Agent</span>
+          <span className="agent-select-text">{selectedAgentName}</span>
           <img src={chevronIcon} alt="Chevron" className="chevron-icon" />
         </div>
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />

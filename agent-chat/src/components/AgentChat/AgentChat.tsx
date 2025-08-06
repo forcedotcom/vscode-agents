@@ -17,6 +17,7 @@ const AgentChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [sendDisabled, setSendDisabled] = useState(true);
+  const [selectedAgentName, setSelectedAgentName] = useState('Select an Agent');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ const AgentChat: React.FC = () => {
       const { command, data, error } = event.data;
       if (command === 'agentSelectedFromCommand') {
         // Agent selected from VS Code command palette
+        setSelectedAgentName(data.label);
         if (vscode) {
           vscode.postMessage({ command: 'startSession', data: data.id });
         }
@@ -150,6 +152,7 @@ const AgentChat: React.FC = () => {
   const handleEndSession = () => {
     setSendDisabled(true);
     setIsThinking(false);
+    setSelectedAgentName('Select an Agent');
     
     if (vscode) {
       vscode.postMessage({ command: 'endSession', data: messages });
@@ -181,6 +184,7 @@ const AgentChat: React.FC = () => {
         sendDisabled={sendDisabled}
         inputRef={inputRef}
         vscode={vscode}
+        selectedAgentName={selectedAgentName}
       />
     </div>
   );
