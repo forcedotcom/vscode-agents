@@ -40,6 +40,12 @@ const AgentChat: React.FC = () => {
       const { command, data, error } = event.data;
       if (command === 'setAgents') {
         setAgents(data);
+      } else if (command === 'agentSelectedFromCommand') {
+        // Agent selected from VS Code command palette
+        setCurrentAgent(data.label);
+        if (vscode) {
+          vscode.postMessage({ command: 'startSession', data: data.id });
+        }
       } else if (command === 'sessionStarting') {
         setSelectable(false);
         setMessages(prev => [

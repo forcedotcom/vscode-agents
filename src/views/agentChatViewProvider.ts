@@ -11,8 +11,11 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   private sessionId = Date.now().toString();
   private apexDebugging = false;
   private webviewView?: vscode.WebviewView;
+  private static activeInstance?: AgentChatViewProvider;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly context: vscode.ExtensionContext) {
+    AgentChatViewProvider.activeInstance = this;
+  }
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -84,7 +87,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         } else if (message.command === 'queryAgents') {
           const conn = await CoreExtensionService.getDefaultConnection();
           const query = await conn.query(
-            "SELECT Id, MasterLabel FROM BotDefinition WHERE IsDeleted = false AND Id IN (SELECT BotDefinitionId FROM BotVersion WHERE Status='Active') AND DeveloperName \!='Copilot_for_Salesforce'"
+            "SELECT Id, MasterLabel FROM BotDefinition WHERE IsDeleted = false AND Id IN (SELECT BotDefinitionId FROM BotVersion WHERE Status='Active') AND DeveloperName != 'Copilot_for_Salesforce'"
           );
           if (query.records.length > 0) {
             webviewView.webview.postMessage({ command: 'setAgents', data: query.records });
@@ -138,6 +141,20 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     if (this.webviewView) {
       // Send a message to the webview to trigger the stop session functionality
       this.webviewView.webview.postMessage({ command: 'stopButtonClicked' });
+    }
+  }
+
+  public static getActiveInstance(): AgentChatViewProvider | undefined {
+    return AgentChatViewProvider.activeInstance;
+  }
+
+  public selectAgentFromCommand(agentId: string, agentLabel: string): void {
+    if (this.webviewView) {
+      // Update the webview to reflect the agent selection and start the session
+      this.webviewView.webview.postMessage({
+        command: 'agentSelectedFromCommand',
+        data: { id: agentId, label: agentLabel }
+      });
     }
   }
 

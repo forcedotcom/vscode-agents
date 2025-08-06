@@ -153,7 +153,13 @@ const listAgents = async () => {
     });
 
     if (selectedAgent) {
-      vscode.window.showInformationMessage(`Selected Agent: ${selectedAgent.label} (${selectedAgent.description})`);
+      // Try to send to active webview, fall back to info message
+      const activeWebview = AgentChatViewProvider.getActiveInstance();
+      if (activeWebview) {
+        activeWebview.selectAgentFromCommand(selectedAgent.description!, selectedAgent.label);
+      } else {
+        vscode.window.showInformationMessage(`Selected Agent: ${selectedAgent.label} (${selectedAgent.description}) - Open Agent Chat view to start session`);
+      }
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
