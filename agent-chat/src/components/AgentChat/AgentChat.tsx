@@ -10,11 +10,6 @@ interface Message {
   systemType?: "session" | "debug";
 }
 
-interface AgentOption {
-  Id: string;
-  MasterLabel: string;
-}
-
 const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
 
 const AgentChat: React.FC = () => {
@@ -22,9 +17,6 @@ const AgentChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [sendDisabled, setSendDisabled] = useState(true);
-  const [agents, setAgents] = useState<AgentOption[]>([]);
-  const [currentAgent, setCurrentAgent] = useState('Select an Agent');
-  const [selectable, setSelectable] = useState<boolean>(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -38,16 +30,12 @@ const AgentChat: React.FC = () => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const { command, data, error } = event.data;
-      if (command === 'setAgents') {
-        setAgents(data);
-      } else if (command === 'agentSelectedFromCommand') {
+      if (command === 'agentSelectedFromCommand') {
         // Agent selected from VS Code command palette
-        setCurrentAgent(data.label);
         if (vscode) {
           vscode.postMessage({ command: 'startSession', data: data.id });
         }
       } else if (command === 'sessionStarting') {
-        setSelectable(false);
         setMessages(prev => [
           ...prev,
           { 
@@ -108,7 +96,6 @@ const AgentChat: React.FC = () => {
             systemType: 'session'
           }
         ]);
-        setSelectable(true);
       } else if (command === 'stopButtonClicked') {
         // Handle stop button click from VSCode panel header
         handleEndSession();
@@ -160,19 +147,9 @@ const AgentChat: React.FC = () => {
     }
   };
 
-  const handleAgentSelect = (agentId: string) => {
-    const agent = agents.find(a => a.Id === agentId);
-    if (agent && vscode) {
-      setCurrentAgent(agent.MasterLabel);
-      vscode.postMessage({ command: 'startSession', data: agent.Id });
-    }
-  };
-
   const handleEndSession = () => {
     setSendDisabled(true);
-    setCurrentAgent('Select an Agent');
     setIsThinking(false);
-    setSelectable(true);
     
     if (vscode) {
       vscode.postMessage({ command: 'endSession', data: messages });
@@ -201,11 +178,6 @@ const AgentChat: React.FC = () => {
         debugMode={debugMode}
         onDebugModeChange={handleDebugModeChange}
         onSendMessage={handleSendMessage}
-        agents={agents}
-        currentAgent={currentAgent}
-        selectable={selectable}
-        onAgentSelect={handleAgentSelect}
-        onEndSession={handleEndSession}
         sendDisabled={sendDisabled}
         inputRef={inputRef}
       />
