@@ -23,7 +23,7 @@ const AgentChat: React.FC = () => {
   const [isThinking, setIsThinking] = useState(false);
   const [sendDisabled, setSendDisabled] = useState(true);
   const [agents, setAgents] = useState<AgentOption[]>([]);
-  const [currentAgent, setCurrentAgent] = useState('Select an Agent to start session');
+  const [currentAgent, setCurrentAgent] = useState('Select an Agent');
   const [selectable, setSelectable] = useState<boolean>(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -164,7 +164,7 @@ const AgentChat: React.FC = () => {
 
   const handleEndSession = () => {
     setSendDisabled(true);
-    setCurrentAgent('Select an Agent to start session');
+    setCurrentAgent('Select an Agent');
     setIsThinking(false);
     setSelectable(true);
     
