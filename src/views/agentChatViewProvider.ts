@@ -41,6 +41,11 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           this.sessionId = session.sessionId;
 
           webviewView.webview.postMessage({
+            command: 'sessionConnected',
+            data: { message: 'Starting session... done.' }
+          });
+
+          webviewView.webview.postMessage({
             command: 'sessionStarted',
             data: session.messages.find(msg => msg.type === 'Inform')
           });

@@ -45,13 +45,21 @@ const AgentChat: React.FC = () => {
         setMessages(prev => [
           ...prev,
           { 
-            id: Date.now().toString(), 
+            id: 'session-starting', 
             type: 'system', 
             content: data.message,
             systemType: 'session'
           }
         ]);
         setSendDisabled(true);
+      } else if (command === 'sessionConnected') {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === 'session-starting' 
+              ? { ...msg, content: data.message }
+              : msg
+          )
+        );
       } else if (command === 'sessionStarted') {
         // Check if this is an agent introduction message or a system message
         const isAgentMessage = data.message && (
