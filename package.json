@@ -218,6 +218,10 @@
         {
           "command": "sf.agent.showChatTracer",
           "when": "false"
+        },
+        {
+          "command": "sf.agent.listAgents",
+          "when": "sf:project_opened"
         }
       ]
     },
@@ -280,6 +284,10 @@
         "command": "sf.agent.stopSession",
         "title": "%stop_session%",
         "icon": "$(debug-stop)"
+      },
+      {
+        "command": "sf.agent.listAgents",
+        "title": "Agentforce DX: List Agents"
       }
     ],
     "customEditors": [

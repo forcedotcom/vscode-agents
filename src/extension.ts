@@ -109,6 +109,11 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
       chatViewProvider.stopSession();
     })
   );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(Commands.listAgents, () => {
+      listAgents();
+    })
+  );
   context.subscriptions.push(chatViewDisposable);
 };
 
@@ -118,6 +123,37 @@ const showChatTracer = () => {
     viewColumn: vscode.ViewColumn.One,
     preview: false
   });
+};
+
+const listAgents = async () => {
+  try {
+    const conn = await CoreExtensionService.getDefaultConnection();
+    const query = await conn.query(
+      "SELECT Id, MasterLabel FROM BotDefinition WHERE IsDeleted = false AND Id IN (SELECT BotDefinitionId FROM BotVersion WHERE Status='Active') AND DeveloperName \\!='Copilot_for_Salesforce'"
+    );
+    
+    if (query.records.length === 0) {
+      vscode.window.showInformationMessage('No agents found in the default org');
+      return;
+    }
+
+    const items = query.records.map((agent: any) => ({
+      label: agent.MasterLabel,
+      description: agent.Id
+    }));
+
+    const selectedAgent = await vscode.window.showQuickPick(items, {
+      placeHolder: 'Select an Agent',
+      canPickMany: false
+    });
+
+    if (selectedAgent) {
+      vscode.window.showInformationMessage(`Selected Agent: ${selectedAgent.label} (${selectedAgent.description})`);
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage(`Error fetching agents: ${errorMessage}`);
+  }
 };
 
 const validateCLI = async () => {
