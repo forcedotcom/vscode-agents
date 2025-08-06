@@ -5,5 +5,6 @@ export enum Commands {
   refreshTestView = 'sf.agent.test.view.refresh',
   collapseAll = 'sf.agent.test.view.collapseAll',
   openChat = 'sf.agent.openChat',
-  showChatTracer = 'sf.agent.showChatTracer'
+  showChatTracer = 'sf.agent.showChatTracer',
+  stopSession = 'sf.agent.stopSession'
 }

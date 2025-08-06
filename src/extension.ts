@@ -79,9 +79,10 @@ const registerTestView = (): vscode.Disposable => {
 
 const registerAgentChatView = (context: vscode.ExtensionContext): void => {
   // Register webview to be disposed on extension deactivation
+  const chatViewProvider = new AgentChatViewProvider(context);
   const chatViewDisposable = vscode.window.registerWebviewViewProvider(
     AgentChatViewProvider.viewType,
-    new AgentChatViewProvider(context),
+    chatViewProvider,
     {
       webviewOptions: { retainContextWhenHidden: true }
     }
@@ -101,6 +102,11 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(
     vscode.commands.registerCommand(Commands.showChatTracer, () => {
       showChatTracer();
+    })
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(Commands.stopSession, () => {
+      chatViewProvider.stopSession();
     })
   );
   context.subscriptions.push(chatViewDisposable);

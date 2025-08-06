@@ -10,6 +10,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   private agentPreview?: AgentPreview;
   private sessionId = Date.now().toString();
   private apexDebugging = false;
+  private webviewView?: vscode.WebviewView;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -20,6 +21,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _token: vscode.CancellationToken
   ) {
+    this.webviewView = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'agent-chat', 'dist')]
@@ -125,6 +127,13 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
       </body>
       </html>
     `;
+  }
+
+  public stopSession(): void {
+    if (this.webviewView) {
+      // Send a message to the webview to trigger the stop session functionality
+      this.webviewView.webview.postMessage({ command: 'stopButtonClicked' });
+    }
   }
 
   private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {

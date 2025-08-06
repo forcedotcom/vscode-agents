@@ -95,6 +95,9 @@ const AgentChat: React.FC = () => {
           }
         ]);
         setSelectable(true);
+      } else if (command === 'stopButtonClicked') {
+        // Handle stop button click from VSCode panel header
+        handleEndSession();
       }
     };
 
