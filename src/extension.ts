@@ -153,13 +153,18 @@ const listAgents = async () => {
     });
 
     if (selectedAgent) {
-      // Try to send to active webview, fall back to info message
-      const activeWebview = AgentChatViewProvider.getActiveInstance();
-      if (activeWebview) {
-        activeWebview.selectAgentFromCommand(selectedAgent.description!, selectedAgent.label);
-      } else {
-        vscode.window.showInformationMessage(`Selected Agent: ${selectedAgent.label} (${selectedAgent.description}) - Open Agent Chat view to start session`);
-      }
+      // Show the Agentforce DX panel and send the selection
+      await vscode.commands.executeCommand('workbench.view.extension.agent-chat');
+      
+      // Give the panel a moment to initialize, then send the agent selection
+      setTimeout(() => {
+        const activeWebview = AgentChatViewProvider.getActiveInstance();
+        if (activeWebview) {
+          activeWebview.selectAgentFromCommand(selectedAgent.description!, selectedAgent.label);
+        } else {
+          vscode.window.showWarningMessage(`Agent selected: ${selectedAgent.label}, but chat view failed to initialize`);
+        }
+      }, 500);
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
