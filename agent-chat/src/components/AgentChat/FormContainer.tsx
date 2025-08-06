@@ -18,9 +18,19 @@ const FormContainer: React.FC<FormContainerProps> = ({
   sendDisabled,
   inputRef
 }) => {
+  const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
+
+  const handleSelectAgent = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (vscode) {
+      vscode.postMessage({ command: 'triggerAgentSelection' });
+    }
+  };
+
   return (
     <div className="form-container">
       <div className="form-controls">
+        <a href="#" className="select-agent-link" onClick={handleSelectAgent}>Select an Agent</a>
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
       </div>
       <ChatInput 

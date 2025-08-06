@@ -9,3 +9,9 @@
   padding: 0 18px;
   height: 35px;
 }
+
+.select-agent-link {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: underline;
+  font-size: 13px;
+}
