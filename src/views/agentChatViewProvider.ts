@@ -94,9 +94,6 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           } else {
             vscode.window.showErrorMessage('There are no agents in the default org');
           }
-        } else if (message.command === 'triggerAgentSelection') {
-          // Execute the VS Code command to show agent selection
-          vscode.commands.executeCommand('sf.agent.listAgents');
         }
       } catch (error) {
         console.error('Error:', error);
