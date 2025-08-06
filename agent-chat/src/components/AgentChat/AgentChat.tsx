@@ -180,6 +180,7 @@ const AgentChat: React.FC = () => {
         onSendMessage={handleSendMessage}
         sendDisabled={sendDisabled}
         inputRef={inputRef}
+        vscode={vscode}
       />
     </div>
   );

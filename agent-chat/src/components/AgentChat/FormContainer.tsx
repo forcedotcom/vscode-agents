@@ -9,6 +9,7 @@ interface FormContainerProps {
   onSendMessage: (message: string) => void;
   sendDisabled: boolean;
   inputRef: React.RefObject<HTMLInputElement>;
+  vscode: any;
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
@@ -16,12 +17,19 @@ const FormContainer: React.FC<FormContainerProps> = ({
   onDebugModeChange,
   onSendMessage,
   sendDisabled,
-  inputRef
+  inputRef,
+  vscode
 }) => {
+  const handleSelectAgent = () => {
+    if (vscode) {
+      vscode.postMessage({ command: 'triggerAgentSelection' });
+    }
+  };
+
   return (
     <div className="form-container">
       <div className="form-controls">
-        <span className="select-agent-link">Select an Agent</span>
+        <span className="select-agent-link" onClick={handleSelectAgent} style={{cursor: 'pointer'}}>Select an Agent</span>
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
       </div>
       <ChatInput 
