@@ -2,6 +2,7 @@ import React from 'react';
 import DebugToggle from './DebugToggle';
 import ChatInput from './ChatInput';
 import './FormContainer.css';
+import chevronIcon from '../../assets/chevron.svg';
 
 interface FormContainerProps {
   debugMode: boolean;
@@ -29,7 +30,10 @@ const FormContainer: React.FC<FormContainerProps> = ({
   return (
     <div className="form-container">
       <div className="form-controls">
-        <span className="select-agent-link" onClick={handleSelectAgent} style={{cursor: 'pointer'}}>Select an Agent</span>
+        <div className="agent-select-button" onClick={handleSelectAgent}>
+          <span className="agent-select-text">Select an Agent</span>
+          <img src={chevronIcon} alt="Chevron" className="chevron-icon" />
+        </div>
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
       </div>
       <ChatInput 
