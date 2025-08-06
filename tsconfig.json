@@ -17,5 +17,5 @@
     "jsx": "preserve",
     "moduleResolution": "Node16"
   },
-  "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "agent-chat", "agent-trace"]
+  "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "agent-chat-and-trace"]
 }

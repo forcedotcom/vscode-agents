@@ -14,7 +14,7 @@ import {
   humanFriendlyName,
   metric
 } from '@salesforce/agents-bundle';
-import { ConfigAggregator, Lifecycle, Org } from '@salesforce/core-bundle';
+import { Lifecycle } from '@salesforce/core-bundle';
 import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';

@@ -63,12 +63,10 @@
     "vscode-test": "^1.6.1"
   },
   "scripts": {
-    "postinstall": "npm run install:chat && npm run install:trace",
-    "install:chat": "cd agent-chat && npm install",
-    "install:trace": "cd agent-trace && npm install",
-    "build": "tsc --build && npm run build:chat && npm run build:tracer",
-    "build:chat": "cd agent-chat && npm run build",
-    "build:tracer": "cd agent-trace && npm run build",
+    "postinstall": "npm run install:combined",
+    "install:combined": "cd agent-chat-and-trace && npm install",
+    "build": "tsc --build && npm run build:combined",
+    "build:combined": "cd agent-chat-and-trace && npm run build",
     "build:clean": "tsc --build --clean",
     "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
@@ -123,10 +121,10 @@
           "when": "sf:project_opened"
         }
       ],
-      "agent-chat": [
+      "agent-combined": [
         {
-          "id": "sf.agent.chat.view",
-          "name": "%agent_chat%",
+          "id": "sf.agent.combined.view",
+          "name": "%agent_combined%",
           "type": "webview",
           "when": "sf:project_opened"
         }
@@ -135,12 +133,13 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "agent-chat",
+          "id": "agent-combined",
           "title": "%agentforce_dx%",
           "icon": "$(chat-editor-label-icon)"
         }
       ]
     },
+
     "menus": {
       "view/title": [
         {
@@ -157,11 +156,6 @@
           "command": "sf.agent.test.view.collapseAll",
           "when": "view == sf.agent.test.view",
           "group": "navigation@3"
-        },
-        {
-          "command": "sf.agent.showChatTracer",
-          "when": "view == sf.agent.chat.view",
-          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -209,10 +203,6 @@
         {
           "command": "sf.agent.openChat",
           "when": "true"
-        },
-        {
-          "command": "sf.agent.showChatTracer",
-          "when": "false"
         }
       ]
     },
@@ -261,26 +251,6 @@
         "command": "sf.agent.openChat",
         "title": "%open_chat_with_agent%",
         "icon": "$(chat-editor-label-icon)"
-      },
-      {
-        "command": "sf.agent.showChatTracer",
-        "title": "%show_chat_trace%",
-        "icon": "$(list-unordered)"
-      }
-    ],
-    "customEditors": [
-      {
-        "viewType": "sf.agent.showChatTracer",
-        "displayName": "Agentforce DX: Agent Tracer",
-        "selector": [
-          {
-            "filenamePattern": "*.chattrace"
-          },
-          {
-            "scheme": "agent-trace"
-          }
-        ],
-        "priority": "default"
       }
     ]
   }

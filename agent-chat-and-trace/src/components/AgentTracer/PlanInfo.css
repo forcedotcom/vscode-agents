@@ -1,0 +1,35 @@
+.plan-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  height: 35px;
+  margin-left: 16px;
+}
+
+.plan-icon {
+  width: 12px;
+  height: 12px;
+  transform: rotate(-90deg);
+  transition: transform 0.2s;
+}
+
+.plan-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.plan-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-id {
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border-primary);
+}

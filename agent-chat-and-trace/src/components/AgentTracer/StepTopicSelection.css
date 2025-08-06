@@ -1,0 +1,107 @@
+.step-topic-selection {
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-topic-selection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--bg-input);
+  height: 35px;
+}
+
+.step-topic-selection-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-topic-selection-icon {
+  width: 16px;
+  height: 216px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-topic-selection-timing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.step-topic-selection-timing-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.step-topic-selection-content {
+  padding: 0;
+}
+
+.step-topic-selection-content p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.step-topic-selection-expandable {
+  padding: 0 16px;
+  min-height: 45px;
+}
+
+.step-topic-selection-expandable:not(:first-child) {
+  border-top: 1px solid var(--border-input);
+}
+
+.step-topic-selection-expandable-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  min-height: 45px;
+}
+
+.step-topic-selection-expand-icon {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.2s;
+  transform: rotate(-90deg);
+}
+
+.step-topic-selection-expand-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.step-topic-selection-section-badge {
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border-primary);
+}
+
+.step-topic-selection-expandable-content {
+  margin-left: 18px;
+  padding: 8px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}

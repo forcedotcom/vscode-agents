@@ -1,0 +1,57 @@
+.step-user-message {
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-user-message-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--bg-input);
+  height: 35px;
+}
+
+.step-user-message-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-user-message-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-user-message-timing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.step-user-message-timing-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.step-user-message-content {
+  padding: 16px;
+}
+
+.step-user-message-content p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+}

@@ -1,0 +1,11 @@
+.form-container {
+  background-color: var(--bg-primary);
+}
+
+.form-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 18px;
+  height: 35px;
+}

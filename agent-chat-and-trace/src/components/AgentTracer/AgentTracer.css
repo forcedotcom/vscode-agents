@@ -1,0 +1,40 @@
+.agent-tracer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.tracer-content {
+  flex: 1;
+  padding: 8px 18px 18px 18px;
+  overflow-y: auto;
+}
+
+.tracer-steps {
+  position: relative;
+}
+
+.tracer-steps > * {
+  position: relative;
+  z-index: 2;
+  background-color: var(--bg-primary);
+}
+
+.tracer-steps::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--border-input) 0px,
+    var(--border-input) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  z-index: 1;
+}
