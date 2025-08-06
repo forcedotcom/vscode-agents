@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview } from '@salesforce/agents-bundle';
+import { AgentPreview, Agent } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
 // import { Lifecycle } from '@salesforce/core-bundle';
 // import type { ApexLog } from '@salesforce/types/tooling';
@@ -32,16 +32,43 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             command: 'sessionStarting',
             data: { message: 'Starting session...' }
           });
+          
+          // End existing session if one exists
+          if (this.agentPreview && this.sessionId) {
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await this.agentPreview.end(this.sessionId, 'UserRequested' as any);
+            } catch (err) {
+              console.warn('Error ending previous session:', err);
+            }
+          }
+          
           const conn = await CoreExtensionService.getDefaultConnection();
 
-          this.agentPreview = new AgentPreview(conn, message.data);
+          // Extract agentId from the message data and pass it as botId
+          const agentId = message.data?.agentId;
+          
+          if (!agentId || typeof agentId !== 'string') {
+            throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
+          }
+          
+          // Validate that the agentId follows Salesforce Bot ID format (starts with "0X" and is 15 or 18 characters)
+          if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
+            throw new Error(`The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`);
+          }
+          
+          console.log('Starting session with agent ID:', agentId);
+          this.agentPreview = new AgentPreview(conn, agentId);
 
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
 
+          // Find the agent's welcome message or create a default one
+          const agentMessage = session.messages.find(msg => msg.type === 'Inform');
           webviewView.webview.postMessage({
             command: 'sessionStarted',
-            data: session.messages.find(msg => msg.type === 'Inform')
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: agentMessage ? { content: (agentMessage as any).message || (agentMessage as any).data || (agentMessage as any).body || "Hi! I'm ready to help. What can I do for you?" } : { content: "Hi! I'm ready to help. What can I do for you?" }
           });
         } else if (message.command === 'setApexDebugging') {
           this.apexDebugging = message.data;
@@ -57,9 +84,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           const session = await this.agentPreview.send(this.sessionId, message.data.message);
 
+          // Get the latest agent response
+          const latestMessage = session.messages.at(-1);
           webviewView.webview.postMessage({
             command: 'messageSent',
-            data: session.messages.at(-1)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: latestMessage ? { content: (latestMessage as any).message || (latestMessage as any).data || (latestMessage as any).body || "I received your message." } : { content: "I received your message." }
           });
 
           if (this.apexDebugging) {
@@ -73,7 +103,62 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             await this.agentPreview.end(this.sessionId, 'UserRequested' as any);
             this.agentPreview = undefined;
             this.sessionId = Date.now().toString();
+            webviewView.webview.postMessage({
+              command: 'sessionEnded',
+              data: {}
+            });
           }
+        } else if (message.command === 'getAvailableAgents') {
+          // Get available agents from the Salesforce org
+          try {
+            const conn = await CoreExtensionService.getDefaultConnection();
+            const remoteAgents = await Agent.listRemote(conn);
+            
+            if (!remoteAgents || remoteAgents.length === 0) {
+              webviewView.webview.postMessage({
+                command: 'availableAgents',
+                data: []
+              });
+              return;
+            }
+
+            // Filter to only agents with active BotVersions and map to the expected format
+            const activeAgents = remoteAgents
+              .filter((bot) => {
+                // Check if the bot has any active BotVersions
+                return bot.BotVersions?.records?.some((version) => version.Status === 'Active');
+              })
+              .map((bot) => ({
+                name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+                id: bot.Id // Use the Bot ID from org
+              }))
+              .filter((agent) => agent.id); // Only include agents with valid IDs
+            
+            webviewView.webview.postMessage({
+              command: 'availableAgents',
+              data: activeAgents
+            });
+          } catch (err) {
+            console.error('Error getting available agents from org:', err);
+            // Return empty list if there's an error
+            webviewView.webview.postMessage({
+              command: 'availableAgents',
+              data: []
+            });
+          }
+        } else if (message.command === 'clearChat') {
+          // Clear chat doesn't need to do anything on the backend for now
+          // The frontend handles clearing the message state
+        } else if (message.command === 'getTraceData') {
+          // TODO: Implement trace data retrieval
+          // This would fetch actual trace data from the agent session
+          webviewView.webview.postMessage({
+            command: 'traceData',
+            data: {
+              sessionId: this.sessionId,
+              traces: [] // Placeholder for actual trace data
+            }
+          });
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);

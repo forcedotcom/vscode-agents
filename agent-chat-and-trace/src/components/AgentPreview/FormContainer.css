@@ -8,4 +8,25 @@
   align-items: center;
   padding: 0 18px;
   height: 35px;
+  gap: 12px;
+}
+
+.clear-chat-button {
+  background: var(--button-secondary-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clear-chat-button:hover:not(:disabled) {
+  background: var(--button-secondary-hover-bg);
+}
+
+.clear-chat-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

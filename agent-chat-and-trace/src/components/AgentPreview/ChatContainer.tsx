@@ -8,13 +8,15 @@ interface Message {
   type: 'user' | 'agent' | 'system';
   content: string;
   systemType?: 'session' | 'debug';
+  timestamp?: string;
 }
 
 interface ChatContainerProps {
   messages: Message[];
+  isLoading?: boolean;
 }
 
-const ChatContainer: React.FC<ChatContainerProps> = ({ messages }) => {
+const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) => {
   return (
     <div className="chat-container">
       {messages.map((message) => (
@@ -32,6 +34,15 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages }) => {
           />
         )
       ))}
+      {isLoading && (
+        <div className="chat-loading">
+          <div className="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

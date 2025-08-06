@@ -19,7 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents-bundle": "^0.15.2",
+    "@salesforce/agents-bundle": "^0.17.0",
     "@salesforce/core-bundle": "^8.12.0",
     "@salesforce/types": "^1.3.0",
     "cross-spawn": "^7.0.6",
@@ -177,7 +177,7 @@
       ],
       "commandPalette": [
         {
-          "command": "sf.agent.test.view.goToDefinition",
+          "command": "sf.agent.test.view.goToTestResults",
           "when": "false"
         },
         {

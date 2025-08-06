@@ -1,88 +1,179 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ChatContainer from "./ChatContainer";
 import FormContainer from "./FormContainer";
+import { vscodeApi, Message } from "../../services/vscodeApi";
 import "./AgentPreview.css";
-
-interface Message {
-  id: string;
-  type: "user" | "agent" | "system";
-  content: string;
-  systemType?: "session" | "debug";
-}
 
 const AgentPreview: React.FC = () => {
   const [debugMode, setDebugMode] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "system",
-      content: "Session was started.",
-      systemType: "session",
-    },
-    {
-      id: "2",
-      type: "agent",
-      content:
-        "Hi! I'm Agentforce, an AI assistant. I can do things like search for information, summarize records, and draft and revise emails. What can I help you with?",
-    },
-    {
-      id: "3",
-      type: "user",
-      content: "What is the weather like at the resort on June 11th?",
-    },
-    {
-      id: "4",
-      type: "agent",
-      content:
-        "The weather at Coral Cloud Resort on June 11th will have temperatures ranging from 14.6°C to 28.7°C. It sounds like a pleasant day!",
-    },
-    {
-      id: "5",
-      type: "system",
-      content: "Debug mode was activated.",
-      systemType: "debug",
-    },
-    {
-      id: "6",
-      type: "user",
-      content: "What's the weather like today?",
-    },
-    {
-      id: "7",
-      type: "agent",
-      content:
-        "I'm sorry, but it seems there was an issue accessing the weather information at the moment. It might be due to a technical problem with the service. Please try again later or check a reliable weather website or app for the latest updates.",
-    },
-    {
-      id: "8",
-      type: "system",
-      content: "Debug mode was deactivated.",
-      systemType: "debug",
-    },
-    {
-      id: "9",
-      type: "system",
-      content: "Session was terminated.",
-      systemType: "session",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [sessionActive, setSessionActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasSelectedAgent, setHasSelectedAgent] = useState(false);
+
+  useEffect(() => {
+    // Set up message handlers for VS Code communication
+    vscodeApi.onMessage('sessionStarted', (data) => {
+      setSessionActive(true);
+      setIsLoading(false);
+      setHasSelectedAgent(true);
+      if (data) {
+        const welcomeMessage: Message = {
+          id: Date.now().toString(),
+          type: 'agent',
+          content: data.content || "Hi! I'm ready to help. What can I do for you?",
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() - 1).toString(),
+            type: 'system',
+            content: 'Session started successfully.',
+            systemType: 'session',
+            timestamp: new Date().toISOString()
+          },
+          welcomeMessage
+        ]);
+      }
+    });
+
+    vscodeApi.onMessage('sessionStarting', () => {
+      setIsLoading(true);
+      const startingMessage: Message = {
+        id: Date.now().toString(),
+        type: 'system',
+        content: 'Starting session...',
+        systemType: 'session',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, startingMessage]);
+    });
+
+    vscodeApi.onMessage('messageSent', (data) => {
+      setIsLoading(false);
+      if (data && data.content) {
+        const agentMessage: Message = {
+          id: Date.now().toString(),
+          type: 'agent',
+          content: data.content,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, agentMessage]);
+      }
+    });
+
+    vscodeApi.onMessage('messageStarting', () => {
+      setIsLoading(true);
+    });
+
+    vscodeApi.onMessage('error', (data) => {
+      setIsLoading(false);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'system',
+        content: `Error: ${data.message}`,
+        systemType: 'session',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    });
+
+    vscodeApi.onMessage('sessionEnded', () => {
+      setSessionActive(false);
+      setIsLoading(false);
+      const endMessage: Message = {
+        id: Date.now().toString(),
+        type: 'system',
+        content: 'Session ended.',
+        systemType: 'session',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, endMessage]);
+    });
+
+    // Don't start session automatically - wait for agent selection
+    // The user should select an agent first
+
+    return () => {
+      if (sessionActive) {
+        vscodeApi.endSession();
+      }
+    };
+  }, []);
 
   const handleSendMessage = (content: string) => {
-    const newMessage: Message = {
+    if (!sessionActive || isLoading || !hasSelectedAgent) {
+      return;
+    }
+
+    const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
       content,
+      timestamp: new Date().toISOString()
     };
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Send message to VS Code
+    vscodeApi.sendChatMessage(content);
   };
+
+  const handleDebugModeChange = (enabled: boolean) => {
+    setDebugMode(enabled);
+    vscodeApi.setApexDebugging(enabled);
+    
+    const debugMessage: Message = {
+      id: Date.now().toString(),
+      type: 'system',
+      content: `Debug mode ${enabled ? 'activated' : 'deactivated'}.`,
+      systemType: 'debug',
+      timestamp: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, debugMessage]);
+  };
+
+  const handleClearChat = () => {
+    setMessages([]);
+    vscodeApi.clearChat();
+  };
+
+  // Show placeholder when no agent is selected
+  if (!hasSelectedAgent && messages.length === 0) {
+    return (
+      <div className="agent-preview">
+        <div className="agent-preview-placeholder">
+          <div className="placeholder-content">
+            <h3>Welcome to Agent Chat</h3>
+            <p>Select an agent from the dropdown below to start a conversation.</p>
+            <p><strong>Note:</strong> Agents are loaded from your Salesforce org. Only active agents are shown.</p>
+          </div>
+        </div>
+        <FormContainer
+          debugMode={debugMode}
+          onDebugModeChange={handleDebugModeChange}
+          onSendMessage={handleSendMessage}
+          onClearChat={handleClearChat}
+          sessionActive={false}
+          isLoading={isLoading}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="agent-preview">
-      <ChatContainer messages={messages} />
+      <ChatContainer 
+        messages={messages} 
+        isLoading={isLoading}
+      />
       <FormContainer
         debugMode={debugMode}
-        onDebugModeChange={setDebugMode}
+        onDebugModeChange={handleDebugModeChange}
         onSendMessage={handleSendMessage}
+        onClearChat={handleClearChat}
+        sessionActive={sessionActive && hasSelectedAgent}
+        isLoading={isLoading}
       />
     </div>
   );

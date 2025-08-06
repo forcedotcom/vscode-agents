@@ -8,20 +8,36 @@ interface FormContainerProps {
   debugMode: boolean;
   onDebugModeChange: (enabled: boolean) => void;
   onSendMessage: (message: string) => void;
+  onClearChat: () => void;
+  sessionActive: boolean;
+  isLoading: boolean;
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
   debugMode,
   onDebugModeChange,
-  onSendMessage
+  onSendMessage,
+  onClearChat,
+  sessionActive,
+  isLoading
 }) => {
   return (
     <div className="form-container">
       <div className="form-controls">
         <AgentSelector />
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
+        <button 
+          className="clear-chat-button" 
+          onClick={onClearChat}
+          disabled={!sessionActive}
+        >
+          Clear Chat
+        </button>
       </div>
-      <ChatInput onSendMessage={onSendMessage} />
+      <ChatInput 
+        onSendMessage={onSendMessage} 
+        disabled={!sessionActive || isLoading}
+      />
     </div>
   );
 };
