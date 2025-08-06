@@ -17,6 +17,19 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     AgentChatViewProvider.activeInstance = this;
   }
 
+  private postMessageToWebview(message: any): boolean {
+    if (this.webviewView && this.webviewView.webview) {
+      try {
+        this.webviewView.webview.postMessage(message);
+        return true;
+      } catch (error) {
+        console.error('Failed to post message to webview:', error);
+        return false;
+      }
+    }
+    return false;
+  }
+
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -32,7 +45,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async message => {
       try {
         if (message.command === 'startSession') {
-          webviewView.webview.postMessage({
+          this.postMessageToWebview({
             command: 'sessionStarting',
             data: { message: 'Starting session...' }
           });
@@ -46,12 +59,12 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           // Set context to show stop button
           vscode.commands.executeCommand('setContext', 'sf.agent.sessionActive', true);
 
-          webviewView.webview.postMessage({
+          this.postMessageToWebview({
             command: 'sessionConnected',
             data: { message: 'Starting session... done.' }
           });
 
-          webviewView.webview.postMessage({
+          this.postMessageToWebview({
             command: 'sessionStarted',
             data: session.messages.find(msg => msg.type === 'Inform')
           });
@@ -68,7 +81,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           const response = await this.agentPreview.send(this.sessionId, message.text);
 
           await Lifecycle.getInstance().emit('chatResponse', response);
-          webviewView.webview.postMessage({
+          this.postMessageToWebview({
             command: 'chatResponse',
             data: response.messages.find(msg => msg.type === 'Inform')
           });
@@ -96,7 +109,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
             "SELECT Id, MasterLabel FROM BotDefinition WHERE IsDeleted = false AND Id IN (SELECT BotDefinitionId FROM BotVersion WHERE Status='Active') AND DeveloperName != 'Copilot_for_Salesforce'"
           );
           if (query.records.length > 0) {
-            webviewView.webview.postMessage({ command: 'setAgents', data: query.records });
+            this.postMessageToWebview({ command: 'setAgents', data: query.records });
           } else {
             vscode.window.showErrorMessage('There are no agents in the default org');
           }
@@ -110,7 +123,7 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           error.message =
             "Unfortunately, we cannot chat. Please ensure you're using JWT authentication and have followed the <a href='https://developer.salesforce.com/docs/einstein/genai/guide/agent-api-get-started.html'>steps</a> to setup your Connected App";
         }
-        webviewView.webview.postMessage({
+        this.postMessageToWebview({
           command: 'chatError',
           error: error instanceof Error ? error.message : String(error)
         });
@@ -147,12 +160,10 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   public stopSession(): void {
-    if (this.webviewView) {
-      // Send a message to the webview to trigger the stop session functionality
-      this.webviewView.webview.postMessage({ command: 'stopButtonClicked' });
-      // Clear context to show play button
-      vscode.commands.executeCommand('setContext', 'sf.agent.sessionActive', false);
-    }
+    // Send a message to the webview to trigger the stop session functionality
+    this.postMessageToWebview({ command: 'stopButtonClicked' });
+    // Clear context to show play button
+    vscode.commands.executeCommand('setContext', 'sf.agent.sessionActive', false);
   }
 
   public static getActiveInstance(): AgentChatViewProvider | undefined {
@@ -160,13 +171,11 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   public selectAgentFromCommand(agentId: string, agentLabel: string): void {
-    if (this.webviewView) {
-      // Update the webview to reflect the agent selection and start the session
-      this.webviewView.webview.postMessage({
-        command: 'agentSelectedFromCommand',
-        data: { id: agentId, label: agentLabel }
-      });
-    }
+    // Update the webview to reflect the agent selection and start the session
+    this.postMessageToWebview({
+      command: 'agentSelectedFromCommand',
+      data: { id: agentId, label: agentLabel }
+    });
   }
 
   private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {
