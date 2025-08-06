@@ -1,0 +1,28 @@
+.agent-selector {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.agent-select {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 8px 20px 8px 0;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: fit-content;
+  white-space: nowrap;
+}
+
+.chevron-icon {
+  position: absolute;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
