@@ -43,6 +43,9 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
 
+          // Set context to show stop button
+          vscode.commands.executeCommand('setContext', 'sf.agent.sessionActive', true);
+
           webviewView.webview.postMessage({
             command: 'sessionConnected',
             data: { message: 'Starting session... done.' }
@@ -84,6 +87,9 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
           await this.agentPreview.end(this.sessionId, 'UserRequest');
           await this.saveChatToFile(message.data);
           this.agentPreview = undefined;
+          
+          // Clear context to show play button
+          vscode.commands.executeCommand('setContext', 'sf.agent.sessionActive', false);
         } else if (message.command === 'queryAgents') {
           const conn = await CoreExtensionService.getDefaultConnection();
           const query = await conn.query(
@@ -144,6 +150,8 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
     if (this.webviewView) {
       // Send a message to the webview to trigger the stop session functionality
       this.webviewView.webview.postMessage({ command: 'stopButtonClicked' });
+      // Clear context to show play button
+      vscode.commands.executeCommand('setContext', 'sf.agent.sessionActive', false);
     }
   }
 

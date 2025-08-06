@@ -7,6 +7,7 @@
   "agent_chat": "Chat with Agent",
   "clear_chat": "Clear chat with Agent",
   "show_chat_trace": "SFDX: Show Chat Trace",
+  "start_agent_selection": "SFDX: Select Agent",
   "stop_session": "SFDX: Stop Session",
   "refresh_test_title": "Refresh Test Definitions",
   "open_chat_with_agent": "SFDX: Open Chat with Agent",

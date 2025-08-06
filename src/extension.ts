@@ -110,6 +110,11 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
     })
   );
   context.subscriptions.push(
+    vscode.commands.registerCommand(Commands.startAgentSelection, () => {
+      listAgents();
+    })
+  );
+  context.subscriptions.push(
     vscode.commands.registerCommand(Commands.stopSession, () => {
       chatViewProvider.stopSession();
     })
