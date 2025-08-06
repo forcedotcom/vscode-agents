@@ -7,8 +7,10 @@
   "agent_chat": "Chat with Agent",
   "clear_chat": "Clear chat with Agent",
   "show_chat_trace": "SFDX: Show Chat Trace",
+  "stop_session": "SFDX: Stop Session",
   "refresh_test_title": "Refresh Test Definitions",
   "open_chat_with_agent": "SFDX: Open Chat with Agent",
+  "go_to_definition": "SFDX: Go to Definition",
   "go_to_test_results": "SFDX: View Test Results",
   "collapse_tests_title": "Collapse All Test Cases"
 }

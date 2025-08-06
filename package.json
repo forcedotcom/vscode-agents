@@ -126,7 +126,7 @@
       "agent-chat": [
         {
           "id": "sf.agent.chat.view",
-          "name": "%agent_chat%",
+          "name": "%agentforce_dx%",
           "type": "webview",
           "when": "sf:project_opened"
         }
@@ -160,6 +160,11 @@
         },
         {
           "command": "sf.agent.showChatTracer",
+          "when": "view == sf.agent.chat.view",
+          "group": "navigation"
+        },
+        {
+          "command": "sf.agent.stopSession",
           "when": "view == sf.agent.chat.view",
           "group": "navigation"
         }
@@ -218,6 +223,10 @@
     },
     "commands": [
       {
+        "command": "sf.agent.test.view.goToDefinition",
+        "title": "%go_to_definition%"
+      },
+      {
         "command": "sf.agent.test.view.goToTestResults",
         "title": "%go_to_test_results%"
       },
@@ -266,6 +275,11 @@
         "command": "sf.agent.showChatTracer",
         "title": "%show_chat_trace%",
         "icon": "$(list-unordered)"
+      },
+      {
+        "command": "sf.agent.stopSession",
+        "title": "%stop_session%",
+        "icon": "$(debug-stop)"
       }
     ],
     "customEditors": [

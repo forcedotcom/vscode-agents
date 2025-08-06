@@ -12,9 +12,10 @@ interface Message {
 
 interface ChatContainerProps {
   messages: Message[];
+  isThinking?: boolean;
 }
 
-const ChatContainer: React.FC<ChatContainerProps> = ({ messages }) => {
+const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isThinking }) => {
   return (
     <div className="chat-container">
       {messages.map((message) => (
@@ -32,6 +33,14 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages }) => {
           />
         )
       ))}
+      {isThinking && (
+        <div className="thinking-indicator">
+          <ChatMessage
+            type="agent"
+            content="Thinking..."
+          />
+        </div>
+      )}
     </div>
   );
 };

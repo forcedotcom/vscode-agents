@@ -1,0 +1,78 @@
+.agent-selector {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.agent-select {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 8px 20px 8px 0;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: fit-content;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-select.disabled {
+  cursor: default;
+}
+
+.agent-select-text {
+  flex: 1;
+}
+
+.chevron-icon {
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.end-session-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.end-session-btn:hover {
+  background: var(--button-hover);
+  color: var(--text-primary);
+}
+
+.agent-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.agent-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.agent-option:hover {
+  background: var(--button-hover);
+}

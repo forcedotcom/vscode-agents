@@ -12,3 +12,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Whenever a task is finished, play a sound using `afplay /System/Library/Sounds/Funk.aiff`
 - Do not run the server `npm run dev` to preview, I will do it myself
 - Do not provide summaries after completing a task, as they are not needed
+- Always run `npm run compile` from the working directory after completing a task to ensure TypeScript compilation is successful
