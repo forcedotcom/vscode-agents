@@ -7,6 +7,11 @@
   position: relative;
 }
 
+.chat-message.user {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
 .message-icon {
   width: 32px;
   height: 32px;
@@ -26,10 +31,27 @@
   padding-top: 6px;
 }
 
+.chat-message.user .message-content-wrapper {
+  text-align: right;
+}
+
 .message-content {
   font-size: 13px;
   line-height: 1.4;
   color: var(--text-primary);
+}
+
+.chat-message.user .message-content {
+  display: inline-block;
+  background-color: var(--input-background);
+  padding: 8px 12px;
+  border-radius: 12px;
+  border-bottom-right-radius: 4px;
+  max-width: 80%;
+}
+
+.chat-message.agent .message-content {
+  max-width: 80%;
 }
 
 .message-actions {

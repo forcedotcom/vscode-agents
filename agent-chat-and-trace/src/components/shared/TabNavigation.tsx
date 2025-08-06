@@ -1,6 +1,5 @@
 import React from 'react';
 import './TabNavigation.css';
-import ellipsisIcon from '../../assets/ellipsis.svg';
 import commentIcon from '../../assets/comment.svg';
 import treeIcon from '../../assets/tree.svg';
 
@@ -32,9 +31,6 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
           Agent Tracer
         </button>
       </div>
-      <button className="tab-navigation-menu">
-        <img src={ellipsisIcon} alt="Menu" className="ellipsis-icon" />
-      </button>
     </nav>
   );
 };
