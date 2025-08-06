@@ -129,7 +129,7 @@ const listAgents = async () => {
   try {
     const conn = await CoreExtensionService.getDefaultConnection();
     const query = await conn.query(
-      "SELECT Id, MasterLabel FROM BotDefinition WHERE IsDeleted = false AND Id IN (SELECT BotDefinitionId FROM BotVersion WHERE Status='Active') AND DeveloperName \\!='Copilot_for_Salesforce'"
+      "SELECT Id, MasterLabel FROM BotDefinition WHERE IsDeleted = false AND Id IN (SELECT BotDefinitionId FROM BotVersion WHERE Status='Active') AND DeveloperName != 'Copilot_for_Salesforce'"
     );
     
     if (query.records.length === 0) {
