@@ -20,7 +20,7 @@
   "main": "lib/src/extension.js",
   "dependencies": {
     "@oclif/core": "^4.5.2",
-    "@salesforce/agents-bundle": "^0.14.11",
+    "@salesforce/agents-bundle": "^0.17.1",
     "@salesforce/core-bundle": "^8.8.5",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
@@ -41,7 +41,7 @@
     "@vscode/vsce": "^3.2.2",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "3.3.0",
-    "esbuild": "^0.23.1",
+    "esbuild": "^0.25.0",
     "esbuild-plugin-pino": "^2.2.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "9.0.0",

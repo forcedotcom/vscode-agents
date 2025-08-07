@@ -78,20 +78,12 @@ export class AgentTestRunner {
         });
 
       // it's not a real string[], more like just a string  "[&#39;IdentifyRecordByName&#39;]", so "[]", empty, is 2 characters
-      if (tc.generatedData.actionsSequence.length > 2) {
+      if (tc.generatedData?.actionsSequence?.length > 2) {
         channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(JSON.stringify(tc.generatedData.invokedActions, null, 2));
         channelService.appendLine(
           ux.colorizeJson(tc.generatedData.invokedActions, {
-            pretty: true,
-            theme: {
-              key: 'blueBright',
-              string: 'greenBright',
-              number: 'redBright',
-              boolean: 'redBright',
-              null: 'blackBright'
-            }
+            pretty: true
           })
         );
         channelService.appendLine('');
@@ -142,8 +134,6 @@ export class AgentTestRunner {
       channelService.appendLine(`Starting ${test.name} tests: ${new Date().toLocaleString()}`);
       vscode.window.withProgress(
         {
-          //TODO: once we can cancel in progress tests
-          cancellable: false,
           location: vscode.ProgressLocation.Notification,
           title: `Running ${test.name}`
         },
