@@ -137,7 +137,7 @@
         {
           "id": "agent-chat",
           "title": "%agentforce_dx%",
-          "icon": "$(chat-editor-label-icon)"
+          "icon": "images/activity-bar-icon.svg"
         }
       ]
     },
