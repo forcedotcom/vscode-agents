@@ -47,6 +47,9 @@ export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTes
         testDefinitionNode.children.push(testcaseNode);
       });
 
+      // Sort test cases alphabetically by name
+      testDefinitionNode.children.sort((a, b) => a.name.localeCompare(b.name));
+
       aggregator.set(testDefinitionNode.name, testDefinitionNode);
     })
   );
@@ -107,7 +110,12 @@ export class AgentTestOutlineProvider implements vscode.TreeDataProvider<TestNod
     this.rootNode = new AgentTestGroupNode(AGENT_TESTS);
     this.agentTestMap.clear();
     this.agentTestMap = await parseAgentTestsFromProject();
-    this.rootNode.children.push(...Array.from(this.agentTestMap.values()));
+    
+    // Sort test groups alphabetically by name
+    const sortedTestGroups = Array.from(this.agentTestMap.values())
+      .sort((a, b) => a.name.localeCompare(b.name));
+    
+    this.rootNode.children.push(...sortedTestGroups);
     this.refreshView();
   }
 

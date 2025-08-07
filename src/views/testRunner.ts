@@ -19,7 +19,7 @@ import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentTestNode } from '../types';
-import { ux } from '@oclif/core';
+import { formatJson } from '../utils/jsonFormatter';
 
 type AgentTestResults = AgentTestResultsResponse & { id: string };
 
@@ -82,9 +82,7 @@ export class AgentTestRunner {
         channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
         channelService.appendLine(
-          ux.colorizeJson(tc.generatedData.invokedActions, {
-            pretty: true
-          })
+          formatJson(tc.generatedData.invokedActions)
         );
         channelService.appendLine('');
       }
