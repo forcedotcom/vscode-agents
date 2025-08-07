@@ -153,7 +153,7 @@ const listAgents = async () => {
     }));
 
     const selectedAgent = await vscode.window.showQuickPick(items, {
-      placeHolder: 'Select an Agent',
+      placeHolder: 'Preview an Agent',
       canPickMany: false
     });
 

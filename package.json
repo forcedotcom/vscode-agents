@@ -297,7 +297,7 @@
       },
       {
         "command": "sf.agent.listAgents",
-        "title": "Agentforce DX: Select an Agent"
+        "title": "Agentforce DX: Preview an Agent"
       }
     ],
     "customEditors": [
