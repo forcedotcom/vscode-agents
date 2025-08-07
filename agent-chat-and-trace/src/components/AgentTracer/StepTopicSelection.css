@@ -13,6 +13,7 @@
   padding: 0 12px;
   background-color: var(--bg-input);
   height: 35px;
+  min-width: 0; /* Allow header to shrink */
 }
 
 .step-topic-selection-title {
@@ -22,6 +23,10 @@
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 500;
+  min-width: 0; /* Allow title to shrink */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .step-topic-selection-icon {
@@ -104,4 +109,48 @@
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Responsive design for narrow panels */
+@media (max-width: 480px) {
+  .step-topic-selection-header {
+    padding: 0 8px;
+  }
+  
+  .step-topic-selection-expandable {
+    padding: 0 12px;
+  }
+  
+  .step-topic-selection-expandable-content {
+    margin-left: 12px;
+  }
+  
+  .step-topic-selection-title {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 320px) {
+  .step-topic-selection-header {
+    padding: 0 6px;
+  }
+  
+  .step-topic-selection-expandable {
+    padding: 0 8px;
+  }
+  
+  .step-topic-selection-expandable-content {
+    margin-left: 8px;
+  }
+  
+  .step-topic-selection-title {
+    gap: 4px;
+    font-size: 12px;
+  }
+  
+  .step-topic-selection-timing {
+    font-size: 12px;
+  }
 }

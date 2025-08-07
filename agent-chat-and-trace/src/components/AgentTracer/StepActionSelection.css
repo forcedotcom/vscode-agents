@@ -13,6 +13,7 @@
   padding: 0 12px;
   background-color: var(--bg-input);
   height: 35px;
+  min-width: 0;
 }
 
 .step-action-selection-title {
@@ -22,6 +23,10 @@
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .step-action-selection-icon {
@@ -99,4 +104,48 @@
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Responsive design for narrow panels */
+@media (max-width: 480px) {
+  .step-action-selection-header {
+    padding: 0 8px;
+  }
+  
+  .step-action-selection-content {
+    padding: 12px;
+  }
+  
+  .step-action-selection-expandable-content {
+    margin-left: 12px;
+  }
+  
+  .step-action-selection-title {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 320px) {
+  .step-action-selection-header {
+    padding: 0 6px;
+  }
+  
+  .step-action-selection-content {
+    padding: 8px;
+  }
+  
+  .step-action-selection-expandable-content {
+    margin-left: 8px;
+  }
+  
+  .step-action-selection-title {
+    gap: 4px;
+    font-size: 12px;
+  }
+  
+  .step-action-selection-timing {
+    font-size: 12px;
+  }
 }

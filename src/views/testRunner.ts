@@ -106,8 +106,6 @@ export class AgentTestRunner {
       channelService.appendLine(`Starting ${test.name} tests: ${new Date().toLocaleString()}`);
       vscode.window.withProgress(
         {
-          //TODO: once we can cancel in progress tests
-          cancellable: false,
           location: vscode.ProgressLocation.Notification,
           title: `Running ${test.name}`
         },

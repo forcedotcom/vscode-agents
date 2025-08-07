@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import chevronIcon from "../../assets/chevron.svg";
 import "./SessionInfo.css";
 
@@ -11,17 +11,29 @@ interface SessionInfoProps {
 export const SessionInfo: React.FC<SessionInfoProps> = ({
   date,
   sessionId,
-  isExpanded = true,
+  isExpanded: initialExpanded = false,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(initialExpanded);
+
   return (
     <div className="session-info">
-      <img
-        src={chevronIcon}
-        alt="Expand"
-        className={`session-icon ${isExpanded ? "expanded" : ""}`}
-      />
-      <span className="session-title">{date}</span>
-      <span className="session-id">Session ID: {sessionId}</span>
+      <button
+        className="session-info-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <img
+          src={chevronIcon}
+          alt="Expand"
+          className={`session-icon ${isExpanded ? "expanded" : ""}`}
+        />
+        <span className="session-title">Session Details</span>
+      </button>
+      {isExpanded && (
+        <div className="session-info-content">
+          <div className="session-date">{date}</div>
+          <div className="session-id">Session ID: {sessionId}</div>
+        </div>
+      )}
     </div>
   );
 };
