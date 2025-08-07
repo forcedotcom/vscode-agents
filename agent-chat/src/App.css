@@ -8,4 +8,5 @@
 .app-content {
   flex: 1;
   overflow: hidden;
+  min-width: 340px;
 }
