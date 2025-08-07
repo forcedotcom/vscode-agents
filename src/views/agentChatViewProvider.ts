@@ -119,13 +119,19 @@ export class AgentChatViewProvider implements vscode.WebviewViewProvider {
         }
       } catch (error) {
         console.error('Error:', error);
+        
+        // Extract clean error message
+        let errorMessage = error instanceof Error ? error.message : String(error);
+        
         if (error instanceof Error && error.name === 'ERROR_HTTP_404') {
-          error.message =
-            "Unfortunately, we cannot chat. Please ensure you're using JWT authentication and have followed the <a href='https://developer.salesforce.com/docs/einstein/genai/guide/agent-api-get-started.html'>steps</a> to setup your Connected App";
+          errorMessage = "Unfortunately, we cannot chat. Please ensure you're using JWT authentication and have followed the steps to setup your Connected App";
         }
+        
+        // Clear any previous session starting message and show only the error
         this.postMessageToWebview({
           command: 'chatError',
-          error: error instanceof Error ? error.message : String(error)
+          error: errorMessage,
+          clearPrevious: true
         });
       }
     });

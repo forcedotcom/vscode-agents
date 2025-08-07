@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import ChatMessage from './ChatMessage';
 import SystemMessage from './SystemMessage';
 import './ChatContainer.css';
@@ -7,7 +7,7 @@ interface Message {
   id: string;
   type: 'user' | 'agent' | 'system';
   content: string;
-  systemType?: 'session' | 'debug';
+  systemType?: 'session' | 'debug' | 'error';
 }
 
 interface ChatContainerProps {
@@ -16,8 +16,16 @@ interface ChatContainerProps {
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isThinking }) => {
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isThinking]);
+
   return (
-    <div className="chat-container">
+    <div className="chat-container" ref={chatContainerRef}>
       {messages.map((message) => (
         message.type === 'system' ? (
           <SystemMessage

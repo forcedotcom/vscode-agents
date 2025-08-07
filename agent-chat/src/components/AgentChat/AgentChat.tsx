@@ -7,7 +7,7 @@ interface Message {
   id: string;
   type: "user" | "agent" | "system";
   content: string;
-  systemType?: "session" | "debug";
+  systemType?: "session" | "debug" | "error";
 }
 
 const vscode = typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
@@ -34,6 +34,12 @@ const AgentChat: React.FC = () => {
       if (command === 'agentSelectedFromCommand') {
         // Agent selected from VS Code command palette
         setSelectedAgentName(data.label);
+        
+        // Clear previous error messages when starting a new session
+        setMessages(prev => prev.filter(msg => 
+          !(msg.type === 'system' && msg.systemType === 'error')
+        ));
+        
         if (vscode) {
           vscode.postMessage({ command: 'startSession', data: data.id });
         }
@@ -65,15 +71,22 @@ const AgentChat: React.FC = () => {
           data.message.includes("help")
         );
         
-        setMessages(prev => [
-          ...prev,
-          { 
-            id: Date.now().toString(), 
-            type: isAgentMessage ? 'agent' : 'system',
-            content: data.message,
-            ...(isAgentMessage ? {} : { systemType: 'session' })
-          }
-        ]);
+        // Clear previous error messages on successful connection
+        setMessages(prev => {
+          const messagesWithoutErrors = prev.filter(msg => 
+            !(msg.type === 'system' && msg.systemType === 'error')
+          );
+          
+          return [
+            ...messagesWithoutErrors,
+            { 
+              id: Date.now().toString(), 
+              type: isAgentMessage ? 'agent' : 'system',
+              content: data.message,
+              ...(isAgentMessage ? {} : { systemType: 'session' })
+            }
+          ];
+        });
         setSendDisabled(false);
         setTimeout(() => inputRef.current?.focus(), 0);
       } else if (command === 'chatResponse') {
@@ -89,15 +102,21 @@ const AgentChat: React.FC = () => {
         setSendDisabled(false);
         setTimeout(() => inputRef.current?.focus(), 0);
       } else if (command === 'chatError') {
-        setMessages(prev => [
-          ...prev, 
-          { 
-            id: Date.now().toString(), 
-            type: 'system', 
-            content: error,
-            systemType: 'session'
-          }
-        ]);
+        const { clearPrevious } = event.data;
+        setMessages(prev => {
+          const filteredMessages = clearPrevious
+            ? prev.filter(msg => !(msg.type === 'system' && msg.content === 'Starting session...'))
+            : prev;
+          return [
+            ...filteredMessages,
+            {
+              id: Date.now().toString(),
+              type: 'system',
+              content: error,
+              systemType: 'error'
+            }
+          ];
+        });
       } else if (command === 'stopButtonClicked') {
         // Handle stop button click from VSCode panel header
         handleEndSession();

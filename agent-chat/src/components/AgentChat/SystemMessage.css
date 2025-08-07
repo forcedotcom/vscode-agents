@@ -10,3 +10,12 @@
   color: var(--color-debug);
   font-weight: 500;
 }
+
+.system-message.error {
+  color: #f14c4c;
+  font-weight: 500;
+  background-color: rgba(241, 76, 76, 0.1);
+  border-radius: 4px;
+  padding: 8px 16px;
+  border-left: 3px solid #f14c4c;
+}
