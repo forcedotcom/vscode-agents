@@ -4,7 +4,7 @@ import * as path from 'path';
 import { AgentPreview, Agent } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
 // import { Lifecycle } from '@salesforce/core-bundle';
-// import type { ApexLog } from '@salesforce/types/tooling';
+import type { ApexLog } from '@salesforce/types/tooling';
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.combined.view';
@@ -70,6 +70,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           
           console.log('Starting session with agent ID:', agentId);
           this.agentPreview = new AgentPreview(conn, agentId);
+          
+          // Enable debug mode if apex debugging is active
+          if (this.apexDebugging) {
+            this.agentPreview.toggleApexDebugMode(this.apexDebugging);
+          }
 
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
@@ -83,6 +88,15 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           });
         } else if (message.command === 'setApexDebugging') {
           this.apexDebugging = message.data;
+          // If we have an active agent preview, update its debug mode
+          if (this.agentPreview) {
+            this.agentPreview.toggleApexDebugMode(this.apexDebugging);
+          }
+          
+          webviewView.webview.postMessage({
+            command: 'debugModeChanged',
+            data: { enabled: this.apexDebugging }
+          });
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
             throw new Error('Session has not been started.');
@@ -93,20 +107,59 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             data: { message: 'Sending message...' }
           });
 
-          const session = await this.agentPreview.send(this.sessionId, message.data.message);
+          const response = await this.agentPreview.send(this.sessionId, message.data.message);
 
           // Get the latest agent response
-          const latestMessage = session.messages.at(-1);
+          const latestMessage = response.messages.at(-1);
           webviewView.webview.postMessage({
             command: 'messageSent',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data: latestMessage ? { content: (latestMessage as any).message || (latestMessage as any).data || (latestMessage as any).body || "I received your message." } : { content: "I received your message." }
           });
 
-          if (this.apexDebugging) {
-            // Note: getApexLogs method needs to be implemented in CoreExtensionService
-            // For now, commenting out this functionality
-            // TODO: Implement Apex debugging functionality
+          if (this.apexDebugging && response.apexDebugLog) {
+            try {
+              const logPath = await this.saveApexDebugLog(response.apexDebugLog);
+              if (logPath) {
+                // Try to launch the apex replay debugger if the command is available
+                try {
+                    await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
+                    
+                    // Notify webview that debug log was processed and debugger launched
+                    webviewView.webview.postMessage({
+                      command: 'debugLogProcessed',
+                      data: { 
+                        message: `Debug log saved and Apex Replay Debugger launched. Log file: ${logPath}`,
+                        logPath: logPath
+                      }
+                    });
+             
+                } catch (commandErr) {
+                  // If command execution fails, just log it but don't show user message
+                  console.warn('Could not launch Apex Replay Debugger:', commandErr);
+                }
+              }
+            } catch (err) {
+              console.error('Error handling apex debug log:', err);
+              const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+              vscode.window.showErrorMessage(`Error processing debug log: ${errorMessage}`);
+              
+              // Notify webview about the error
+              webviewView.webview.postMessage({
+                command: 'debugLogError',
+                data: { 
+                  message: `Error processing debug log: ${errorMessage}`
+                }
+              });
+            }
+          } else if (this.apexDebugging && !response.apexDebugLog) {
+            // Debug mode is enabled but no debug log was returned
+            webviewView.webview.postMessage({
+              command: 'debugLogInfo',
+              data: { 
+                message: 'Debug mode is enabled, but no Apex debug log was generated for this request.'
+              }
+            });
           }
         } else if (message.command === 'endSession') {
           if (this.agentPreview && this.sessionId) {
@@ -222,6 +275,44 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         command: 'configuration',
         data: { section: 'agentforceDx.showAgentTracer', value: showAgentTracer }
       });
+    }
+  }
+
+  private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {
+    try {
+      const conn = await CoreExtensionService.getDefaultConnection();
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage('No workspace folder found to save apex debug logs.');
+        return undefined;
+      }
+
+      const logId = apexLog.Id;
+      if (!logId) {
+        vscode.window.showErrorMessage('No Apex debug log ID found.');
+        return undefined;
+      }
+
+      // Get the log content from Salesforce
+      // Apex debug logs are retrieved via the Tooling API
+      const url = `${conn.tooling._baseUrl()}/sobjects/ApexLog/${logId}/Body`;
+      const logContent = await conn.tooling.request(url);
+
+      // Apex debug logs are written to: .sfdx/tools/debug/logs
+      const apexDebugLogPath = vscode.Uri.joinPath(workspaceFolder.uri, '.sfdx', 'tools', 'debug', 'logs');
+      await vscode.workspace.fs.createDirectory(apexDebugLogPath);
+      const filePath = vscode.Uri.joinPath(apexDebugLogPath, `${logId}.log`);
+
+      // Write apex debug log to file
+      const logContentStr = typeof logContent === 'string' ? logContent : JSON.stringify(logContent);
+      await vscode.workspace.fs.writeFile(filePath, Buffer.from(logContentStr));
+
+      vscode.window.showInformationMessage(`Apex debug log saved to ${filePath.path}`);
+      return filePath.path;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      vscode.window.showErrorMessage(`Error saving Apex debug log: ${errorMessage}`);
+      return undefined;
     }
   }
 }

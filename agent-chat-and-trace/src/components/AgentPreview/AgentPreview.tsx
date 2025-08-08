@@ -102,6 +102,58 @@ const AgentPreview: React.FC = () => {
       setMessages(prev => [...prev, endMessage]);
     });
 
+    vscodeApi.onMessage('debugModeChanged', (data) => {
+      if (data && data.message) {
+        const debugMessage: Message = {
+          id: Date.now().toString(),
+          type: 'system',
+          content: data.message,
+          systemType: 'debug',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, debugMessage]);
+      }
+    });
+
+    vscodeApi.onMessage('debugLogProcessed', (data) => {
+      if (data && data.message) {
+        const logMessage: Message = {
+          id: Date.now().toString(),
+          type: 'system',
+          content: data.message,
+          systemType: 'debug',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, logMessage]);
+      }
+    });
+
+    vscodeApi.onMessage('debugLogError', (data) => {
+      if (data && data.message) {
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          type: 'system',
+          content: data.message,
+          systemType: 'error',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    });
+
+    vscodeApi.onMessage('debugLogInfo', (data) => {
+      if (data && data.message) {
+        const infoMessage: Message = {
+          id: Date.now().toString(),
+          type: 'system',
+          content: data.message,
+          systemType: 'debug',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, infoMessage]);
+      }
+    });
+
     // Don't start session automatically - wait for agent selection
     // The user should select an agent first
 
