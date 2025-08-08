@@ -6,9 +6,10 @@ import treeIcon from '../../assets/tree.svg';
 interface TabNavigationProps {
   activeTab: 'preview' | 'tracer';
   onTabChange: (tab: 'preview' | 'tracer') => void;
+  showTracerTab?: boolean;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
+const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, showTracerTab = false }) => {
   const handleTabClick = (tab: 'preview' | 'tracer') => {
     onTabChange(tab);
   };
@@ -23,13 +24,15 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
           <img src={commentIcon} alt="Comment" className="tab-icon-svg" />
           Agent Preview
         </button>
-        <button 
-          className={`tab ${activeTab === 'tracer' ? 'active' : ''}`}
-          onClick={() => handleTabClick('tracer')}
-        >
-          <img src={treeIcon} alt="Tree" className="tab-icon-svg" />
-          Agent Tracer
-        </button>
+        {showTracerTab && (
+          <button 
+            className={`tab ${activeTab === 'tracer' ? 'active' : ''}`}
+            onClick={() => handleTabClick('tracer')}
+          >
+            <img src={treeIcon} alt="Tree" className="tab-icon-svg" />
+            Agent Tracer
+          </button>
+        )}
       </div>
     </nav>
   );

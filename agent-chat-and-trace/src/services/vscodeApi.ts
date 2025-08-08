@@ -89,6 +89,11 @@ class VSCodeApiService {
   clearChat() {
     this.postMessage('clearChat');
   }
+
+  // Get configuration values
+  getConfiguration(section: string) {
+    this.postMessage('getConfiguration', { section });
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

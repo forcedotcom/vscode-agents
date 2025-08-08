@@ -113,6 +113,16 @@
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "configuration": {
+      "title": "Agentforce DX",
+      "properties": {
+        "agentforceDx.showAgentTracer": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the Agent Tracer tab in the Agent Preview panel"
+        }
+      }
+    },
     "views": {
       "test": [
         {

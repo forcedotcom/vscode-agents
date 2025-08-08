@@ -11,8 +11,18 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private agentPreview?: AgentPreview;
   private sessionId = Date.now().toString();
   private apexDebugging = false;
+  private webviewView?: vscode.WebviewView;
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  constructor(private readonly context: vscode.ExtensionContext) {
+    // Listen for configuration changes
+    this.context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration('agentforceDx.showAgentTracer')) {
+          this.notifyConfigurationChange();
+        }
+      })
+    );
+  }
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -21,6 +31,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _token: vscode.CancellationToken
   ) {
+    this.webviewView = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'agent-chat-and-trace', 'dist')]
@@ -159,6 +170,17 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               traces: [] // Placeholder for actual trace data
             }
           });
+        } else if (message.command === 'getConfiguration') {
+          // Get configuration values
+          const config = vscode.workspace.getConfiguration();
+          const section = message.data?.section;
+          if (section) {
+            const value = config.get(section);
+            webviewView.webview.postMessage({
+              command: 'configuration',
+              data: { section, value }
+            });
+          }
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
@@ -190,5 +212,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     html = html.replace('</head>', `${vscodeScript}</head>`);
     
     return html;
+  }
+
+  private notifyConfigurationChange() {
+    if (this.webviewView) {
+      const config = vscode.workspace.getConfiguration();
+      const showAgentTracer = config.get('agentforceDx.showAgentTracer');
+      this.webviewView.webview.postMessage({
+        command: 'configuration',
+        data: { section: 'agentforceDx.showAgentTracer', value: showAgentTracer }
+      });
+    }
   }
 }
