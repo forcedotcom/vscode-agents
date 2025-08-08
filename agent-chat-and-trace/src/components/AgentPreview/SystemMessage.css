@@ -10,3 +10,8 @@
   color: var(--color-debug);
   font-weight: 500;
 }
+
+.system-message.error {
+  color: #ff6b6b;
+  font-weight: 500;
+}

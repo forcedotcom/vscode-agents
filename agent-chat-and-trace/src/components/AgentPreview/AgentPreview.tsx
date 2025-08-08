@@ -69,14 +69,24 @@ const AgentPreview: React.FC = () => {
 
     vscodeApi.onMessage('error', (data) => {
       setIsLoading(false);
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        type: 'system',
-        content: `Error: ${data.message}`,
-        systemType: 'session',
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      
+      // Remove the "Starting session..." message if it exists
+      setMessages(prev => {
+        const filteredMessages = prev.filter(msg => 
+          !(msg.type === 'system' && msg.content === 'Starting session...')
+        );
+        
+        // Add the error message
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          type: 'system',
+          content: `Error: ${data.message}`,
+          systemType: 'error',
+          timestamp: new Date().toISOString()
+        };
+        
+        return [...filteredMessages, errorMessage];
+      });
     });
 
     vscodeApi.onMessage('sessionEnded', () => {

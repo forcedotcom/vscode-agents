@@ -7,7 +7,7 @@ interface Message {
   id: string;
   type: 'user' | 'agent' | 'system';
   content: string;
-  systemType?: 'session' | 'debug';
+  systemType?: 'session' | 'debug' | 'error';
   timestamp?: string;
 }
 
