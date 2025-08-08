@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
 import SystemMessage from './SystemMessage';
 import './ChatContainer.css';
@@ -17,6 +17,15 @@ interface ChatContainerProps {
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) => {
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change or when loading
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isLoading]);
+
   return (
     <div className="chat-container">
       {messages.map((message) => (
@@ -43,6 +52,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) =>
           </div>
         </div>
       )}
+      {/* Invisible element at the bottom for auto-scrolling */}
+      <div ref={chatEndRef} />
     </div>
   );
 };
