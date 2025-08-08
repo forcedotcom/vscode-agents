@@ -132,7 +132,7 @@
           "when": "sf:project_opened"
         }
       ],
-      "agent-combined": [
+      "agentforce-dx": [
         {
           "id": "sf.agent.combined.view",
           "name": "%agent_combined%",
@@ -144,9 +144,9 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "agent-combined",
-          "title": "%agentforce_dx%",
-          "icon": "$(chat-editor-label-icon)"
+          "id": "agentforce-dx",
+          "title": "Agentforce DX",
+          "icon": "images/activity-bar-icon.svg"
         }
       ]
     },
