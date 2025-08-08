@@ -107,7 +107,8 @@
     }
   },
   "extensionDependencies": [
-    "salesforce.salesforcedx-vscode-core"
+    "salesforce.salesforcedx-vscode-core",
+    "salesforce.salesforcedx-vscode-apex-replay-debugger"
   ],
   "activationEvents": [
     "workspaceContains:sfdx-project.json"

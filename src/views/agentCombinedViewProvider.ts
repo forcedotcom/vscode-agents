@@ -126,13 +126,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
                     
                     // Notify webview that debug log was processed and debugger launched
-                    webviewView.webview.postMessage({
-                      command: 'debugLogProcessed',
-                      data: { 
-                        message: `Debug log saved and Apex Replay Debugger launched. Log file: ${logPath}`,
-                        logPath: logPath
-                      }
-                    });
+                    // webviewView.webview.postMessage({
+                    //   command: 'debugLogProcessed',
+                    //   data: { 
+                    //     message: `Debug log saved and Apex Replay Debugger launched. Log file: ${logPath}`,
+                    //     logPath: logPath
+                    //   }
+                    // });
              
                 } catch (commandErr) {
                   // If command execution fails, just log it but don't show user message
@@ -307,7 +307,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       const logContentStr = typeof logContent === 'string' ? logContent : JSON.stringify(logContent);
       await vscode.workspace.fs.writeFile(filePath, Buffer.from(logContentStr));
 
-      vscode.window.showInformationMessage(`Apex debug log saved to ${filePath.path}`);
       return filePath.path;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
