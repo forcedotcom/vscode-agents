@@ -160,7 +160,7 @@
         },
         {
           "command": "sf.agent.showChatTracer",
-          "when": "view == sf.agent.chat.view",
+          "when": "view == sf.agent.chat.view && config.agentforceDx.enableAgentTracer",
           "group": "navigation@2"
         },
         {
@@ -314,6 +314,16 @@
         ],
         "priority": "default"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Agentforce DX",
+      "properties": {
+        "agentforceDx.enableAgentTracer": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the Agent Tracer tab for debugging agent conversations. When disabled, the tracer tab will be hidden."
+        }
+      }
+    }
   }
 }

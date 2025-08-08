@@ -128,6 +128,17 @@ const registerAgentChatView = (context: vscode.ExtensionContext): void => {
 };
 
 const showChatTracer = () => {
+  // Check if agent tracer is enabled in settings
+  const config = vscode.workspace.getConfiguration('agentforceDx');
+  const isTracerEnabled = config.get<boolean>('enableAgentTracer', false);
+  
+  if (!isTracerEnabled) {
+    vscode.window.showWarningMessage(
+      'Agent Tracer is disabled. Enable it in settings under "Agentforce DX: Enable Agent Tracer" to use this feature.'
+    );
+    return;
+  }
+
   const uri = vscode.Uri.parse('agent-trace://chattrace/ChatTrace.chattrace');
   vscode.commands.executeCommand('vscode.openWith', uri, Commands.showChatTracer, {
     viewColumn: vscode.ViewColumn.One,
