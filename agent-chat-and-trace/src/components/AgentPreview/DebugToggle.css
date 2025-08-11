@@ -2,6 +2,8 @@
   display: flex;
   align-items: center;
   padding: 0;
+  min-width: 0; /* Allow shrinking */
+  flex-shrink: 1;
 }
 
 .debug-toggle-label {
@@ -11,6 +13,8 @@
   cursor: pointer;
   color: var(--text-secondary);
   font-size: 13px;
+  min-width: 0; /* Allow shrinking */
+  flex-shrink: 1;
 }
 
 .debug-toggle-checkbox {
@@ -18,12 +22,13 @@
 }
 
 .debug-toggle-slider {
-  width: 32px;
-  height: 18px;
+  width: 28px; /* Slightly smaller for better fit */
+  height: 16px;
   background-color: var(--text-muted);
-  border-radius: 9px;
+  border-radius: 8px;
   position: relative;
   transition: background-color 0.3s;
+  flex-shrink: 0; /* Don't shrink the slider */
 }
 
 .debug-toggle-slider::after {
@@ -31,8 +36,8 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background-color: var(--text-primary);
   border-radius: 50%;
   transition: transform 0.3s;
@@ -43,6 +48,41 @@
 }
 
 .debug-toggle-checkbox:checked + .debug-toggle-slider::after {
-  transform: translateX(16px);
+  transform: translateX(14px); /* Adjusted for smaller slider */
   background-color: var(--text-primary);
+}
+
+.debug-toggle-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Responsive behavior for very narrow containers */
+@container (max-width: 240px) {
+  .debug-toggle-text {
+    display: none; /* Hide text in very narrow spaces */
+  }
+  
+  .debug-toggle-label {
+    gap: 0;
+  }
+}
+
+/* Even more compact for extremely narrow spaces */
+@container (max-width: 200px) {
+  .debug-toggle-slider {
+    width: 24px;
+    height: 14px;
+  }
+  
+  .debug-toggle-slider::after {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .debug-toggle-checkbox:checked + .debug-toggle-slider::after {
+    transform: translateX(12px);
+  }
 }

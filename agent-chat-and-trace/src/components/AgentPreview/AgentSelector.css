@@ -2,6 +2,8 @@
   display: flex;
   align-items: center;
   position: relative;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .agent-select {
@@ -17,6 +19,10 @@
   -moz-appearance: none;
   width: fit-content;
   white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chevron-icon {
@@ -25,4 +31,25 @@
   width: 12px;
   height: 12px;
   pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* Responsive adjustments for narrow containers */
+@container (max-width: 240px) {
+  .agent-select {
+    padding: 6px 18px 6px 0;
+    font-size: 12px;
+  }
+  
+  .chevron-icon {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@container (max-width: 200px) {
+  .agent-select {
+    padding: 4px 16px 4px 0;
+    font-size: 11px;
+  }
 }
