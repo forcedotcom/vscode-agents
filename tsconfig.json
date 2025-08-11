@@ -10,7 +10,12 @@
     "sourceMap": true,
     "rootDir": ".",
     "strict": true,
-    "moduleResolution": "node16",
+    "moduleResolution": "Node16",
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@salesforce/types/tooling": ["node_modules/@salesforce/types/lib/tooling.d.ts"]
+    },
     /* Additional Checks */
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": true,

@@ -19,6 +19,7 @@ import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentTestNode } from '../types';
+import { formatJson } from '../utils/jsonFormatter';
 
 type AgentTestResults = AgentTestResultsResponse & { id: string };
 
@@ -76,6 +77,16 @@ export class AgentTestRunner {
           channelService.appendLine('');
         });
 
+      // it's not a real string[], more like just a string  "[&#39;IdentifyRecordByName&#39;]", so "[]", empty, is 2 characters
+      if (tc.generatedData?.actionsSequence?.length > 2) {
+        channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
+        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+        channelService.appendLine(
+          formatJson(tc.generatedData.invokedActions)
+        );
+        channelService.appendLine('');
+      }
+
       const metricResults = tc.testResults
         // this is the output for metric information
         // filter out the standard evaluations (topics/action/output)
@@ -121,8 +132,6 @@ export class AgentTestRunner {
       channelService.appendLine(`Starting ${test.name} tests: ${new Date().toLocaleString()}`);
       vscode.window.withProgress(
         {
-          //TODO: once we can cancel in progress tests
-          cancellable: false,
           location: vscode.ProgressLocation.Notification,
           title: `Running ${test.name}`
         },
