@@ -6,6 +6,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { getAgentNameFromFile, getAgentNameFromPath } from '../../src/commands/agentUtils';
 
 describe('Bot Version File System Lookup', () => {
@@ -16,7 +17,7 @@ describe('Bot Version File System Lookup', () => {
   });
 
   it('should extract bot name from .bot-meta.xml filename', async () => {
-    const mockFilePath = '/path/to/force-app/main/default/botVersions/TestAgent/v1.botVersion-meta.xml';
+    const mockFilePath = path.join('path', 'to', 'force-app', 'main', 'default', 'botVersions', 'TestAgent', 'v1.botVersion-meta.xml');
     
     const mockFiles: [string, vscode.FileType][] = [
       ['v1.botVersion-meta.xml', vscode.FileType.File],
@@ -31,12 +32,12 @@ describe('Bot Version File System Lookup', () => {
   });
 
   it('should handle bot metadata files directly', async () => {
-    const botName = await getAgentNameFromFile('TestAgent.bot-meta.xml', '/path/to/TestAgent.bot-meta.xml');
+    const botName = await getAgentNameFromFile('TestAgent.bot-meta.xml', path.join('path', 'to', 'TestAgent.bot-meta.xml'));
     expect(botName).toBe('TestAgent');
   });
 
   it('should handle case when no .bot-meta.xml file is found', async () => {
-    const mockFilePath = '/path/to/force-app/main/default/botVersions/TestAgent/v1.botVersion-meta.xml';
+    const mockFilePath = path.join('path', 'to', 'force-app', 'main', 'default', 'botVersions', 'TestAgent', 'v1.botVersion-meta.xml');
     
     const mockFiles: [string, vscode.FileType][] = [
       ['v1.botVersion-meta.xml', vscode.FileType.File],
@@ -50,7 +51,7 @@ describe('Bot Version File System Lookup', () => {
   });
 
   it('should ignore directories and only look at files', async () => {
-    const mockFilePath = '/path/to/force-app/main/default/botVersions/TestAgent/v1.botVersion-meta.xml';
+    const mockFilePath = path.join('path', 'to', 'force-app', 'main', 'default', 'botVersions', 'TestAgent', 'v1.botVersion-meta.xml');
     
     const mockFiles: [string, vscode.FileType][] = [
       ['v1.botVersion-meta.xml', vscode.FileType.File],
@@ -65,7 +66,7 @@ describe('Bot Version File System Lookup', () => {
   });
 
   it('should fall back to filename if file system lookup fails', async () => {
-    const mockFilePath = '/path/to/v1.botVersion-meta.xml';
+    const mockFilePath = path.join('path', 'to', 'v1.botVersion-meta.xml');
     
     (vscode.workspace.fs.readDirectory as jest.Mock).mockRejectedValue(new Error('File read error'));
     
@@ -83,7 +84,7 @@ describe('Directory Path Handling', () => {
   });
 
   it('should handle directory paths and find bot name from .bot-meta.xml file', async () => {
-    const mockDirectoryPath = '/path/to/force-app/main/default/bots/TestAgent';
+    const mockDirectoryPath = path.join('path', 'to', 'force-app', 'main', 'default', 'bots', 'TestAgent');
     
     const mockFiles: [string, vscode.FileType][] = [
       ['v1.botVersion-meta.xml', vscode.FileType.File],
@@ -105,7 +106,7 @@ describe('Directory Path Handling', () => {
   });
 
   it('should handle file paths by delegating to getAgentNameFromFile', async () => {
-    const mockFilePath = '/path/to/force-app/main/default/botVersions/TestAgent/v1.botVersion-meta.xml';
+    const mockFilePath = path.join('path', 'to', 'force-app', 'main', 'default', 'botVersions', 'TestAgent', 'v1.botVersion-meta.xml');
     
     const mockFiles: [string, vscode.FileType][] = [
       ['v1.botVersion-meta.xml', vscode.FileType.File],
@@ -125,7 +126,7 @@ describe('Directory Path Handling', () => {
   });
 
   it('should fall back to directory name if no .bot-meta.xml file found in directory', async () => {
-    const mockDirectoryPath = '/path/to/force-app/main/default/botVersions/MyBot';
+    const mockDirectoryPath = path.join('path', 'to', 'force-app', 'main', 'default', 'botVersions', 'MyBot');
     
     const mockFiles: [string, vscode.FileType][] = [
       ['v1.botVersion-meta.xml', vscode.FileType.File],
@@ -144,7 +145,7 @@ describe('Directory Path Handling', () => {
   });
 
   it('should handle directories in bots path structure', async () => {
-    const mockDirectoryPath = '/path/to/force-app/main/default/bots/MyAgent';
+    const mockDirectoryPath = path.join('path', 'to', 'force-app', 'main', 'default', 'bots', 'MyAgent');
     
     const mockFiles: [string, vscode.FileType][] = [
       ['MyAgent.bot-meta.xml', vscode.FileType.File],
@@ -162,7 +163,7 @@ describe('Directory Path Handling', () => {
   });
 
   it('should handle directory read errors gracefully', async () => {
-    const mockDirectoryPath = '/path/to/force-app/main/default/botVersions/ErrorBot';
+    const mockDirectoryPath = path.join('path', 'to', 'force-app', 'main', 'default', 'botVersions', 'ErrorBot');
     
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({
       type: vscode.FileType.Directory
