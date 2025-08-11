@@ -122,17 +122,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               const logPath = await this.saveApexDebugLog(response.apexDebugLog);
               if (logPath) {
                 // Try to launch the apex replay debugger if the command is available
-                try {
+                try {     
+                    // Auto-continue the debugger to run until it hits actual Apex code with breakpoints
+                    // This eliminates the need for manual user interaction (clicking "Continue" button)
+                    this.setupAutoDebugListeners();
                     await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
                     
-                    // Notify webview that debug log was processed and debugger launched
-                    // webviewView.webview.postMessage({
-                    //   command: 'debugLogProcessed',
-                    //   data: { 
-                    //     message: `Debug log saved and Apex Replay Debugger launched. Log file: ${logPath}`,
-                    //     logPath: logPath
-                    //   }
-                    // });
+             
+
              
                 } catch (commandErr) {
                   // If command execution fails, just log it but don't show user message
@@ -276,6 +273,66 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         data: { section: 'agentforceDx.showAgentTracer', value: showAgentTracer }
       });
     }
+  }
+
+  /**
+   * Automatically continues the Apex Replay Debugger after it's launched,
+   * eliminating the need for manual user interaction (clicking "Continue" button).
+   * 
+   * The debugger initially stops at the first instruction in the log, but users
+   * typically want to continue execution until they reach actual Apex code where
+   * they have set breakpoints. This method automates that process.
+   */
+  private setupAutoDebugListeners(): void {
+    let debuggerLaunched = false;
+    const disposables: vscode.Disposable[] = [];
+    
+    // Clean up function
+    const cleanup = () => {
+      disposables.forEach(d => d.dispose());
+    };
+    
+    // Listen for debug session start
+    const startDisposable = vscode.debug.onDidStartDebugSession((session) => {
+      console.log(`Debug session started - Type: "${session.type}", Name: "${session.name}"`);
+      
+      // Check if this is an Apex replay debugger session
+      if (session.type === 'apex-replay' || 
+          session.type === 'apex' ||
+          session.name?.toLowerCase().includes('apex') ||
+          session.name?.toLowerCase().includes('replay')) {
+        
+        debuggerLaunched = true;
+        console.log(`Apex replay debugger session detected: ${session.name}`);
+        
+        // Set up a timer to continue the debugger once it's ready
+        // We need to wait for the debugger to fully initialize and stop at the first instruction
+        setTimeout(async () => {
+          try {
+            if (vscode.debug.activeDebugSession) {
+              console.log('Auto-continuing Apex replay debugger to reach breakpoints...');
+              await vscode.commands.executeCommand('workbench.action.debug.continue');
+              console.log('Successfully auto-continued Apex replay debugger');
+            }
+          } catch (continueErr) {
+            console.warn('Could not auto-continue Apex replay debugger:', continueErr);
+          }
+          
+          // Clean up listeners after attempting to continue
+          cleanup();
+        }, 1000); // 1 second delay to ensure debugger is fully ready
+      }
+    });
+    disposables.push(startDisposable);
+    
+    // Failsafe cleanup after 15 seconds
+    const timeoutDisposable = setTimeout(() => {
+      if (!debuggerLaunched) {
+        console.log('No Apex debugger session detected within timeout, cleaning up auto-continue listeners');
+      }
+      cleanup();
+    }, 15000);
+    disposables.push({ dispose: () => clearTimeout(timeoutDisposable) });
   }
 
   private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {
