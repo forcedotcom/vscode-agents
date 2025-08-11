@@ -3,13 +3,14 @@
 // Config ref: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "Node16",
     "target": "ES2021",
     "outDir": "lib",
     "lib": ["ES2021", "DOM", "DOM.Iterable"],
     "sourceMap": true,
     "rootDir": ".",
     "strict": true,
+    "moduleResolution": "node16",
     /* Additional Checks */
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": true,

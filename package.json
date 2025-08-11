@@ -155,7 +155,35 @@
       "editor/context": [
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "group": "agent@2"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.deactivateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "group": "agent@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "group": "agent@2"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.deactivateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "group": "agent@3"
         }
       ]
     },
@@ -163,6 +191,14 @@
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.activateAgent",
+        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.deactivateAgent",
+        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
       },
       {
         "command": "sf.agent.test.view.runAll",
@@ -221,6 +257,14 @@
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.activateAgent",
+        "title": "%salesforcedx-vscode-agents.activateAgent%"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.deactivateAgent",
+        "title": "%salesforcedx-vscode-agents.deactivateAgent%"
       }
     ]
   }
