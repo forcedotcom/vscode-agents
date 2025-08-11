@@ -35,6 +35,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
     disposables.push(commands.registerOpenAgentInOrgCommand());
+    disposables.push(commands.registerActivateAgentCommand());
+    disposables.push(commands.registerDeactivateAgentCommand());
     context.subscriptions.push(registerTestView());
 
     // Update the test view without blocking activation
