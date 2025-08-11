@@ -37,7 +37,12 @@ const App: React.FC = () => {
         showTracerTab={showTracerTab}
       />
       <div className="app-content">
-        {activeTab === 'preview' ? <AgentPreview /> : <AgentTracer />}
+        <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
+          <AgentPreview />
+        </div>
+        <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
+          <AgentTracer />
+        </div>
       </div>
     </div>
   );
