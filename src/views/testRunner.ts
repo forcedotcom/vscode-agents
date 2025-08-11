@@ -14,20 +14,35 @@ import {
   humanFriendlyName,
   metric
 } from '@salesforce/agents-bundle';
-import { Lifecycle } from '@salesforce/core-bundle';
+import { Lifecycle, ConfigAggregator } from '@salesforce/core-bundle';
 import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentTestNode } from '../types';
+import { formatJson } from '../utils/jsonFormatter';
+
+type AgentTestResults = AgentTestResultsResponse & { id: string };
 
 export class AgentTestRunner {
-  private testGroupNameToResult = new Map<string, AgentTestResultsResponse>();
+  private testGroupNameToResult = new Map<string, AgentTestResults>();
   constructor(private testOutline: AgentTestOutlineProvider) {}
 
   public displayTestDetails(test: TestNode) {
     const channelService = CoreExtensionService.getChannelService();
     channelService.showChannelOutput();
     channelService.clear();
+    if (test.parentName == '') {
+      // this is the parent test group, so we only show the test summary, test id
+      const result = this.testGroupNameToResult.get(test.name);
+      if (result) {
+        channelService.appendLine(`Job Id: ${result.id}`);
+        this.printTestSummary(result!);
+      } else {
+        vscode.window.showErrorMessage('You need to run the test first to see its results.');
+      }
+
+      return;
+    }
 
     const resultFromMap = this.testGroupNameToResult.get(test.name) ?? this.testGroupNameToResult.get(test.parentName);
     if (!resultFromMap) {
@@ -61,6 +76,16 @@ export class AgentTestRunner {
           channelService.appendLine(`SCORE    : ${tr.score}`);
           channelService.appendLine('');
         });
+
+      // it's not a real string[], more like just a string  "[&#39;IdentifyRecordByName&#39;]", so "[]", empty, is 2 characters
+      if (tc.generatedData?.actionsSequence?.length > 2) {
+        channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
+        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+        channelService.appendLine(
+          formatJson(tc.generatedData.invokedActions)
+        );
+        channelService.appendLine('');
+      }
 
       const metricResults = tc.testResults
         // this is the output for metric information
@@ -96,9 +121,7 @@ export class AgentTestRunner {
     const telemetryService = CoreExtensionService.getTelemetryService();
     telemetryService.sendCommandEvent('RunAgentTest');
     try {
-      let passing,
-        failing,
-        total = 0;
+      const configAggregator = await ConfigAggregator.create();
       const lifecycle = await Lifecycle.getInstance();
       channelService.clear();
       channelService.showChannelOutput();
@@ -128,16 +151,10 @@ export class AgentTestRunner {
                     break;
                   case 'ERROR':
                   case 'TERMINATED':
-                    passing = data.passingTestCases;
-                    failing = data.failingTestCases;
-                    total = data.totalTestCases;
                     progress.report({ increment: 100, message: `Status: ${data.status}` });
                     setTimeout(() => reject(), 1500);
                     break;
                   case 'COMPLETED':
-                    passing = data.passingTestCases;
-                    failing = data.failingTestCases;
-                    total = data.totalTestCases;
                     progress.report({ increment: 100, message: `Status: ${data.status}` });
                     setTimeout(() => resolve({}), 1500);
                     break;
@@ -151,9 +168,14 @@ export class AgentTestRunner {
       const response = await tester.start(test.name);
       // begin in-progress
       this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
-      channelService.appendLine(`Job Id: ${response.runId}`);
 
-      const result = await tester.poll(response.runId, { timeout: Duration.minutes(100) });
+      const result = {
+        ...(await tester.poll(response.runId, { timeout: Duration.minutes(100) })),
+        id: response.runId
+      };
+      result.id = response.runId;
+      channelService.appendLine(`Job Id: ${result.id}`);
+
       this.testGroupNameToResult.set(test.name, result);
       this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
       let hasFailure = false;
@@ -169,13 +191,7 @@ export class AgentTestRunner {
       });
       // update the parent's icon
       this.testOutline.getTestGroup(test.name)?.updateOutcome(hasFailure ? 'ERROR' : 'COMPLETED');
-      channelService.appendLine(result.status);
-      channelService.appendLine('');
-      channelService.appendLine('Test Results');
-      channelService.appendLine(`Passing: ${passing}/${total}`);
-      channelService.appendLine(`Failing: ${failing}/${total}`);
-      channelService.appendLine('');
-      channelService.appendLine(`Select a test case in the Test View panel for more information`);
+      this.printTestSummary(result);
     } catch (e) {
       const error = e as Error;
       void Lifecycle.getInstance().emit('AGENT_TEST_POLLING_EVENT', { status: 'ERROR' });
@@ -183,5 +199,21 @@ export class AgentTestRunner {
       channelService.appendLine(`Error running test: ${error.message}`);
       telemetryService.sendException(error.name, error.message);
     }
+  }
+
+  private printTestSummary(result: AgentTestResults) {
+    const channelService = CoreExtensionService.getChannelService();
+    channelService.appendLine(result.status);
+    channelService.appendLine('');
+    channelService.appendLine('Test Results');
+    const total = result.testCases.length;
+    channelService.appendLine(
+      `Passing: ${result.testCases.filter(tc => tc.testResults.every(tr => tr.result === 'PASS')).length}/${total}`
+    );
+    channelService.appendLine(
+      `Failing: ${result.testCases.filter(tc => tc.testResults.some(tr => tr.result === 'FAILURE')).length}/${total}`
+    );
+    channelService.appendLine('');
+    channelService.appendLine(`Select a test case in the Test View panel for more information`);
   }
 }

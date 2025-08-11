@@ -42,7 +42,7 @@
     "@vscode/vsce": "^3.2.2",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "3.3.0",
-    "esbuild": "^0.23.1",
+    "esbuild": "^0.25.0",
     "esbuild-plugin-pino": "^2.2.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "9.0.0",
@@ -183,7 +183,35 @@
       "editor/context": [
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "group": "agent@2"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.deactivateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "group": "agent@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "group": "agent@2"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.deactivateAgent",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "group": "agent@3"
         }
       ],
       "commandPalette": [
@@ -217,6 +245,36 @@
         }
       ]
     },
+    "commandPalette": [
+      {
+        "command": "salesforcedx-vscode-agents.openAgentInOrg",
+        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.activateAgent",
+        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.deactivateAgent",
+        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
+      },
+      {
+        "command": "sf.agent.test.view.runAll",
+        "when": "false"
+      },
+      {
+        "command": "sf.agent.test.view.runTest",
+        "when": "false"
+      },
+      {
+        "command": "sf.agent.test.view.refresh",
+        "when": "false"
+      },
+      {
+        "command": "sf.agent.test.view.collapseAll",
+        "when": "sf:project_opened"
+      }
+    ],
     "commands": [
       {
         "command": "sf.agent.test.view.goToTestResults",
@@ -262,6 +320,14 @@
         "command": "sf.agent.openChat",
         "title": "%open_chat_with_agent%",
         "icon": "$(chat-editor-label-icon)"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.activateAgent",
+        "title": "%salesforcedx-vscode-agents.activateAgent%"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.deactivateAgent",
+        "title": "%salesforcedx-vscode-agents.deactivateAgent%"
       }
     ]
   }
