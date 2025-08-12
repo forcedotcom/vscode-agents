@@ -165,10 +165,11 @@ const AgentPreview: React.FC = () => {
   }, []);
 
   const handleSendMessage = (content: string) => {
-    if (!sessionActive || isLoading || !hasSelectedAgent) {
+    if (!sessionActive || !hasSelectedAgent) {
       return;
     }
 
+    // Allow sending even when loading - let the backend handle message queuing
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
@@ -218,6 +219,7 @@ const AgentPreview: React.FC = () => {
           onClearChat={handleClearChat}
           sessionActive={false}
           isLoading={isLoading}
+          messages={messages}
         />
       </div>
     );
@@ -236,6 +238,7 @@ const AgentPreview: React.FC = () => {
         onClearChat={handleClearChat}
         sessionActive={sessionActive && hasSelectedAgent}
         isLoading={isLoading}
+        messages={messages}
       />
     </div>
   );

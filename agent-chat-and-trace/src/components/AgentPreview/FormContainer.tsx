@@ -4,6 +4,14 @@ import DebugToggle from './DebugToggle';
 import ChatInput from './ChatInput';
 import './FormContainer.css';
 
+interface Message {
+  id: string;
+  type: 'user' | 'agent' | 'system';
+  content: string;
+  systemType?: 'session' | 'debug' | 'error';
+  timestamp?: string;
+}
+
 interface FormContainerProps {
   debugMode: boolean;
   onDebugModeChange: (enabled: boolean) => void;
@@ -11,6 +19,7 @@ interface FormContainerProps {
   onClearChat: () => void;
   sessionActive: boolean;
   isLoading: boolean;
+  messages?: Message[];
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
@@ -19,7 +28,8 @@ const FormContainer: React.FC<FormContainerProps> = ({
   onSendMessage,
   onClearChat,
   sessionActive,
-  isLoading
+  isLoading: _isLoading, // Renamed to indicate it's intentionally unused
+  messages = []
 }) => {
   return (
     <div className="form-container">
@@ -36,7 +46,8 @@ const FormContainer: React.FC<FormContainerProps> = ({
       </div>
       <ChatInput 
         onSendMessage={onSendMessage} 
-        disabled={!sessionActive || isLoading}
+        disabled={!sessionActive}
+        messages={messages}
       />
     </div>
   );
