@@ -17,7 +17,7 @@ interface FormContainerProps {
   onDebugModeChange: (enabled: boolean) => void;
   onSendMessage: (message: string) => void;
   onClearChat: () => void;
-  sessionActive: boolean;
+  sessionActive: boolean; // Now represents agent connection status
   isLoading: boolean;
   messages?: Message[];
 }

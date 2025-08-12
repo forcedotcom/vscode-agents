@@ -10,6 +10,7 @@ const AgentPreview: React.FC = () => {
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSelectedAgent, setHasSelectedAgent] = useState(false);
+  const [agentConnected, setAgentConnected] = useState(false);
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
@@ -17,6 +18,7 @@ const AgentPreview: React.FC = () => {
       setSessionActive(true);
       setIsLoading(false);
       setHasSelectedAgent(true);
+      setAgentConnected(true); // Agent is now ready for conversation
       if (data) {
         const welcomeMessage: Message = {
           id: Date.now().toString(),
@@ -40,6 +42,7 @@ const AgentPreview: React.FC = () => {
 
     vscodeApi.onMessage('sessionStarting', () => {
       setIsLoading(true);
+      setAgentConnected(false); // Reset agent connected state while starting
       const startingMessage: Message = {
         id: Date.now().toString(),
         type: 'system',
@@ -69,6 +72,7 @@ const AgentPreview: React.FC = () => {
 
     vscodeApi.onMessage('error', (data) => {
       setIsLoading(false);
+      setAgentConnected(false); // Reset agent connected state on error
       
       // Remove the "Starting session..." message if it exists
       setMessages(prev => {
@@ -92,6 +96,7 @@ const AgentPreview: React.FC = () => {
     vscodeApi.onMessage('sessionEnded', () => {
       setSessionActive(false);
       setIsLoading(false);
+      setAgentConnected(false); // Reset agent connected state when session ends
       const endMessage: Message = {
         id: Date.now().toString(),
         type: 'system',
@@ -165,7 +170,7 @@ const AgentPreview: React.FC = () => {
   }, []);
 
   const handleSendMessage = (content: string) => {
-    if (!sessionActive || !hasSelectedAgent) {
+    if (!agentConnected) {
       return;
     }
 
@@ -236,7 +241,7 @@ const AgentPreview: React.FC = () => {
         onDebugModeChange={handleDebugModeChange}
         onSendMessage={handleSendMessage}
         onClearChat={handleClearChat}
-        sessionActive={sessionActive && hasSelectedAgent}
+        sessionActive={agentConnected}
         isLoading={isLoading}
         messages={messages}
       />
