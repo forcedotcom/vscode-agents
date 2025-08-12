@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentPreview, Agent } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
-// import { Lifecycle } from '@salesforce/core-bundle';
 import type { ApexLog } from '@salesforce/types/tooling';
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
@@ -26,9 +25,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _context: vscode.WebviewViewResolveContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _token: vscode.CancellationToken
   ) {
     this.webviewView = webviewView;
@@ -47,8 +44,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // End existing session if one exists
           if (this.agentPreview && this.sessionId) {
             try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              await this.agentPreview.end(this.sessionId, 'UserRequested' as any);
+              await this.agentPreview.end(this.sessionId, 'UserRequest');
             } catch (err) {
               console.warn('Error ending previous session:', err);
             }
@@ -83,7 +79,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const agentMessage = session.messages.find(msg => msg.type === 'Inform');
           webviewView.webview.postMessage({
             command: 'sessionStarted',
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data: agentMessage ? { content: (agentMessage as any).message || (agentMessage as any).data || (agentMessage as any).body || "Hi! I'm ready to help. What can I do for you?" } : { content: "Hi! I'm ready to help. What can I do for you?" }
           });
         } else if (message.command === 'setApexDebugging') {
@@ -113,8 +108,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const latestMessage = response.messages.at(-1);
           webviewView.webview.postMessage({
             command: 'messageSent',
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: latestMessage ? { content: (latestMessage as any).message || (latestMessage as any).data || (latestMessage as any).body || "I received your message." } : { content: "I received your message." }
+            data:  { content: latestMessage?.message  || "I received your message." } 
           });
 
           if (this.apexDebugging && response.apexDebugLog) {
@@ -160,8 +154,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'endSession') {
           if (this.agentPreview && this.sessionId) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await this.agentPreview.end(this.sessionId, 'UserRequested' as any);
+            await this.agentPreview.end(this.sessionId, 'UserRequest');
             this.agentPreview = undefined;
             this.sessionId = Date.now().toString();
             webviewView.webview.postMessage({
