@@ -16,7 +16,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // Listen for configuration changes
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('agentforceDx.showAgentTracer')) {
+        if (e.affectsConfiguration('agentforceDX.showAgentTracer(Mocked)')) {
           this.notifyConfigurationChange();
         }
       })
@@ -227,7 +227,21 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        
+        // Check for specific agent deactivation error
+        if (errorMessage.includes('404') && errorMessage.includes('NOT_FOUND') && errorMessage.includes('No valid version available')) {
+          errorMessage = 'This agent is currently deactivated and cannot be used for conversations. Please activate the agent first using the "Activate Agent" right click menu option or through the Salesforce Setup.';
+        }
+        // Check for other common agent errors
+        else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
+          errorMessage = 'The selected agent could not be found. It may have been deleted or you may not have access to it.';
+        }
+        // Check for permission errors
+        else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
+          errorMessage = 'You don\'t have permission to use this agent. Please check with your administrator.';
+        }
+        
         webviewView.webview.postMessage({
           command: 'error',
           data: { message: errorMessage }
@@ -260,10 +274,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private notifyConfigurationChange() {
     if (this.webviewView) {
       const config = vscode.workspace.getConfiguration();
-      const showAgentTracer = config.get('agentforceDx.showAgentTracer');
+      const showAgentTracer = config.get('agentforceDX.showAgentTracer(Mocked)');
       this.webviewView.webview.postMessage({
         command: 'configuration',
-        data: { section: 'agentforceDx.showAgentTracer', value: showAgentTracer }
+        data: { section: 'agentforceDX.showAgentTracer(Mocked)', value: showAgentTracer }
       });
     }
   }

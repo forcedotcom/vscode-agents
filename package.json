@@ -117,10 +117,10 @@
     "configuration": {
       "title": "Agentforce DX",
       "properties": {
-        "agentforceDx.showAgentTracer": {
+        "agentforceDX.showAgentTracer(Mocked)": {
           "type": "boolean",
           "default": false,
-          "description": "Show the Agent Tracer tab in the Agent Preview panel"
+          "description": "Show the mocked Agent Tracer tab in the Agent Preview panel"
         }
       }
     },

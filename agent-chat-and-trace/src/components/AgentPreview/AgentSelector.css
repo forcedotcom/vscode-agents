@@ -25,6 +25,12 @@
   text-overflow: ellipsis;
 }
 
+.agent-select:focus {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .chevron-icon {
   position: absolute;
   right: 0;
