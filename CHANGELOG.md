@@ -1,3 +1,15 @@
+## [1.1.3](https://github.com/salesforcecli/vsode-agents/compare/v1.1.2...v1.1.3) (2025-08-13)
+
+
+### Bug Fixes
+
+* activate/deactive agent, context menu groupings, update to include parent dir ([1adf73c](https://github.com/salesforcecli/vsode-agents/commit/1adf73c4539a85b1388a096d5116f74476e5427d))
+* add generatedData.invokedActions to output, when present ([5a15d7a](https://github.com/salesforcecli/vsode-agents/commit/5a15d7a8957830a1903c90814e773e3c5fd0dea9))
+* bump agent-bundle, fix output ([bacd1e9](https://github.com/salesforcecli/vsode-agents/commit/bacd1e993aac152fea740048cd8f097e60e82692))
+* keep the test summary when clicking on the parent in the tree ([c8968b4](https://github.com/salesforcecli/vsode-agents/commit/c8968b47bfcca724a06a9b05b76b38f7babc371e))
+
+
+
 ## [1.1.2](https://github.com/salesforcecli/vsode-agents/compare/v1.1.1...v1.1.2) (2025-05-13)
 
 ### Bug Fixes
