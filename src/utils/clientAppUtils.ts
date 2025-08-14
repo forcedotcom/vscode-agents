@@ -23,8 +23,10 @@ export interface ClientAppResult {
  */
 export async function getAvailableClientApps(): Promise<ClientAppResult> {
   try {
-    // Get the default target org username
+    // Get the default target org username, creating a fresh instance each time
     const configAggregator = await ConfigAggregator.create();
+    // Force a fresh read of the config value
+    await configAggregator.reload();
     const targetOrgAliasOrUsername = configAggregator.getPropertyValue<string>('target-org');
     
     if (!targetOrgAliasOrUsername) {
@@ -110,8 +112,10 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
  * Creates a connection with the specified client app
  */
 export async function createConnectionWithClientApp(clientAppName: string): Promise<Connection> {
-  // Get the default target org username
+  // Get the default target org username, creating a fresh instance each time
   const configAggregator = await ConfigAggregator.create();
+  // Force a fresh read of the config value
+  await configAggregator.reload();
   const targetOrgAliasOrUsername = configAggregator.getPropertyValue<string>('target-org');
   
   if (!targetOrgAliasOrUsername) {
