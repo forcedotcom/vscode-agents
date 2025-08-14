@@ -20,6 +20,8 @@ interface FormContainerProps {
   sessionActive: boolean; // Now represents agent connection status
   isLoading: boolean;
   messages?: Message[];
+  onClientAppRequired?: (data: any) => void;
+  onClientAppSelection?: (data: any) => void;
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
@@ -29,19 +31,23 @@ const FormContainer: React.FC<FormContainerProps> = ({
   onClearChat,
   sessionActive,
   isLoading: _isLoading, // Renamed to indicate it's intentionally unused
-  messages = []
+  messages = [],
+  onClientAppRequired,
+  onClientAppSelection
 }) => {
   return (
     <div className="form-container">
       <div className="form-controls">
-        <AgentSelector />
+        <AgentSelector 
+          onClientAppRequired={onClientAppRequired}
+          onClientAppSelection={onClientAppSelection}
+        />
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
         <button 
           className="clear-chat-button" 
           onClick={onClearChat}
-          disabled={!sessionActive}
         >
-          Clear Chat
+          Reset
         </button>
       </div>
       <ChatInput 

@@ -94,6 +94,21 @@ class VSCodeApiService {
   getConfiguration(section: string) {
     this.postMessage('getConfiguration', { section });
   }
+
+  // Client app selection
+  selectClientApp(clientAppName: string) {
+    this.postMessage('clientAppSelected', { clientAppName });
+  }
+
+  // Informational message when client app is ready
+  onClientAppReady(handler: () => void) {
+    this.onMessage('clientAppReady', handler);
+  }
+
+  // Reset entire preview state
+  reset() {
+    this.postMessage('reset');
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

@@ -3,22 +3,50 @@ import { vscodeApi, AgentInfo } from "../../services/vscodeApi";
 import "./AgentSelector.css";
 import chevronIcon from "../../assets/chevron.svg";
 
-const AgentSelector: React.FC = () => {
+interface AgentSelectorProps {
+  onClientAppRequired?: (data: any) => void;
+  onClientAppSelection?: (data: any) => void;
+}
+
+const AgentSelector: React.FC<AgentSelectorProps> = ({ 
+  onClientAppRequired,
+  onClientAppSelection 
+}) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Listen for available agents from VS Code
     vscodeApi.onMessage('availableAgents', (data: AgentInfo[]) => {
+      setIsLoading(false);
       if (data && data.length > 0) {
         setAgents(data);
         // Don't automatically select or start session - wait for user selection
+      } else {
+        setAgents([]);
       }
     });
 
-    // Request available agents
+    // Listen for client app required message (Case 1) - pass to parent
+    vscodeApi.onMessage('clientAppRequired', (data) => {
+      setIsLoading(false);
+      if (onClientAppRequired) {
+        onClientAppRequired(data);
+      }
+    });
+
+    // Listen for client app selection required (Case 3) - pass to parent
+    vscodeApi.onMessage('selectClientApp', (data) => {
+      setIsLoading(false);
+      if (onClientAppSelection) {
+        onClientAppSelection(data);
+      }
+    });
+
+    // Request available agents (this will trigger the client app checking)
     vscodeApi.getAvailableAgents();
-  }, []);
+  }, [onClientAppRequired, onClientAppSelection]);
 
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
@@ -35,8 +63,11 @@ const AgentSelector: React.FC = () => {
         className="agent-select" 
         value={selectedAgent}
         onChange={handleAgentChange}
+        disabled={isLoading}
       >
-        <option value="">Select an agent...</option>
+        <option value="">
+          {isLoading ? "Loading..." : agents.length === 0 ? "No agents available" : "Select an agent..."}
+        </option>
         {agents.map((agent) => (
           <option key={agent.id} value={agent.id}>
             {agent.name}

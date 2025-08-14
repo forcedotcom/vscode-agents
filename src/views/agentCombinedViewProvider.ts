@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentPreview, Agent } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
+import { getAvailableClientApps, createConnectionWithClientApp, ClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
@@ -11,6 +12,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private sessionId = Date.now().toString();
   private apexDebugging = false;
   private webviewView?: vscode.WebviewView;
+  private selectedClientApp?: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Listen for configuration changes
@@ -50,7 +52,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           }
           
-          const conn = await CoreExtensionService.getDefaultConnection();
+          // If a client app was previously selected, reuse it to avoid re-prompt loops
+          const conn = this.selectedClientApp 
+            ? await createConnectionWithClientApp(this.selectedClientApp)
+            : await CoreExtensionService.getDefaultConnection();
 
           // Extract agentId from the message data and pass it as botId
           const agentId = message.data?.agentId;
@@ -163,9 +168,46 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           }
         } else if (message.command === 'getAvailableAgents') {
-          // Get available agents from the Salesforce org
+          // First check client app requirements before getting agents
           try {
-            const conn = await CoreExtensionService.getDefaultConnection();
+            // If a client app has already been selected, use it directly and skip prompting
+            let conn;
+            if (this.selectedClientApp) {
+              conn = await createConnectionWithClientApp(this.selectedClientApp);
+            } else {
+              const clientAppResult = await getAvailableClientApps();
+
+              // Handle the three cases
+              if (clientAppResult.type === 'none') {
+                // Case 1: No client app available
+                webviewView.webview.postMessage({
+                  command: 'clientAppRequired',
+                  data: {
+                    message: 'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
+                    username: clientAppResult.username,
+                    error: clientAppResult.error
+                  }
+                });
+                return;
+              } else if (clientAppResult.type === 'multiple') {
+                // Case 3: Multiple client apps - need user selection
+                webviewView.webview.postMessage({
+                  command: 'selectClientApp',
+                  data: {
+                    clientApps: clientAppResult.clientApps,
+                    username: clientAppResult.username
+                  }
+                });
+                return;
+              } else if (clientAppResult.type === 'single') {
+                // Case 2: Single client app - use automatically
+                this.selectedClientApp = clientAppResult.clientApps[0].name;
+                conn = await createConnectionWithClientApp(this.selectedClientApp);
+              } else {
+                conn = await CoreExtensionService.getDefaultConnection();
+              }
+            }
+              
             const remoteAgents = await Agent.listRemote(conn);
             
             if (!remoteAgents || remoteAgents.length === 0) {
@@ -201,8 +243,60 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           }
         } else if (message.command === 'clearChat') {
-          // Clear chat doesn't need to do anything on the backend for now
-          // The frontend handles clearing the message state
+          // Legacy no-op: kept for compatibility with older UI messages
+        } else if (message.command === 'reset') {
+          // Fully reset state: client app selection and session
+          try {
+            // End any active session
+            if (this.agentPreview && this.sessionId) {
+              try {
+                await this.agentPreview.end(this.sessionId, 'UserRequest');
+              } catch (err) {
+                console.warn('Error ending session during reset:', err);
+              }
+            }
+            this.agentPreview = undefined;
+            this.sessionId = Date.now().toString();
+            this.selectedClientApp = undefined;
+
+            // Immediately re-evaluate current org and push appropriate UI messages
+            try {
+              const clientAppResult = await getAvailableClientApps();
+              if (clientAppResult.type === 'none') {
+                webviewView.webview.postMessage({
+                  command: 'clientAppRequired',
+                  data: {
+                    message: 'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
+                    username: clientAppResult.username,
+                    error: clientAppResult.error
+                  }
+                });
+              } else if (clientAppResult.type === 'multiple') {
+                webviewView.webview.postMessage({
+                  command: 'selectClientApp',
+                  data: {
+                    clientApps: clientAppResult.clientApps,
+                    username: clientAppResult.username
+                  }
+                });
+              } else if (clientAppResult.type === 'single') {
+                this.selectedClientApp = clientAppResult.clientApps[0].name;
+                const conn = await createConnectionWithClientApp(this.selectedClientApp);
+                const remoteAgents = await Agent.listRemote(conn);
+                const activeAgents = (remoteAgents || [])
+                  .filter((bot) => bot.BotVersions?.records?.some((v) => v.Status === 'Active'))
+                  .map((bot) => ({ name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent', id: bot.Id }))
+                  .filter((a) => a.id);
+                webviewView.webview.postMessage({ command: 'availableAgents', data: activeAgents });
+                webviewView.webview.postMessage({ command: 'clientAppReady' });
+              }
+            } catch (e) {
+              console.error('Error reevaluating org after reset:', e);
+              webviewView.webview.postMessage({ command: 'clientAppRequired', data: { error: String(e) } });
+            }
+          } catch (err) {
+            console.error('Error during reset:', err);
+          }
         } else if (message.command === 'getTraceData') {
           // TODO: Implement trace data retrieval
           // This would fetch actual trace data from the agent session
@@ -213,6 +307,56 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               traces: [] // Placeholder for actual trace data
             }
           });
+        } else if (message.command === 'clientAppSelected') {
+          // Handle client app selection (Case 3)
+          try {
+            const clientAppName = message.data?.clientAppName;
+            if (!clientAppName) {
+              throw new Error('No client app name provided');
+            }
+            
+            this.selectedClientApp = clientAppName;
+            
+            // Now that we have a client app selected, create the connection
+            // and then refresh the available agents
+            if (!this.selectedClientApp) {
+              throw new Error('Client app not set');
+            }
+            const conn = await createConnectionWithClientApp(this.selectedClientApp);
+            const remoteAgents = await Agent.listRemote(conn);
+            
+            if (!remoteAgents || remoteAgents.length === 0) {
+              webviewView.webview.postMessage({
+                command: 'availableAgents',
+                data: []
+              });
+              return;
+            }
+
+            // Filter to only agents with active BotVersions and map to the expected format
+            const activeAgents = remoteAgents
+              .filter((bot) => {
+                // Check if the bot has any active BotVersions
+                return bot.BotVersions?.records?.some((version) => version.Status === 'Active');
+              })
+              .map((bot) => ({
+                name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+                id: bot.Id // Use the Bot ID from org
+              }))
+              .filter((agent) => agent.id); // Only include agents with valid IDs
+            
+            // Notify the UI that client app is ready so it can clear selection UI
+            webviewView.webview.postMessage({ command: 'clientAppReady' });
+
+            // Provide updated agent list
+            webviewView.webview.postMessage({ command: 'availableAgents', data: activeAgents });
+          } catch (err) {
+            console.error('Error selecting client app:', err);
+            webviewView.webview.postMessage({
+              command: 'error',
+              data: { message: `Error selecting client app: ${err instanceof Error ? err.message : 'Unknown error'}` }
+            });
+          }
         } else if (message.command === 'getConfiguration') {
           // Get configuration values
           const config = vscode.workspace.getConfiguration();
@@ -344,7 +488,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {
     try {
-      const conn = await CoreExtensionService.getDefaultConnection();
+      const conn = this.selectedClientApp 
+        ? await createConnectionWithClientApp(this.selectedClientApp)
+        : await CoreExtensionService.getDefaultConnection();
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) {
         vscode.window.showErrorMessage('No workspace folder found to save apex debug logs.');
