@@ -153,7 +153,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             webviewView.webview.postMessage({
               command: 'debugLogInfo',
               data: { 
-                message: 'Debug mode is enabled, but no Apex debug log was generated for this request.'
+                message: 'Debug mode is enabled, but no Apex was executed during the last turn of your conversation.g'
               }
             });
           }
