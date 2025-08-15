@@ -21,9 +21,10 @@
   "dependencies": {
     "@salesforce/agents-bundle": "^0.17.3",
     "@salesforce/core-bundle": "^8.19.1",
+    "@salesforce/types": "^1.3.0",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
-    "semver": "^7.7.0",
+    "semver": "^7.7.2",
     "shelljs": "^0.8.5"
   },
   "devDependencies": {
@@ -36,6 +37,7 @@
     "@types/semver": "7.5.8",
     "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.90.0",
+    "@types/vscode-webview": "^1.57.5",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@vscode/vsce": "^3.2.2",
     "commitizen": "^4.3.1",
@@ -61,9 +63,12 @@
     "vscode-test": "^1.6.1"
   },
   "scripts": {
-    "build": "tsc --build",
+    "postinstall": "npm run install:combined",
+    "install:combined": "cd agent-chat-and-trace && npm install",
+    "build": "tsc --build && npm run build:combined",
+    "build:combined": "cd agent-chat-and-trace && npm run build",
     "build:clean": "tsc --build --clean",
-    "compile": "tsc --build",
+    "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
     "reinstall": "git checkout -- package-lock.json && git clean -xfd && npm install",
     "watch": "tsc --build --watch",
@@ -102,12 +107,23 @@
     }
   },
   "extensionDependencies": [
-    "salesforce.salesforcedx-vscode-core"
+    "salesforce.salesforcedx-vscode-core",
+    "salesforce.salesforcedx-vscode-apex-replay-debugger"
   ],
   "activationEvents": [
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "configuration": {
+      "title": "Agentforce DX",
+      "properties": {
+        "agentforceDX.showAgentTracer(Mocked)": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the mocked Agent Tracer tab in the Agent Preview panel"
+        }
+      }
+    },
     "views": {
       "test": [
         {
@@ -115,15 +131,27 @@
           "name": "%agent_test_view_name%",
           "when": "sf:project_opened"
         }
+      ],
+      "agentforce-dx": [
+        {
+          "id": "sf.agent.combined.view",
+          "name": "%agent_combined%",
+          "type": "webview",
+          "when": "sf:project_opened"
+        }
       ]
     },
-    "menus": {
-      "commandPalette": [
+    "viewsContainers": {
+      "activitybar": [
         {
-          "command": "sf.agent.test.view.goToTestResults",
-          "when": "false"
+          "id": "agentforce-dx",
+          "title": "Agentforce DX",
+          "icon": "images/activity-bar-icon.svg"
         }
-      ],
+      ]
+    },
+
+    "menus": {
       "view/title": [
         {
           "command": "sf.agent.test.view.runAll",
@@ -184,6 +212,36 @@
           "command": "salesforcedx-vscode-agents.deactivateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
           "group": "agent@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "sf.agent.test.view.goToTestResults",
+          "when": "false"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/"
+        },
+        {
+          "command": "sf.agent.test.view.runAll",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.runTest",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.refresh",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.test.view.collapseAll",
+          "when": "sf:project_opened"
+        },
+        {
+          "command": "sf.agent.openChat",
+          "when": "true"
         }
       ]
     },
@@ -257,6 +315,11 @@
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
+      },
+      {
+        "command": "sf.agent.openChat",
+        "title": "%open_chat_with_agent%",
+        "icon": "$(chat-editor-label-icon)"
       },
       {
         "command": "salesforcedx-vscode-agents.activateAgent",

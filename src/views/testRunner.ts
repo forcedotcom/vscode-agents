@@ -14,7 +14,7 @@ import {
   humanFriendlyName,
   metric
 } from '@salesforce/agents-bundle';
-import { ConfigAggregator, Lifecycle, Org } from '@salesforce/core-bundle';
+import { Lifecycle, ConfigAggregator } from '@salesforce/core-bundle';
 import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
@@ -123,12 +123,9 @@ export class AgentTestRunner {
     try {
       const configAggregator = await ConfigAggregator.create();
       const lifecycle = await Lifecycle.getInstance();
-      const org = await Org.create({
-        aliasOrUsername: configAggregator.getPropertyValue<string>('target-org') ?? 'undefined'
-      });
       channelService.clear();
       channelService.showChannelOutput();
-      const tester = new AgentTester(org.getConnection());
+      const tester = new AgentTester(await CoreExtensionService.getDefaultConnection());
       channelService.appendLine(`Starting ${test.name} tests: ${new Date().toLocaleString()}`);
       vscode.window.withProgress(
         {

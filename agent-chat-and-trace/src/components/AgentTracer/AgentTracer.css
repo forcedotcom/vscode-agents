@@ -1,0 +1,29 @@
+.agent-tracer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.tracer-content {
+  flex: 1;
+  padding: 8px 18px 18px 18px;
+  overflow-y: auto;
+  min-width: 0; /* Allow content to shrink */
+}
+
+/* Tracer steps are now contained within PlanInfo components */
+
+/* Responsive design for narrow panels */
+@media (max-width: 480px) {
+  .tracer-content {
+    padding: 8px 12px 12px 12px;
+  }
+}
+
+@media (max-width: 320px) {
+  .tracer-content {
+    padding: 6px 8px 8px 8px;
+  }
+}

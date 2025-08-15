@@ -1,0 +1,17 @@
+.header {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-primary);
+  padding: 0px 18px;
+  height: 35px;
+  width: 100%;
+}
+
+.header-title {
+  color: var(--text-primary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  text-transform: uppercase;
+}
