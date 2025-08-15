@@ -108,6 +108,16 @@
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "configuration": {
+      "title": "Agentforce DX",
+      "properties": {
+        "agentforceDX.showGeneratedData": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show generated data in test results output"
+        }
+      }
+    },
     "views": {
       "test": [
         {
@@ -139,6 +149,16 @@
           "command": "sf.agent.test.view.collapseAll",
           "when": "view == sf.agent.test.view",
           "group": "navigation@3"
+        },
+        {
+          "command": "sf.agent.test.view.toggleGeneratedData.on",
+          "when": "view == sf.agent.test.view && agentforceDX:showGeneratedData",
+          "group": "navigation@4"
+        },
+        {
+          "command": "sf.agent.test.view.toggleGeneratedData.off",
+          "when": "view == sf.agent.test.view && !agentforceDX:showGeneratedData",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -238,6 +258,7 @@
           "dark": "resources/dark/collapse-all.svg"
         }
       },
+
       {
         "command": "sf.agent.test.view.runAll",
         "title": "%run_all_tests_title%",
@@ -265,6 +286,24 @@
       {
         "command": "salesforcedx-vscode-agents.deactivateAgent",
         "title": "%salesforcedx-vscode-agents.deactivateAgent%"
+      },
+      {
+        "command": "sf.agent.test.view.toggleGeneratedData.on",
+        "title": "Hide Generated Data Output",
+        "category": "Agent Tests",
+        "icon": {
+          "light": "resources/light/check-on.svg",
+          "dark": "resources/dark/check-on.svg"
+        }
+      },
+      {
+        "command": "sf.agent.test.view.toggleGeneratedData.off",
+        "title": "Show Generated Data Output",
+        "category": "Agent Tests",
+        "icon": {
+          "light": "resources/light/check-off.svg",
+          "dark": "resources/dark/check-off.svg"
+        }
       }
     ]
   }
