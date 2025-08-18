@@ -34,17 +34,7 @@ const AgentPreview: React.FC = () => {
           content: data.content || "Hi! I'm ready to help. What can I do for you?",
           timestamp: new Date().toISOString()
         };
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() - 1).toString(),
-            type: 'system',
-            content: 'Session started successfully.',
-            systemType: 'session',
-            timestamp: new Date().toISOString()
-          },
-          welcomeMessage
-        ]);
+        setMessages([welcomeMessage]);
       }
     });
 
@@ -59,16 +49,7 @@ const AgentPreview: React.FC = () => {
     vscodeApi.onMessage('sessionStarting', () => {
       setIsLoading(true);
       setAgentConnected(false); // Reset agent connected state while starting
-      
-      // Clear previous messages and show transition message
-      const startingMessage: Message = {
-        id: Date.now().toString(),
-        type: 'system',
-        content: 'Starting session...',
-        systemType: 'session',
-        timestamp: new Date().toISOString()
-      };
-      setMessages([startingMessage]);
+      setMessages([]); // Just clear messages without showing transition message
     });
 
     vscodeApi.onMessage('messageSent', (data) => {
@@ -115,14 +96,6 @@ const AgentPreview: React.FC = () => {
       setSessionActive(false);
       setIsLoading(false);
       setAgentConnected(false); // Reset agent connected state when session ends
-      const endMessage: Message = {
-        id: Date.now().toString(),
-        type: 'system',
-        content: 'Session ended.',
-        systemType: 'session',
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, endMessage]);
     });
 
     vscodeApi.onMessage('debugModeChanged', (data) => {
