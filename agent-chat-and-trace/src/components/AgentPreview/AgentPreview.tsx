@@ -18,6 +18,7 @@ const AgentPreview: React.FC = () => {
   const [agentConnected, setAgentConnected] = useState(false);
   const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState("");
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
@@ -58,6 +59,8 @@ const AgentPreview: React.FC = () => {
     vscodeApi.onMessage('sessionStarting', () => {
       setIsLoading(true);
       setAgentConnected(false); // Reset agent connected state while starting
+      
+      // Clear previous messages and show transition message
       const startingMessage: Message = {
         id: Date.now().toString(),
         type: 'system',
@@ -65,7 +68,7 @@ const AgentPreview: React.FC = () => {
         systemType: 'session',
         timestamp: new Date().toISOString()
       };
-      setMessages(prev => [...prev, startingMessage]);
+      setMessages([startingMessage]);
     });
 
     vscodeApi.onMessage('messageSent', (data) => {
@@ -237,13 +240,28 @@ const AgentPreview: React.FC = () => {
   const handleClearChat = () => {
     // Reset all UI state back to initial
     setDebugMode(false);
-    setMessages([]);
     setSessionActive(false);
     setIsLoading(false);
     setHasSelectedAgent(false);
     setAgentConnected(false);
     setClientAppState('none');
     setAvailableClientApps([]);
+    setSelectedAgentId(""); // Reset selected agent
+
+    // Show welcome message
+    const welcomeMessage: Message = {
+      id: Date.now().toString(),
+      type: 'system',
+      content: `
+        <div class="welcome-message">
+          <h2 style="font-size: 1.2em; margin: 0 0 8px 0;">Welcome to Agent Chat!</h2>
+          <p style="margin: 0;">Select an agent to begin.</p>
+        </div>
+      `,
+      systemType: 'session',
+      timestamp: new Date().toISOString()
+    };
+    setMessages([welcomeMessage]);
 
     // Ask backend to reset its state
     vscodeApi.reset();
@@ -297,17 +315,19 @@ const AgentPreview: React.FC = () => {
             <p><strong>Note:</strong> Agents are loaded from your Salesforce org. Only active agents are shown.</p>
           </div>
         </div>
-        <FormContainer
-          debugMode={debugMode}
-          onDebugModeChange={handleDebugModeChange}
-          onSendMessage={handleSendMessage}
-          onClearChat={handleClearChat}
-          sessionActive={false}
-          isLoading={isLoading}
-          messages={messages}
-          onClientAppRequired={handleClientAppRequired}
-          onClientAppSelection={handleClientAppSelection}
-        />
+              <FormContainer
+        debugMode={debugMode}
+        onDebugModeChange={handleDebugModeChange}
+        onSendMessage={handleSendMessage}
+        onClearChat={handleClearChat}
+        sessionActive={false}
+        isLoading={isLoading}
+        messages={messages}
+        onClientAppRequired={handleClientAppRequired}
+        onClientAppSelection={handleClientAppSelection}
+        selectedAgent={selectedAgentId}
+        onAgentChange={setSelectedAgentId}
+      />
       </div>
     );
   }
@@ -355,6 +375,8 @@ const AgentPreview: React.FC = () => {
         messages={messages}
         onClientAppRequired={handleClientAppRequired}
         onClientAppSelection={handleClientAppSelection}
+        selectedAgent={selectedAgentId}
+        onAgentChange={setSelectedAgentId}
       />
     </div>
   );

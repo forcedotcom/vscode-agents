@@ -6,14 +6,17 @@ import chevronIcon from "../../assets/chevron.svg";
 interface AgentSelectorProps {
   onClientAppRequired?: (data: any) => void;
   onClientAppSelection?: (data: any) => void;
+  selectedAgent: string;
+  onAgentChange: (agentId: string) => void;
 }
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({ 
   onClientAppRequired,
-  onClientAppSelection 
+  onClientAppSelection,
+  selectedAgent,
+  onAgentChange
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,9 +51,17 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     vscodeApi.getAvailableAgents();
   }, [onClientAppRequired, onClientAppSelection]);
 
-  const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleAgentChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
-    setSelectedAgent(agentId);
+    onAgentChange(agentId);
+    
+    // End current session if one exists
+    if (selectedAgent) {
+      vscodeApi.endSession();
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     // Only start session if a valid agent is selected
     if (agentId && agentId !== "") {
       vscodeApi.startSession(agentId);

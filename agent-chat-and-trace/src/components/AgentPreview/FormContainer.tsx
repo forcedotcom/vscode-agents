@@ -22,6 +22,8 @@ interface FormContainerProps {
   messages?: Message[];
   onClientAppRequired?: (data: any) => void;
   onClientAppSelection?: (data: any) => void;
+  selectedAgent: string;
+  onAgentChange: (agentId: string) => void;
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
@@ -33,7 +35,9 @@ const FormContainer: React.FC<FormContainerProps> = ({
   isLoading: _isLoading, // Renamed to indicate it's intentionally unused
   messages = [],
   onClientAppRequired,
-  onClientAppSelection
+  onClientAppSelection,
+  selectedAgent,
+  onAgentChange
 }) => {
   return (
     <div className="form-container">
@@ -41,6 +45,8 @@ const FormContainer: React.FC<FormContainerProps> = ({
         <AgentSelector 
           onClientAppRequired={onClientAppRequired}
           onClientAppSelection={onClientAppSelection}
+          selectedAgent={selectedAgent}
+          onAgentChange={onAgentChange}
         />
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
         <button 
