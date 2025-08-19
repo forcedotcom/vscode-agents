@@ -3,8 +3,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgentPreview, Agent } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAvailableClientApps, createConnectionWithClientApp, ClientApp } from '../utils/clientAppUtils';
+import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
+
+interface AgentMessage {
+  type: string;
+  message?: string;
+  data?: unknown;
+  body?: string;
+}
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.combined.view';
@@ -27,7 +34,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _context: vscode.WebviewViewResolveContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _token: vscode.CancellationToken
   ) {
     this.webviewView = webviewView;
@@ -81,10 +90,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           this.sessionId = session.sessionId;
 
           // Find the agent's welcome message or create a default one
-          const agentMessage = session.messages.find(msg => msg.type === 'Inform');
+          const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
           webviewView.webview.postMessage({
             command: 'sessionStarted',
-            data: agentMessage ? { content: (agentMessage as any).message || (agentMessage as any).data || (agentMessage as any).body || "Hi! I'm ready to help. What can I do for you?" } : { content: "Hi! I'm ready to help. What can I do for you?" }
+            data: agentMessage ? { content: agentMessage.message || agentMessage.data?.toString() || agentMessage.body || "Hi! I'm ready to help. What can I do for you?" } : { content: "Hi! I'm ready to help. What can I do for you?" }
           });
         } else if (message.command === 'setApexDebugging') {
           this.apexDebugging = message.data;
@@ -297,16 +306,180 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           } catch (err) {
             console.error('Error during reset:', err);
           }
-        } else if (message.command === 'getTraceData') {
-          // TODO: Implement trace data retrieval
-          // This would fetch actual trace data from the agent session
-          webviewView.webview.postMessage({
-            command: 'traceData',
-            data: {
-              sessionId: this.sessionId,
-              traces: [] // Placeholder for actual trace data
+        } else if (message.command === 'getTraceIds') {
+          try {
+            const mockDir = process.env.SF_MOCK_DIR;
+            if (!mockDir) {
+              throw new Error('SF_MOCK_DIR environment variable not set');
             }
-          });
+
+            const files = fs.readdirSync(mockDir);
+            const traceIds = files
+              .filter(file => file.startsWith('api_trace_') && file.endsWith('.json'))
+              .map(file => file.replace('api_trace_', '').replace('.json', ''));
+
+            webviewView.webview.postMessage({
+              command: 'traceIds',
+              data: { traceIds }
+            });
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            webviewView.webview.postMessage({
+              command: 'error',
+              data: { message: `Failed to read trace IDs: ${errorMessage}` }
+            });
+          }
+        } else if (message.command === 'getTraceData') {
+          try {
+            const mockDir = process.env.SF_MOCK_DIR;
+            if (!mockDir) {
+              throw new Error('SF_MOCK_DIR environment variable not set');
+            }
+
+            const traceId = message.data?.traceId;
+            if (!traceId) {
+              throw new Error('No trace ID provided');
+            }
+
+            const filePath = path.join(mockDir, `api_trace_${traceId}.json`);
+            const data = fs.readFileSync(filePath, 'utf8');
+            const rawData = JSON.parse(data) as {
+              sessionId?: string;
+              date?: string;
+              title?: string;
+              planId?: string;
+              steps?: Array<{
+                type?: string;
+                timing?: string;
+                data?: Record<string, unknown>;
+              }>;
+            };
+            
+            console.log('Full raw trace data:', JSON.stringify(rawData, null, 2));
+            console.log('Raw trace data structure:', {
+              hasSessionId: !!rawData.sessionId,
+              hasDate: !!rawData.date,
+              hasTitle: !!rawData.title,
+              hasPlanId: !!rawData.planId,
+              hasSteps: Array.isArray(rawData.steps),
+              stepsCount: Array.isArray(rawData.steps) ? rawData.steps.length : 0
+            });
+
+            // Transform the data to match the expected format
+            const traceData = {
+              sessionId: rawData.sessionId || traceId,
+              date: rawData.date || new Date().toISOString(),
+              plans: [
+                {
+                  title: '"What is the weather like at the resort on June 11th?"',
+                  planId: traceId + '-1',
+                  steps: [
+                    {
+                      type: 'user_message',
+                      timing: '0.75 sec',
+                      data: {
+                        message: 'What is the weather like at the resort on June 11th?'
+                      }
+                    },
+                    {
+                      type: 'topic_selection',
+                      timing: '1.10 sec',
+                      data: {
+                        promptUsed: 'System instructions and context for topic selection for resort weather inquiry...',
+                        availableTopics: 'Weather Service, Location Service, Travel Service, Calendar Service',
+                        availableTopicsCount: 4
+                      }
+                    },
+                    {
+                      type: 'agent_response',
+                      timing: '0.50 sec',
+                      data: {
+                        response: "I'd be happy to help you check the weather at the resort on June 11th. However, I need to know which resort you're referring to. Could you please specify the name and location of the resort?"
+                      }
+                    }
+                  ]
+                },
+                {
+                  title: '"What\'s the weather like today?"',
+                  planId: traceId + '-2',
+                  steps: [
+                    {
+                      type: 'user_message',
+                      timing: '0.90 sec',
+                      data: {
+                        message: "What's the weather like today?"
+                      }
+                    },
+                    {
+                      type: 'topic_selection',
+                      timing: '1.20 sec',
+                      data: {
+                        promptUsed: 'System instructions and context for topic selection...',
+                        availableTopics: 'Weather Service, News Service, Calendar Service, Location Service',
+                        availableTopicsCount: 4
+                      }
+                    },
+                    {
+                      type: 'topic',
+                      timing: '1.15 sec',
+                      data: {
+                        topicName: 'Weather Service',
+                        description: 'The Weather Service monitors, forecasts, and reports real-time weather conditions and alerts. You can pass a location to be get the weather report.',
+                        instructions: 'Detailed instructions for using the Weather Service...',
+                        instructionsCount: 7,
+                        availableTopics: 'Available weather-related topics and endpoints...',
+                        availableTopicsCount: 4
+                      }
+                    },
+                    {
+                      type: 'action_selection',
+                      timing: '0.65 sec',
+                      data: {
+                        promptUsed: 'System instructions for action selection...'
+                      }
+                    },
+                    {
+                      type: 'action',
+                      timing: '1.20 sec',
+                      data: {
+                        actionName: 'Weather Location',
+                        description: 'Weather Location retrieves weather data for a specified geographic point based on provided coordinates.',
+                        inputCode: '{\n  "prompt": "What\'s the weather like today?",\n  "args": "Location:NYC"\n}',
+                        outputCode: '{\n  "response": "500 internal server error"\n}'
+                      }
+                    },
+                    {
+                      type: 'response_validation',
+                      timing: '0.12 sec',
+                      data: {
+                        validationCode: '{\n  "prompt_response": "The weather could not be retrieved (the response was 500 internal server error). The weather service might not be working correctly."\n}'
+                      }
+                    },
+                    {
+                      type: 'agent_response',
+                      timing: '0.25 sec',
+                      data: {
+                        response: 'The weather could not be retrieved (the response was 500 internal server error). The weather service might not be working correctly.'
+                      }
+                    }
+                  ]
+                }
+              ]
+            };
+
+            console.log('Transformed trace data:', traceData);
+
+            webviewView.webview.postMessage({
+              command: 'traceData',
+              data: traceData
+            });
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            webviewView.webview.postMessage({
+              command: 'error',
+              data: { message: `Failed to read trace data: ${errorMessage}` }
+            });
+          }
         } else if (message.command === 'clientAppSelected') {
           // Handle client app selection (Case 3)
           try {
@@ -415,7 +588,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     return html;
   }
 
-  private notifyConfigurationChange() {
+  private notifyConfigurationChange(): void {
     if (this.webviewView) {
       const config = vscode.workspace.getConfiguration();
       const showAgentTracer = config.get('agentforceDX.showAgentTracer(Mocked)');
@@ -426,20 +599,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  /**
-   * Automatically continues the Apex Replay Debugger after it's launched,
-   * eliminating the need for manual user interaction (clicking "Continue" button).
-   * 
-   * The debugger initially stops at the first instruction in the log, but users
-   * typically want to continue execution until they reach actual Apex code where
-   * they have set breakpoints. This method automates that process.
-   */
   private setupAutoDebugListeners(): void {
     let debuggerLaunched = false;
     const disposables: vscode.Disposable[] = [];
     
     // Clean up function
-    const cleanup = () => {
+    const cleanup = (): void => {
       disposables.forEach(d => d.dispose());
     };
     

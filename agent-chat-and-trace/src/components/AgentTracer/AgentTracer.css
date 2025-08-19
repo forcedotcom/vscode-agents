@@ -1,29 +1,26 @@
 .agent-tracer {
-  display: flex;
-  flex-direction: column;
   height: 100%;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  overflow: auto;
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
 }
 
 .tracer-content {
-  flex: 1;
-  padding: 8px 18px 18px 18px;
-  overflow-y: auto;
-  min-width: 0; /* Allow content to shrink */
+  padding: 0;
 }
 
-/* Tracer steps are now contained within PlanInfo components */
-
-/* Responsive design for narrow panels */
-@media (max-width: 480px) {
-  .tracer-content {
-    padding: 8px 12px 12px 12px;
-  }
+.tracer-error {
+  padding: 16px;
+  color: var(--vscode-errorForeground);
 }
 
-@media (max-width: 320px) {
-  .tracer-content {
-    padding: 6px 8px 8px 8px;
-  }
+.tracer-loading {
+  padding: 16px;
+  color: var(--vscode-foreground);
+}
+
+.tracer-empty {
+  padding: 16px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
 }
