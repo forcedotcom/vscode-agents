@@ -10,26 +10,13 @@ import { StepResponseValidation } from "./StepResponseValidation";
 import { StepAgentResponse } from "./StepAgentResponse";
 import { TraceSelector } from "./TraceSelector";
 import { vscodeApi } from "../../services/vscodeApi";
+import { AgentTraceResponse } from "@salesforce/agents-bundle";
 import "./AgentTracer.css";
-
-interface TraceData {
-  sessionId: string;
-  date: string;
-  plans: Array<{
-    title: string;
-    planId: string;
-    steps: Array<{
-      type: string;
-      timing: string;
-      data: any;
-    }>;
-  }>;
-}
 
 const AgentTracer: React.FC = () => {
   const [traceIds, setTraceIds] = useState<string[]>([]);
   const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
-  const [traceData, setTraceData] = useState<TraceData | null>(null);
+  const [traceData, setTraceData] = useState<AgentTraceResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,16 +31,6 @@ const AgentTracer: React.FC = () => {
 
     // Listen for trace data response
     vscodeApi.onMessage('traceData', (data) => {
-      console.log('Received trace data:', data);
-      console.log('Trace data structure:', {
-        hasData: !!data,
-        hasPlans: Array.isArray(data?.plans),
-        plansCount: Array.isArray(data?.plans) ? data.plans.length : 0,
-        firstPlan: data?.plans?.[0] ? {
-          hasSteps: Array.isArray(data.plans[0].steps),
-          stepsCount: Array.isArray(data.plans[0].steps) ? data.plans[0].steps.length : 0
-        } : null
-      });
       setTraceData(data);
       setLoading(false);
       setError(null);
@@ -97,13 +74,13 @@ const AgentTracer: React.FC = () => {
           <>
             {console.log('Rendering trace data:', traceData)}
             <SessionInfo
-              date={traceData.date || 'Unknown Date'}
-              sessionId={traceData.sessionId || 'Unknown Session'}
+              date={'Unknown Date'}
+              sessionId={traceData.actions.at(0)?.id || 'Unknown Session'}
               isExpanded={true}
             />
-            {Array.isArray(traceData?.plans) ? traceData.plans.map((plan): React.ReactNode => (
+            {Array.isArray(traceData?.actions.at(0)?.returnValue.plan) ? traceData?.actions.at(0)?.returnValue.plan.map((plan): React.ReactNode => (
               <PlanInfo
-                key={plan.planId || `plan-${Math.random()}`}
+                key={plan.type || `plan-${Math.random()}`}
                 title={plan.title || 'Untitled Plan'}
                 planId={plan.planId || 'unknown'}
                 isExpanded={true}

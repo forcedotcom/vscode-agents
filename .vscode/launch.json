@@ -6,6 +6,9 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "env":{
+        "SF_MOCK_DIR": "/Users/william.ruemmele/projects/oss/agents/test/mocks"
+      },
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",

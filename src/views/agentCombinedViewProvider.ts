@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent } from '@salesforce/agents-bundle';
+import { AgentPreview, Agent, type AgentTraceResponse } from '@salesforce/agents-bundle';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
@@ -136,9 +136,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     this.setupAutoDebugListeners();
                     await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
                     
-             
-
-             
                 } catch (commandErr) {
                   // If command execution fails, just log it but don't show user message
                   console.warn('Could not launch Apex Replay Debugger:', commandErr);
@@ -307,6 +304,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             console.error('Error during reset:', err);
           }
         } else if (message.command === 'getTraceIds') {
+          // this is temporary for mocking
           try {
             const mockDir = process.env.SF_MOCK_DIR;
             if (!mockDir) {
@@ -341,137 +339,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               throw new Error('No trace ID provided');
             }
 
-            const filePath = path.join(mockDir, `api_trace_${traceId}.json`);
-            const data = fs.readFileSync(filePath, 'utf8');
-            const rawData = JSON.parse(data) as {
-              sessionId?: string;
-              date?: string;
-              title?: string;
-              planId?: string;
-              steps?: Array<{
-                type?: string;
-                timing?: string;
-                data?: Record<string, unknown>;
-              }>;
-            };
-            
-            console.log('Full raw trace data:', JSON.stringify(rawData, null, 2));
-            console.log('Raw trace data structure:', {
-              hasSessionId: !!rawData.sessionId,
-              hasDate: !!rawData.date,
-              hasTitle: !!rawData.title,
-              hasPlanId: !!rawData.planId,
-              hasSteps: Array.isArray(rawData.steps),
-              stepsCount: Array.isArray(rawData.steps) ? rawData.steps.length : 0
-            });
+            // const data = await AgentTrace.getTrace(await CoreExtensionService.getDefaultConnection(), traceId)
+            const data = JSON.parse( fs.readFileSync(path.join(mockDir, `api_trace_${traceId}.json`), 'utf8')) as AgentTraceResponse
 
-            // Transform the data to match the expected format
-            const traceData = {
-              sessionId: rawData.sessionId || traceId,
-              date: rawData.date || new Date().toISOString(),
-              plans: [
-                {
-                  title: '"What is the weather like at the resort on June 11th?"',
-                  planId: traceId + '-1',
-                  steps: [
-                    {
-                      type: 'user_message',
-                      timing: '0.75 sec',
-                      data: {
-                        message: 'What is the weather like at the resort on June 11th?'
-                      }
-                    },
-                    {
-                      type: 'topic_selection',
-                      timing: '1.10 sec',
-                      data: {
-                        promptUsed: 'System instructions and context for topic selection for resort weather inquiry...',
-                        availableTopics: 'Weather Service, Location Service, Travel Service, Calendar Service',
-                        availableTopicsCount: 4
-                      }
-                    },
-                    {
-                      type: 'agent_response',
-                      timing: '0.50 sec',
-                      data: {
-                        response: "I'd be happy to help you check the weather at the resort on June 11th. However, I need to know which resort you're referring to. Could you please specify the name and location of the resort?"
-                      }
-                    }
-                  ]
-                },
-                {
-                  title: '"What\'s the weather like today?"',
-                  planId: traceId + '-2',
-                  steps: [
-                    {
-                      type: 'user_message',
-                      timing: '0.90 sec',
-                      data: {
-                        message: "What's the weather like today?"
-                      }
-                    },
-                    {
-                      type: 'topic_selection',
-                      timing: '1.20 sec',
-                      data: {
-                        promptUsed: 'System instructions and context for topic selection...',
-                        availableTopics: 'Weather Service, News Service, Calendar Service, Location Service',
-                        availableTopicsCount: 4
-                      }
-                    },
-                    {
-                      type: 'topic',
-                      timing: '1.15 sec',
-                      data: {
-                        topicName: 'Weather Service',
-                        description: 'The Weather Service monitors, forecasts, and reports real-time weather conditions and alerts. You can pass a location to be get the weather report.',
-                        instructions: 'Detailed instructions for using the Weather Service...',
-                        instructionsCount: 7,
-                        availableTopics: 'Available weather-related topics and endpoints...',
-                        availableTopicsCount: 4
-                      }
-                    },
-                    {
-                      type: 'action_selection',
-                      timing: '0.65 sec',
-                      data: {
-                        promptUsed: 'System instructions for action selection...'
-                      }
-                    },
-                    {
-                      type: 'action',
-                      timing: '1.20 sec',
-                      data: {
-                        actionName: 'Weather Location',
-                        description: 'Weather Location retrieves weather data for a specified geographic point based on provided coordinates.',
-                        inputCode: '{\n  "prompt": "What\'s the weather like today?",\n  "args": "Location:NYC"\n}',
-                        outputCode: '{\n  "response": "500 internal server error"\n}'
-                      }
-                    },
-                    {
-                      type: 'response_validation',
-                      timing: '0.12 sec',
-                      data: {
-                        validationCode: '{\n  "prompt_response": "The weather could not be retrieved (the response was 500 internal server error). The weather service might not be working correctly."\n}'
-                      }
-                    },
-                    {
-                      type: 'agent_response',
-                      timing: '0.25 sec',
-                      data: {
-                        response: 'The weather could not be retrieved (the response was 500 internal server error). The weather service might not be working correctly.'
-                      }
-                    }
-                  ]
-                }
-              ]
-            };
-
-            console.log('Transformed trace data:', traceData);
 
             webviewView.webview.postMessage({
               command: 'traceData',
-              data: traceData
+              data
             });
           } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
