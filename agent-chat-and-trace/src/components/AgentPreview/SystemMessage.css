@@ -1,0 +1,17 @@
+.system-message {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  padding: 0 24px;
+}
+
+.system-message.debug {
+  color: var(--color-debug);
+  font-weight: 500;
+}
+
+.system-message.error {
+  color: #ff6b6b;
+  font-weight: 500;
+}

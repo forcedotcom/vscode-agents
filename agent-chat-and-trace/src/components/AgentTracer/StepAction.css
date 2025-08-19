@@ -1,0 +1,92 @@
+.step-action {
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-action-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--bg-input);
+  height: 35px;
+}
+
+.step-action-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-action-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-action-timing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.step-action-timing-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.step-action-content {
+  padding: 16px;
+}
+
+.step-action-content p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.step-action-blocks {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.step-action-blocks > * {
+  flex: 1;
+}
+
+.step-action-code-block {
+  background-color: var(--bg-code);
+  border-radius: 4px;
+  border: 1px solid var(--border-input);
+  overflow: hidden;
+}
+
+.step-action-code-block-header {
+  background-color: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 8px 12px;
+  font-weight: 500;
+}
+
+.step-action-code-block-content pre {
+  color: var(--text-primary);
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-x: auto;
+  padding: 12px;
+}

@@ -12,15 +12,11 @@
     "strict": true,
     "moduleResolution": "Node16",
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
-    "paths": {
-      "@salesforce/types/tooling": ["node_modules/@salesforce/types/lib/tooling.d.ts"]
-    },
     /* Additional Checks */
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": true,
     "esModuleInterop": true,
     "jsx": "preserve"
   },
-  "exclude": ["test/**/*.test.ts", "node_modules", "scripts"]
+  "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "agent-chat-and-trace"]
 }

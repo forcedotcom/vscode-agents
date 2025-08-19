@@ -1,0 +1,83 @@
+.step-response-validation {
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-response-validation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--bg-input);
+  height: 35px;
+}
+
+.step-response-validation-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-response-validation-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-response-validation-timing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.step-response-validation-timing-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.step-response-validation-content {
+  padding: 16px;
+}
+
+.step-response-validation-content p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.step-response-validation-code-block {
+  background-color: var(--bg-code);
+  border-radius: 6px;
+  border: 1px solid var(--border-input);
+  overflow: hidden;
+}
+
+.step-response-validation-code-block-header {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-primary);
+  font-weight: 500;
+}
+
+.step-response-validation-code-block-content pre {
+  color: var(--text-primary);
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-x: auto;
+  padding: 12px;
+}
