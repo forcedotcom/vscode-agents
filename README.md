@@ -1,6 +1,6 @@
 # Agentforce DX for Visual Studio Code
 
-Agentforce DX is a suite of tools to build, preview, and test agents. This extension provides integrated VS Code commands to easily open an agent in your org's Agent Builder UI and run the tests associated with an agent in the Agent Testing Panel.
+Agentforce DX is a suite of tools to build, preview, and test agents. This extension provides integrated VS Code commands to easily open an agent in your org's Agent Builder UI, run the tests associated with an agent in the Agent Testing Panel, and have a preview conversation with an active agent.
 
 ## Prerequisites
 
@@ -13,22 +13,29 @@ Agentforce DX is a suite of tools to build, preview, and test agents. This exten
 
 ## How to Use this Extension
 
-1. Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
+Here are the high-level features of this extension.
+
+### Test Agents
+
+Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
 
    ![Run agent tests from the VS Code testing panel](images/afdx-test-panel.gif)
 
-2. Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
+### Open, Activate, or Deactivate an Agent in Agent Builder
+
+Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
 
    - Bot (file extension `.bot-meta.xml`)
    - BotVersion (file extension `.botVersion-meta.xml`)
-   - GenAiPlanner (file extension `.genAiPlannerBundle-meta.xml`)
-   - GenAiDefinition (file extension `.genAiDefinition-meta.xml`)
+   - GenAiPlannerBundle (file extension `.genAiPlannerBundle`)
+
+Similarly, activate or deactivate an agent in your org by running the **SFDX: Activate Agent** or **SFDX: Deactivate Agent** commands from the command palette or by right-clicking the agent's metadata files.
 
    ![Open an agent in an org using a VS Code command](images/afdx-open-org.gif)
 
 ## Documentation
 
-For information about Agentforce DX, see the **Build Agents with Agentforce DX** section of the [Agentforce Developer Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx.html).
+For details about the features in this VS Code extension, and generally more information about Agentforce DX, see the **Build Agents with Agentforce DX** section of the [Agentforce Developer Guide](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx.html).
 
 ## Bugs and Feedback
 
