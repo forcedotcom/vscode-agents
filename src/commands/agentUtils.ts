@@ -62,7 +62,13 @@ export async function getAgentNameFromFile(fileName: string, filePath: string): 
   // For bot metadata files, extract agent name from filename
   if (fileName.endsWith('.bot-meta.xml')) {
     return fileName.replace('.bot-meta.xml', '');
-  } 
+  }
+
+  // For genAiPlannerBundle files, extract agent name from filename
+  if (fileName.endsWith('.genAiPlannerBundle')) {
+    // Remove the .genAiPlannerBundle extension and Planner suffix
+    return fileName.replace('.genAiPlannerBundle', '');
+  }
   
   // For bot version metadata files, find the corresponding .bot-meta.xml file in the same directory
   if (fileName.endsWith('.botVersion-meta.xml')) {
