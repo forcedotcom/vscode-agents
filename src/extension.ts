@@ -10,10 +10,12 @@ import { Commands } from './enums/commands';
 import { CoreExtensionService } from './services/coreExtensionService';
 import type { AgentTestGroupNode, TestNode } from './types';
 import type { TelemetryService } from './types/TelemetryService';
-
 import { AgentCombinedViewProvider } from './views/agentCombinedViewProvider';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
+import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
+
+
 
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -39,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
     disposables.push(commands.registerOpenAgentInOrgCommand());
     disposables.push(commands.registerActivateAgentCommand());
     disposables.push(commands.registerDeactivateAgentCommand());
-    context.subscriptions.push(registerTestView());
+    context.subscriptions.push(await registerTestView());
     context.subscriptions.push(registerAgentCombinedView(context));
 
     // Update the test view without blocking activation
@@ -54,7 +56,7 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 }
 
-const registerTestView = (): vscode.Disposable => {
+const registerTestView = async (): Promise<vscode.Disposable> => {
   const testOutlineProvider = getTestOutlineProvider();
   const testViewItems: vscode.Disposable[] = [];
 
@@ -75,6 +77,35 @@ const registerTestView = (): vscode.Disposable => {
   testViewItems.push(vscode.commands.registerCommand(Commands.refreshTestView, () => testOutlineProvider.refresh()));
 
   testViewItems.push(vscode.commands.registerCommand(Commands.collapseAll, () => testOutlineProvider.collapseAll()));
+
+  // Initialize generated data context based on current setting
+  const updateGeneratedDataContext = async () => {
+    const config = vscode.workspace.getConfiguration('agentforceDX');
+    const showGeneratedData = config.get<boolean>('showGeneratedData', false);
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:showGeneratedData', showGeneratedData);
+  };
+
+  // Listen for configuration changes
+  testViewItems.push(
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (e.affectsConfiguration('agentforceDX.showGeneratedData')) {
+        await updateGeneratedDataContext();
+      }
+    })
+  );
+
+  // Set initial context
+  await updateGeneratedDataContext();
+
+  // Register commands to toggle generated data visibility
+  testViewItems.push(
+    vscode.commands.registerCommand('sf.agent.test.view.toggleGeneratedData.on', async () => {
+      await toggleGeneratedDataOff(); // Switch to off when clicking the "on" icon
+    }),
+    vscode.commands.registerCommand('sf.agent.test.view.toggleGeneratedData.off', async () => {
+      await toggleGeneratedDataOn(); // Switch to on when clicking the "off" icon
+    })
+  );
 
   return vscode.Disposable.from(...testViewItems);
 };
