@@ -75,17 +75,18 @@ const AgentTracer: React.FC = () => {
             {console.log('Rendering trace data:', traceData)}
                           <SessionInfo
                 date={new Date().toLocaleString()}
-                sessionId={traceData.actions.at(0)?.returnValue.sessionId || 'Unknown Session'}
+                sessionId={traceData.actions[0]?.returnValue.sessionId || 'Unknown Session'}
                 isExpanded={true}
               />
-              <PlanInfo
-                key={traceData.actions.at(0)?.returnValue.planId}
-                title={traceData.actions.at(0)?.returnValue.intent || 'Untitled Plan'}
-                planId={traceData.actions.at(0)?.returnValue.planId || 'unknown'}
-                isExpanded={true}
-              >
-                <div className="tracer-steps">
-                  {Array.isArray(traceData.actions.at(0)?.returnValue.plan) ? traceData.actions.at(0)?.returnValue.plan.map((step, index): React.ReactNode => {
+              {traceData.actions.map((action, actionIndex) => (
+                <PlanInfo
+                  key={`${action.returnValue.planId}-${actionIndex}`}
+                  title={action.returnValue.plan.find((step) => step.type === 'UserInputStep')?.message || 'Untitled Plan'}
+                  planId={action.returnValue.planId || 'unknown'}
+                  isExpanded={true}
+                >
+                  <div className="tracer-steps">
+                    {Array.isArray(action.returnValue.plan) ? action.returnValue.plan.map((step, index): React.ReactNode => {
                     console.log('Rendering step:', step);
                     const timing = step instanceof Object && 'executionLatency' in step 
                       ? `${(step.executionLatency / 1000).toFixed(2)} sec`
@@ -155,9 +156,10 @@ const AgentTracer: React.FC = () => {
                         return null;
                       }
                     }
-                  }) : <div className="tracer-empty">No steps available</div>}
-                </div>
-              </PlanInfo>
+                    }) : <div className="tracer-empty">No steps available</div>}
+                  </div>
+                </PlanInfo>
+              ))}
           </>
         ) : (
           <div className="tracer-empty">
