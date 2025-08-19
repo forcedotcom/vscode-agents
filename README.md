@@ -21,6 +21,17 @@ Run agent tests by viewing them in the Agent Testing Panel. Click on either a te
 
    ![Run agent tests from the VS Code testing panel](images/afdx-test-panel.gif)
 
+### Preview An Agent and Debug the Conversation
+
+Preview an agent by chatting with it to to see how it responds to your statements, questions, and commands (also known as _utterances_). These conversation previews serve as interactive tests to make sure the agent behaves as expected. If an agent action that's implemented with an Apex class doesn't seem to be working correctly, you can chat in Debug Mode, which enables easy integration with the Apex Replay Debugger. Here's an overview of the steps. 
+
+1. Complete the [prerequisites](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html#prerequisites) in the org that contains your agent. Prerequisites include creating a new connected app and locally reauthorizing the org to link the new connected app.
+2. In VS Code, in the Activity Bar, click the Agentforce DX icon. The Agent Preview pane opens.
+3. In the `Select an agent..` drop-down, select the agent you want to converse with.  Only active agents are listed.
+4. If you want to use the Apex Reply Debugger to debug issues with Apex classes, enable `Debug Mode`.
+5. In the chat window, start chatting with your agent.
+6. To invoke the Apex Reply Debugger, set a breakpoint in the Apex class you want to debug. Then start chatting again.  As soon as an agent action invokes that Apex class, the Apex Replay Debugger automatically starts, and you can debug as usual.  See [Apex Replay Debugger](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/replay-debugger.html) for details. 
+
 ### Open, Activate, or Deactivate an Agent in Agent Builder
 
 Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
