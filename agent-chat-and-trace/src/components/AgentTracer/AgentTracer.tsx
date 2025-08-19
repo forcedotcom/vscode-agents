@@ -6,7 +6,7 @@ import { StepTopicSelection } from "./StepTopicSelection";
 import { StepTopic } from "./StepTopic";
 import { StepActionSelection } from "./StepActionSelection";
 import { StepAction } from "./StepAction";
-import { StepResponseValidation } from "./StepResponseValidation";
+
 import { StepAgentResponse } from "./StepAgentResponse";
 import { TraceSelector } from "./TraceSelector";
 import { vscodeApi } from "../../services/vscodeApi";
@@ -73,97 +73,91 @@ const AgentTracer: React.FC = () => {
         ) : traceData ? (
           <>
             {console.log('Rendering trace data:', traceData)}
-            <SessionInfo
-              date={'Unknown Date'}
-              sessionId={traceData.actions.at(0)?.id || 'Unknown Session'}
-              isExpanded={true}
-            />
-            {Array.isArray(traceData?.actions.at(0)?.returnValue.plan) ? traceData?.actions.at(0)?.returnValue.plan.map((plan): React.ReactNode => (
+                          <SessionInfo
+                date={new Date().toLocaleString()}
+                sessionId={traceData.actions.at(0)?.returnValue.sessionId || 'Unknown Session'}
+                isExpanded={true}
+              />
               <PlanInfo
-                key={plan.type || `plan-${Math.random()}`}
-                title={plan.title || 'Untitled Plan'}
-                planId={plan.planId || 'unknown'}
+                key={traceData.actions.at(0)?.returnValue.planId}
+                title={traceData.actions.at(0)?.returnValue.intent || 'Untitled Plan'}
+                planId={traceData.actions.at(0)?.returnValue.planId || 'unknown'}
                 isExpanded={true}
               >
                 <div className="tracer-steps">
-                  {Array.isArray(plan.steps) ? plan.steps.map((step, index): React.ReactNode => {
+                  {Array.isArray(traceData.actions.at(0)?.returnValue.plan) ? traceData.actions.at(0)?.returnValue.plan.map((step, index): React.ReactNode => {
                     console.log('Rendering step:', step);
-                    const timing = step.timing || '0.00 sec';
+                    const timing = step instanceof Object && 'executionLatency' in step 
+                      ? `${(step.executionLatency / 1000).toFixed(2)} sec`
+                      : '0.00 sec';
                     
                     switch (step.type) {
-                      case 'user_message':
+                      case 'UserInputStep':
                         return (
                           <StepUserMessage
                             key={index}
-                            message={step.data?.message || 'No message'}
+                            message={step.message}
                             timing={timing}
                           />
                         );
-                      case 'topic_selection':
+                      case 'LLMExecutionStep':
                         return (
                           <StepTopicSelection
                             key={index}
                             timing={timing}
-                            promptUsed={<p>{step.data?.promptUsed || 'No prompt'}</p>}
-                            availableTopics={<p>{step.data?.availableTopics || 'No topics'}</p>}
-                            availableTopicsCount={step.data?.availableTopicsCount || 0}
+                            promptUsed={<p>{step.promptContent}</p>}
+                            availableTopics={<p>{step.promptResponse}</p>}
+                            availableTopicsCount={1}
                           />
                         );
-                      case 'topic':
+                      case 'UpdateTopicStep':
                         return (
                           <StepTopic
                             key={index}
-                            topicName={step.data?.topicName || 'Unknown Topic'}
-                            description={step.data?.description || 'No description'}
+                            topicName={step.topic}
+                            description={step.description}
                             timing={timing}
-                            instructions={<p>{step.data?.instructions || 'No instructions'}</p>}
-                            instructionsCount={step.data?.instructionsCount || 0}
-                            availableTopics={<p>{step.data?.availableTopics || 'No topics'}</p>}
-                            availableTopicsCount={step.data?.availableTopicsCount || 0}
+                            instructions={<p>{step.instructions.join('\n')}</p>}
+                            instructionsCount={step.instructions.length}
+                            availableTopics={<p>{step.availableFunctions.join(', ')}</p>}
+                            availableTopicsCount={step.availableFunctions.length}
                           />
                         );
-                      case 'action_selection':
+                      case 'EventStep':
                         return (
                           <StepActionSelection
                             key={index}
                             timing={timing}
-                            promptUsed={<p>{step.data?.promptUsed || 'No prompt'}</p>}
+                            promptUsed={<p>{`${step.eventName}: ${step.payload.oldTopic} → ${step.payload.newTopic}`}</p>}
                           />
                         );
-                      case 'action':
+                      case 'ReasoningStep':
                         return (
                           <StepAction
                             key={index}
-                            actionName={step.data?.actionName || 'Unknown Action'}
-                            description={step.data?.description || 'No description'}
+                            actionName="Reasoning"
+                            description={step.reason}
                             timing={timing}
-                            inputCode={step.data?.inputCode || '{}'}
-                            outputCode={step.data?.outputCode || '{}'}
+                            inputCode="{}"
+                            outputCode="{}"
                           />
                         );
-                      case 'response_validation':
-                        return (
-                          <StepResponseValidation
-                            key={index}
-                            timing={timing}
-                            validationCode={step.data?.validationCode || '{}'}
-                          />
-                        );
-                      case 'agent_response':
+                      case 'PlannerResponseStep':
                         return (
                           <StepAgentResponse
                             key={index}
-                            response={step.data?.response || 'No response'}
+                            response={step.message}
                           />
                         );
-                      default:
-                        console.log('Unknown step type:', step.type);
+                      default: {
+                        const unknownStep = step as { type: string };
+                        console.log('Unknown step type:', unknownStep.type);
                         return null;
+                      }
                     }
                   }) : <div className="tracer-empty">No steps available</div>}
                 </div>
               </PlanInfo>
-            )) : null}
           </>
         ) : (
           <div className="tracer-empty">
