@@ -6,12 +6,14 @@
  **/
 import * as vscode from 'vscode';
 import * as commands from './commands';
+import { Commands } from './enums/commands';
+import { CoreExtensionService } from './services/coreExtensionService';
+import type { AgentTestGroupNode, TestNode } from './types';
+import type { TelemetryService } from './types/TelemetryService';
+
+import { AgentCombinedViewProvider } from './views/agentCombinedViewProvider';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
-import { Commands } from './enums/commands';
-import type { AgentTestGroupNode, TestNode } from './types';
-import { CoreExtensionService } from './services/coreExtensionService';
-import type { TelemetryService } from './types/TelemetryService';
 
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -38,9 +40,12 @@ export async function activate(context: vscode.ExtensionContext) {
     disposables.push(commands.registerActivateAgentCommand());
     disposables.push(commands.registerDeactivateAgentCommand());
     context.subscriptions.push(registerTestView());
+    context.subscriptions.push(registerAgentCombinedView(context));
 
     // Update the test view without blocking activation
-    setTimeout(() => getTestOutlineProvider().refresh(), 0);
+    setTimeout(() => {
+      void getTestOutlineProvider().refresh();
+    }, 0);
     telemetryService?.sendExtensionActivationEvent(extensionHRStart);
 
     context.subscriptions.push(...disposables);
@@ -62,7 +67,6 @@ const registerTestView = (): vscode.Disposable => {
       testRunner.displayTestDetails(test);
     })
   );
-
   testViewItems.push(
     vscode.commands.registerCommand(Commands.runTest, (test: AgentTestGroupNode) => {
       void testRunner.runAgentTest(test);
@@ -74,6 +78,8 @@ const registerTestView = (): vscode.Disposable => {
 
   return vscode.Disposable.from(...testViewItems);
 };
+
+
 
 const validateCLI = async () => {
   try {
@@ -93,4 +99,15 @@ const validateCLI = async () => {
   } catch {
     throw new Error('Failed to validate sf CLI and plugin-agent installation');
   }
+};
+
+const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
+  // Register webview to be disposed on extension deactivation
+  return vscode.window.registerWebviewViewProvider(
+    AgentCombinedViewProvider.viewType,
+    new AgentCombinedViewProvider(context),
+    {
+      webviewOptions: { retainContextWhenHidden: true }
+    }
+  );
 };

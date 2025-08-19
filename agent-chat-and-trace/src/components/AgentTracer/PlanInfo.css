@@ -1,0 +1,124 @@
+.plan-info {
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  margin: 16px 0;
+  overflow: hidden;
+  background-color: var(--bg-input);
+}
+
+.plan-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  height: 35px;
+  transition: background-color 0.2s;
+}
+
+.plan-info-header:hover {
+  background-color: var(--bg-secondary);
+}
+
+.plan-icon {
+  width: 12px;
+  height: 12px;
+  transform: rotate(-90deg);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.plan-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.plan-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.plan-id {
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+
+.plan-info-content {
+  padding: 16px;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-input);
+}
+
+.plan-info-content .tracer-steps {
+  position: relative;
+}
+
+.plan-info-content .tracer-steps::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--border-input) 0px,
+    var(--border-input) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  z-index: 1;
+}
+
+.plan-info-content .tracer-steps > * {
+  position: relative;
+  z-index: 2;
+  background-color: var(--bg-primary);
+  min-width: 0;
+}
+
+/* Responsive design for narrow panels */
+@media (max-width: 480px) {
+  .plan-info-header {
+    padding: 0 8px;
+  }
+  
+  .plan-info-content {
+    padding: 12px;
+  }
+  
+  .plan-info-content .tracer-steps::before {
+    left: 16px;
+  }
+}
+
+@media (max-width: 320px) {
+  .plan-info-header {
+    padding: 0 6px;
+  }
+  
+  .plan-info-content {
+    padding: 8px;
+  }
+  
+  .plan-info-content .tracer-steps::before {
+    left: 12px;
+  }
+  
+  .plan-title {
+    font-size: 12px;
+  }
+}

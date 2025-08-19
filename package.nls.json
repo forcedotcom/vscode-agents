@@ -5,7 +5,13 @@
   "agent_test_view_name": "Agent Tests",
   "run_all_tests_title": "Run All Test Definitions",
   "run_test_title": "Run Test Definition",
+  "agentforce_dx": "Agentforce DX",
+  "agent_chat": "Chat with Agent",
+  "agent_combined": "Agent Chat & Trace",
+  "clear_chat": "Clear chat with Agent",
+  "show_chat_trace": "SFDX: Show Chat Trace",
   "refresh_test_title": "Refresh Test Definitions",
+  "open_chat_with_agent": "SFDX: Open Chat with Agent",
   "go_to_test_results": "SFDX: View Test Results",
   "collapse_tests_title": "Collapse All Test Cases"
 }
