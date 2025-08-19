@@ -15,6 +15,10 @@ Agentforce DX is a suite of tools to build, preview, and test agents. This exten
 
 Here are the high-level features of this extension.
 
+* [Test Agents](README.md#test-agents)
+* [Preview An Agent and Debug the Conversation](README.md#preview-an-agent-and-debug-the-conversation)
+* [Open an Agent in Agent Builder and Easily (De)Activate It](README.md#open-an-agent-in-agent-builder-and-easily-deactivate-it)
+
 ### Test Agents
 
 Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
@@ -32,7 +36,9 @@ Preview an agent by chatting with it to to see how it responds to your statement
 5. In the chat window, start chatting with your agent.
 6. To invoke the Apex Reply Debugger, set a breakpoint in the Apex class you want to debug. Then start chatting again.  As soon as an agent action invokes that Apex class, the Apex Replay Debugger automatically starts, and you can debug as usual.  See [Apex Replay Debugger](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/replay-debugger.html) for details. 
 
-### Open, Activate, or Deactivate an Agent in Agent Builder
+![Agent preview panel with these items highlighted: Agentforce DX in Activity Bar, Agent Preview tab, drop-down to select an agent, debug mode, and chat window.](images/afdx-agent-preview.png)
+
+### Open an Agent in Agent Builder and Easily (De)Activate It
 
 Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
 
