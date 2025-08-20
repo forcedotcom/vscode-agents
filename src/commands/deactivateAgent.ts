@@ -14,7 +14,7 @@ export const registerDeactivateAgentCommand = () => {
 
     // Get the file or directory path from the context menu
     const targetPath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
-    
+
     if (!targetPath) {
       vscode.window.showErrorMessage('No agent file or directory selected.');
       return;
@@ -24,17 +24,29 @@ export const registerDeactivateAgentCommand = () => {
       // Check if it's a valid target (file or directory)
       const stat = await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
       const fileName = path.basename(targetPath);
-      
+
       // Validate that this is a supported context
       if (stat.type === vscode.FileType.File) {
-        if (!fileName.endsWith('.bot-meta.xml') && !fileName.endsWith('.botVersion-meta.xml') && !fileName.endsWith('.genAiPlannerBundle')) {
-          vscode.window.showErrorMessage('This command can only be used on bot, bot version, or genAiPlannerBundle files.');
+        if (
+          !fileName.endsWith('.bot-meta.xml') &&
+          !fileName.endsWith('.botVersion-meta.xml') &&
+          !fileName.endsWith('.genAiPlannerBundle')
+        ) {
+          vscode.window.showErrorMessage(
+            'This command can only be used on bot, bot version, or genAiPlannerBundle files.'
+          );
           return;
         }
       } else if (stat.type === vscode.FileType.Directory) {
         // For directories, we accept them if they're in a bots or botVersions path structure
-        if (!targetPath.includes('bots') && !targetPath.includes('botVersions') && !targetPath.includes('genAiPlannerBundles')) {
-          vscode.window.showErrorMessage('This command can only be used on directories containing bot, bot version, or genAiPlannerBundle files.');
+        if (
+          !targetPath.includes('bots') &&
+          !targetPath.includes('botVersions') &&
+          !targetPath.includes('genAiPlannerBundles')
+        ) {
+          vscode.window.showErrorMessage(
+            'This command can only be used on directories containing bot, bot version, or genAiPlannerBundle files.'
+          );
           return;
         }
       } else {
@@ -93,4 +105,3 @@ export const registerDeactivateAgentCommand = () => {
     }
   });
 };
-

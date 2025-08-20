@@ -17,7 +17,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   constructor(private readonly context: vscode.ExtensionContext) {
     // Listen for configuration changes
     this.context.subscriptions.push(
-      vscode.workspace.onDidChangeConfiguration((e) => {
+      vscode.workspace.onDidChangeConfiguration(e => {
         if (e.affectsConfiguration('agentforceDX.showAgentTracer(Mocked)')) {
           this.notifyConfigurationChange();
         }
@@ -42,7 +42,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             command: 'sessionStarting',
             data: { message: 'Starting session...' }
           });
-          
+
           // End existing session if one exists
           if (this.agentPreview && this.sessionId) {
             try {
@@ -51,27 +51,29 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               console.warn('Error ending previous session:', err);
             }
           }
-          
+
           // If a client app was previously selected, reuse it to avoid re-prompt loops
-          const conn = this.selectedClientApp 
+          const conn = this.selectedClientApp
             ? await createConnectionWithClientApp(this.selectedClientApp)
             : await CoreExtensionService.getDefaultConnection();
 
           // Extract agentId from the message data and pass it as botId
           const agentId = message.data?.agentId;
-          
+
           if (!agentId || typeof agentId !== 'string') {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
           }
-          
+
           // Validate that the agentId follows Salesforce Bot ID format (starts with "0X" and is 15 or 18 characters)
           if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
-            throw new Error(`The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`);
+            throw new Error(
+              `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
+            );
           }
-          
+
           console.log('Starting session with agent ID:', agentId);
           this.agentPreview = new AgentPreview(conn, agentId);
-          
+
           // Enable debug mode if apex debugging is active
           if (this.apexDebugging) {
             this.agentPreview.toggleApexDebugMode(this.apexDebugging);
@@ -84,7 +86,15 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const agentMessage = session.messages.find(msg => msg.type === 'Inform');
           webviewView.webview.postMessage({
             command: 'sessionStarted',
-            data: agentMessage ? { content: (agentMessage as any).message || (agentMessage as any).data || (agentMessage as any).body || "Hi! I'm ready to help. What can I do for you?" } : { content: "Hi! I'm ready to help. What can I do for you?" }
+            data: agentMessage
+              ? {
+                  content:
+                    (agentMessage as any).message ||
+                    (agentMessage as any).data ||
+                    (agentMessage as any).body ||
+                    "Hi! I'm ready to help. What can I do for you?"
+                }
+              : { content: "Hi! I'm ready to help. What can I do for you?" }
           });
         } else if (message.command === 'setApexDebugging') {
           this.apexDebugging = message.data;
@@ -92,7 +102,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           if (this.agentPreview) {
             this.agentPreview.toggleApexDebugMode(this.apexDebugging);
           }
-          
+
           webviewView.webview.postMessage({
             command: 'debugModeChanged',
             data: { enabled: this.apexDebugging }
@@ -113,7 +123,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const latestMessage = response.messages.at(-1);
           webviewView.webview.postMessage({
             command: 'messageSent',
-            data:  { content: latestMessage?.message  || "I received your message." } 
+            data: { content: latestMessage?.message || 'I received your message.' }
           });
 
           if (this.apexDebugging && response.apexDebugLog) {
@@ -121,15 +131,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               const logPath = await this.saveApexDebugLog(response.apexDebugLog);
               if (logPath) {
                 // Try to launch the apex replay debugger if the command is available
-                try {     
-                    // Auto-continue the debugger to run until it hits actual Apex code with breakpoints
-                    // This eliminates the need for manual user interaction (clicking "Continue" button)
-                    this.setupAutoDebugListeners();
-                    await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
-                    
-             
-
-             
+                try {
+                  // Auto-continue the debugger to run until it hits actual Apex code with breakpoints
+                  // This eliminates the need for manual user interaction (clicking "Continue" button)
+                  this.setupAutoDebugListeners();
+                  await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
                 } catch (commandErr) {
                   // If command execution fails, just log it but don't show user message
                   console.warn('Could not launch Apex Replay Debugger:', commandErr);
@@ -139,11 +145,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               console.error('Error handling apex debug log:', err);
               const errorMessage = err instanceof Error ? err.message : 'Unknown error';
               vscode.window.showErrorMessage(`Error processing debug log: ${errorMessage}`);
-              
+
               // Notify webview about the error
               webviewView.webview.postMessage({
                 command: 'debugLogError',
-                data: { 
+                data: {
                   message: `Error processing debug log: ${errorMessage}`
                 }
               });
@@ -152,7 +158,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // Debug mode is enabled but no debug log was returned
             webviewView.webview.postMessage({
               command: 'debugLogInfo',
-              data: { 
+              data: {
                 message: 'Debug mode is enabled, but no Apex was executed during the last turn of your conversation.g'
               }
             });
@@ -183,7 +189,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 webviewView.webview.postMessage({
                   command: 'clientAppRequired',
                   data: {
-                    message: 'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
+                    message:
+                      'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
                     username: clientAppResult.username,
                     error: clientAppResult.error
                   }
@@ -207,9 +214,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 conn = await CoreExtensionService.getDefaultConnection();
               }
             }
-              
+
             const remoteAgents = await Agent.listRemote(conn);
-            
+
             if (!remoteAgents || remoteAgents.length === 0) {
               webviewView.webview.postMessage({
                 command: 'availableAgents',
@@ -220,16 +227,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Filter to only agents with active BotVersions and map to the expected format
             const activeAgents = remoteAgents
-              .filter((bot) => {
+              .filter(bot => {
                 // Check if the bot has any active BotVersions
-                return bot.BotVersions?.records?.some((version) => version.Status === 'Active');
+                return bot.BotVersions?.records?.some(version => version.Status === 'Active');
               })
-              .map((bot) => ({
+              .map(bot => ({
                 name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
                 id: bot.Id // Use the Bot ID from org
               }))
-              .filter((agent) => agent.id); // Only include agents with valid IDs
-            
+              .filter(agent => agent.id); // Only include agents with valid IDs
+
             webviewView.webview.postMessage({
               command: 'availableAgents',
               data: activeAgents
@@ -266,7 +273,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 webviewView.webview.postMessage({
                   command: 'clientAppRequired',
                   data: {
-                    message: 'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
+                    message:
+                      'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
                     username: clientAppResult.username,
                     error: clientAppResult.error
                   }
@@ -284,9 +292,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 const conn = await createConnectionWithClientApp(this.selectedClientApp);
                 const remoteAgents = await Agent.listRemote(conn);
                 const activeAgents = (remoteAgents || [])
-                  .filter((bot) => bot.BotVersions?.records?.some((v) => v.Status === 'Active'))
-                  .map((bot) => ({ name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent', id: bot.Id }))
-                  .filter((a) => a.id);
+                  .filter(bot => bot.BotVersions?.records?.some(v => v.Status === 'Active'))
+                  .map(bot => ({ name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent', id: bot.Id }))
+                  .filter(a => a.id);
                 webviewView.webview.postMessage({ command: 'availableAgents', data: activeAgents });
                 webviewView.webview.postMessage({ command: 'clientAppReady' });
               }
@@ -314,9 +322,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             if (!clientAppName) {
               throw new Error('No client app name provided');
             }
-            
+
             this.selectedClientApp = clientAppName;
-            
+
             // Now that we have a client app selected, create the connection
             // and then refresh the available agents
             if (!this.selectedClientApp) {
@@ -324,7 +332,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
             const conn = await createConnectionWithClientApp(this.selectedClientApp);
             const remoteAgents = await Agent.listRemote(conn);
-            
+
             if (!remoteAgents || remoteAgents.length === 0) {
               webviewView.webview.postMessage({
                 command: 'availableAgents',
@@ -335,16 +343,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Filter to only agents with active BotVersions and map to the expected format
             const activeAgents = remoteAgents
-              .filter((bot) => {
+              .filter(bot => {
                 // Check if the bot has any active BotVersions
-                return bot.BotVersions?.records?.some((version) => version.Status === 'Active');
+                return bot.BotVersions?.records?.some(version => version.Status === 'Active');
               })
-              .map((bot) => ({
+              .map(bot => ({
                 name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
                 id: bot.Id // Use the Bot ID from org
               }))
-              .filter((agent) => agent.id); // Only include agents with valid IDs
-            
+              .filter(agent => agent.id); // Only include agents with valid IDs
+
             // Notify the UI that client app is ready so it can clear selection UI
             webviewView.webview.postMessage({ command: 'clientAppReady' });
 
@@ -372,20 +380,26 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-        
+
         // Check for specific agent deactivation error
-        if (errorMessage.includes('404') && errorMessage.includes('NOT_FOUND') && errorMessage.includes('No valid version available')) {
-          errorMessage = 'This agent is currently deactivated and cannot be used for conversations. Please activate the agent first using the "Activate Agent" right click menu option or through the Salesforce Setup.';
+        if (
+          errorMessage.includes('404') &&
+          errorMessage.includes('NOT_FOUND') &&
+          errorMessage.includes('No valid version available')
+        ) {
+          errorMessage =
+            'This agent is currently deactivated and cannot be used for conversations. Please activate the agent first using the "Activate Agent" right click menu option or through the Salesforce Setup.';
         }
         // Check for other common agent errors
         else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
-          errorMessage = 'The selected agent could not be found. It may have been deleted or you may not have access to it.';
+          errorMessage =
+            'The selected agent could not be found. It may have been deleted or you may not have access to it.';
         }
         // Check for permission errors
         else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
-          errorMessage = 'You don\'t have permission to use this agent. Please check with your administrator.';
+          errorMessage = "You don't have permission to use this agent. Please check with your administrator.";
         }
-        
+
         webviewView.webview.postMessage({
           command: 'error',
           data: { message: errorMessage }
@@ -400,7 +414,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // Read the built HTML file which contains everything inlined
     const htmlPath = path.join(this.context.extensionPath, 'agent-chat-and-trace', 'dist', 'index.html');
     let html = fs.readFileSync(htmlPath, 'utf8');
-    
+
     // Add VSCode webview API script injection
     const vscodeScript = `
       <script>
@@ -408,10 +422,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         window.vscode = vscode;
       </script>
     `;
-    
+
     // Insert the vscode script before the closing head tag
     html = html.replace('</head>', `${vscodeScript}</head>`);
-    
+
     return html;
   }
 
@@ -429,7 +443,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   /**
    * Automatically continues the Apex Replay Debugger after it's launched,
    * eliminating the need for manual user interaction (clicking "Continue" button).
-   * 
+   *
    * The debugger initially stops at the first instruction in the log, but users
    * typically want to continue execution until they reach actual Apex code where
    * they have set breakpoints. This method automates that process.
@@ -437,25 +451,26 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private setupAutoDebugListeners(): void {
     let debuggerLaunched = false;
     const disposables: vscode.Disposable[] = [];
-    
+
     // Clean up function
     const cleanup = () => {
       disposables.forEach(d => d.dispose());
     };
-    
+
     // Listen for debug session start
-    const startDisposable = vscode.debug.onDidStartDebugSession((session) => {
+    const startDisposable = vscode.debug.onDidStartDebugSession(session => {
       console.log(`Debug session started - Type: "${session.type}", Name: "${session.name}"`);
-      
+
       // Check if this is an Apex replay debugger session
-      if (session.type === 'apex-replay' || 
-          session.type === 'apex' ||
-          session.name?.toLowerCase().includes('apex') ||
-          session.name?.toLowerCase().includes('replay')) {
-        
+      if (
+        session.type === 'apex-replay' ||
+        session.type === 'apex' ||
+        session.name?.toLowerCase().includes('apex') ||
+        session.name?.toLowerCase().includes('replay')
+      ) {
         debuggerLaunched = true;
         console.log(`Apex replay debugger session detected: ${session.name}`);
-        
+
         // Set up a timer to continue the debugger once it's ready
         // We need to wait for the debugger to fully initialize and stop at the first instruction
         setTimeout(async () => {
@@ -468,14 +483,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           } catch (continueErr) {
             console.warn('Could not auto-continue Apex replay debugger:', continueErr);
           }
-          
+
           // Clean up listeners after attempting to continue
           cleanup();
         }, 1000); // 1 second delay to ensure debugger is fully ready
       }
     });
     disposables.push(startDisposable);
-    
+
     // Failsafe cleanup after 15 seconds
     const timeoutDisposable = setTimeout(() => {
       if (!debuggerLaunched) {
@@ -488,7 +503,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {
     try {
-      const conn = this.selectedClientApp 
+      const conn = this.selectedClientApp
         ? await createConnectionWithClientApp(this.selectedClientApp)
         : await CoreExtensionService.getDefaultConnection();
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];

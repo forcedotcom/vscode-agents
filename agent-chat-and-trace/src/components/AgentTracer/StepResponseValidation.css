@@ -74,7 +74,7 @@
 
 .step-response-validation-code-block-content pre {
   color: var(--text-primary);
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
   line-height: 1.4;
   margin: 0;

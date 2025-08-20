@@ -1,8 +1,8 @@
-import React, { ReactNode, useState } from "react";
-import chevronIcon from "../../assets/chevron.svg";
-import clockIcon from "../../assets/clock.svg";
-import bookIcon from "../../assets/book.svg";
-import "./StepTopic.css";
+import React, { ReactNode, useState } from 'react';
+import chevronIcon from '../../assets/chevron.svg';
+import clockIcon from '../../assets/clock.svg';
+import bookIcon from '../../assets/book.svg';
+import './StepTopic.css';
 
 interface StepTopicProps {
   topicName: string;
@@ -24,21 +24,12 @@ const ExpandableSection: React.FC<{
 
   return (
     <div className="step-topic-expandable">
-      <button
-        className="step-topic-expandable-header"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <img
-          src={chevronIcon}
-          alt="Expand"
-          className={`step-topic-expand-icon ${isExpanded ? "expanded" : ""}`}
-        />
+      <button className="step-topic-expandable-header" onClick={() => setIsExpanded(!isExpanded)}>
+        <img src={chevronIcon} alt="Expand" className={`step-topic-expand-icon ${isExpanded ? 'expanded' : ''}`} />
         <span className="step-topic-section-title">{title}</span>
         {badge && <span className="step-topic-section-badge">{badge}</span>}
       </button>
-      {isExpanded && (
-        <div className="step-topic-expandable-content">{children}</div>
-      )}
+      {isExpanded && <div className="step-topic-expandable-content">{children}</div>}
     </div>
   );
 };
@@ -50,7 +41,7 @@ export const StepTopic: React.FC<StepTopicProps> = ({
   instructions,
   instructionsCount = 7,
   availableTopics,
-  availableTopicsCount = 4,
+  availableTopicsCount = 4
 }) => {
   return (
     <div className="step-topic step-topic--default">
@@ -61,11 +52,7 @@ export const StepTopic: React.FC<StepTopicProps> = ({
         </div>
         {timing && (
           <div className="step-topic-timing">
-            <img
-              src={clockIcon}
-              alt="Clock"
-              className="step-topic-timing-icon"
-            />
+            <img src={clockIcon} alt="Clock" className="step-topic-timing-icon" />
             {timing}
           </div>
         )}
@@ -80,10 +67,7 @@ export const StepTopic: React.FC<StepTopicProps> = ({
         </ExpandableSection>
       )}
       {availableTopics && (
-        <ExpandableSection
-          title="Available Topics"
-          badge={`${availableTopicsCount} available`}
-        >
+        <ExpandableSection title="Available Topics" badge={`${availableTopicsCount} available`}>
           {availableTopics}
         </ExpandableSection>
       )}

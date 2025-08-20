@@ -67,7 +67,7 @@
 }
 
 .plan-info-content .tracer-steps::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 20px;
   top: 0;
@@ -95,11 +95,11 @@
   .plan-info-header {
     padding: 0 8px;
   }
-  
+
   .plan-info-content {
     padding: 12px;
   }
-  
+
   .plan-info-content .tracer-steps::before {
     left: 16px;
   }
@@ -109,15 +109,15 @@
   .plan-info-header {
     padding: 0 6px;
   }
-  
+
   .plan-info-content {
     padding: 8px;
   }
-  
+
   .plan-info-content .tracer-steps::before {
     left: 12px;
   }
-  
+
   .plan-title {
     font-size: 12px;
   }

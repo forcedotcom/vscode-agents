@@ -28,12 +28,13 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
     // Force a fresh read of the config value
     await configAggregator.reload();
     const targetOrgAliasOrUsername = configAggregator.getPropertyValue<string>('target-org');
-    
+
     if (!targetOrgAliasOrUsername) {
       return {
         type: 'none',
         clientApps: [],
-        error: 'No default target org configured. Please set your default target org using "sf config set target-org <username>"'
+        error:
+          'No default target org configured. Please set your default target org using "sf config set target-org <username>"'
       };
     }
 
@@ -51,7 +52,7 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
     // Read the authentication file
     const homeDir = os.homedir();
     const authFilePath = path.join(homeDir, '.sfdx', `${resolvedUsername}.json`);
-    
+
     if (!fs.existsSync(authFilePath)) {
       return {
         type: 'none',
@@ -63,7 +64,7 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
 
     const fileContent = fs.readFileSync(authFilePath, 'utf8');
     const authData = JSON.parse(fileContent);
-    
+
     // Extract client apps from the object structure
     const clientApps: ClientApp[] = [];
     if (authData.clientApps && typeof authData.clientApps === 'object' && !Array.isArray(authData.clientApps)) {
@@ -97,7 +98,6 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
         username: authData.username || resolvedUsername
       };
     }
-
   } catch (error) {
     console.error('Error reading client apps:', error);
     return {
@@ -117,7 +117,7 @@ export async function createConnectionWithClientApp(clientAppName: string): Prom
   // Force a fresh read of the config value
   await configAggregator.reload();
   const targetOrgAliasOrUsername = configAggregator.getPropertyValue<string>('target-org');
-  
+
   if (!targetOrgAliasOrUsername) {
     throw new Error('No default target org configured');
   }

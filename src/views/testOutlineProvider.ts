@@ -110,11 +110,10 @@ export class AgentTestOutlineProvider implements vscode.TreeDataProvider<TestNod
     this.rootNode = new AgentTestGroupNode(AGENT_TESTS);
     this.agentTestMap.clear();
     this.agentTestMap = await parseAgentTestsFromProject();
-    
+
     // Sort test groups alphabetically by name
-    const sortedTestGroups = Array.from(this.agentTestMap.values())
-      .sort((a, b) => a.name.localeCompare(b.name));
-    
+    const sortedTestGroups = Array.from(this.agentTestMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
     this.rootNode.children.push(...sortedTestGroups);
     this.refreshView();
   }

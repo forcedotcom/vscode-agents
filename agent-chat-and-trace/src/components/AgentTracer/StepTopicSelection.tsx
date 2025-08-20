@@ -21,28 +21,21 @@ const ExpandableSection: React.FC<{
 
   return (
     <div className="step-topic-selection-expandable">
-      <button 
-        className="step-topic-selection-expandable-header"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <img 
-          src={chevronIcon} 
-          alt="Expand" 
+      <button className="step-topic-selection-expandable-header" onClick={() => setIsExpanded(!isExpanded)}>
+        <img
+          src={chevronIcon}
+          alt="Expand"
           className={`step-topic-selection-expand-icon ${isExpanded ? 'expanded' : ''}`}
         />
         <span className="step-topic-selection-section-title">{title}</span>
         {badge && <span className="step-topic-selection-section-badge">{badge}</span>}
       </button>
-      {isExpanded && (
-        <div className="step-topic-selection-expandable-content">
-          {children}
-        </div>
-      )}
+      {isExpanded && <div className="step-topic-selection-expandable-content">{children}</div>}
     </div>
   );
 };
 
-export const StepTopicSelection: React.FC<StepTopicSelectionProps> = ({ 
+export const StepTopicSelection: React.FC<StepTopicSelectionProps> = ({
   timing,
   promptUsed,
   availableTopics,
@@ -63,11 +56,7 @@ export const StepTopicSelection: React.FC<StepTopicSelectionProps> = ({
         )}
       </div>
       <div className="step-topic-selection-content">
-        {promptUsed && (
-          <ExpandableSection title="Prompt Used">
-            {promptUsed}
-          </ExpandableSection>
-        )}
+        {promptUsed && <ExpandableSection title="Prompt Used">{promptUsed}</ExpandableSection>}
         {availableTopics && (
           <ExpandableSection title="Available Topics" badge={`${availableTopicsCount} available`}>
             {availableTopics}
