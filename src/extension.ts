@@ -79,8 +79,6 @@ const registerTestView = (): vscode.Disposable => {
   return vscode.Disposable.from(...testViewItems);
 };
 
-
-
 const validateCLI = async () => {
   try {
     const { exec } = await import('child_process');
@@ -94,10 +92,10 @@ const validateCLI = async () => {
       });
     });
     if (!stdout.includes('agent')) {
-      // throw new Error('sf CLI + plugin-agent installed required');
+      throw new Error('sf CLI + plugin-agent installed required');
     }
   } catch {
-    // throw new Error('Failed to validate sf CLI and plugin-agent installation');
+    throw new Error('Failed to validate sf CLI and plugin-agent installation');
   }
 };
 
