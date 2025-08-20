@@ -8,10 +8,7 @@ interface StepResponseValidationProps {
   validationCode: string;
 }
 
-export const StepResponseValidation: React.FC<StepResponseValidationProps> = ({ 
-  timing,
-  validationCode
-}) => {
+export const StepResponseValidation: React.FC<StepResponseValidationProps> = ({ timing, validationCode }) => {
   return (
     <div className="step-response-validation step-response-validation--default">
       <div className="step-response-validation-header">

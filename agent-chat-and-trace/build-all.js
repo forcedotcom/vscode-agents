@@ -10,12 +10,12 @@ const commonConfig = {
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
-        manualChunks: undefined,
-      },
+        manualChunks: undefined
+      }
     },
     assetsInlineLimit: 100000000,
-    chunkSizeWarningLimit: 100000000,
-  },
+    chunkSizeWarningLimit: 100000000
+  }
 };
 
 async function buildAll() {
@@ -32,8 +32,8 @@ async function buildAll() {
     ...commonConfig,
     build: {
       ...commonConfig.build,
-      outDir: 'dist',
-    },
+      outDir: 'dist'
+    }
   });
 
   // Build tabs only
@@ -44,10 +44,10 @@ async function buildAll() {
       ...commonConfig.build,
       rollupOptions: {
         ...commonConfig.build.rollupOptions,
-        input: resolve(process.cwd(), 'tabs.html'),
+        input: resolve(process.cwd(), 'tabs.html')
       },
-      outDir: 'dist-temp-tabs',
-    },
+      outDir: 'dist-temp-tabs'
+    }
   });
   copyFileSync('dist-temp-tabs/tabs.html', 'dist/tabs.html');
 
@@ -59,10 +59,10 @@ async function buildAll() {
       ...commonConfig.build,
       rollupOptions: {
         ...commonConfig.build.rollupOptions,
-        input: resolve(process.cwd(), 'preview.html'),
+        input: resolve(process.cwd(), 'preview.html')
       },
-      outDir: 'dist-temp-preview',
-    },
+      outDir: 'dist-temp-preview'
+    }
   });
   copyFileSync('dist-temp-preview/preview.html', 'dist/preview.html');
 
@@ -74,10 +74,10 @@ async function buildAll() {
       ...commonConfig.build,
       rollupOptions: {
         ...commonConfig.build.rollupOptions,
-        input: resolve(process.cwd(), 'tracer.html'),
+        input: resolve(process.cwd(), 'tracer.html')
       },
-      outDir: 'dist-temp-tracer',
-    },
+      outDir: 'dist-temp-tracer'
+    }
   });
   copyFileSync('dist-temp-tracer/tracer.html', 'dist/tracer.html');
 

@@ -12,9 +12,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ type, content }) => {
   return (
     <div className={`chat-message ${type}`}>
       <div className="message-icon">
-        <img 
-          src={type === 'user' ? userIcon : agentIcon} 
-          alt={type === 'user' ? 'User' : 'Agent'} 
+        <img
+          src={type === 'user' ? userIcon : agentIcon}
+          alt={type === 'user' ? 'User' : 'Agent'}
           className="icon-svg"
         />
       </div>

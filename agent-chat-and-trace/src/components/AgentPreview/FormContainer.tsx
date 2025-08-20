@@ -42,25 +42,18 @@ const FormContainer: React.FC<FormContainerProps> = ({
   return (
     <div className="form-container">
       <div className="form-controls">
-        <AgentSelector 
+        <AgentSelector
           onClientAppRequired={onClientAppRequired}
           onClientAppSelection={onClientAppSelection}
           selectedAgent={selectedAgent}
           onAgentChange={onAgentChange}
         />
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
-        <button 
-          className="clear-chat-button" 
-          onClick={onClearChat}
-        >
+        <button className="clear-chat-button" onClick={onClearChat}>
           Reset
         </button>
       </div>
-      <ChatInput 
-        onSendMessage={onSendMessage} 
-        disabled={!sessionActive}
-        messages={messages}
-      />
+      <ChatInput onSendMessage={onSendMessage} disabled={!sessionActive} messages={messages} />
     </div>
   );
 };

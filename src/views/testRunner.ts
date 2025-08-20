@@ -77,13 +77,12 @@ export class AgentTestRunner {
           channelService.appendLine('');
         });
 
-      // it's not a real string[], more like just a string  "[&#39;IdentifyRecordByName&#39;]", so "[]", empty, is 2 characters
-      if (tc.generatedData?.actionsSequence?.length > 2) {
+      // Show generated data only if enabled in settings
+      const showGeneratedData = vscode.workspace.getConfiguration('agentforceDX').get<boolean>('showGeneratedData');
+      if (showGeneratedData && tc.generatedData?.actionsSequence?.length > 2) {
         channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(
-          formatJson(tc.generatedData.invokedActions)
-        );
+        channelService.appendLine(formatJson(tc.generatedData.invokedActions));
         channelService.appendLine('');
       }
 

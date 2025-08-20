@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { vscodeApi, AgentInfo } from "../../services/vscodeApi";
-import "./AgentSelector.css";
-import chevronIcon from "../../assets/chevron.svg";
+import React, { useState, useEffect } from 'react';
+import { vscodeApi, AgentInfo } from '../../services/vscodeApi';
+import './AgentSelector.css';
+import chevronIcon from '../../assets/chevron.svg';
 
 interface AgentSelectorProps {
   onClientAppRequired?: (data: any) => void;
@@ -10,7 +10,7 @@ interface AgentSelectorProps {
   onAgentChange: (agentId: string) => void;
 }
 
-const AgentSelector: React.FC<AgentSelectorProps> = ({ 
+const AgentSelector: React.FC<AgentSelectorProps> = ({
   onClientAppRequired,
   onClientAppSelection,
   selectedAgent,
@@ -32,7 +32,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     });
 
     // Listen for client app required message (Case 1) - pass to parent
-    vscodeApi.onMessage('clientAppRequired', (data) => {
+    vscodeApi.onMessage('clientAppRequired', data => {
       setIsLoading(false);
       if (onClientAppRequired) {
         onClientAppRequired(data);
@@ -40,7 +40,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     });
 
     // Listen for client app selection required (Case 3) - pass to parent
-    vscodeApi.onMessage('selectClientApp', (data) => {
+    vscodeApi.onMessage('selectClientApp', data => {
       setIsLoading(false);
       if (onClientAppSelection) {
         onClientAppSelection(data);
@@ -54,32 +54,27 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const handleAgentChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
     onAgentChange(agentId);
-    
+
     // End current session if one exists
     if (selectedAgent) {
       vscodeApi.endSession();
       // Small delay to ensure cleanup is complete
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
     // Only start session if a valid agent is selected
-    if (agentId && agentId !== "") {
+    if (agentId && agentId !== '') {
       vscodeApi.startSession(agentId);
     }
   };
 
   return (
     <div className="agent-selector">
-      <select 
-        className="agent-select" 
-        value={selectedAgent}
-        onChange={handleAgentChange}
-        disabled={isLoading}
-      >
+      <select className="agent-select" value={selectedAgent} onChange={handleAgentChange} disabled={isLoading}>
         <option value="">
-          {isLoading ? "Loading..." : agents.length === 0 ? "No agents available" : "Select an agent..."}
+          {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
         </option>
-        {agents.map((agent) => (
+        {agents.map(agent => (
           <option key={agent.id} value={agent.id}>
             {agent.name}
           </option>

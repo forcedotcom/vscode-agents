@@ -13,7 +13,7 @@ const DebugToggle: React.FC<DebugToggleProps> = ({ isEnabled, onChange }) => {
         <input
           type="checkbox"
           checked={isEnabled}
-          onChange={(e) => onChange(e.target.checked)}
+          onChange={e => onChange(e.target.checked)}
           className="debug-toggle-checkbox"
         />
         <span className="debug-toggle-slider"></span>

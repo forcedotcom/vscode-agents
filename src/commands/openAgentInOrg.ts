@@ -12,9 +12,9 @@ export const registerOpenAgentInOrgCommand = () => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const channelService = CoreExtensionService.getChannelService();
     telemetryService.sendCommandEvent(Commands.openAgentInOrg);
-    
+
     let agentName: string | undefined;
-    
+
     // If called from context menu with a file/directory, use that to determine the agent
     if (uri?.fsPath) {
       try {
@@ -23,7 +23,7 @@ export const registerOpenAgentInOrgCommand = () => {
         console.warn('Failed to get agent name from path, falling back to picker:', error);
       }
     }
-    
+
     // If no agent name from context, prompt user to select
     if (!agentName) {
       const project = SfProject.getInstance();

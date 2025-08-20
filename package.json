@@ -2,7 +2,7 @@
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
   "description": "Provides a suite of tools to build, preview, and test agents",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "publisher": "salesforce",
   "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
   "enableO11y": "true",
@@ -117,6 +117,11 @@
     "configuration": {
       "title": "Agentforce DX",
       "properties": {
+        "agentforceDX.showGeneratedData": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show generated data in test results output"
+        },
         "agentforceDX.showAgentTracer(Mocked)": {
           "type": "boolean",
           "default": false,
@@ -150,7 +155,6 @@
         }
       ]
     },
-
     "menus": {
       "view/title": [
         {
@@ -167,6 +171,16 @@
           "command": "sf.agent.test.view.collapseAll",
           "when": "view == sf.agent.test.view",
           "group": "navigation@3"
+        },
+        {
+          "command": "sf.agent.test.view.toggleGeneratedData.on",
+          "when": "view == sf.agent.test.view && agentforceDX:showGeneratedData",
+          "group": "navigation@4"
+        },
+        {
+          "command": "sf.agent.test.view.toggleGeneratedData.off",
+          "when": "view == sf.agent.test.view && !agentforceDX:showGeneratedData",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -183,34 +197,34 @@
       "editor/context": [
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@2"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@3"
         }
       ],
       "explorer/context": [
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@2"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || (explorerResourceIsFolder && resourcePath =~ /.*bots/) || (explorerResourceIsFolder && resourcePath =~ /.*botVersions/)",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@3"
         }
       ],
@@ -328,6 +342,24 @@
       {
         "command": "salesforcedx-vscode-agents.deactivateAgent",
         "title": "%salesforcedx-vscode-agents.deactivateAgent%"
+      },
+      {
+        "command": "sf.agent.test.view.toggleGeneratedData.on",
+        "title": "Hide Generated Data Output",
+        "category": "Agent Tests",
+        "icon": {
+          "light": "resources/light/check-on.svg",
+          "dark": "resources/dark/check-on.svg"
+        }
+      },
+      {
+        "command": "sf.agent.test.view.toggleGeneratedData.off",
+        "title": "Show Generated Data Output",
+        "category": "Agent Tests",
+        "icon": {
+          "light": "resources/light/check-off.svg",
+          "dark": "resources/dark/check-off.svg"
+        }
       }
     ]
   }

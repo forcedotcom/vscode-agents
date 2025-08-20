@@ -11,13 +11,7 @@ interface StepActionProps {
   outputCode?: string;
 }
 
-export const StepAction: React.FC<StepActionProps> = ({ 
-  actionName,
-  description,
-  timing,
-  inputCode,
-  outputCode
-}) => {
+export const StepAction: React.FC<StepActionProps> = ({ actionName, description, timing, inputCode, outputCode }) => {
   return (
     <div className="step-action step-action--default">
       <div className="step-action-header">

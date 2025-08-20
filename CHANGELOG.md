@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/salesforcecli/vsode-agents/compare/v1.1.3...v1.2.0) (2025-08-20)
+
+### Features
+
+- Chat with an active agent in your org with the new Agent Preview panel. Enable Debug Mode to automatically invoke the Apex Replay Debugger to debug Apex classes that are invoked as agent actions during the chat.
+- Show generated data in agent test results by either enabling the new "Agentforce DX: Show Generated Data" setting or clicking the new square icon in the Agent Tests panel. Generated data, which is in JSON format, isn't displayed by default because it can get pretty long, depending on how complicated the action is.
+
 ## [1.1.3](https://github.com/salesforcecli/vsode-agents/compare/v1.1.2...v1.1.3) (2025-08-13)
 
 ### Bug Fixes

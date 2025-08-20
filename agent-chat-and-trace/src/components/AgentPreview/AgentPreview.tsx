@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import ChatContainer from "./ChatContainer";
-import FormContainer from "./FormContainer";
-import { vscodeApi, Message } from "../../services/vscodeApi";
-import "./AgentPreview.css";
+import React, { useState, useEffect } from 'react';
+import ChatContainer from './ChatContainer';
+import FormContainer from './FormContainer';
+import { vscodeApi, Message } from '../../services/vscodeApi';
+import './AgentPreview.css';
 
 interface ClientApp {
   name: string;
@@ -18,11 +18,11 @@ const AgentPreview: React.FC = () => {
   const [agentConnected, setAgentConnected] = useState(false);
   const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
-  const [selectedAgentId, setSelectedAgentId] = useState("");
+  const [selectedAgentId, setSelectedAgentId] = useState('');
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
-    vscodeApi.onMessage('sessionStarted', (data) => {
+    vscodeApi.onMessage('sessionStarted', data => {
       setSessionActive(true);
       setIsLoading(false);
       setHasSelectedAgent(true);
@@ -52,7 +52,7 @@ const AgentPreview: React.FC = () => {
       setMessages([]); // Just clear messages without showing transition message
     });
 
-    vscodeApi.onMessage('messageSent', (data) => {
+    vscodeApi.onMessage('messageSent', data => {
       setIsLoading(false);
       if (data && data.content) {
         const agentMessage: Message = {
@@ -69,16 +69,14 @@ const AgentPreview: React.FC = () => {
       setIsLoading(true);
     });
 
-    vscodeApi.onMessage('error', (data) => {
+    vscodeApi.onMessage('error', data => {
       setIsLoading(false);
       setAgentConnected(false); // Reset agent connected state on error
-      
+
       // Remove the "Starting session..." message if it exists
       setMessages(prev => {
-        const filteredMessages = prev.filter(msg => 
-          !(msg.type === 'system' && msg.content === 'Starting session...')
-        );
-        
+        const filteredMessages = prev.filter(msg => !(msg.type === 'system' && msg.content === 'Starting session...'));
+
         // Add the error message
         const errorMessage: Message = {
           id: Date.now().toString(),
@@ -87,7 +85,7 @@ const AgentPreview: React.FC = () => {
           systemType: 'error',
           timestamp: new Date().toISOString()
         };
-        
+
         return [...filteredMessages, errorMessage];
       });
     });
@@ -98,7 +96,7 @@ const AgentPreview: React.FC = () => {
       setAgentConnected(false); // Reset agent connected state when session ends
     });
 
-    vscodeApi.onMessage('debugModeChanged', (data) => {
+    vscodeApi.onMessage('debugModeChanged', data => {
       if (data && data.message) {
         const debugMessage: Message = {
           id: Date.now().toString(),
@@ -111,7 +109,7 @@ const AgentPreview: React.FC = () => {
       }
     });
 
-    vscodeApi.onMessage('debugLogProcessed', (data) => {
+    vscodeApi.onMessage('debugLogProcessed', data => {
       if (data && data.message) {
         const logMessage: Message = {
           id: Date.now().toString(),
@@ -124,7 +122,7 @@ const AgentPreview: React.FC = () => {
       }
     });
 
-    vscodeApi.onMessage('debugLogError', (data) => {
+    vscodeApi.onMessage('debugLogError', data => {
       if (data && data.message) {
         const errorMessage: Message = {
           id: Date.now().toString(),
@@ -137,7 +135,7 @@ const AgentPreview: React.FC = () => {
       }
     });
 
-    vscodeApi.onMessage('debugLogInfo', (data) => {
+    vscodeApi.onMessage('debugLogInfo', data => {
       if (data && data.message) {
         const infoMessage: Message = {
           id: Date.now().toString(),
@@ -186,12 +184,12 @@ const AgentPreview: React.FC = () => {
     // Allow sending even when loading - let the backend handle message queuing
     const userMessage: Message = {
       id: Date.now().toString(),
-      type: "user",
+      type: 'user',
       content,
       timestamp: new Date().toISOString()
     };
     setMessages(prev => [...prev, userMessage]);
-    
+
     // Send message to VS Code
     vscodeApi.sendChatMessage(content);
   };
@@ -199,7 +197,7 @@ const AgentPreview: React.FC = () => {
   const handleDebugModeChange = (enabled: boolean) => {
     setDebugMode(enabled);
     vscodeApi.setApexDebugging(enabled);
-    
+
     const debugMessage: Message = {
       id: Date.now().toString(),
       type: 'system',
@@ -219,7 +217,7 @@ const AgentPreview: React.FC = () => {
     setAgentConnected(false);
     setClientAppState('none');
     setAvailableClientApps([]);
-    setSelectedAgentId(""); // Reset selected agent
+    setSelectedAgentId(''); // Reset selected agent
 
     // Show welcome message
     const welcomeMessage: Message = {
@@ -250,8 +248,8 @@ const AgentPreview: React.FC = () => {
         content:
           'Client app required for agent preview. See "Preview an Agent" in the Agentforce Developer Guide for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html',
         systemType: 'error',
-        timestamp: new Date().toISOString(),
-      },
+        timestamp: new Date().toISOString()
+      }
     ]);
   };
 
@@ -285,22 +283,24 @@ const AgentPreview: React.FC = () => {
           <div className="placeholder-content">
             <h3>Welcome to Agent Chat</h3>
             <p>Select an agent from the dropdown below to start a conversation.</p>
-            <p><strong>Note:</strong> Agents are loaded from your Salesforce org. Only active agents are shown.</p>
+            <p>
+              <strong>Note:</strong> Agents are loaded from your Salesforce org. Only active agents are shown.
+            </p>
           </div>
         </div>
-              <FormContainer
-        debugMode={debugMode}
-        onDebugModeChange={handleDebugModeChange}
-        onSendMessage={handleSendMessage}
-        onClearChat={handleClearChat}
-        sessionActive={false}
-        isLoading={isLoading}
-        messages={messages}
-        onClientAppRequired={handleClientAppRequired}
-        onClientAppSelection={handleClientAppSelection}
-        selectedAgent={selectedAgentId}
-        onAgentChange={setSelectedAgentId}
-      />
+        <FormContainer
+          debugMode={debugMode}
+          onDebugModeChange={handleDebugModeChange}
+          onSendMessage={handleSendMessage}
+          onClearChat={handleClearChat}
+          sessionActive={false}
+          isLoading={isLoading}
+          messages={messages}
+          onClientAppRequired={handleClientAppRequired}
+          onClientAppSelection={handleClientAppSelection}
+          selectedAgent={selectedAgentId}
+          onAgentChange={setSelectedAgentId}
+        />
       </div>
     );
   }
@@ -308,12 +308,12 @@ const AgentPreview: React.FC = () => {
   // Render client app selection UI in the chat area for case 3
   const renderClientAppSelection = () => {
     if (clientAppState !== 'selecting') return null;
-    
+
     return (
       <div style={{ padding: '16px', borderBottom: '1px solid #eee' }}>
         <h4>Select Client App:</h4>
-        <select 
-          onChange={(e) => {
+        <select
+          onChange={e => {
             if (e.target.value) {
               handleClientAppSelected(e.target.value);
             }
@@ -321,7 +321,7 @@ const AgentPreview: React.FC = () => {
           style={{ padding: '8px', marginRight: '8px', minWidth: '200px' }}
         >
           <option value="">Choose a client app...</option>
-          {availableClientApps.map((app) => (
+          {availableClientApps.map(app => (
             <option key={app.name} value={app.name}>
               {app.name}
             </option>
@@ -334,10 +334,7 @@ const AgentPreview: React.FC = () => {
   return (
     <div className="agent-preview">
       {renderClientAppSelection()}
-      <ChatContainer 
-        messages={messages} 
-        isLoading={isLoading}
-      />
+      <ChatContainer messages={messages} isLoading={isLoading} />
       <FormContainer
         debugMode={debugMode}
         onDebugModeChange={handleDebugModeChange}

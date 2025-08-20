@@ -118,15 +118,15 @@
   .step-topic-selection-header {
     padding: 0 8px;
   }
-  
+
   .step-topic-selection-expandable {
     padding: 0 12px;
   }
-  
+
   .step-topic-selection-expandable-content {
     margin-left: 12px;
   }
-  
+
   .step-topic-selection-title {
     gap: 6px;
   }
@@ -136,20 +136,20 @@
   .step-topic-selection-header {
     padding: 0 6px;
   }
-  
+
   .step-topic-selection-expandable {
     padding: 0 8px;
   }
-  
+
   .step-topic-selection-expandable-content {
     margin-left: 8px;
   }
-  
+
   .step-topic-selection-title {
     gap: 4px;
     font-size: 12px;
   }
-  
+
   .step-topic-selection-timing {
     font-size: 12px;
   }
