@@ -8,10 +8,7 @@ interface StepUserMessageProps {
   timing?: string;
 }
 
-export const StepUserMessage: React.FC<StepUserMessageProps> = ({ 
-  message, 
-  timing 
-}) => {
+export const StepUserMessage: React.FC<StepUserMessageProps> = ({ message, timing }) => {
   return (
     <div className="step-user-message step-user-message--user">
       <div className="step-user-message-header">

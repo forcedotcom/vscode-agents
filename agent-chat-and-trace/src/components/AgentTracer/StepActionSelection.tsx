@@ -19,31 +19,21 @@ const ExpandableSection: React.FC<{
 
   return (
     <div className="step-action-selection-expandable">
-      <button 
-        className="step-action-selection-expandable-header"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <img 
-          src={chevronIcon} 
-          alt="Expand" 
+      <button className="step-action-selection-expandable-header" onClick={() => setIsExpanded(!isExpanded)}>
+        <img
+          src={chevronIcon}
+          alt="Expand"
           className={`step-action-selection-expand-icon ${isExpanded ? 'expanded' : ''}`}
         />
         <span className="step-action-selection-section-title">{title}</span>
         {badge && <span className="step-action-selection-section-badge">{badge}</span>}
       </button>
-      {isExpanded && (
-        <div className="step-action-selection-expandable-content">
-          {children}
-        </div>
-      )}
+      {isExpanded && <div className="step-action-selection-expandable-content">{children}</div>}
     </div>
   );
 };
 
-export const StepActionSelection: React.FC<StepActionSelectionProps> = ({ 
-  timing,
-  promptUsed
-}) => {
+export const StepActionSelection: React.FC<StepActionSelectionProps> = ({ timing, promptUsed }) => {
   return (
     <div className="step-action-selection">
       <div className="step-action-selection-header">
@@ -60,9 +50,7 @@ export const StepActionSelection: React.FC<StepActionSelectionProps> = ({
       </div>
       {promptUsed && (
         <div className="step-action-selection-content">
-          <ExpandableSection title="Prompt Used">
-            {promptUsed}
-          </ExpandableSection>
+          <ExpandableSection title="Prompt Used">{promptUsed}</ExpandableSection>
         </div>
       )}
     </div>

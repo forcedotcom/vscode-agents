@@ -28,21 +28,13 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) =>
 
   return (
     <div className="chat-container">
-      {messages.map((message) => (
+      {messages.map(message =>
         message.type === 'system' ? (
-          <SystemMessage
-            key={message.id}
-            content={message.content}
-            type={message.systemType}
-          />
+          <SystemMessage key={message.id} content={message.content} type={message.systemType} />
         ) : (
-          <ChatMessage
-            key={message.id}
-            type={message.type}
-            content={message.content}
-          />
+          <ChatMessage key={message.id} type={message.type} content={message.content} />
         )
-      ))}
+      )}
       {isLoading && (
         <div className="chat-loading">
           <div className="loading-dots">

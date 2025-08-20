@@ -11,7 +11,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Listen for configuration updates
-    vscodeApi.onMessage('configuration', (data) => {
+    vscodeApi.onMessage('configuration', data => {
       if (data.section === 'agentforceDX.showAgentTracer(Mocked)') {
         setShowTracerTab(data.value === true);
         // If tracer tab is being hidden and it's currently active, switch to preview
@@ -31,11 +31,7 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
-      <TabNavigation 
-        activeTab={activeTab} 
-        onTabChange={handleTabChange} 
-        showTracerTab={showTracerTab}
-      />
+      <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
       <div className="app-content">
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview />

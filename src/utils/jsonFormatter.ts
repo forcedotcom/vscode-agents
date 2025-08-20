@@ -19,7 +19,7 @@ function stringify(value: unknown, replacer?: unknown, spaces?: number): string 
 function serializer(replacer: unknown, cycleReplacer?: unknown) {
   const stack: unknown[] = [];
   const keys: string[] = [];
-  
+
   if (!cycleReplacer) {
     cycleReplacer = function (_key: string, value: unknown) {
       if (stack[0] === value) return '[Circular ~]';
@@ -39,7 +39,7 @@ function serializer(replacer: unknown, cycleReplacer?: unknown) {
     } else {
       stack.push(value);
     }
-    
+
     // @ts-expect-error because `this` is not typed
     return replacer ? (replacer as any).call(this, key, value) : value;
   };
@@ -47,7 +47,7 @@ function serializer(replacer: unknown, cycleReplacer?: unknown) {
 
 /**
  * Formats JSON input into a pretty-printed string with 2-space indentation.
- * 
+ *
  * @param json - The JSON object or string to format
  * @returns Pretty-formatted JSON string
  */

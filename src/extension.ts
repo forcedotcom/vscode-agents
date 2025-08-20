@@ -15,8 +15,6 @@ import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
 
-
-
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
   const extensionHRStart = process.hrtime();
@@ -87,7 +85,7 @@ const registerTestView = async (): Promise<vscode.Disposable> => {
 
   // Listen for configuration changes
   testViewItems.push(
-    vscode.workspace.onDidChangeConfiguration(async (e) => {
+    vscode.workspace.onDidChangeConfiguration(async e => {
       if (e.affectsConfiguration('agentforceDX.showGeneratedData')) {
         await updateGeneratedDataContext();
       }
@@ -109,8 +107,6 @@ const registerTestView = async (): Promise<vscode.Disposable> => {
 
   return vscode.Disposable.from(...testViewItems);
 };
-
-
 
 const validateCLI = async () => {
   try {

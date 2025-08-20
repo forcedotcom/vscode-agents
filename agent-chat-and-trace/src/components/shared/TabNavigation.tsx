@@ -17,18 +17,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
   return (
     <nav className="tab-navigation">
       <div className="tab-navigation-left">
-        <button 
-          className={`tab ${activeTab === 'preview' ? 'active' : ''}`}
-          onClick={() => handleTabClick('preview')}
-        >
+        <button className={`tab ${activeTab === 'preview' ? 'active' : ''}`} onClick={() => handleTabClick('preview')}>
           <img src={commentIcon} alt="Comment" className="tab-icon-svg" />
           Agent Preview
         </button>
         {showTracerTab && (
-          <button 
-            className={`tab ${activeTab === 'tracer' ? 'active' : ''}`}
-            onClick={() => handleTabClick('tracer')}
-          >
+          <button className={`tab ${activeTab === 'tracer' ? 'active' : ''}`} onClick={() => handleTabClick('tracer')}>
             <img src={treeIcon} alt="Tree" className="tab-icon-svg" />
             Agent Tracer
           </button>

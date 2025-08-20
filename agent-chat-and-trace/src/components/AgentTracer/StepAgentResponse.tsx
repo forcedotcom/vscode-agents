@@ -6,9 +6,7 @@ interface StepAgentResponseProps {
   response: string;
 }
 
-export const StepAgentResponse: React.FC<StepAgentResponseProps> = ({ 
-  response
-}) => {
+export const StepAgentResponse: React.FC<StepAgentResponseProps> = ({ response }) => {
   return (
     <div className="step-agent-response step-agent-response--response">
       <div className="step-agent-response-header">

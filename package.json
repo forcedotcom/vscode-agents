@@ -2,7 +2,7 @@
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
   "description": "Provides a suite of tools to build, preview, and test agents",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "publisher": "salesforce",
   "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
   "enableO11y": "true",
@@ -155,7 +155,6 @@
         }
       ]
     },
-
     "menus": {
       "view/title": [
         {
@@ -311,7 +310,6 @@
           "dark": "resources/dark/collapse-all.svg"
         }
       },
-
       {
         "command": "sf.agent.test.view.runAll",
         "title": "%run_all_tests_title%",

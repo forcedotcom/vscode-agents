@@ -7,9 +7,9 @@ declare global {
 
 export interface Message {
   id: string;
-  type: "user" | "agent" | "system";
+  type: 'user' | 'agent' | 'system';
   content: string;
-  systemType?: "session" | "debug" | "error";
+  systemType?: 'session' | 'debug' | 'error';
   timestamp?: string;
 }
 
@@ -27,7 +27,14 @@ export interface TraceData {
 }
 
 export interface TraceStep {
-  type: 'userMessage' | 'topicSelection' | 'topic' | 'actionSelection' | 'action' | 'responseValidation' | 'agentResponse';
+  type:
+    | 'userMessage'
+    | 'topicSelection'
+    | 'topic'
+    | 'actionSelection'
+    | 'action'
+    | 'responseValidation'
+    | 'agentResponse';
   timing: string;
   data: any;
 }
@@ -38,7 +45,7 @@ class VSCodeApiService {
 
   constructor() {
     // Listen for messages from VS Code
-    window.addEventListener('message', (event) => {
+    window.addEventListener('message', event => {
       const message = event.data;
       const handler = this.messageHandlers.get(message.command);
       if (handler) {

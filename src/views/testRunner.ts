@@ -82,9 +82,7 @@ export class AgentTestRunner {
       if (showGeneratedData && tc.generatedData?.actionsSequence?.length > 2) {
         channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(
-          formatJson(tc.generatedData.invokedActions)
-        );
+        channelService.appendLine(formatJson(tc.generatedData.invokedActions));
         channelService.appendLine('');
       }
 
