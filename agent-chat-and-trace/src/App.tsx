@@ -12,7 +12,7 @@ const App: React.FC = () => {
   useEffect(() => {
     // Listen for configuration updates
     vscodeApi.onMessage('configuration', data => {
-      if (data.section === 'agentforceDX.showAgentTracer(Mocked)') {
+      if (data.section === 'salesforce.agentforceDX.showAgentTracer(Mocked)') {
         setShowTracerTab(data.value === true);
         // If tracer tab is being hidden and it's currently active, switch to preview
         if (!data.value && activeTab === 'tracer') {
@@ -22,7 +22,7 @@ const App: React.FC = () => {
     });
 
     // Request the current configuration
-    vscodeApi.getConfiguration('agentforceDX.showAgentTracer(Mocked)');
+    vscodeApi.getConfiguration('salesforce.agentforceDX.showAgentTracer(Mocked)');
   }, [activeTab]);
 
   const handleTabChange = (tab: 'preview' | 'tracer') => {
