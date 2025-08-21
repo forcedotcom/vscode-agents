@@ -88,8 +88,8 @@ class VSCodeApiService {
   }
 
   // Trace data
-  getTraceData(traceId?: string) {
-    this.postMessage('getTraceData', traceId ? { traceId } : undefined);
+  getTraceData() {
+    this.postMessage('getTraceData');
   }
 
   // Clear chat

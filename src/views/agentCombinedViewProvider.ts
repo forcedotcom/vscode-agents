@@ -26,9 +26,23 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // Listen for configuration changes
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer(Mocked)') || 
-            e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
+        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer(Mocked)')) {
           this.notifyConfigurationChange();
+        }
+        if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
+          // Get the new mock file path
+          const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+          const mockFile = config.get<string>('mockFile');
+          
+          // Update internal state
+          this.updateMockFile(mockFile);
+
+          // Notify webview to refresh data
+          if (this.webviewView) {
+            this.webviewView.webview.postMessage({
+              command: 'getTraceData'
+            });
+          }
         }
       })
     );
@@ -37,6 +51,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public updateMockFile(filePath: string | undefined): void {
     // Trim any whitespace from the file path
     this.mockFile = filePath?.trim();
+
+    // Trigger a data reload if we have a webview
+    if (this.webviewView) {
+      this.webviewView.webview.postMessage({
+        command: 'getTraceData'
+      });
+    }
   }
 
   public resolveWebviewView(
