@@ -46,6 +46,21 @@
   white-space: nowrap;
 }
 
+.toggle-all-button {
+  background: transparent;
+  border: none;
+  color: var(--vscode-editor-foreground);
+  cursor: pointer;
+  font-size: var(--vscode-font-size);
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-right: 8px;
+}
+
+.toggle-all-button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
 .session-info-content {
   padding: 12px;
   background-color: var(--bg-primary);

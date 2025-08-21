@@ -16,6 +16,7 @@ const AgentTracer: React.FC = () => {
   const [traceData, setTraceData] = useState<AgentTraceResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   useEffect(() => {
     // Listen for trace data response
@@ -58,6 +59,10 @@ const AgentTracer: React.FC = () => {
     );
   }
 
+  const toggleExpansion = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <div className="agent-tracer">
       <div className="tracer-content">
@@ -68,14 +73,17 @@ const AgentTracer: React.FC = () => {
             <SessionInfo
               date={new Date().toLocaleString()}
               sessionId={traceData.actions[0]?.returnValue.sessionId || 'Unknown Session'}
-              isExpanded={true}
+              isExpanded={isExpanded}
+              onToggleAll={toggleExpansion}
+              isAllExpanded={isExpanded}
             />
             {traceData.actions.map((action, actionIndex) => (
               <PlanInfo
                 key={`${action.returnValue.planId}-${actionIndex}`}
                 title={action.returnValue.plan.find(step => step.type === 'UserInputStep')?.message || 'Untitled Plan'}
                 planId={action.returnValue.planId || 'unknown'}
-                isExpanded={true}
+                isExpanded={isExpanded}
+                onToggleExpand={toggleExpansion}
               >
                 <div className="tracer-steps">
                   {Array.isArray(action.returnValue.plan) ? (

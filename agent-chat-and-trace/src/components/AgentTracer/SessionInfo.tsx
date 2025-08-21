@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import chevronIcon from '../../assets/chevron.svg';
 import './SessionInfo.css';
 
@@ -6,16 +6,31 @@ interface SessionInfoProps {
   date: string;
   sessionId: string;
   isExpanded?: boolean;
+  onToggleAll?: () => void;
+  isAllExpanded?: boolean;
 }
 
-export const SessionInfo: React.FC<SessionInfoProps> = ({ date, sessionId, isExpanded: initialExpanded = false }) => {
-  const [isExpanded, setIsExpanded] = useState(initialExpanded);
+export const SessionInfo: React.FC<SessionInfoProps> = ({ 
+  date, 
+  sessionId, 
+  isExpanded = false,
+  onToggleAll,
+  isAllExpanded = true
+}) => {
 
   return (
     <div className="session-info">
-      <button className="session-info-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <button className="session-info-header" onClick={onToggleAll}>
         <img src={chevronIcon} alt="Expand" className={`session-icon ${isExpanded ? 'expanded' : ''}`} />
         <span className="session-title">Session Details</span>
+        {onToggleAll && (
+          <button className="toggle-all-button" onClick={(e) => {
+            e.stopPropagation();
+            onToggleAll();
+          }}>
+            {isAllExpanded ? 'Collapse All' : 'Expand All'}
+          </button>
+        )}
       </button>
       {isExpanded && (
         <div className="session-info-content">
