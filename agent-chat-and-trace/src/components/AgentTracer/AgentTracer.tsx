@@ -7,27 +7,17 @@ import { StepTopic } from './StepTopic';
 import { StepActionSelection } from './StepActionSelection';
 import { StepAction } from './StepAction';
 import { StepAgentResponse } from './StepAgentResponse';
-import { TraceSelector } from './TraceSelector';
+
 import { vscodeApi } from '../../services/vscodeApi';
 import { AgentTraceResponse } from '@salesforce/agents-bundle';
 import './AgentTracer.css';
 
 const AgentTracer: React.FC = () => {
-  const [traceIds, setTraceIds] = useState<string[]>([]);
-  const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
   const [traceData, setTraceData] = useState<AgentTraceResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Request available trace IDs when component mounts
-    vscodeApi.getTraceIds();
-
-    // Listen for trace IDs response
-    vscodeApi.onMessage('traceIds', data => {
-      setTraceIds(data.traceIds);
-    });
-
     // Listen for trace data response
     vscodeApi.onMessage('traceData', data => {
       setTraceData(data);
@@ -40,14 +30,19 @@ const AgentTracer: React.FC = () => {
       setError(data.message);
       setLoading(false);
     });
-  }, []);
 
-  const handleTraceSelect = (traceId: string) => {
-    setSelectedTraceId(traceId);
-    setLoading(true);
-    setError(null);
-    vscodeApi.getTraceData(traceId);
-  };
+    // Listen for configuration changes
+    vscodeApi.onMessage('configuration', data => {
+      if (data.section === 'salesforce.agentforceDX.mockFile') {
+        // Reload trace data when mock file changes
+        setLoading(true);
+        vscodeApi.getTraceData(undefined);
+      }
+    });
+
+    // Request trace data when component mounts
+    vscodeApi.getTraceData(undefined);
+  }, []);
 
   if (error) {
     return (
@@ -59,7 +54,6 @@ const AgentTracer: React.FC = () => {
 
   return (
     <div className="agent-tracer">
-      <TraceSelector traceIds={traceIds} selectedTraceId={selectedTraceId} onTraceSelect={handleTraceSelect} />
       <div className="tracer-content">
         {loading ? (
           <div className="tracer-loading">Loading trace data...</div>

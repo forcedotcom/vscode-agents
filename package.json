@@ -115,17 +115,21 @@
   ],
   "contributes": {
     "configuration": {
-      "title": "Agentforce DX",
+      "title": "Salesforce",
       "properties": {
-        "agentforceDX.showGeneratedData": {
+        "salesforce.agentforceDX.showGeneratedData": {
           "type": "boolean",
           "default": false,
           "description": "Show generated data in test results output"
         },
-        "agentforceDX.showAgentTracer(Mocked)": {
+        "salesforce.agentforceDX.showAgentTracer(Mocked)": {
           "type": "boolean",
           "default": false,
           "description": "Show the mocked Agent Tracer tab in the Agent Preview panel"
+        },
+        "salesforce.agentforceDX.mockFile": {
+          "type": "string",
+          "description": "Absolute path to the mock agent trace response file"
         }
       }
     },

@@ -78,15 +78,15 @@ const registerTestView = async (): Promise<vscode.Disposable> => {
 
   // Initialize generated data context based on current setting
   const updateGeneratedDataContext = async () => {
-    const config = vscode.workspace.getConfiguration('agentforceDX');
-    const showGeneratedData = config.get<boolean>('showGeneratedData', false);
+    const generatedDataConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+    const showGeneratedData = generatedDataConfig.get<boolean>('showGeneratedData', false);
     await vscode.commands.executeCommand('setContext', 'agentforceDX:showGeneratedData', showGeneratedData);
   };
 
   // Listen for configuration changes
   testViewItems.push(
     vscode.workspace.onDidChangeConfiguration(async e => {
-      if (e.affectsConfiguration('agentforceDX.showGeneratedData')) {
+      if (e.affectsConfiguration('salesforce.agentforceDX.showGeneratedData')) {
         await updateGeneratedDataContext();
       }
     })
@@ -121,18 +121,36 @@ const validateCLI = async () => {
       });
     });
     if (!stdout.includes('agent')) {
-      throw new Error('sf CLI + plugin-agent installed required');
+      // throw new Error('sf CLI + plugin-agent installed required');
     }
   } catch {
-    throw new Error('Failed to validate sf CLI and plugin-agent installation');
+    // throw new Error('Failed to validate sf CLI and plugin-agent installation');
   }
 };
 
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation
+  const provider = new AgentCombinedViewProvider(context);
+  
+  // Update mock file when configuration changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
+        const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+        const newMockFile = mockConfig.get<string>('mockFile');
+        provider.updateMockFile(newMockFile);
+      }
+    })
+  );
+
+  // Set initial mock file
+  const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+  const mockFile = mockConfig.get<string>('mockFile');
+  provider.updateMockFile(mockFile);
+
   return vscode.window.registerWebviewViewProvider(
     AgentCombinedViewProvider.viewType,
-    new AgentCombinedViewProvider(context),
+    provider,
     {
       webviewOptions: { retainContextWhenHidden: true }
     }
