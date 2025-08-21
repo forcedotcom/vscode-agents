@@ -17,6 +17,7 @@ const AgentTracer: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['session']));
 
   useEffect(() => {
     // Listen for trace data response
@@ -60,7 +61,31 @@ const AgentTracer: React.FC = () => {
   }
 
   const toggleExpansion = () => {
-    setIsExpanded(!isExpanded);
+    const newState = !isExpanded;
+    setIsExpanded(newState);
+    if (newState) {
+      // Expand all sections
+      const allSections = new Set(['session']);
+      traceData?.actions.forEach((_, index) => {
+        allSections.add(`plan-${index}`);
+      });
+      setExpandedSections(allSections);
+    } else {
+      // Collapse all sections
+      setExpandedSections(new Set());
+    }
+  };
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
   };
 
   return (
@@ -73,7 +98,8 @@ const AgentTracer: React.FC = () => {
             <SessionInfo
               date={new Date().toLocaleString()}
               sessionId={traceData.actions[0]?.returnValue.sessionId || 'Unknown Session'}
-              isExpanded={isExpanded}
+              isExpanded={expandedSections.has('session')}
+              onToggle={() => toggleSection('session')}
               onToggleAll={toggleExpansion}
               isAllExpanded={isExpanded}
             />
@@ -82,8 +108,8 @@ const AgentTracer: React.FC = () => {
                 key={`${action.returnValue.planId}-${actionIndex}`}
                 title={action.returnValue.plan.find(step => step.type === 'UserInputStep')?.message || 'Untitled Plan'}
                 planId={action.returnValue.planId || 'unknown'}
-                isExpanded={isExpanded}
-                onToggleExpand={toggleExpansion}
+                isExpanded={expandedSections.has(`plan-${actionIndex}`)}
+                onToggle={() => toggleSection(`plan-${actionIndex}`)}
               >
                 <div className="tracer-steps">
                   {Array.isArray(action.returnValue.plan) ? (

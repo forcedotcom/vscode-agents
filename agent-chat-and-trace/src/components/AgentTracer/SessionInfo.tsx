@@ -6,6 +6,7 @@ interface SessionInfoProps {
   date: string;
   sessionId: string;
   isExpanded?: boolean;
+  onToggle?: () => void;
   onToggleAll?: () => void;
   isAllExpanded?: boolean;
 }
@@ -14,13 +15,14 @@ export const SessionInfo: React.FC<SessionInfoProps> = ({
   date, 
   sessionId, 
   isExpanded = false,
+  onToggle,
   onToggleAll,
   isAllExpanded = true
 }) => {
 
   return (
     <div className="session-info">
-      <button className="session-info-header" onClick={onToggleAll}>
+      <button className="session-info-header" onClick={onToggle}>
         <img src={chevronIcon} alt="Expand" className={`session-icon ${isExpanded ? 'expanded' : ''}`} />
         <span className="session-title">Session Details</span>
         {onToggleAll && (

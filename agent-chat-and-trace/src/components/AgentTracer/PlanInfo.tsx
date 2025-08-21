@@ -6,7 +6,7 @@ interface PlanInfoProps {
   title: string;
   planId: string;
   isExpanded?: boolean;
-  onToggleExpand?: () => void;
+  onToggle?: () => void;
   children?: ReactNode;
 }
 
@@ -14,13 +14,13 @@ export const PlanInfo: React.FC<PlanInfoProps> = ({
   title, 
   planId, 
   isExpanded = false,
-  onToggleExpand,
+  onToggle,
   children 
 }) => {
 
   return (
     <div className="plan-info">
-      <button className="plan-info-header" onClick={onToggleExpand}>
+      <button className="plan-info-header" onClick={onToggle}>
         <img src={chevronIcon} alt="Expand" className={`plan-icon ${isExpanded ? 'expanded' : ''}`} />
         <span className="plan-title">{title}</span>
         <span className="plan-id">Plan ID: {planId}</span>
