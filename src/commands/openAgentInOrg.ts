@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { Commands } from '../enums/commands';
-import { SfProject } from '@salesforce/core-bundle';
-import { Agent } from '@salesforce/agents-bundle';
+import { SfProject } from '@salesforce/core';
+import { Agent } from '@salesforce/agents';
 import { sync } from 'cross-spawn';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath } from './agentUtils';

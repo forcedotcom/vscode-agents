@@ -16,7 +16,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": true,
     "esModuleInterop": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "resolveJsonModule": true
   },
   "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "agent-chat-and-trace"]
 }

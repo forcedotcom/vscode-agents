@@ -6,25 +6,6 @@
  */
 const { build } = require('esbuild');
 const esbuildPluginPino = require('esbuild-plugin-pino');
-const fs = require('fs');
-
-const copyFiles = (src, dest) => {
-  const stats = fs.statSync(src);
-  try {
-    if (stats.isDirectory()) {
-      fs.cpSync(src, dest, { recursive: true });
-    } else {
-      fs.cpSync(src, dest);
-    }
-    console.log(`Copied from ${src} to ${dest}`);
-  } catch (error) {
-    console.error('An error occurred:', error);
-  }
-};
-
-// copy core-bundle/lib/transformStream.js to dist if core-bundle is included
-const srcPathTransformStream = './node_modules/@salesforce/core-bundle/lib/transformStream.js';
-const destPathTransformStream = './dist/transformStream.js';
 
 (async () => {
   await build({
@@ -43,8 +24,4 @@ const destPathTransformStream = './dist/transformStream.js';
     plugins: [esbuildPluginPino({ transports: ['pino-pretty'] })],
     supported: { 'dynamic-import': false }
   });
-})()
-  .then(() => {
-    copyFiles(srcPathTransformStream, destPathTransformStream);
-  })
-  .catch(() => process.exit(1));
+})();

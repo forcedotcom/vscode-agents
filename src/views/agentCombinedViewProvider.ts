@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, AgentTrace, type AgentTraceResponse } from '@salesforce/agents-bundle';
+import { AgentPreview, Agent, AgentTrace, type AgentTraceResponse } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
@@ -33,7 +33,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // Get the new mock file path
           const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
           const mockFile = config.get<string>('mockFile');
-          
+
           // Update internal state
           this.updateMockFile(mockFile);
 
@@ -369,21 +369,23 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Check if file exists before trying to read it
             if (!fs.existsSync(this.mockFile)) {
-              throw new Error(`Mock file does not exist at path: "${this.mockFile}". Please check the path and ensure it exists.`);
+              throw new Error(
+                `Mock file does not exist at path: "${this.mockFile}". Please check the path and ensure it exists.`
+              );
             }
 
             // const data = await AgentTrace.getTrace(await CoreExtensionService.getDefaultConnection(), traceId)
             try {
-              const data = JSON.parse(
-                fs.readFileSync(this.mockFile, 'utf8')
-              ) as AgentTraceResponse;
+              const data = JSON.parse(fs.readFileSync(this.mockFile, 'utf8')) as AgentTraceResponse;
 
               webviewView.webview.postMessage({
                 command: 'traceData',
                 data
               });
             } catch (parseError) {
-              throw new Error(`Failed to parse mock file as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+              throw new Error(
+                `Failed to parse mock file as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+              );
             }
           } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);

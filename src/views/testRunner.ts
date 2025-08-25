@@ -7,14 +7,8 @@
 
 import * as vscode from 'vscode';
 import { AgentTestOutlineProvider } from './testOutlineProvider';
-import {
-  AgentTester,
-  TestStatus,
-  AgentTestResultsResponse,
-  humanFriendlyName,
-  metric
-} from '@salesforce/agents-bundle';
-import { Lifecycle, ConfigAggregator } from '@salesforce/core-bundle';
+import { AgentTester, TestStatus, AgentTestResultsResponse, humanFriendlyName, metric } from '@salesforce/agents';
+import { Lifecycle, ConfigAggregator } from '@salesforce/core';
 import { Duration } from '@salesforce/kit';
 import type { AgentTestGroupNode, TestNode } from '../types';
 import { CoreExtensionService } from '../services/coreExtensionService';
