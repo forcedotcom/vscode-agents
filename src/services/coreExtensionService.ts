@@ -11,7 +11,7 @@ import { ChannelService } from '../types';
 import { TelemetryService } from '../types/TelemetryService';
 import { CoreExtensionApi } from '../types/CoreExtension';
 import { WorkspaceContext } from '../types/WorkspaceContext';
-import { Connection } from '@salesforce/core-bundle';
+import { Connection } from '@salesforce/core';
 
 const CORE_EXTENSION_ID = 'salesforce.salesforcedx-vscode-core';
 export const NOT_INITIALIZED_ERROR = 'CoreExtensionService not initialized';
