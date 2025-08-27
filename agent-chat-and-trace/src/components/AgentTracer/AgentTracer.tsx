@@ -9,7 +9,7 @@ import { StepAction } from './StepAction';
 import { StepAgentResponse } from './StepAgentResponse';
 
 import { vscodeApi } from '../../services/vscodeApi';
-import { AgentTraceResponse } from '@salesforce/agents-bundle';
+import { AgentTraceResponse } from '@salesforce/agents';
 import './AgentTracer.css';
 
 const AgentTracer: React.FC = () => {
