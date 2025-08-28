@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Commands } from '../enums/commands';
-import { SfProject, ConfigAggregator, Org } from '@salesforce/core-bundle';
-import { Agent } from '@salesforce/agents-bundle';
+import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
+import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath, getAgentNameFromFile } from './agentUtils';
 

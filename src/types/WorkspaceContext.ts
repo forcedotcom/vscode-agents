@@ -5,7 +5,7 @@
  * For full license text, see LICENSE.txt file in the repo root or https://opensource.org/licenses/BSD-3-Clause
  **/
 import { Event } from 'vscode';
-import { Connection } from '@salesforce/core-bundle';
+import { Connection } from '@salesforce/core';
 
 export interface WorkspaceContext {
   readonly onOrgChange: Event<{

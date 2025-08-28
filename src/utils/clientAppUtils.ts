@@ -4,7 +4,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { ConfigAggregator, AuthInfo, Connection, Org } from '@salesforce/core-bundle';
+import { ConfigAggregator, AuthInfo, Connection, Org } from '@salesforce/core';
 
 export interface ClientApp {
   name: string; // The key name from auth file (e.g., "agent-app")
