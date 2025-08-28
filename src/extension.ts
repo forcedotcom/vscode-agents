@@ -121,17 +121,17 @@ const validateCLI = async () => {
       });
     });
     if (!stdout.includes('agent')) {
-      // throw new Error('sf CLI + plugin-agent installed required');
+      throw new Error('sf CLI + plugin-agent installed required');
     }
   } catch {
-    // throw new Error('Failed to validate sf CLI and plugin-agent installation');
+    throw new Error('Failed to validate sf CLI and plugin-agent installation');
   }
 };
 
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation
   const provider = new AgentCombinedViewProvider(context);
-  
+
   // Update mock file when configuration changes
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(e => {
@@ -148,11 +148,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   const mockFile = mockConfig.get<string>('mockFile');
   provider.updateMockFile(mockFile);
 
-  return vscode.window.registerWebviewViewProvider(
-    AgentCombinedViewProvider.viewType,
-    provider,
-    {
-      webviewOptions: { retainContextWhenHidden: true }
-    }
-  );
+  return vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
+    webviewOptions: { retainContextWhenHidden: true }
+  });
 };
