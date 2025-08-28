@@ -1,10 +1,17 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent } from '@salesforce/agents-bundle';
+import { AgentPreview, Agent, type AgentTraceResponse } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAvailableClientApps, createConnectionWithClientApp, ClientApp } from '../utils/clientAppUtils';
+import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
+
+interface AgentMessage {
+  type: string;
+  message?: string;
+  data?: unknown;
+  body?: string;
+}
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.combined.view';
@@ -13,21 +20,51 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private apexDebugging = false;
   private webviewView?: vscode.WebviewView;
   private selectedClientApp?: string;
+  private mockFile?: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Listen for configuration changes
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('agentforceDX.showAgentTracer(Mocked)')) {
+        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer(Mocked)')) {
           this.notifyConfigurationChange();
+        }
+        if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
+          // Get the new mock file path
+          const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+          const mockFile = config.get<string>('mockFile');
+
+          // Update internal state
+          this.updateMockFile(mockFile);
+
+          // Notify webview to refresh data
+          if (this.webviewView) {
+            this.webviewView.webview.postMessage({
+              command: 'getTraceData'
+            });
+          }
         }
       })
     );
   }
 
+  public updateMockFile(filePath: string | undefined): void {
+    // Trim any whitespace from the file path
+    this.mockFile = filePath?.trim();
+
+    // Trigger a data reload if we have a webview
+    if (this.webviewView) {
+      this.webviewView.webview.postMessage({
+        command: 'getTraceData'
+      });
+    }
+  }
+
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _context: vscode.WebviewViewResolveContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _token: vscode.CancellationToken
   ) {
     this.webviewView = webviewView;
@@ -83,15 +120,15 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           this.sessionId = session.sessionId;
 
           // Find the agent's welcome message or create a default one
-          const agentMessage = session.messages.find(msg => msg.type === 'Inform');
+          const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
           webviewView.webview.postMessage({
             command: 'sessionStarted',
             data: agentMessage
               ? {
                   content:
-                    (agentMessage as any).message ||
-                    (agentMessage as any).data ||
-                    (agentMessage as any).body ||
+                    (agentMessage as { message?: string; data?: string; body?: string }).message ||
+                    (agentMessage as { message?: string; data?: string; body?: string }).data ||
+                    (agentMessage as { message?: string; data?: string; body?: string }).body ||
                     "Hi! I'm ready to help. What can I do for you?"
                 }
               : { content: "Hi! I'm ready to help. What can I do for you?" }
@@ -305,16 +342,58 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           } catch (err) {
             console.error('Error during reset:', err);
           }
-        } else if (message.command === 'getTraceData') {
-          // TODO: Implement trace data retrieval
-          // This would fetch actual trace data from the agent session
-          webviewView.webview.postMessage({
-            command: 'traceData',
-            data: {
-              sessionId: this.sessionId,
-              traces: [] // Placeholder for actual trace data
+        } else if (message.command === 'getTraceIds') {
+          try {
+            if (!this.mockFile) {
+              throw new Error('Mock file not set. Please configure salesforce.agentforceDX.mockFile in settings.');
             }
-          });
+
+            // Since we're using a single file now, we'll just return a single trace ID
+            const traceId = path.basename(this.mockFile, '.json').replace('api_trace_', '');
+            webviewView.webview.postMessage({
+              command: 'traceIds',
+              data: { traceIds: [traceId] }
+            });
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            webviewView.webview.postMessage({
+              command: 'error',
+              data: { message: `Failed to read trace ID: ${errorMessage}` }
+            });
+          }
+        } else if (message.command === 'getTraceData') {
+          try {
+            if (!this.mockFile) {
+              throw new Error('Mock file not set. Please configure salesforce.agentforceDX.mockFile in settings.');
+            }
+
+            // Check if file exists before trying to read it
+            if (!fs.existsSync(this.mockFile)) {
+              throw new Error(
+                `Mock file does not exist at path: "${this.mockFile}". Please check the path and ensure it exists.`
+              );
+            }
+
+            // const data = await AgentTrace.getTrace(await CoreExtensionService.getDefaultConnection(), traceId)
+            try {
+              const data = JSON.parse(fs.readFileSync(this.mockFile, 'utf8')) as AgentTraceResponse;
+
+              webviewView.webview.postMessage({
+                command: 'traceData',
+                data
+              });
+            } catch (parseError) {
+              throw new Error(
+                `Failed to parse mock file as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+              );
+            }
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            webviewView.webview.postMessage({
+              command: 'error',
+              data: { message: `Failed to read trace data: ${errorMessage}` }
+            });
+          }
         } else if (message.command === 'clientAppSelected') {
           // Handle client app selection (Case 3)
           try {
@@ -429,13 +508,23 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     return html;
   }
 
-  private notifyConfigurationChange() {
+  private notifyConfigurationChange(): void {
     if (this.webviewView) {
       const config = vscode.workspace.getConfiguration();
-      const showAgentTracer = config.get('agentforceDX.showAgentTracer(Mocked)');
+      const showAgentTracer = config.get('salesforce.agentforceDX.showAgentTracer(Mocked)');
+      const mockFile = config.get('salesforce.agentforceDX.mockFile');
+
+      // Update internal state
+      this.updateMockFile(mockFile as string | undefined);
+
+      // Notify webview of configuration changes
       this.webviewView.webview.postMessage({
         command: 'configuration',
-        data: { section: 'agentforceDX.showAgentTracer(Mocked)', value: showAgentTracer }
+        data: { section: 'salesforce.agentforceDX.showAgentTracer(Mocked)', value: showAgentTracer }
+      });
+      this.webviewView.webview.postMessage({
+        command: 'configuration',
+        data: { section: 'salesforce.agentforceDX.mockFile', value: mockFile }
       });
     }
   }
@@ -453,7 +542,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const disposables: vscode.Disposable[] = [];
 
     // Clean up function
-    const cleanup = () => {
+    const cleanup = (): void => {
       disposables.forEach(d => d.dispose());
     };
 

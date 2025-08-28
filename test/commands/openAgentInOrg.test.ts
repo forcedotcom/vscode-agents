@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { registerOpenAgentInOrgCommand } from '../../src/commands/openAgentInOrg';
 import { Commands } from '../../src/enums/commands';
-import { SfProject } from '@salesforce/core-bundle';
+import { SfProject } from '@salesforce/core';
 import { sync } from 'cross-spawn';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
-import { Agent } from '@salesforce/agents-bundle';
+import { Agent } from '@salesforce/agents';
 
 jest.mock('cross-spawn', () => ({
   sync: jest.fn()
