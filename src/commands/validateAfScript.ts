@@ -36,21 +36,10 @@ export const registerValidateAfScriptCommand = () => {
 
       // Attempt to compile the AF Script
       try {
-        const result = await Agent.compileAfScript(await CoreExtensionService.getDefaultConnection(), afScriptContent);
-        
-        // Show success message
-        channelService.appendLine('✅ AF Script validation successful!');
-        channelService.appendLine('');
-        
-        // Show compilation result details
-        channelService.appendLine('Compilation Details:');
-        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        if (result) {
-          channelService.appendLine(JSON.stringify(result, null, 2));
-        }
+        await Agent.compileAfScript(await CoreExtensionService.getDefaultConnection(), afScriptContent);
         
         // Show minimal success notification
-        vscode.window.showInformationMessage('AF Script validation successful! Check output for details.');
+        vscode.window.showInformationMessage('AF Script validation successful! ');
       } catch (compileError) {
         const error = SfError.wrap(compileError);
         
@@ -67,9 +56,6 @@ export const registerValidateAfScriptCommand = () => {
           channelService.appendLine('────────────────────────────────────────────────────────────────────────');
           channelService.appendLine(error.stack);
         }
-
-        // Show minimal error notification
-        vscode.window.showErrorMessage('AF Script validation failed. Check output for details.');
       }
     } catch (e) {
       const error = SfError.wrap(e);
@@ -87,9 +73,6 @@ export const registerValidateAfScriptCommand = () => {
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
         channelService.appendLine(error.stack);
       }
-
-      // Show minimal error notification
-      vscode.window.showErrorMessage('Error reading .afscript file. Check output for details.');
     }
   });
 };
