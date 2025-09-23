@@ -19,7 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "^0.17.7",
+    "@salesforce/agents": "^0.17.10",
     "@salesforce/core": "^8.22.0",
     "@salesforce/types": "^1.3.0",
     "cross-spawn": "^7.0.6",
@@ -200,9 +200,14 @@
       ],
       "editor/context": [
         {
+          "command": "salesforcedx-vscode-agents.validateAfScript",
+          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "group": "agent@1"
+        },
+        {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
-          "group": "agent@1"
+          "group": "agent@2"
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
@@ -217,9 +222,14 @@
       ],
       "explorer/context": [
         {
+          "command": "salesforcedx-vscode-agents.validateAfScript",
+          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "group": "agent@1"
+        },
+        {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
-          "group": "agent@1"
+          "group": "agent@2"
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
@@ -233,6 +243,10 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "salesforcedx-vscode-agents.validateAfScript",
+          "when": "resourceFilename =~ /.*\\.afscript$/"
+        },
         {
           "command": "sf.agent.test.view.goToTestResults",
           "when": "false"
@@ -364,6 +378,10 @@
           "light": "resources/light/check-off.svg",
           "dark": "resources/dark/check-off.svg"
         }
+      },
+      {
+        "command": "salesforcedx-vscode-agents.validateAfScript",
+        "title": "AFDX: Validate AF Script"
       }
     ]
   }
