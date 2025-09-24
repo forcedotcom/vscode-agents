@@ -30,19 +30,11 @@ export const registerValidateAfScriptCommand = () => {
         const error = SfError.wrap(compileError);
         // Show the output channel
         channelService.showChannelOutput();
+        channelService.clear();
         // Show error details in output
         channelService.appendLine('❌ AF Script validation failed!');
-        channelService.appendLine('');
-        channelService.appendLine(`Error Details: ${error.name}`);
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
         channelService.appendLine(`Error: ${error.message}`);
-        
-        if (error.stack) {
-          channelService.appendLine('');
-          channelService.appendLine('Stack Trace:');
-          channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-          channelService.appendLine(error.stack);
-        }
       }
     } catch (e) {
       const error = SfError.wrap(e);
