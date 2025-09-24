@@ -381,7 +381,7 @@
       },
       {
         "command": "salesforcedx-vscode-agents.validateAfScript",
-        "title": "AFDX: Validate AF Script"
+        "title": "AFDX: Validate AFscript"
       }
     ]
   }
