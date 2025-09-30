@@ -205,6 +205,11 @@
           "group": "agent@1"
         },
         {
+          "command": "salesforcedx-vscode-agents.previewAfScript",
+          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "group": "agent@1"
+        },
+        {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
           "group": "agent@2"
@@ -227,6 +232,11 @@
           "group": "agent@1"
         },
         {
+          "command": "salesforcedx-vscode-agents.previewAfScript",
+          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "group": "agent@1"
+        },
+        {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
           "group": "agent@2"
@@ -245,6 +255,10 @@
       "commandPalette": [
         {
           "command": "salesforcedx-vscode-agents.validateAfScript",
+          "when": "resourceFilename =~ /.*\\.afscript$/"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.previewAfScript",
           "when": "resourceFilename =~ /.*\\.afscript$/"
         },
         {
@@ -308,6 +322,10 @@
       }
     ],
     "commands": [
+      {
+        "command": "salesforcedx-vscode-agents.previewAfScript",
+        "title": "AFDX: Preview Afscript"
+      },
       {
         "command": "sf.agent.test.view.goToTestResults",
         "title": "%go_to_test_results%"

@@ -3,6 +3,7 @@ export enum Commands {
   activateAgent = 'salesforcedx-vscode-agents.activateAgent',
   deactivateAgent = 'salesforcedx-vscode-agents.deactivateAgent',
   validateAfScript = 'salesforcedx-vscode-agents.validateAfScript',
+  previewAfScript = 'salesforcedx-vscode-agents.previewAfScript',
   goToTestResults = 'sf.agent.test.view.goToTestResults',
   runTest = 'sf.agent.test.view.runTest',
   refreshTestView = 'sf.agent.test.view.refresh',
