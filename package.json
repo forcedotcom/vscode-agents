@@ -200,13 +200,13 @@
       ],
       "editor/context": [
         {
-          "command": "salesforcedx-vscode-agents.validateAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
           "group": "agent@1"
         },
         {
-          "command": "salesforcedx-vscode-agents.previewAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
           "group": "agent@1"
         },
         {
@@ -227,13 +227,13 @@
       ],
       "explorer/context": [
         {
-          "command": "salesforcedx-vscode-agents.validateAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
           "group": "agent@1"
         },
         {
-          "command": "salesforcedx-vscode-agents.previewAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
           "group": "agent@1"
         },
         {
@@ -254,12 +254,12 @@
       ],
       "commandPalette": [
         {
-          "command": "salesforcedx-vscode-agents.validateAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/"
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/"
         },
         {
-          "command": "salesforcedx-vscode-agents.previewAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/"
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/"
         },
         {
           "command": "sf.agent.test.view.goToTestResults",
@@ -323,8 +323,8 @@
     ],
     "commands": [
       {
-        "command": "salesforcedx-vscode-agents.previewAfScript",
-        "title": "AFDX: Preview Afscript"
+        "command": "salesforcedx-vscode-agents.previewAgent",
+        "title": "AFDX: Preview This Agent"
       },
       {
         "command": "sf.agent.test.view.goToTestResults",
@@ -398,8 +398,8 @@
         }
       },
       {
-        "command": "salesforcedx-vscode-agents.validateAfScript",
-        "title": "AFDX: Validate AFscript"
+        "command": "salesforcedx-vscode-agents.validateAgent",
+        "title": "AFDX: Validate This Agent"
       }
     ]
   }
