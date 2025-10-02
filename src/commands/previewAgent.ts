@@ -5,17 +5,17 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfError } from '@salesforce/core';
 import { AgentCombinedViewProvider } from '../views/agentCombinedViewProvider';
 
-export const registerPreviewAfScriptCommand = () => {
-  return vscode.commands.registerCommand(Commands.previewAfScript, async (uri?: vscode.Uri) => {
+export const registerPreviewAgentCommand = () => {
+  return vscode.commands.registerCommand(Commands.previewAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const channelService = CoreExtensionService.getChannelService();
-    telemetryService.sendCommandEvent(Commands.previewAfScript);
+    telemetryService.sendCommandEvent(Commands.previewAgent);
 
     // Get the file path from the context menu
     const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
 
     if (!filePath) {
-      vscode.window.showErrorMessage('No .afscript file selected.');
+      vscode.window.showErrorMessage('No .agent file selected.');
       return;
     }
 
@@ -38,7 +38,7 @@ export const registerPreviewAfScriptCommand = () => {
       }
 
       // for when the APIs are real
-      // Read and compile the .afscript file
+      // Read and compile the .agent file
       // 
       // const fileContents = Buffer.from((await vscode.workspace.fs.readFile(vscode.Uri.file(filePath)))).toString();
       // try {
@@ -47,7 +47,7 @@ export const registerPreviewAfScriptCommand = () => {
       //   const error = SfError.wrap(compileError);
       //   channelService.showChannelOutput();
       //   channelService.clear();
-      //   channelService.appendLine('❌ AF Script validation failed! Cannot preview invalid script.');
+      //   channelService.appendLine('❌ Agent validation failed! Cannot preview invalid agent.');
       //   channelService.appendLine('────────────────────────────────────────────────────────────────────────');
       //   channelService.appendLine(`Error: ${error.message}`);
       //   return;
@@ -71,7 +71,7 @@ export const registerPreviewAfScriptCommand = () => {
 
     } catch (e) {
       const error = SfError.wrap(e);
-      channelService.appendLine('❌ Error previewing .afscript file!');
+      channelService.appendLine('❌ Error previewing .agent file!');
       channelService.appendLine('');
       channelService.appendLine('Error Details:');
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
