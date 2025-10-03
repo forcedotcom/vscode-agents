@@ -103,8 +103,8 @@ export class AgentTestRunner {
             );
           } else {
             channelService.appendLine(
-              // 0.6 is the threshold for passing, hardcoded for now
-              `${tr.result === 'PASS' ? '✅' : '❌'} : ${humanFriendlyName(tr.name).toUpperCase()} (${tr.score}/0.6) ${tr.metricExplainability ? `: ${tr.metricExplainability}` : ''}`
+              // 3 is the threshold for passing, hardcoded for now
+              `${tr.result === 'PASS' ? '✅' : '❌'} : ${humanFriendlyName(tr.name).toUpperCase()} (${tr.score}/3) ${tr.metricExplainability ? `: ${tr.metricExplainability}` : ''}`
             );
           }
         });
