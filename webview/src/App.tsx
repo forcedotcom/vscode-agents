@@ -31,14 +31,18 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
-      <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
+      {showTracerTab && (
+        <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
+      )}
       <div className="app-content">
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview />
         </div>
-        <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
-          <AgentTracer />
-        </div>
+        {showTracerTab && (
+          <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
+            <AgentTracer />
+          </div>
+        )}
       </div>
     </div>
   );
