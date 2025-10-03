@@ -78,31 +78,11 @@
     "update-snapshots": "jest --updateSnapshot",
     "test": "jest --coverage",
     "bundle:extension": "node ./esbuild.config.js",
-    "vscode:package": "npm run compile && npx vsce package",
+    "vscode:package": "npm run compile && npm run vscode:package:prod",
+    "vscode:package:prod": "npm ci --omit=dev && npx vsce package && npm install",
     "vsix:install": "find ./ -name '*.vsix' -exec code --install-extension {}",
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {}",
     "reformat": "node scripts/reformat-with-prettier.js"
-  },
-  "packaging": {
-    "assets": [
-      "LICENSE",
-      "package.nls.json",
-      "README.md",
-      ".vscodeignore",
-      "resources",
-      "images",
-      "dist"
-    ],
-    "packageUpdates": {
-      "main": "dist/extension.js",
-      "dependencies": {
-        "shelljs": "0.8.5",
-        "cross-spawn": "^7.0.6",
-        "fast-xml-parser": "^4.5.1",
-        "semver": "^7.7.0"
-      },
-      "devDependencies": {}
-    }
   },
   "extensionDependencies": [
     "salesforce.salesforcedx-vscode-core",
