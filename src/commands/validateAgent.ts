@@ -18,40 +18,21 @@ export const registerValidateAgentCommand = () => {
       return;
     }
 
-      try {
-        // Read the file contents
-      const fileContents = Buffer.from((await vscode.workspace.fs.readFile(vscode.Uri.file(filePath)))).toString();
+    const fileContents = Buffer.from((await vscode.workspace.fs.readFile(vscode.Uri.file(filePath)))).toString();
 
-      // Attempt to compile the Agent
-      try {
-        await Agent.compileAfScript(await CoreExtensionService.getDefaultConnection(), fileContents);
-        vscode.window.showInformationMessage('Agent validation successful! 🎉');
-      } catch (compileError) {
-        const error = SfError.wrap(compileError);
-        // Show the output channel
-        channelService.showChannelOutput();
-        channelService.clear();
-        // Show error details in output
-        channelService.appendLine('❌ Agent validation failed!');
-        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(`Error: ${error.message}`);
-      }
-    } catch (e) {
-      const error = SfError.wrap(e);
-      
-      // Show file read error details
-      channelService.appendLine('❌ Error reading .agent file!');
-      channelService.appendLine('');
-      channelService.appendLine('Error Details:');
+    // Attempt to compile the Agent
+    try {
+      await Agent.compileAfScript(await CoreExtensionService.getDefaultConnection(), fileContents);
+      vscode.window.showInformationMessage('Agent validation successful! 🎉');
+    } catch (compileError) {
+      const error = SfError.wrap(compileError);
+      // Show the output channel
+      channelService.showChannelOutput();
+      channelService.clear();
+      // Show error details in output
+      channelService.appendLine('❌ Agent validation failed!');
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
       channelService.appendLine(`Error: ${error.message}`);
-      
-      if (error.stack) {
-        channelService.appendLine('');
-        channelService.appendLine('Stack Trace:');
-        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(error.stack);
-      }
     }
   });
 };

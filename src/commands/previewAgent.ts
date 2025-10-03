@@ -37,6 +37,8 @@ export const registerPreviewAgentCommand = () => {
         return;
       }
 
+      console.log('Found demo agent:', demoAgent.Id, 'with name:', demoAgent.DeveloperName);
+
       // for when the APIs are real
       // Read and compile the .agent file
       // 
@@ -64,10 +66,14 @@ export const registerPreviewAgentCommand = () => {
       provider.setPreselectedAgentId(demoAgent.Id);
       await vscode.commands.executeCommand('workbench.view.extension.agentforce-dx');
       vscode.commands.executeCommand('setContext', 'sf:project_opened', true);
-      provider.webviewView?.webview.postMessage({
-        command: 'startSession',
-        data: { agentId: demoAgent.Id }
-      });
+      
+      // Wait a bit for the webview to be ready before sending the message
+      setTimeout(() => {
+        provider.webviewView?.webview.postMessage({
+          command: 'startSession',
+          data: { agentId: demoAgent.Id }
+        });
+      }, 500);
 
     } catch (e) {
       const error = SfError.wrap(e);
