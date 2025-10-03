@@ -122,14 +122,10 @@
           "default": false,
           "description": "Show generated data in test results output"
         },
-        "salesforce.agentforceDX.showAgentTracer(Mocked)": {
+        "salesforce.agentforceDX.showAgentTracer": {
           "type": "boolean",
-          "default": false,
-          "description": "Show the mocked Agent Tracer tab in the Agent Preview panel"
-        },
-        "salesforce.agentforceDX.mockFile": {
-          "type": "string",
-          "description": "Absolute path to the mock agent trace response file"
+          "default": true,
+          "description": "Show the Agent Tracer tab in the Agent Preview panel"
         }
       }
     },

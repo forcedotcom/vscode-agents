@@ -20,44 +20,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private apexDebugging = false;
   private webviewView?: vscode.WebviewView;
   private selectedClientApp?: string;
-  private mockFile?: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Listen for configuration changes
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer(Mocked)')) {
+        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer')) {
           this.notifyConfigurationChange();
-        }
-        if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
-          // Get the new mock file path
-          const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-          const mockFile = config.get<string>('mockFile');
-
-          // Update internal state
-          this.updateMockFile(mockFile);
-
-          // Notify webview to refresh data
-          if (this.webviewView) {
-            this.webviewView.webview.postMessage({
-              command: 'getTraceData'
-            });
-          }
         }
       })
     );
-  }
-
-  public updateMockFile(filePath: string | undefined): void {
-    // Trim any whitespace from the file path
-    this.mockFile = filePath?.trim();
-
-    // Trigger a data reload if we have a webview
-    if (this.webviewView) {
-      this.webviewView.webview.postMessage({
-        command: 'getTraceData'
-      });
-    }
   }
 
   public resolveWebviewView(
@@ -342,56 +314,23 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           } catch (err) {
             console.error('Error during reset:', err);
           }
-        } else if (message.command === 'getTraceIds') {
-          try {
-            if (!this.mockFile) {
-              throw new Error('Mock file not set. Please configure salesforce.agentforceDX.mockFile in settings.');
-            }
-
-            // Since we're using a single file now, we'll just return a single trace ID
-            const traceId = path.basename(this.mockFile, '.json').replace('api_trace_', '');
-            webviewView.webview.postMessage({
-              command: 'traceIds',
-              data: { traceIds: [traceId] }
-            });
-          } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            webviewView.webview.postMessage({
-              command: 'error',
-              data: { message: `Failed to read trace ID: ${errorMessage}` }
-            });
-          }
         } else if (message.command === 'getTraceData') {
+          // Serve the sample tracer.json file from webview/src/data
           try {
-            if (!this.mockFile) {
-              throw new Error('Mock file not set. Please configure salesforce.agentforceDX.mockFile in settings.');
+            const tracerJsonPath = path.join(this.context.extensionPath, 'webview', 'src', 'data', 'tracer.json');
+            if (!fs.existsSync(tracerJsonPath)) {
+              throw new Error('tracer.json not found at webview/src/data/tracer.json. Please create this file to customize trace data.');
             }
-
-            // Check if file exists before trying to read it
-            if (!fs.existsSync(this.mockFile)) {
-              throw new Error(
-                `Mock file does not exist at path: "${this.mockFile}". Please check the path and ensure it exists.`
-              );
-            }
-
-            // const data = await AgentTrace.getTrace(await CoreExtensionService.getDefaultConnection(), traceId)
-            try {
-              const data = JSON.parse(fs.readFileSync(this.mockFile, 'utf8')) as AgentTraceResponse;
-
-              webviewView.webview.postMessage({
-                command: 'traceData',
-                data
-              });
-            } catch (parseError) {
-              throw new Error(
-                `Failed to parse mock file as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`
-              );
-            }
+            const data = JSON.parse(fs.readFileSync(tracerJsonPath, 'utf8')) as AgentTraceResponse;
+            webviewView.webview.postMessage({
+              command: 'traceData',
+              data
+            });
           } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             webviewView.webview.postMessage({
               command: 'error',
-              data: { message: `Failed to read trace data: ${errorMessage}` }
+              data: { message: errorMessage }
             });
           }
         } else if (message.command === 'clientAppSelected') {
@@ -511,20 +450,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private notifyConfigurationChange(): void {
     if (this.webviewView) {
       const config = vscode.workspace.getConfiguration();
-      const showAgentTracer = config.get('salesforce.agentforceDX.showAgentTracer(Mocked)');
-      const mockFile = config.get('salesforce.agentforceDX.mockFile');
-
-      // Update internal state
-      this.updateMockFile(mockFile as string | undefined);
+      const showAgentTracer = config.get('salesforce.agentforceDX.showAgentTracer');
 
       // Notify webview of configuration changes
       this.webviewView.webview.postMessage({
         command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer(Mocked)', value: showAgentTracer }
-      });
-      this.webviewView.webview.postMessage({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.mockFile', value: mockFile }
+        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: showAgentTracer }
       });
     }
   }

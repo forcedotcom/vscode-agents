@@ -142,21 +142,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   const provider = new AgentCombinedViewProvider(context);
 
   // Update mock file when configuration changes
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
-        const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-        const newMockFile = mockConfig.get<string>('mockFile');
-        provider.updateMockFile(newMockFile);
-      }
-    })
-  );
-
-  // Set initial mock file
-  const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-  const mockFile = mockConfig.get<string>('mockFile');
-  provider.updateMockFile(mockFile);
-
   return vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
     webviewOptions: { retainContextWhenHidden: true }
   });

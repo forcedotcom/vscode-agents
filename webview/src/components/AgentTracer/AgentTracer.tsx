@@ -33,21 +33,6 @@ const AgentTracer: React.FC = () => {
       setLoading(false);
     });
 
-    // Listen for configuration changes
-    vscodeApi.onMessage('configuration', data => {
-      if (data.section === 'salesforce.agentforceDX.mockFile') {
-        // Reload trace data when mock file changes
-        setLoading(true);
-        vscodeApi.getTraceData();
-      }
-    });
-
-    // Listen for getTraceData command
-    vscodeApi.onMessage('getTraceData', () => {
-      setLoading(true);
-      vscodeApi.getTraceData();
-    });
-
     // Request trace data when component mounts
     vscodeApi.getTraceData();
   }, []);
