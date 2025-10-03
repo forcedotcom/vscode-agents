@@ -70,7 +70,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.webviewView = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'agent-chat-and-trace', 'dist')]
+      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'webview', 'dist')]
     };
     webviewView.webview.onDidReceiveMessage(async message => {
       try {
@@ -491,7 +491,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private getHtmlForWebview(): string {
     // Read the built HTML file which contains everything inlined
-    const htmlPath = path.join(this.context.extensionPath, 'agent-chat-and-trace', 'dist', 'index.html');
+    const htmlPath = path.join(this.context.extensionPath, 'webview', 'dist', 'index.html');
     let html = fs.readFileSync(htmlPath, 'utf8');
 
     // Add VSCode webview API script injection

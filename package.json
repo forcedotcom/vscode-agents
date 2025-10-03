@@ -64,9 +64,9 @@
   },
   "scripts": {
     "postinstall": "npm run install:combined",
-    "install:combined": "cd agent-chat-and-trace && npm install",
+    "install:combined": "cd webview && npm install",
     "build": "tsc --build && npm run build:combined",
-    "build:combined": "cd agent-chat-and-trace && npm run build",
+    "build:combined": "cd webview && npm run build",
     "build:clean": "tsc --build --clean",
     "compile": "npm run build",
     "compile:clean": "tsc --build --clean",

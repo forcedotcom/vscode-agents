@@ -19,5 +19,5 @@
     "jsx": "preserve",
     "resolveJsonModule": true
   },
-  "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "agent-chat-and-trace"]
+  "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "webview"]
 }
