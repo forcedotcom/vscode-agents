@@ -78,33 +78,11 @@
     "update-snapshots": "jest --updateSnapshot",
     "test": "jest --coverage",
     "bundle:extension": "node ./esbuild.config.js",
-    "vscode:package": "npm run compile && npm run bundle:extension & npx vsce package",
-    "vscode:prepublish": "npm run update-for-packaging",
-    "update-for-packaging": "ts-node scripts/updatePackageJsonForVSIX.ts",
+    "vscode:package": "npm run compile && npm run vscode:package:prod",
+    "vscode:package:prod": "npm ci --omit=dev && npx vsce package && npm install",
     "vsix:install": "find ./ -name '*.vsix' -exec code --install-extension {}",
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {}",
     "reformat": "node scripts/reformat-with-prettier.js"
-  },
-  "packaging": {
-    "assets": [
-      "LICENSE",
-      "package.nls.json",
-      "README.md",
-      ".vscodeignore",
-      "resources",
-      "images",
-      "dist"
-    ],
-    "packageUpdates": {
-      "main": "dist/extension.js",
-      "dependencies": {
-        "shelljs": "0.8.5",
-        "cross-spawn": "^7.0.6",
-        "fast-xml-parser": "^4.5.1",
-        "semver": "^7.7.0"
-      },
-      "devDependencies": {}
-    }
   },
   "extensionDependencies": [
     "salesforce.salesforcedx-vscode-core",
@@ -200,8 +178,13 @@
       ],
       "editor/context": [
         {
-          "command": "salesforcedx-vscode-agents.validateAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
           "group": "agent@1"
         },
         {
@@ -222,8 +205,13 @@
       ],
       "explorer/context": [
         {
-          "command": "salesforcedx-vscode-agents.validateAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/",
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
           "group": "agent@1"
         },
         {
@@ -244,8 +232,12 @@
       ],
       "commandPalette": [
         {
-          "command": "salesforcedx-vscode-agents.validateAfScript",
-          "when": "resourceFilename =~ /.*\\.afscript$/"
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/"
         },
         {
           "command": "sf.agent.test.view.goToTestResults",
@@ -308,6 +300,10 @@
       }
     ],
     "commands": [
+      {
+        "command": "salesforcedx-vscode-agents.previewAgent",
+        "title": "AFDX: Preview This Agent"
+      },
       {
         "command": "sf.agent.test.view.goToTestResults",
         "title": "%go_to_test_results%"
@@ -380,8 +376,8 @@
         }
       },
       {
-        "command": "salesforcedx-vscode-agents.validateAfScript",
-        "title": "AFDX: Validate AFscript"
+        "command": "salesforcedx-vscode-agents.validateAgent",
+        "title": "AFDX: Validate This Agent"
       }
     ]
   }
