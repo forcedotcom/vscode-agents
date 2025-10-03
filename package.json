@@ -78,9 +78,7 @@
     "update-snapshots": "jest --updateSnapshot",
     "test": "jest --coverage",
     "bundle:extension": "node ./esbuild.config.js",
-    "vscode:package": "npm run compile && npm run bundle:extension & npx vsce package",
-    "vscode:prepublish": "npm run update-for-packaging",
-    "update-for-packaging": "ts-node scripts/updatePackageJsonForVSIX.ts",
+    "vscode:package": "npm run compile && npx vsce package",
     "vsix:install": "find ./ -name '*.vsix' -exec code --install-extension {}",
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {}",
     "reformat": "node scripts/reformat-with-prettier.js"

@@ -17,7 +17,6 @@ scripts/**
 .yarnrc
 .nvmrc
 node_modules
-lib/**
 
 # Ignore documentation and extra files
 CONTRIBUTING/**
