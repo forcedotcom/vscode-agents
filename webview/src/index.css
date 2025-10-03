@@ -1,18 +1,22 @@
 :root {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --bg-tertiary: #404040;
-  --bg-code: #1e1e1e;
-  --bg-input: #3c3c3c;
-  --text-primary: #fff;
-  --text-secondary: #ddd;
-  --text-muted: #999;
-  --border-primary: #404040;
-  --border-input: #606060;
-  --brand-primary: #0095ff;
-  --hover-overlay: rgba(255, 255, 255, 0.1);
-  --color-debug: #ffa500;
-  --color-user: #666;
+  /* Use VS Code's built-in CSS variables for automatic light/dark theme support */
+  --bg-primary: var(--vscode-sideBar-background);
+  --bg-secondary: var(--vscode-sideBarSectionHeader-background);
+  --bg-tertiary: var(--vscode-editorGroupHeader-tabsBackground);
+  --bg-code: var(--vscode-textCodeBlock-background);
+  --bg-input: var(--vscode-input-background);
+  --text-primary: var(--vscode-sideBar-foreground);
+  --text-secondary: var(--vscode-foreground);
+  --text-muted: var(--vscode-descriptionForeground);
+  --border-primary: var(--vscode-panel-border);
+  --border-input: var(--vscode-input-border);
+  --border-color: var(--vscode-input-border);
+  --brand-primary: var(--vscode-button-background);
+  --hover-overlay: var(--vscode-toolbar-hoverBackground);
+  --color-debug: var(--vscode-debugIcon-startForeground);
+  --color-user: var(--vscode-descriptionForeground);
+  --button-secondary-bg: var(--vscode-button-secondaryBackground);
+  --button-secondary-hover-bg: var(--vscode-button-secondaryHoverBackground);
 }
 
 * {
