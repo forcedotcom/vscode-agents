@@ -61,6 +61,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setIsLoading(true);
       setLoadingMessage('Loading agent...');
       setAgentConnected(false); // Reset agent connected state while starting
+      setHasSelectedAgent(true); // Switch to chat view to show spinner
       setMessages([]); // Just clear messages without showing transition message
     });
 
