@@ -17,15 +17,27 @@
 
 .chat-input-field::placeholder {
   color: var(--text-muted);
+  opacity: 0.7;
 }
 
 .chat-input-field:focus {
   border-color: var(--brand-primary);
 }
 
+.chat-input-field:focus::placeholder {
+  opacity: 0.5;
+}
+
+.chat-input-field:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .chat-input-button {
   position: absolute;
-  right: 24px;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 32px;
   height: 32px;
   background: none;
@@ -37,12 +49,28 @@
   transition: opacity 0.2s;
 }
 
-.send-icon {
-  width: 22px;
-  height: 22px;
+.chat-input-button {
+  cursor: pointer;
+  opacity: 1;
 }
 
 .chat-input-button:disabled {
-  opacity: 0.3;
   cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.send-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  background-image: url('../../assets/send-dark.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .send-icon {
+    background-image: url('../../assets/send.svg');
+  }
 }

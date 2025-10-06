@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import './ChatInput.css';
-import sendIcon from '../../assets/send.svg';
 
 interface Message {
   id: string;
@@ -70,14 +69,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
         value={message}
         onChange={e => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={
-          disabled ? 'Select to an agent to start chatting' : 'Write something to start testing your agent...'
-        }
+        placeholder={disabled ? 'Select to an agent to start…' : 'Write something to start testing…'}
         className="chat-input-field"
         disabled={disabled}
       />
       <button type="submit" className="chat-input-button" disabled={disabled || !message.trim()}>
-        <img src={sendIcon} alt="Send" className="send-icon" />
+        <span className="send-icon"></span>
       </button>
     </form>
   );
