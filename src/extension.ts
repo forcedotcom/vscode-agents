@@ -140,9 +140,36 @@ const validateCLI = async () => {
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation
   const provider = new AgentCombinedViewProvider(context);
+  const disposables: vscode.Disposable[] = [];
 
-  // Update mock file when configuration changes
-  return vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
-    webviewOptions: { retainContextWhenHidden: true }
-  });
+  // Register the webview provider
+  disposables.push(
+    vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
+      webviewOptions: { retainContextWhenHidden: true }
+    })
+  );
+
+  // Register toolbar commands
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.run', () => {
+      // TODO: Implement run functionality
+      vscode.window.showInformationMessage('Run agent');
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.debug', () => {
+      // TODO: Implement debug functionality
+      vscode.window.showInformationMessage('Debug agent');
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.refresh', () => {
+      // TODO: Implement refresh functionality
+      vscode.window.showInformationMessage('Refresh agent');
+    })
+  );
+
+  return vscode.Disposable.from(...disposables);
 };

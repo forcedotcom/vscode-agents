@@ -158,6 +158,21 @@
     "menus": {
       "view/title": [
         {
+          "command": "sf.agent.combined.view.run",
+          "when": "view == sf.agent.combined.view",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sf.agent.combined.view.debug",
+          "when": "view == sf.agent.combined.view",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sf.agent.combined.view.refresh",
+          "when": "view == sf.agent.combined.view",
+          "group": "navigation@3"
+        },
+        {
           "command": "sf.agent.test.view.runAll",
           "when": "never && view == sf.agent.test.view",
           "group": "navigation@1"
@@ -290,6 +305,21 @@
       }
     ],
     "commands": [
+      {
+        "command": "sf.agent.combined.view.run",
+        "title": "Run Agent",
+        "icon": "$(play-circle)"
+      },
+      {
+        "command": "sf.agent.combined.view.debug",
+        "title": "Debug Agent",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "sf.agent.combined.view.refresh",
+        "title": "Refresh Agent",
+        "icon": "$(refresh)"
+      },
       {
         "command": "sf.agent.test.view.goToTestResults",
         "title": "%go_to_test_results%"
