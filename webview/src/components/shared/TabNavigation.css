@@ -4,6 +4,7 @@
   background-color: var(--bg-primary);
   padding: 0 18px;
   height: 35px;
+  margin-top: 6px;
 }
 
 .tab-navigation-left {
@@ -14,8 +15,8 @@
 .tab {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 10px 0;
+  gap: 8px;
+  padding: 8px 0;
   background: none;
   border: none;
   color: var(--text-primary);
@@ -25,6 +26,7 @@
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
   position: relative;
+  font-weight: 500;
 }
 
 .tab:hover {
@@ -46,10 +48,28 @@
 }
 
 .tab-icon {
-  font-size: 16px;
-}
-
-.tab-icon-svg {
   width: 16px;
   height: 16px;
+  display: inline-block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.tab-icon-comment {
+  background-image: url('../../assets/comment-dark.svg');
+}
+
+.tab-icon-tree {
+  background-image: url('../../assets/tree-dark.svg');
+}
+
+@media (prefers-color-scheme: dark) {
+  .tab-icon-comment {
+    background-image: url('../../assets/comment.svg');
+  }
+
+  .tab-icon-tree {
+    background-image: url('../../assets/tree.svg');
+  }
 }

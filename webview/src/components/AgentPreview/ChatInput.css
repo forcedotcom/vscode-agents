@@ -1,8 +1,6 @@
 .chat-input {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  position: relative;
 }
 
 .chat-input-field {
@@ -23,10 +21,6 @@
 
 .chat-input-field:focus {
   border-color: var(--brand-primary);
-}
-
-.chat-input {
-  position: relative;
 }
 
 .chat-input-button {

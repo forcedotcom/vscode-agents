@@ -49,15 +49,17 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
-      <AgentSelector
-        onClientAppRequired={handleClientAppRequired}
-        onClientAppSelection={handleClientAppSelection}
-        selectedAgent={selectedAgentId}
-        onAgentChange={setSelectedAgentId}
-      />
-      {showTracerTab && (
-        <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
-      )}
+      <div className="app-menu">
+        <AgentSelector
+          onClientAppRequired={handleClientAppRequired}
+          onClientAppSelection={handleClientAppSelection}
+          selectedAgent={selectedAgentId}
+          onAgentChange={setSelectedAgentId}
+        />
+        {showTracerTab && (
+          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
+        )}
+      </div>
       <div className="app-content">
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview

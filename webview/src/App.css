@@ -5,6 +5,11 @@
   flex-direction: column;
 }
 
+.app-menu {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
 .app-content {
   flex: 1;
   overflow: hidden;

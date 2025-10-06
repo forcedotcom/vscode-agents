@@ -1,7 +1,5 @@
 import React from 'react';
 import './TabNavigation.css';
-import commentIcon from '../../assets/comment.svg';
-import treeIcon from '../../assets/tree.svg';
 
 interface TabNavigationProps {
   activeTab: 'preview' | 'tracer';
@@ -18,12 +16,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
     <nav className="tab-navigation">
       <div className="tab-navigation-left">
         <button className={`tab ${activeTab === 'preview' ? 'active' : ''}`} onClick={() => handleTabClick('preview')}>
-          <img src={commentIcon} alt="Comment" className="tab-icon-svg" />
+          <span className="tab-icon tab-icon-comment"></span>
           Agent Preview
         </button>
         {showTracerTab && (
           <button className={`tab ${activeTab === 'tracer' ? 'active' : ''}`} onClick={() => handleTabClick('tracer')}>
-            <img src={treeIcon} alt="Tree" className="tab-icon-svg" />
+            <span className="tab-icon tab-icon-tree"></span>
             Agent Tracer
           </button>
         )}

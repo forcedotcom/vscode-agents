@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import ChatMessage from './ChatMessage';
 import SystemMessage from './SystemMessage';
 import './ChatContainer.css';
@@ -37,11 +37,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) =>
       )}
       {isLoading && (
         <div className="chat-loading">
-          <div className="loading-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+          <span className="loading-spinner"></span>
+          <span className="loading-text">Agent is thinking...</span>
         </div>
       )}
       {/* Invisible element at the bottom for auto-scrolling */}
