@@ -1,0 +1,22 @@
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+  height: 100%;
+}
+
+.placeholder-content h3 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.placeholder-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ChatContainer from './ChatContainer';
 import FormContainer from './FormContainer';
 import AgentSelector from './AgentSelector';
+import PlaceholderContent from './PlaceholderContent';
 import { vscodeApi, Message } from '../../services/vscodeApi';
 import './AgentPreview.css';
 
@@ -297,14 +298,14 @@ const AgentPreview: React.FC = () => {
   }, []);
 
   // Render client app selection UI in the chat area for case 3
-  const renderClientAppSelection = () => {
+  const renderAgentSelection = () => {
     if (clientAppState !== 'selecting') return null;
 
     return (
-      <div className="client-app-selection">
+      <div className="agent-selection">
         <h4>Select Client App:</h4>
         <select
-          className="client-app-select"
+          className="agent-select"
           onChange={e => {
             if (e.target.value) {
               handleClientAppSelected(e.target.value);
@@ -322,7 +323,6 @@ const AgentPreview: React.FC = () => {
     );
   };
 
-  // Show placeholder when no agent is selected and no client app issues
   if (!hasSelectedAgent && messages.length === 0 && clientAppState === 'none') {
     return (
       <div className="agent-preview">
@@ -332,16 +332,8 @@ const AgentPreview: React.FC = () => {
           selectedAgent={selectedAgentId}
           onAgentChange={setSelectedAgentId}
         />
-        {renderClientAppSelection()}
-        <div className="chat-container">
-          <div className="placeholder-content">
-            <h3>Welcome to Agent Chat</h3>
-            <p>Select an agent from the dropdown above to start a conversation.</p>
-            <p>
-              <strong>Note:</strong> Agents are loaded from your Salesforce org. Only active agents are shown.
-            </p>
-          </div>
-        </div>
+        {renderAgentSelection()}
+        <PlaceholderContent />
         <FormContainer
           debugMode={debugMode}
           onDebugModeChange={handleDebugModeChange}
@@ -363,7 +355,7 @@ const AgentPreview: React.FC = () => {
         selectedAgent={selectedAgentId}
         onAgentChange={setSelectedAgentId}
       />
-      {renderClientAppSelection()}
+      {renderAgentSelection()}
       <ChatContainer messages={messages} isLoading={isLoading} />
       <FormContainer
         debugMode={debugMode}

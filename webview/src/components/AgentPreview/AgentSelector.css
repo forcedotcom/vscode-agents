@@ -37,29 +37,9 @@
 
 .chevron-icon {
   position: absolute;
-  right: 24px;
+  right: 40px;
   width: 12px;
   height: 12px;
   pointer-events: none;
-  flex-shrink: 0;
   filter: brightness(0.8);
-}
-
-@container (max-width: 240px) {
-  .agent-select {
-    padding: 6px 18px 6px 0;
-    font-size: 12px;
-  }
-
-  .chevron-icon {
-    width: 10px;
-    height: 10px;
-  }
-}
-
-@container (max-width: 200px) {
-  .agent-select {
-    padding: 4px 16px 4px 0;
-    font-size: 11px;
-  }
 }

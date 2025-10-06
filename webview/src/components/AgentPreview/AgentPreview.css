@@ -7,41 +7,18 @@
   container-type: inline-size; /* Enable container queries */
 }
 
-.placeholder-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: var(--text-muted);
-  height: 100%;
-}
-
-.placeholder-content h3 {
-  margin: 0 0 1rem 0;
-  color: var(--text-primary);
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.placeholder-content p {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.client-app-selection {
+.agent-selection {
   padding: 16px;
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
-.client-app-selection h4 {
+.agent-selection h4 {
   margin: 0 0 8px 0;
   font-size: 13px;
   font-weight: 600;
 }
 
-.client-app-select {
+.agent-select {
   padding: 8px;
   margin-right: 8px;
   min-width: 200px;
