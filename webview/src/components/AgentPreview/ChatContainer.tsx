@@ -17,14 +17,14 @@ interface ChatContainerProps {
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) => {
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  // const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change or when loading
-  useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, isLoading]);
+  // // Auto-scroll to bottom when messages change or when loading
+  // useEffect(() => {
+  //   if (chatEndRef.current) {
+  //     chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  //   }
+  // }, [messages, isLoading]);
 
   return (
     <div className="chat-container">
@@ -45,7 +45,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) =>
         </div>
       )}
       {/* Invisible element at the bottom for auto-scrolling */}
-      <div ref={chatEndRef} />
+      {/* <div ref={chatEndRef} /> */}
     </div>
   );
 };

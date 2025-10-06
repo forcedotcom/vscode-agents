@@ -1,15 +1,10 @@
 .chat-message {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 10px;
   padding: 0;
   position: relative;
-}
-
-.chat-message.user {
-  flex-direction: row;
-  justify-content: flex-start;
 }
 
 .message-icon {
@@ -31,18 +26,10 @@
   padding-top: 6px;
 }
 
-.chat-message.user .message-content-wrapper {
-  text-align: left;
-}
-
 .message-content {
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.3333;
   color: var(--text-primary);
-}
-
-.chat-message.user .message-content {
-  font-weight: 500;
 }
 
 .message-actions {
