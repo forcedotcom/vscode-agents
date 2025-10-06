@@ -169,7 +169,7 @@
         },
         {
           "command": "sf.agent.combined.view.debug",
-          "when": "view == sf.agent.combined.view",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive",
           "group": "navigation@2"
         },
         {
