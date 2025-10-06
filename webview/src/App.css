@@ -20,7 +20,8 @@
 }
 
 .tab-content.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
   z-index: 1;
 }
 

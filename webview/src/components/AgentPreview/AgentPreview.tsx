@@ -239,8 +239,8 @@ const AgentPreview: React.FC = () => {
       type: 'system',
       content: `
         <div class="welcome-message">
-          <h2 style="font-size: 1.2em; margin: 0 0 8px 0;">Welcome to Agent Chat!</h2>
-          <p style="margin: 0;">Select an agent to begin.</p>
+          <h2>Welcome to Agent Chat!</h2>
+          <p>Select an agent to begin.</p>
         </div>
       `,
       systemType: 'session',
@@ -296,6 +296,32 @@ const AgentPreview: React.FC = () => {
     });
   }, []);
 
+  // Render client app selection UI in the chat area for case 3
+  const renderClientAppSelection = () => {
+    if (clientAppState !== 'selecting') return null;
+
+    return (
+      <div className="client-app-selection">
+        <h4>Select Client App:</h4>
+        <select
+          className="client-app-select"
+          onChange={e => {
+            if (e.target.value) {
+              handleClientAppSelected(e.target.value);
+            }
+          }}
+        >
+          <option value="">Choose a client app...</option>
+          {availableClientApps.map(app => (
+            <option key={app.name} value={app.name}>
+              {app.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
   // Show placeholder when no agent is selected and no client app issues
   if (!hasSelectedAgent && messages.length === 0 && clientAppState === 'none') {
     return (
@@ -306,7 +332,8 @@ const AgentPreview: React.FC = () => {
           selectedAgent={selectedAgentId}
           onAgentChange={setSelectedAgentId}
         />
-        <div className="agent-preview-placeholder">
+        {renderClientAppSelection()}
+        <div className="chat-container">
           <div className="placeholder-content">
             <h3>Welcome to Agent Chat</h3>
             <p>Select an agent from the dropdown above to start a conversation.</p>
@@ -327,32 +354,6 @@ const AgentPreview: React.FC = () => {
       </div>
     );
   }
-
-  // Render client app selection UI in the chat area for case 3
-  const renderClientAppSelection = () => {
-    if (clientAppState !== 'selecting') return null;
-
-    return (
-      <div style={{ padding: '16px', borderBottom: '1px solid #eee' }}>
-        <h4>Select Client App:</h4>
-        <select
-          onChange={e => {
-            if (e.target.value) {
-              handleClientAppSelected(e.target.value);
-            }
-          }}
-          style={{ padding: '8px', marginRight: '8px', minWidth: '200px' }}
-        >
-          <option value="">Choose a client app...</option>
-          {availableClientApps.map(app => (
-            <option key={app.name} value={app.name}>
-              {app.name}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  };
 
   return (
     <div className="agent-preview">

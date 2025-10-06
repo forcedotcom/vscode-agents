@@ -7,17 +7,14 @@
   container-type: inline-size; /* Enable container queries */
 }
 
-.agent-preview-placeholder {
-  flex: 1;
+.placeholder-content {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-}
-
-.placeholder-content {
   text-align: center;
   color: var(--text-muted);
+  height: 100%;
 }
 
 .placeholder-content h3 {
@@ -31,4 +28,26 @@
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.4;
+}
+
+.client-app-selection {
+  padding: 16px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.client-app-selection h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.client-app-select {
+  padding: 8px;
+  margin-right: 8px;
+  min-width: 200px;
+  background: var(--vscode-dropdown-background);
+  border: 1px solid var(--vscode-dropdown-border);
+  color: var(--vscode-dropdown-foreground);
+  font-size: 13px;
+  border-radius: 2px;
 }

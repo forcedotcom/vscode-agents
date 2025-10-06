@@ -45,7 +45,6 @@
   filter: brightness(0.8);
 }
 
-/* Responsive adjustments for narrow containers */
 @container (max-width: 240px) {
   .agent-select {
     padding: 6px 18px 6px 0;
