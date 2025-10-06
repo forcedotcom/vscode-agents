@@ -31,6 +31,7 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
+      <div id="agent-selector-portal"></div>
       {showTracerTab && (
         <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
       )}

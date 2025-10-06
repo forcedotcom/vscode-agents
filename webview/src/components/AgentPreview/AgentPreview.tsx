@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import ChatContainer from './ChatContainer';
 import FormContainer from './FormContainer';
 import AgentSelector from './AgentSelector';
@@ -21,6 +22,11 @@ const AgentPreview: React.FC = () => {
   const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState('');
+  const [portalElement, setPortalElement] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalElement(document.getElementById('agent-selector-portal'));
+  }, []);
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
@@ -323,50 +329,53 @@ const AgentPreview: React.FC = () => {
     );
   };
 
+  const agentSelectorElement = (
+    <AgentSelector
+      onClientAppRequired={handleClientAppRequired}
+      onClientAppSelection={handleClientAppSelection}
+      selectedAgent={selectedAgentId}
+      onAgentChange={setSelectedAgentId}
+    />
+  );
+
   if (!hasSelectedAgent && messages.length === 0 && clientAppState === 'none') {
     return (
+      <>
+        {portalElement && createPortal(agentSelectorElement, portalElement)}
+        <div className="agent-preview">
+          {renderAgentSelection()}
+          <PlaceholderContent />
+          <FormContainer
+            debugMode={debugMode}
+            onDebugModeChange={handleDebugModeChange}
+            onSendMessage={handleSendMessage}
+            onClearChat={handleClearChat}
+            sessionActive={false}
+            isLoading={isLoading}
+            messages={messages}
+          />
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {portalElement && createPortal(agentSelectorElement, portalElement)}
       <div className="agent-preview">
-        <AgentSelector
-          onClientAppRequired={handleClientAppRequired}
-          onClientAppSelection={handleClientAppSelection}
-          selectedAgent={selectedAgentId}
-          onAgentChange={setSelectedAgentId}
-        />
         {renderAgentSelection()}
-        <PlaceholderContent />
+        <ChatContainer messages={messages} isLoading={isLoading} />
         <FormContainer
           debugMode={debugMode}
           onDebugModeChange={handleDebugModeChange}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}
-          sessionActive={false}
+          sessionActive={agentConnected}
           isLoading={isLoading}
           messages={messages}
         />
       </div>
-    );
-  }
-
-  return (
-    <div className="agent-preview">
-      <AgentSelector
-        onClientAppRequired={handleClientAppRequired}
-        onClientAppSelection={handleClientAppSelection}
-        selectedAgent={selectedAgentId}
-        onAgentChange={setSelectedAgentId}
-      />
-      {renderAgentSelection()}
-      <ChatContainer messages={messages} isLoading={isLoading} />
-      <FormContainer
-        debugMode={debugMode}
-        onDebugModeChange={handleDebugModeChange}
-        onSendMessage={handleSendMessage}
-        onClearChat={handleClearChat}
-        sessionActive={agentConnected}
-        isLoading={isLoading}
-        messages={messages}
-      />
-    </div>
+    </>
   );
 };
 

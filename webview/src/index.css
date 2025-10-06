@@ -1,5 +1,4 @@
 :root {
-  /* Use VS Code's built-in CSS variables for automatic light/dark theme support */
   --bg-primary: var(--vscode-sideBar-background);
   --bg-secondary: var(--vscode-sideBarSectionHeader-background);
   --bg-tertiary: var(--vscode-editorGroupHeader-tabsBackground);
@@ -26,15 +25,18 @@
 }
 
 body {
-  margin: 0;
   font-family: system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  margin: 0;
+  padding: 0;
 }
 
 #root {
   width: 100%;
   height: 100vh;
+  margin: 0;
+  padding: 0;
 }

@@ -124,7 +124,7 @@
         },
         "salesforce.agentforceDX.showAgentTracer": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Show the Agent Tracer and enable tabs in the panel"
         }
       }
