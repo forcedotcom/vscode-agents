@@ -35,7 +35,11 @@ const App: React.FC = () => {
       if (data && data.agentId) {
         // Update the selected agent in the dropdown
         setSelectedAgentId(data.agentId);
-        // The AgentSelector component will handle starting the session
+        // Force restart the session even if it's the same agent
+        vscodeApi.endSession();
+        setTimeout(() => {
+          vscodeApi.startSession(data.agentId);
+        }, 100);
       }
     });
 
@@ -56,6 +60,12 @@ const App: React.FC = () => {
     setAvailableClientApps(data.clientApps || []);
   };
 
+  const handleAgentChange = (agentId: string) => {
+    setSelectedAgentId(agentId);
+    // Notify the extension about the selected agent
+    vscodeApi.setSelectedAgentId(agentId);
+  };
+
   return (
     <div className="app">
       <div className="app-menu">
@@ -63,7 +73,7 @@ const App: React.FC = () => {
           onClientAppRequired={handleClientAppRequired}
           onClientAppSelection={handleClientAppSelection}
           selectedAgent={selectedAgentId}
-          onAgentChange={setSelectedAgentId}
+          onAgentChange={handleAgentChange}
         />
         {showTracerTab && (
           <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />

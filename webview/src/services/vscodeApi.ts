@@ -121,6 +121,11 @@ class VSCodeApiService {
   executeCommand(commandId: string) {
     this.postMessage('executeCommand', { commandId });
   }
+
+  // Notify the extension about the selected agent ID
+  setSelectedAgentId(agentId: string) {
+    this.postMessage('setSelectedAgentId', { agentId });
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

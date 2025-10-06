@@ -106,7 +106,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
-      this.currentAgentId = undefined;
+      // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setDebugMode(false);
 
@@ -184,7 +184,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             );
           }
 
-          console.log('Starting session with agent ID:', agentId);
           this.agentPreview = new AgentPreview(conn, agentId);
 
           // Get agent name for notifications
@@ -293,7 +292,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.agentPreview = undefined;
             this.sessionId = Date.now().toString();
             this.currentAgentName = undefined;
-            this.currentAgentId = undefined;
+            // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
             await this.setSessionActive(false);
             await this.setDebugMode(false);
 
@@ -530,6 +529,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const commandId = message.data?.commandId;
           if (commandId && typeof commandId === 'string') {
             await vscode.commands.executeCommand(commandId);
+          }
+        } else if (message.command === 'setSelectedAgentId') {
+          // Update the currently selected agent ID from the dropdown
+          const agentId = message.data?.agentId;
+          if (agentId && typeof agentId === 'string' && agentId !== '') {
+            this.currentAgentId = agentId;
+          } else {
+            this.currentAgentId = undefined;
           }
         }
       } catch (err) {

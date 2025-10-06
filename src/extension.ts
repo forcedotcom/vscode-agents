@@ -155,6 +155,15 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
     const channelService = CoreExtensionService.getChannelService();
 
     try {
+      // Check if there's already an agent selected in the dropdown
+      const currentAgentId = provider.getCurrentAgentId();
+      if (currentAgentId) {
+        // Restart the currently selected agent without showing the palette
+        await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+        provider.selectAndStartAgent(currentAgentId);
+        return;
+      }
+
       const conn = await CoreExtensionService.getDefaultConnection();
       const remoteAgents = await Agent.listRemote(conn);
 
