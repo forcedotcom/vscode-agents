@@ -288,6 +288,13 @@ const AgentPreview: React.FC = () => {
     vscodeApi.selectClientApp(clientAppName);
   };
 
+  // Handle reset trigger from refresh button
+  useEffect(() => {
+    vscodeApi.onMessage('triggerReset', () => {
+      handleClearChat();
+    });
+  }, []);
+
   // Show placeholder when no agent is selected and no client app issues
   if (!hasSelectedAgent && messages.length === 0 && clientAppState === 'none') {
     return (

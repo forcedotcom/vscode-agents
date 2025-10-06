@@ -81,6 +81,18 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /**
+   * Resets the entire agent preview state (same as Reset button in webview)
+   */
+  public resetAgentPreview(): void {
+    if (this.webviewView) {
+      // Send reset command to webview - this triggers the same handler as the Reset button
+      this.webviewView.webview.postMessage({
+        command: 'triggerReset'
+      });
+    }
+  }
+
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

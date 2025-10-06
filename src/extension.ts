@@ -217,8 +217,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refresh', () => {
-      // TODO: Implement refresh functionality
-      vscode.window.showInformationMessage('Refresh agent');
+      provider.resetAgentPreview();
     })
   );
 
