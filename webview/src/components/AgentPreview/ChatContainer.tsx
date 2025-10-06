@@ -14,9 +14,10 @@ interface Message {
 interface ChatContainerProps {
   messages: Message[];
   isLoading?: boolean;
+  loadingMessage?: string;
 }
 
-const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) => {
+const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading, loadingMessage = 'Loading...' }) => {
   // const chatEndRef = useRef<HTMLDivElement>(null);
 
   // // Auto-scroll to bottom when messages change or when loading
@@ -38,7 +39,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) =>
       {isLoading && (
         <div className="chat-loading">
           <span className="loading-spinner"></span>
-          <span className="loading-text">Agent is thinking...</span>
+          <span className="loading-text">{loadingMessage}</span>
         </div>
       )}
       {/* Invisible element at the bottom for auto-scrolling */}

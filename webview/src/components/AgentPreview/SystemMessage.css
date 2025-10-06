@@ -2,8 +2,7 @@
   text-align: center;
   font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 16px;
-  padding: 0 24px;
+  padding: 8px 18px;
 }
 
 .system-message.debug {
@@ -12,6 +11,6 @@
 }
 
 .system-message.error {
-  color: #ff6b6b;
+  color: var(--vscode-errorForeground);
   font-weight: 500;
 }

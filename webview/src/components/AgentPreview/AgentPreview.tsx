@@ -27,6 +27,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Loading...');
   const [hasSelectedAgent, setHasSelectedAgent] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
 
@@ -58,6 +59,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
     vscodeApi.onMessage('sessionStarting', () => {
       setIsLoading(true);
+      setLoadingMessage('Loading agent...');
       setAgentConnected(false); // Reset agent connected state while starting
       setMessages([]); // Just clear messages without showing transition message
     });
@@ -77,6 +79,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
     vscodeApi.onMessage('messageStarting', () => {
       setIsLoading(true);
+      setLoadingMessage('Agent is thinking...');
     });
 
     vscodeApi.onMessage('error', data => {
@@ -323,7 +326,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   return (
     <div className="agent-preview">
       {renderAgentSelection()}
-      <ChatContainer messages={messages} isLoading={isLoading} />
+      <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
       <FormContainer
         debugMode={debugMode}
         onDebugModeChange={handleDebugModeChange}
