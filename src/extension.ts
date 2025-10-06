@@ -151,9 +151,50 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
   // Register toolbar commands
   disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.run', () => {
-      // TODO: Implement run functionality
-      vscode.window.showInformationMessage('Run agent');
+    vscode.commands.registerCommand('sf.agent.combined.view.run', async () => {
+      const { Agent } = await import('@salesforce/agents');
+      const channelService = CoreExtensionService.getChannelService();
+
+      try {
+        const conn = await CoreExtensionService.getDefaultConnection();
+        const remoteAgents = await Agent.listRemote(conn);
+
+        if (!remoteAgents || remoteAgents.length === 0) {
+          vscode.window.showErrorMessage('Could not find agents in the org.');
+          channelService.appendLine('Could not find agents in the org.');
+          return;
+        }
+
+        // Filter to only agents with active BotVersions
+        const activeAgents = remoteAgents
+          .filter(bot => {
+            return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+          })
+          .map(bot => ({
+            label: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+            description: bot.DeveloperName,
+            id: bot.Id
+          }))
+          .filter(agent => agent.id);
+
+        if (activeAgents.length === 0) {
+          vscode.window.showErrorMessage('No active agents found in the org.');
+          channelService.appendLine('No active agents found in the org.');
+          return;
+        }
+
+        const selectedAgent = await vscode.window.showQuickPick(activeAgents, {
+          placeHolder: 'Select an agent to run'
+        });
+
+        if (selectedAgent) {
+          vscode.window.showInformationMessage(`Selected agent: ${selectedAgent.label}`);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to list agents: ${errorMessage}`);
+        channelService.appendLine(`Failed to list agents: ${errorMessage}`);
+      }
     })
   );
 
