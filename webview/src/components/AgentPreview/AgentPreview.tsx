@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import ChatContainer from './ChatContainer';
 import FormContainer from './FormContainer';
-import AgentSelector from './AgentSelector';
 import PlaceholderContent from './PlaceholderContent';
 import { vscodeApi, Message } from '../../services/vscodeApi';
 import './AgentPreview.css';
@@ -12,21 +10,25 @@ interface ClientApp {
   clientId: string;
 }
 
-const AgentPreview: React.FC = () => {
+interface AgentPreviewProps {
+  clientAppState: 'none' | 'required' | 'selecting' | 'ready';
+  availableClientApps: ClientApp[];
+  onClientAppStateChange: (state: 'none' | 'required' | 'selecting' | 'ready') => void;
+  onAvailableClientAppsChange: (apps: ClientApp[]) => void;
+}
+
+const AgentPreview: React.FC<AgentPreviewProps> = ({
+  clientAppState,
+  availableClientApps,
+  onClientAppStateChange,
+  onAvailableClientAppsChange
+}) => {
   const [debugMode, setDebugMode] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSelectedAgent, setHasSelectedAgent] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
-  const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
-  const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
-  const [selectedAgentId, setSelectedAgentId] = useState('');
-  const [portalElement, setPortalElement] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setPortalElement(document.getElementById('agent-selector-portal'));
-  }, []);
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
@@ -48,7 +50,7 @@ const AgentPreview: React.FC = () => {
 
     // When backend confirms client app ready, clear any temp UI/messages
     vscodeApi.onClientAppReady(() => {
-      setClientAppState('ready');
+      onClientAppStateChange('ready');
       // Do not auto-start a session; user will still pick an agent from updated list
       // Ensure chat area is clean
       setIsLoading(false);
@@ -159,7 +161,7 @@ const AgentPreview: React.FC = () => {
     // Handle agent selection from external command (e.g., play-circle button)
     vscodeApi.onMessage('selectAgent', data => {
       if (data && data.agentId) {
-        setSelectedAgentId(data.agentId);
+        // Note: selectedAgentId is now managed at App level
         // End current session if one exists
         if (sessionActive) {
           vscodeApi.endSession();
@@ -177,25 +179,25 @@ const AgentPreview: React.FC = () => {
         vscodeApi.endSession();
       }
     };
-  }, [sessionActive]);
+  }, [sessionActive, onClientAppStateChange]);
 
   // Listen for backend reset completion and client app readiness signals
   useEffect(() => {
     const handleReady = () => {
-      setClientAppState('ready');
+      onClientAppStateChange('ready');
       setIsLoading(false);
     };
     vscodeApi.onClientAppReady(handleReady);
 
     const handleResetComplete = () => {
-      setClientAppState('none');
-      setAvailableClientApps([]);
+      onClientAppStateChange('none');
+      onAvailableClientAppsChange([]);
       setMessages([]);
     };
     vscodeApi.onMessage('resetComplete', handleResetComplete);
 
     // no cleanup needed for our simple message bus
-  }, []);
+  }, [onClientAppStateChange, onAvailableClientAppsChange]);
 
   const handleSendMessage = (content: string) => {
     if (!agentConnected) {
@@ -236,9 +238,8 @@ const AgentPreview: React.FC = () => {
     setIsLoading(false);
     setHasSelectedAgent(false);
     setAgentConnected(false);
-    setClientAppState('none');
-    setAvailableClientApps([]);
-    setSelectedAgentId(''); // Reset selected agent
+    onClientAppStateChange('none');
+    onAvailableClientAppsChange([]);
 
     // Show welcome message
     const welcomeMessage: Message = {
@@ -259,37 +260,9 @@ const AgentPreview: React.FC = () => {
     vscodeApi.reset();
   };
 
-  const handleClientAppRequired = (_data: any) => {
-    setClientAppState('required');
-    // Replace chat content with only the error message
-    setMessages([
-      {
-        id: Date.now().toString(),
-        type: 'system',
-        content:
-          'Client app required for agent preview. See "Preview an Agent" in the Agentforce Developer Guide for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html',
-        systemType: 'error',
-        timestamp: new Date().toISOString()
-      }
-    ]);
-  };
-
-  const handleClientAppSelection = (data: any) => {
-    setClientAppState('selecting');
-    setAvailableClientApps(data.clientApps || []);
-    const selectionMessage: Message = {
-      id: Date.now().toString(),
-      type: 'system',
-      content: `Multiple client apps found (${data.clientApps?.length || 0}). Please select one to continue.`,
-      systemType: 'session',
-      timestamp: new Date().toISOString()
-    };
-    setMessages([selectionMessage]);
-  };
-
   const handleClientAppSelected = (clientAppName: string) => {
     // Hide client app selection UI and reset chat area to normal
-    setClientAppState('ready');
+    onClientAppStateChange('ready');
     // Clear any prior selection/status messages and return to normal chat state
     setMessages([]);
     // Notify backend to finalize the client app selection and refresh agents
@@ -329,53 +302,38 @@ const AgentPreview: React.FC = () => {
     );
   };
 
-  const agentSelectorElement = (
-    <AgentSelector
-      onClientAppRequired={handleClientAppRequired}
-      onClientAppSelection={handleClientAppSelection}
-      selectedAgent={selectedAgentId}
-      onAgentChange={setSelectedAgentId}
-    />
-  );
-
   if (!hasSelectedAgent && messages.length === 0 && clientAppState === 'none') {
     return (
-      <>
-        {portalElement && createPortal(agentSelectorElement, portalElement)}
-        <div className="agent-preview">
-          {renderAgentSelection()}
-          <PlaceholderContent />
-          <FormContainer
-            debugMode={debugMode}
-            onDebugModeChange={handleDebugModeChange}
-            onSendMessage={handleSendMessage}
-            onClearChat={handleClearChat}
-            sessionActive={false}
-            isLoading={isLoading}
-            messages={messages}
-          />
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      {portalElement && createPortal(agentSelectorElement, portalElement)}
       <div className="agent-preview">
         {renderAgentSelection()}
-        <ChatContainer messages={messages} isLoading={isLoading} />
+        <PlaceholderContent />
         <FormContainer
           debugMode={debugMode}
           onDebugModeChange={handleDebugModeChange}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}
-          sessionActive={agentConnected}
+          sessionActive={false}
           isLoading={isLoading}
           messages={messages}
         />
       </div>
-    </>
+    );
+  }
+
+  return (
+    <div className="agent-preview">
+      {renderAgentSelection()}
+      <ChatContainer messages={messages} isLoading={isLoading} />
+      <FormContainer
+        debugMode={debugMode}
+        onDebugModeChange={handleDebugModeChange}
+        onSendMessage={handleSendMessage}
+        onClearChat={handleClearChat}
+        sessionActive={agentConnected}
+        isLoading={isLoading}
+        messages={messages}
+      />
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@
   align-items: center;
   position: relative;
   width: 100%;
-  padding: 0 16px 0 16px;
+  padding: 0 16px;
   background-color: var(--vscode-sideBar-background);
   flex-shrink: 0;
 }
@@ -33,7 +33,7 @@
   padding: 6px 28px 6px 8px;
   background: var(--vscode-dropdown-background);
   border: 1px solid var(--vscode-dropdown-border);
-  border-radius: 2px;
+  border-radius: 3px;
   color: var(--vscode-dropdown-foreground);
   font-size: 13px;
   cursor: pointer;
@@ -52,15 +52,4 @@
 .agent-select:focus {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
-}
-
-.agent-selection {
-  padding: 16px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-}
-
-.agent-selection h4 {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  font-weight: 600;
 }

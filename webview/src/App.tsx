@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import AgentPreview from './components/AgentPreview/AgentPreview';
 import AgentTracer from './components/AgentTracer/AgentTracer';
+import AgentSelector from './components/AgentPreview/AgentSelector';
 import TabNavigation from './components/shared/TabNavigation';
 import { vscodeApi } from './services/vscodeApi';
 import './App.css';
 
+interface ClientApp {
+  name: string;
+  clientId: string;
+}
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'preview' | 'tracer'>('preview');
   const [showTracerTab, setShowTracerTab] = useState<boolean>(false);
+  const [selectedAgentId, setSelectedAgentId] = useState('');
+  const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
+  const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
 
   useEffect(() => {
     // Listen for configuration updates
@@ -29,15 +38,34 @@ const App: React.FC = () => {
     setActiveTab(tab);
   };
 
+  const handleClientAppRequired = (_data: any) => {
+    setClientAppState('required');
+  };
+
+  const handleClientAppSelection = (data: any) => {
+    setClientAppState('selecting');
+    setAvailableClientApps(data.clientApps || []);
+  };
+
   return (
     <div className="app">
-      <div id="agent-selector-portal"></div>
+      <AgentSelector
+        onClientAppRequired={handleClientAppRequired}
+        onClientAppSelection={handleClientAppSelection}
+        selectedAgent={selectedAgentId}
+        onAgentChange={setSelectedAgentId}
+      />
       {showTracerTab && (
         <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
       )}
       <div className="app-content">
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
-          <AgentPreview />
+          <AgentPreview
+            clientAppState={clientAppState}
+            availableClientApps={availableClientApps}
+            onClientAppStateChange={setClientAppState}
+            onAvailableClientAppsChange={setAvailableClientApps}
+          />
         </div>
         {showTracerTab && (
           <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
