@@ -3,7 +3,7 @@
   align-items: center;
   position: relative;
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 16px;
   background-color: var(--vscode-sideBar-background);
   border-bottom: 1px solid var(--vscode-panel-border);
   flex-shrink: 0;
