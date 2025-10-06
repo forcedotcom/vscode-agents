@@ -43,6 +43,38 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Updates the debug mode state and context
+   */
+  private async setDebugMode(enabled: boolean): Promise<void> {
+    this.apexDebugging = enabled;
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', enabled);
+  }
+
+  /**
+   * Toggles debug mode on/off
+   */
+  public async toggleDebugMode(): Promise<void> {
+    const newDebugMode = !this.apexDebugging;
+    await this.setDebugMode(newDebugMode);
+
+    // If we have an active agent preview, update its debug mode
+    if (this.agentPreview) {
+      this.agentPreview.toggleApexDebugMode(newDebugMode);
+    }
+
+    // Notify webview
+    if (this.webviewView) {
+      this.webviewView.webview.postMessage({
+        command: 'setDebugMode',
+        data: newDebugMode
+      });
+    }
+
+    const statusMessage = newDebugMode ? 'Debug mode activated' : 'Debug mode deactivated';
+    vscode.window.showInformationMessage(`Agentforce DX: ${statusMessage}`);
+  }
+
+  /**
    * Selects an agent and starts a session
    * @param agentId The agent's Bot ID
    */
@@ -66,6 +98,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
       await this.setSessionActive(false);
+      await this.setDebugMode(false);
 
       // Show notification
       if (agentName) {
@@ -176,7 +209,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               : { content: "Hi! I'm ready to help. What can I do for you?" }
           });
         } else if (message.command === 'setApexDebugging') {
-          this.apexDebugging = message.data;
+          await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
           if (this.agentPreview) {
             this.agentPreview.toggleApexDebugMode(this.apexDebugging);
@@ -238,7 +271,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             webviewView.webview.postMessage({
               command: 'debugLogInfo',
               data: {
-                message: 'Debug mode is enabled, but no Apex was executed during the last turn of your conversation.g'
+                message: 'Debug mode is enabled, but no Apex was executed.'
               }
             });
           }
@@ -250,6 +283,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.sessionId = Date.now().toString();
             this.currentAgentName = undefined;
             await this.setSessionActive(false);
+            await this.setDebugMode(false);
 
             // Show notification
             if (agentName) {
@@ -355,6 +389,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.selectedClientApp = undefined;
             this.currentAgentName = undefined;
             await this.setSessionActive(false);
+            await this.setDebugMode(false);
 
             // Immediately re-evaluate current org and push appropriate UI messages
             try {
@@ -400,7 +435,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           try {
             const tracerJsonPath = path.join(this.context.extensionPath, 'webview', 'src', 'data', 'tracer.json');
             if (!fs.existsSync(tracerJsonPath)) {
-              throw new Error('tracer.json not found at webview/src/data/tracer.json. Please create this file to customize trace data.');
+              throw new Error(
+                'tracer.json not found at webview/src/data/tracer.json. Please create this file to customize trace data.'
+              );
             }
             const data = JSON.parse(fs.readFileSync(tracerJsonPath, 'utf8')) as AgentTraceResponse;
             webviewView.webview.postMessage({

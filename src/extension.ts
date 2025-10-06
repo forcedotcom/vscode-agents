@@ -212,9 +212,14 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.debug', () => {
-      // TODO: Implement debug functionality
-      vscode.window.showInformationMessage('Debug agent');
+    vscode.commands.registerCommand('sf.agent.combined.view.debug', async () => {
+      await provider.toggleDebugMode();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.debugStop', async () => {
+      await provider.toggleDebugMode();
     })
   );
 
