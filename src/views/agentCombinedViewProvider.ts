@@ -20,6 +20,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private apexDebugging = false;
   private webviewView?: vscode.WebviewView;
   private selectedClientApp?: string;
+  private sessionActive = false;
+  private currentAgentName?: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Listen for configuration changes
@@ -33,6 +35,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Updates the session active state and context
+   */
+  private async setSessionActive(active: boolean): Promise<void> {
+    this.sessionActive = active;
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionActive', active);
+  }
+
+  /**
    * Selects an agent and starts a session
    * @param agentId The agent's Bot ID
    */
@@ -42,6 +52,32 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         command: 'selectAgent',
         data: { agentId }
       });
+    }
+  }
+
+  /**
+   * Ends the current agent session
+   */
+  public async endSession(): Promise<void> {
+    if (this.agentPreview && this.sessionId) {
+      const agentName = this.currentAgentName;
+      await this.agentPreview.end(this.sessionId, 'UserRequest');
+      this.agentPreview = undefined;
+      this.sessionId = Date.now().toString();
+      this.currentAgentName = undefined;
+      await this.setSessionActive(false);
+
+      // Show notification
+      if (agentName) {
+        vscode.window.showInformationMessage(`Agentforce DX: Session ended with ${agentName}`);
+      }
+
+      if (this.webviewView) {
+        this.webviewView.webview.postMessage({
+          command: 'sessionEnded',
+          data: {}
+        });
+      }
     }
   }
 
@@ -96,6 +132,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           console.log('Starting session with agent ID:', agentId);
           this.agentPreview = new AgentPreview(conn, agentId);
 
+          // Get agent name for notifications
+          const remoteAgents = await Agent.listRemote(conn);
+          const agent = remoteAgents?.find(bot => bot.Id === agentId);
+          this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
+
           // Enable debug mode if apex debugging is active
           if (this.apexDebugging) {
             this.agentPreview.toggleApexDebugMode(this.apexDebugging);
@@ -103,6 +144,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
+          await this.setSessionActive(true);
+
+          // Show notification
+          vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
@@ -187,9 +232,18 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'endSession') {
           if (this.agentPreview && this.sessionId) {
+            const agentName = this.currentAgentName;
             await this.agentPreview.end(this.sessionId, 'UserRequest');
             this.agentPreview = undefined;
             this.sessionId = Date.now().toString();
+            this.currentAgentName = undefined;
+            await this.setSessionActive(false);
+
+            // Show notification
+            if (agentName) {
+              vscode.window.showInformationMessage(`Agentforce DX: Session ended with ${agentName}`);
+            }
+
             webviewView.webview.postMessage({
               command: 'sessionEnded',
               data: {}
@@ -287,6 +341,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.agentPreview = undefined;
             this.sessionId = Date.now().toString();
             this.selectedClientApp = undefined;
+            this.currentAgentName = undefined;
+            await this.setSessionActive(false);
 
             // Immediately re-evaluate current org and push appropriate UI messages
             try {

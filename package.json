@@ -159,7 +159,12 @@
       "view/title": [
         {
           "command": "sf.agent.combined.view.run",
-          "when": "view == sf.agent.combined.view",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sf.agent.combined.view.stop",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive",
           "group": "navigation@1"
         },
         {
@@ -309,6 +314,11 @@
         "command": "sf.agent.combined.view.run",
         "title": "Run Agent",
         "icon": "$(play-circle)"
+      },
+      {
+        "command": "sf.agent.combined.view.stop",
+        "title": "Stop Agent",
+        "icon": "$(stop-circle)"
       },
       {
         "command": "sf.agent.combined.view.debug",
