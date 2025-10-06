@@ -86,6 +86,7 @@ const App: React.FC = () => {
             availableClientApps={availableClientApps}
             onClientAppStateChange={setClientAppState}
             onAvailableClientAppsChange={setAvailableClientApps}
+            selectedAgentId={selectedAgentId}
           />
         </div>
         {showTracerTab && (

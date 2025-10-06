@@ -15,20 +15,21 @@ interface AgentPreviewProps {
   availableClientApps: ClientApp[];
   onClientAppStateChange: (state: 'none' | 'required' | 'selecting' | 'ready') => void;
   onAvailableClientAppsChange: (apps: ClientApp[]) => void;
+  selectedAgentId: string;
 }
 
 const AgentPreview: React.FC<AgentPreviewProps> = ({
   clientAppState,
   availableClientApps,
   onClientAppStateChange,
-  onAvailableClientAppsChange
+  onAvailableClientAppsChange,
+  selectedAgentId
 }) => {
   const [debugMode, setDebugMode] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Loading...');
-  const [hasSelectedAgent, setHasSelectedAgent] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
 
   useEffect(() => {
@@ -36,7 +37,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     vscodeApi.onMessage('sessionStarted', data => {
       setSessionActive(true);
       setIsLoading(false);
-      setHasSelectedAgent(true);
       setAgentConnected(true); // Agent is now ready for conversation
       if (data) {
         const welcomeMessage: Message = {
@@ -61,7 +61,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setIsLoading(true);
       setLoadingMessage('Loading agent...');
       setAgentConnected(false); // Reset agent connected state while starting
-      setHasSelectedAgent(true); // Switch to chat view to show spinner
       setMessages([]); // Just clear messages without showing transition message
     });
 
@@ -228,25 +227,10 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     setDebugMode(false);
     setSessionActive(false);
     setIsLoading(false);
-    setHasSelectedAgent(false);
     setAgentConnected(false);
     onClientAppStateChange('none');
     onAvailableClientAppsChange([]);
-
-    // Show welcome message
-    const welcomeMessage: Message = {
-      id: Date.now().toString(),
-      type: 'system',
-      content: `
-        <div class="welcome-message">
-          <h2>Welcome to Agent Chat!</h2>
-          <p>Select an agent to begin.</p>
-        </div>
-      `,
-      systemType: 'session',
-      timestamp: new Date().toISOString()
-    };
-    setMessages([welcomeMessage]);
+    setMessages([]);
 
     // Ask backend to reset its state
     vscodeApi.reset();
@@ -267,6 +251,22 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       handleClearChat();
     });
   }, []);
+
+  // Watch for when selectedAgentId becomes empty (user selects default option)
+  useEffect(() => {
+    if (selectedAgentId === '') {
+      // End any active session
+      if (sessionActive || agentConnected) {
+        vscodeApi.endSession();
+      }
+      // Reset to placeholder state
+      setDebugMode(false);
+      setSessionActive(false);
+      setIsLoading(false);
+      setAgentConnected(false);
+      setMessages([]);
+    }
+  }, [selectedAgentId, sessionActive, agentConnected]);
 
   // Render client app selection UI in the chat area for case 3
   const renderAgentSelection = () => {
@@ -294,7 +294,8 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     );
   };
 
-  if (!hasSelectedAgent && messages.length === 0 && clientAppState === 'none') {
+  // Show placeholder when no agent is selected or in special client app states
+  if (selectedAgentId === '' || clientAppState === 'selecting') {
     return (
       <div className="agent-preview">
         {renderAgentSelection()}
