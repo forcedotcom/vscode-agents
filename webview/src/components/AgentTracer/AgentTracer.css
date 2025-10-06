@@ -1,13 +1,12 @@
 .agent-tracer {
   height: 100%;
   overflow: auto;
-  background-color: var(--vscode-editor-background);
-  color: var(--vscode-editor-foreground);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-
 .tracer-content {
-  padding: 16px 0 0 0;
+  padding: 0 18px;
 }
 
 .tracer-error {
