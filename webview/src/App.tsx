@@ -30,6 +30,15 @@ const App: React.FC = () => {
       }
     });
 
+    // Listen for agent selection from external command (e.g., play-circle button)
+    vscodeApi.onMessage('selectAgent', data => {
+      if (data && data.agentId) {
+        // Update the selected agent in the dropdown
+        setSelectedAgentId(data.agentId);
+        // The AgentSelector component will handle starting the session
+      }
+    });
+
     // Request the current configuration
     vscodeApi.getConfiguration('salesforce.agentforceDX.showAgentTracer');
   }, [activeTab]);

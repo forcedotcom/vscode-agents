@@ -116,6 +116,11 @@ class VSCodeApiService {
   reset() {
     this.postMessage('reset');
   }
+
+  // Execute a VSCode command
+  executeCommand(commandId: string) {
+    this.postMessage('executeCommand', { commandId });
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

@@ -162,21 +162,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       }
     });
 
-    // Handle agent selection from external command (e.g., play-circle button)
-    vscodeApi.onMessage('selectAgent', data => {
-      if (data && data.agentId) {
-        // Note: selectedAgentId is now managed at App level
-        // End current session if one exists
-        if (sessionActive) {
-          vscodeApi.endSession();
-        }
-        // Start new session with the selected agent
-        vscodeApi.startSession(data.agentId);
-      }
-    });
-
     // Don't start session automatically - wait for agent selection
     // The user should select an agent first
+    // Note: Agent selection from external commands is now handled in App.tsx
 
     return () => {
       if (sessionActive) {

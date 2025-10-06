@@ -17,6 +17,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [previousAgent, setPreviousAgent] = useState('');
 
   useEffect(() => {
     // Listen for available agents from VS Code
@@ -50,9 +51,33 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     vscodeApi.getAvailableAgents();
   }, [onClientAppRequired, onClientAppSelection]);
 
+  // Handle external agent selection (e.g., from command palette)
+  useEffect(() => {
+    const startSessionForSelectedAgent = async () => {
+      // Only start session if selectedAgent changed externally (not from dropdown)
+      if (selectedAgent && selectedAgent !== '' && selectedAgent !== previousAgent && agents.length > 0) {
+        // Check if this agent exists in the available agents list
+        const agentExists = agents.some(agent => agent.id === selectedAgent);
+        if (agentExists) {
+          // End current session if one exists
+          if (previousAgent) {
+            vscodeApi.endSession();
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          // Start session for the externally selected agent
+          vscodeApi.startSession(selectedAgent);
+          setPreviousAgent(selectedAgent);
+        }
+      }
+    };
+
+    startSessionForSelectedAgent();
+  }, [selectedAgent, agents, previousAgent]);
+
   const handleAgentChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
     onAgentChange(agentId);
+    setPreviousAgent(agentId);
 
     // End current session if one exists
     if (selectedAgent) {

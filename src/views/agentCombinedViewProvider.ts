@@ -22,6 +22,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private selectedClientApp?: string;
   private sessionActive = false;
   private currentAgentName?: string;
+  private currentAgentId?: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Listen for configuration changes
@@ -75,6 +76,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Gets the currently selected agent ID
+   * @returns The current agent's Bot ID, or undefined if no agent is selected
+   */
+  public getCurrentAgentId(): string | undefined {
+    return this.currentAgentId;
+  }
+
+  /**
    * Selects an agent and starts a session
    * @param agentId The agent's Bot ID
    */
@@ -97,6 +106,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
+      this.currentAgentId = undefined;
       await this.setSessionActive(false);
       await this.setDebugMode(false);
 
@@ -181,6 +191,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const remoteAgents = await Agent.listRemote(conn);
           const agent = remoteAgents?.find(bot => bot.Id === agentId);
           this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
+          this.currentAgentId = agentId;
 
           // Enable debug mode if apex debugging is active
           if (this.apexDebugging) {
@@ -282,6 +293,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.agentPreview = undefined;
             this.sessionId = Date.now().toString();
             this.currentAgentName = undefined;
+            this.currentAgentId = undefined;
             await this.setSessionActive(false);
             await this.setDebugMode(false);
 
@@ -388,6 +400,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.sessionId = Date.now().toString();
             this.selectedClientApp = undefined;
             this.currentAgentName = undefined;
+            this.currentAgentId = undefined;
             await this.setSessionActive(false);
             await this.setDebugMode(false);
 
@@ -511,6 +524,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               command: 'configuration',
               data: { section, value }
             });
+          }
+        } else if (message.command === 'executeCommand') {
+          // Execute a VSCode command from the webview
+          const commandId = message.data?.commandId;
+          if (commandId && typeof commandId === 'string') {
+            await vscode.commands.executeCommand(commandId);
           }
         }
       } catch (err) {
