@@ -148,6 +148,19 @@ const AgentPreview: React.FC = () => {
       }
     });
 
+    // Handle agent selection from external command (e.g., play-circle button)
+    vscodeApi.onMessage('selectAgent', data => {
+      if (data && data.agentId) {
+        setSelectedAgentId(data.agentId);
+        // End current session if one exists
+        if (sessionActive) {
+          vscodeApi.endSession();
+        }
+        // Start new session with the selected agent
+        vscodeApi.startSession(data.agentId);
+      }
+    });
+
     // Don't start session automatically - wait for agent selection
     // The user should select an agent first
 
@@ -156,7 +169,7 @@ const AgentPreview: React.FC = () => {
         vscodeApi.endSession();
       }
     };
-  }, []);
+  }, [sessionActive]);
 
   // Listen for backend reset completion and client app readiness signals
   useEffect(() => {

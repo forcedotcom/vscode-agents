@@ -188,7 +188,11 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         });
 
         if (selectedAgent) {
-          vscode.window.showInformationMessage(`Selected agent: ${selectedAgent.label}`);
+          // Reveal the Agentforce DX panel
+          await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+
+          // Select and start the agent in the webview
+          provider.selectAndStartAgent(selectedAgent.id);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

@@ -32,6 +32,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     );
   }
 
+  /**
+   * Selects an agent and starts a session
+   * @param agentId The agent's Bot ID
+   */
+  public selectAndStartAgent(agentId: string): void {
+    if (this.webviewView) {
+      this.webviewView.webview.postMessage({
+        command: 'selectAgent',
+        data: { agentId }
+      });
+    }
+  }
+
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
