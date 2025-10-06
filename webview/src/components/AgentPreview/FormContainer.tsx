@@ -1,5 +1,4 @@
 import React from 'react';
-import AgentSelector from './AgentSelector';
 import DebugToggle from './DebugToggle';
 import ChatInput from './ChatInput';
 import './FormContainer.css';
@@ -20,10 +19,6 @@ interface FormContainerProps {
   sessionActive: boolean; // Now represents agent connection status
   isLoading: boolean;
   messages?: Message[];
-  onClientAppRequired?: (data: any) => void;
-  onClientAppSelection?: (data: any) => void;
-  selectedAgent: string;
-  onAgentChange: (agentId: string) => void;
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
@@ -33,21 +28,11 @@ const FormContainer: React.FC<FormContainerProps> = ({
   onClearChat,
   sessionActive,
   isLoading: _isLoading, // Renamed to indicate it's intentionally unused
-  messages = [],
-  onClientAppRequired,
-  onClientAppSelection,
-  selectedAgent,
-  onAgentChange
+  messages = []
 }) => {
   return (
     <div className="form-container">
       <div className="form-controls">
-        <AgentSelector
-          onClientAppRequired={onClientAppRequired}
-          onClientAppSelection={onClientAppSelection}
-          selectedAgent={selectedAgent}
-          onAgentChange={onAgentChange}
-        />
         <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
         <button className="clear-chat-button" onClick={onClearChat}>
           Reset
