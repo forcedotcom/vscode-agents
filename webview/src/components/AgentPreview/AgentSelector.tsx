@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi';
 import './AgentSelector.css';
-import chevronIcon from '../../assets/chevron.svg';
 
 interface AgentSelectorProps {
   onClientAppRequired?: (data: any) => void;
@@ -80,7 +79,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           </option>
         ))}
       </select>
-      <img src={chevronIcon} alt="Chevron" className="chevron-icon" />
     </div>
   );
 };
