@@ -160,27 +160,22 @@
         {
           "command": "sf.agent.combined.view.run",
           "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive",
-          "group": "navigation@1"
+          "group": "navigation@2"
         },
         {
           "command": "sf.agent.combined.view.stop",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive",
-          "group": "navigation@1"
+          "group": "navigation@2"
         },
         {
           "command": "sf.agent.combined.view.debug",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode",
-          "group": "navigation@2"
+          "group": "navigation@1"
         },
         {
           "command": "sf.agent.combined.view.debugStop",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:debugMode",
-          "group": "navigation@2"
-        },
-        {
-          "command": "sf.agent.combined.view.refresh",
-          "when": "view == sf.agent.combined.view",
-          "group": "navigation@3"
+          "group": "navigation@1"
         },
         {
           "command": "sf.agent.test.view.runAll",
@@ -342,11 +337,6 @@
         "command": "sf.agent.combined.view.debugStop",
         "title": "Stop Debug Mode",
         "icon": "$(debug)"
-      },
-      {
-        "command": "sf.agent.combined.view.refresh",
-        "title": "Refresh Agent",
-        "icon": "$(refresh)"
       },
       {
         "command": "sf.agent.test.view.goToTestResults",

@@ -124,18 +124,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  /**
-   * Resets the entire agent preview state (same as Reset button in webview)
-   */
-  public resetAgentPreview(): void {
-    if (this.webviewView) {
-      // Send reset command to webview - this triggers the same handler as the Reset button
-      this.webviewView.webview.postMessage({
-        command: 'triggerReset'
-      });
-    }
-  }
-
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -384,64 +372,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'clearChat') {
           // Legacy no-op: kept for compatibility with older UI messages
-        } else if (message.command === 'reset') {
-          // Fully reset state: client app selection and session
-          try {
-            // End any active session
-            if (this.agentPreview && this.sessionId) {
-              try {
-                await this.agentPreview.end(this.sessionId, 'UserRequest');
-              } catch (err) {
-                console.warn('Error ending session during reset:', err);
-              }
-            }
-            this.agentPreview = undefined;
-            this.sessionId = Date.now().toString();
-            this.selectedClientApp = undefined;
-            this.currentAgentName = undefined;
-            this.currentAgentId = undefined;
-            await this.setSessionActive(false);
-            await this.setDebugMode(false);
-
-            // Immediately re-evaluate current org and push appropriate UI messages
-            try {
-              const clientAppResult = await getAvailableClientApps();
-              if (clientAppResult.type === 'none') {
-                webviewView.webview.postMessage({
-                  command: 'clientAppRequired',
-                  data: {
-                    message:
-                      'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
-                    username: clientAppResult.username,
-                    error: clientAppResult.error
-                  }
-                });
-              } else if (clientAppResult.type === 'multiple') {
-                webviewView.webview.postMessage({
-                  command: 'selectClientApp',
-                  data: {
-                    clientApps: clientAppResult.clientApps,
-                    username: clientAppResult.username
-                  }
-                });
-              } else if (clientAppResult.type === 'single') {
-                this.selectedClientApp = clientAppResult.clientApps[0].name;
-                const conn = await createConnectionWithClientApp(this.selectedClientApp);
-                const remoteAgents = await Agent.listRemote(conn);
-                const activeAgents = (remoteAgents || [])
-                  .filter(bot => bot.BotVersions?.records?.some(v => v.Status === 'Active'))
-                  .map(bot => ({ name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent', id: bot.Id }))
-                  .filter(a => a.id);
-                webviewView.webview.postMessage({ command: 'availableAgents', data: activeAgents });
-                webviewView.webview.postMessage({ command: 'clientAppReady' });
-              }
-            } catch (e) {
-              console.error('Error reevaluating org after reset:', e);
-              webviewView.webview.postMessage({ command: 'clientAppRequired', data: { error: String(e) } });
-            }
-          } catch (err) {
-            console.error('Error during reset:', err);
-          }
         } else if (message.command === 'getTraceData') {
           // Serve the sample tracer.json file from webview/src/data
           try {

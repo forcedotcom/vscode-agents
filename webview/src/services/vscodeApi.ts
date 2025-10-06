@@ -112,11 +112,6 @@ class VSCodeApiService {
     this.onMessage('clientAppReady', handler);
   }
 
-  // Reset entire preview state
-  reset() {
-    this.postMessage('reset');
-  }
-
   // Execute a VSCode command
   executeCommand(commandId: string) {
     this.postMessage('executeCommand', { commandId });

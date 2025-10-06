@@ -22,7 +22,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   clientAppState,
   availableClientApps,
   onClientAppStateChange,
-  onAvailableClientAppsChange,
+  onAvailableClientAppsChange: _onAvailableClientAppsChange,
   selectedAgentId
 }) => {
   const [debugMode, setDebugMode] = useState(false);
@@ -172,7 +172,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     };
   }, [sessionActive, onClientAppStateChange]);
 
-  // Listen for backend reset completion and client app readiness signals
+  // Listen for backend client app readiness signals
   useEffect(() => {
     const handleReady = () => {
       onClientAppStateChange('ready');
@@ -180,15 +180,8 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     };
     vscodeApi.onClientAppReady(handleReady);
 
-    const handleResetComplete = () => {
-      onClientAppStateChange('none');
-      onAvailableClientAppsChange([]);
-      setMessages([]);
-    };
-    vscodeApi.onMessage('resetComplete', handleResetComplete);
-
     // no cleanup needed for our simple message bus
-  }, [onClientAppStateChange, onAvailableClientAppsChange]);
+  }, [onClientAppStateChange]);
 
   const handleSendMessage = (content: string) => {
     if (!agentConnected) {
@@ -222,20 +215,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     setMessages(prev => [...prev, debugMessage]);
   };
 
-  const handleClearChat = () => {
-    // Reset all UI state back to initial
-    setDebugMode(false);
-    setSessionActive(false);
-    setIsLoading(false);
-    setAgentConnected(false);
-    onClientAppStateChange('none');
-    onAvailableClientAppsChange([]);
-    setMessages([]);
-
-    // Ask backend to reset its state
-    vscodeApi.reset();
-  };
-
   const handleClientAppSelected = (clientAppName: string) => {
     // Hide client app selection UI and reset chat area to normal
     onClientAppStateChange('ready');
@@ -244,13 +223,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     // Notify backend to finalize the client app selection and refresh agents
     vscodeApi.selectClientApp(clientAppName);
   };
-
-  // Handle reset trigger from refresh button
-  useEffect(() => {
-    vscodeApi.onMessage('triggerReset', () => {
-      handleClearChat();
-    });
-  }, []);
 
   // Watch for when selectedAgentId becomes empty (user selects default option)
   useEffect(() => {
@@ -304,7 +276,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
           debugMode={debugMode}
           onDebugModeChange={handleDebugModeChange}
           onSendMessage={handleSendMessage}
-          onClearChat={handleClearChat}
           sessionActive={false}
           isLoading={isLoading}
           messages={messages}
@@ -321,7 +292,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         debugMode={debugMode}
         onDebugModeChange={handleDebugModeChange}
         onSendMessage={handleSendMessage}
-        onClearChat={handleClearChat}
         sessionActive={agentConnected}
         isLoading={isLoading}
         messages={messages}

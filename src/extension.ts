@@ -232,11 +232,5 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
     })
   );
 
-  disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.refresh', () => {
-      provider.resetAgentPreview();
-    })
-  );
-
   return vscode.Disposable.from(...disposables);
 };
