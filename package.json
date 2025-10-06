@@ -293,6 +293,10 @@
         "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
       },
       {
+        "command": "sf.agent.selectAndRun",
+        "when": "sf:project_opened"
+      },
+      {
         "command": "sf.agent.test.view.runAll",
         "when": "false"
       },
@@ -314,6 +318,10 @@
         "command": "sf.agent.combined.view.run",
         "title": "Run Agent",
         "icon": "$(play-circle)"
+      },
+      {
+        "command": "sf.agent.selectAndRun",
+        "title": "Agentforce DX: Select an Agent to Run"
       },
       {
         "command": "sf.agent.combined.view.stop",
