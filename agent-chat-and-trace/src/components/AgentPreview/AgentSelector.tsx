@@ -21,13 +21,27 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
   useEffect(() => {
     // Listen for available agents from VS Code
-    vscodeApi.onMessage('availableAgents', (data: AgentInfo[]) => {
+    vscodeApi.onMessage('availableAgents', (data: { agents: AgentInfo[], selectedAgentId?: string } | AgentInfo[]) => {
       setIsLoading(false);
-      if (data && data.length > 0) {
-        setAgents(data);
-        // Don't automatically select or start session - wait for user selection
+      if (Array.isArray(data)) {
+        // Handle legacy format
+        if (data.length > 0) {
+          setAgents(data);
+        } else {
+          setAgents([]);
+        }
       } else {
-        setAgents([]);
+        // Handle new format with selectedAgentId
+        if (data.agents && data.agents.length > 0) {
+          setAgents(data.agents);
+          if (data.selectedAgentId) {
+            onAgentChange(data.selectedAgentId);
+            // Start session with preselected agent
+            vscodeApi.startSession(data.selectedAgentId);
+          }
+        } else {
+          setAgents([]);
+        }
       }
     });
 

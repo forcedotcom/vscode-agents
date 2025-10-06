@@ -15,14 +15,21 @@ interface AgentMessage {
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.combined.view';
+  private static instance: AgentCombinedViewProvider;
+
+  public static getInstance(): AgentCombinedViewProvider {
+    return AgentCombinedViewProvider.instance;
+  }
   private agentPreview?: AgentPreview;
   private sessionId = Date.now().toString();
   private apexDebugging = false;
-  private webviewView?: vscode.WebviewView;
+  public webviewView?: vscode.WebviewView;
   private selectedClientApp?: string;
   private mockFile?: string;
+  private preselectedAgentId?: string;
 
   constructor(private readonly context: vscode.ExtensionContext) {
+    AgentCombinedViewProvider.instance = this;
     // Listen for configuration changes
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
@@ -60,6 +67,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  public setPreselectedAgentId(agentId: string) {
+    this.preselectedAgentId = agentId;
+  }
+
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -95,7 +106,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             : await CoreExtensionService.getDefaultConnection();
 
           // Extract agentId from the message data and pass it as botId
-          const agentId = message.data?.agentId;
+          const agentId = this.preselectedAgentId || message.data?.agentId;
 
           if (!agentId || typeof agentId !== 'string') {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
@@ -274,10 +285,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               }))
               .filter(agent => agent.id); // Only include agents with valid IDs
 
+            // Send the available agents with preselected agent if we have one
             webviewView.webview.postMessage({
               command: 'availableAgents',
-              data: activeAgents
+              data: {
+                agents: activeAgents,
+                selectedAgentId: this.preselectedAgentId
+              }
             });
+
+            // Clear the preselected agent ID after sending it
+            if (this.preselectedAgentId) {
+              this.preselectedAgentId = undefined;
+            }
           } catch (err) {
             console.error('Error getting available agents from org:', err);
             // Return empty list if there's an error
@@ -435,8 +455,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // Notify the UI that client app is ready so it can clear selection UI
             webviewView.webview.postMessage({ command: 'clientAppReady' });
 
-            // Provide updated agent list
-            webviewView.webview.postMessage({ command: 'availableAgents', data: activeAgents });
+            // Provide updated agent list with preselected agent if we have one
+            webviewView.webview.postMessage({
+              command: 'availableAgents',
+              data: {
+                agents: activeAgents,
+                selectedAgentId: this.preselectedAgentId
+              }
+            });
+
+            // Clear the preselected agent ID after sending it
+            if (this.preselectedAgentId) {
+              this.preselectedAgentId = undefined;
+            }
           } catch (err) {
             console.error('Error selecting client app:', err);
             webviewView.webview.postMessage({
