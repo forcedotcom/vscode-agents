@@ -1,16 +1,17 @@
 .system-message {
   text-align: center;
   font-size: 13px;
-  color: var(--text-muted);
   padding: 8px 18px;
 }
 
 .system-message.debug {
-  color: var(--color-debug);
-  font-weight: 500;
+  font-weight: 400;
+  font-size: 11px;
+  opacity: 0.6;
 }
 
 .system-message.error {
   color: var(--vscode-errorForeground);
   font-weight: 500;
+  font-size: 13px;
 }
