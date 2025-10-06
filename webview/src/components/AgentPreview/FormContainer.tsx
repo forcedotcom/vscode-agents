@@ -1,5 +1,4 @@
 import React from 'react';
-import DebugToggle from './DebugToggle';
 import ChatInput from './ChatInput';
 import './FormContainer.css';
 
@@ -22,22 +21,16 @@ interface FormContainerProps {
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
-  debugMode,
-  onDebugModeChange,
+  debugMode: _debugMode,
+  onDebugModeChange: _onDebugModeChange,
   onSendMessage,
-  onClearChat,
+  onClearChat: _onClearChat,
   sessionActive,
   isLoading: _isLoading, // Renamed to indicate it's intentionally unused
   messages = []
 }) => {
   return (
     <div className="form-container">
-      <div className="form-controls">
-        <DebugToggle isEnabled={debugMode} onChange={onDebugModeChange} />
-        <button className="clear-chat-button" onClick={onClearChat}>
-          Reset
-        </button>
-      </div>
       <ChatInput onSendMessage={onSendMessage} disabled={!sessionActive} messages={messages} />
     </div>
   );
