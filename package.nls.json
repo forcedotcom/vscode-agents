@@ -7,7 +7,7 @@
   "run_test_title": "Run Test Definition",
   "agentforce_dx": "Agentforce DX",
   "agent_chat": "Chat with Agent",
-  "agent_combined": "Agent Chat",
+  "agent_combined": "Agentforce DX",
   "clear_chat": "Clear chat with Agent",
   "show_chat_trace": "SFDX: Show Chat Trace",
   "refresh_test_title": "Refresh Test Definitions",
