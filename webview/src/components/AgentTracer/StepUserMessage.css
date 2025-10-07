@@ -13,20 +13,21 @@
   padding: 0 12px;
   background-color: var(--vscode-input-background);
   height: 35px;
+  border-bottom: 1px solid var(--vscode-input-border);
 }
 
 .step-user-message-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--vscode-foreground);
   font-size: 13px;
   font-weight: 500;
 }
 
 .step-user-message-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;

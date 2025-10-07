@@ -6,10 +6,6 @@
   position: relative;
 }
 
-.step-agent-response--response {
-  border-color: var(--vscode-panel-border);
-}
-
 .step-agent-response-header {
   display: flex;
   align-items: center;
@@ -17,24 +13,21 @@
   padding: 0 12px;
   background-color: var(--vscode-input-background);
   height: 35px;
-}
-
-.step-agent-response--response .step-agent-response-header {
-  border-bottom-color: var(--vscode-panel-border);
+  border-bottom: 1px solid var(--vscode-input-border);
 }
 
 .step-agent-response-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--vscode-foreground);
   font-size: 13px;
   font-weight: 500;
 }
 
 .step-agent-response-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,8 +43,4 @@
   color: var(--vscode-foreground);
   font-size: 13px;
   line-height: 1.4;
-}
-
-.step-agent-response--response .step-agent-response-content p {
-  color: var(--vscode-foreground);
 }

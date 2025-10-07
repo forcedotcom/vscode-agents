@@ -58,7 +58,7 @@
 }
 
 .plan-info-content {
-  padding: 16px;
+  padding: 0 16px 16px 16px;
   background-color: var(--vscode-sideBar-background);
   border-top: 1px solid var(--vscode-input-border);
 }
@@ -89,37 +89,4 @@
   z-index: 2;
   background-color: var(--vscode-sideBar-background);
   min-width: 0;
-}
-
-/* Responsive design for narrow panels */
-@media (max-width: 480px) {
-  .plan-info-header {
-    padding: 0 8px;
-  }
-
-  .plan-info-content {
-    padding: 12px;
-  }
-
-  .plan-info-content .tracer-steps::before {
-    left: 16px;
-  }
-}
-
-@media (max-width: 320px) {
-  .plan-info-header {
-    padding: 0 6px;
-  }
-
-  .plan-info-content {
-    padding: 8px;
-  }
-
-  .plan-info-content .tracer-steps::before {
-    left: 12px;
-  }
-
-  .plan-title {
-    font-size: 12px;
-  }
 }

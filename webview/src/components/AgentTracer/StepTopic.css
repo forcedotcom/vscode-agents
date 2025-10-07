@@ -13,6 +13,7 @@
   padding: 0 12px;
   background-color: var(--vscode-input-background);
   height: 35px;
+  border-bottom: 1px solid var(--vscode-input-border);
 }
 
 .step-topic-title {
@@ -94,8 +95,8 @@
 .step-topic-section-badge {
   color: var(--vscode-foreground);
   font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 99px;
+  padding: 2px 6px;
+  border-radius: 4px;
   border: 1px solid var(--vscode-panel-border);
 }
 

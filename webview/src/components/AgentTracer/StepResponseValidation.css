@@ -13,20 +13,21 @@
   padding: 0 12px;
   background-color: var(--vscode-input-background);
   height: 35px;
+  border-bottom: 1px solid var(--vscode-input-border);
 }
 
 .step-response-validation-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--vscode-foreground);
   font-size: 13px;
   font-weight: 500;
 }
 
 .step-response-validation-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -60,17 +61,17 @@
 
 .step-response-validation-code-block {
   background-color: var(--vscode-textCodeBlock-background);
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid var(--vscode-input-border);
   overflow: hidden;
 }
 
 .step-response-validation-code-block-header {
-  background-color: var(--vscode-sideBarSectionHeader-background);
+  background-color: var(--vscode-input-background);
   color: var(--vscode-foreground);
-  font-size: 12px;
+  font-size: 13px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--vscode-panel-border);
+  border-bottom: 1px solid var(--vscode-input-border);
   font-weight: 500;
 }
 
