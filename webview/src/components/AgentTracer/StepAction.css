@@ -30,6 +30,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0.8;
 }
 
 .step-action-timing {
@@ -43,6 +44,7 @@
 .step-action-timing-icon {
   width: 12px;
   height: 12px;
+  opacity: 0.8;
 }
 
 .step-action-content {

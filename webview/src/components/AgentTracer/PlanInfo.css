@@ -32,6 +32,7 @@
   transform: rotate(-90deg);
   transition: transform 0.2s;
   flex-shrink: 0;
+  opacity: 0.8;
 }
 
 .plan-icon.expanded {

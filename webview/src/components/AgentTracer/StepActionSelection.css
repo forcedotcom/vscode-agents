@@ -35,6 +35,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0.8;
 }
 
 .step-action-selection-timing {
@@ -48,6 +49,7 @@
 .step-action-selection-timing-icon {
   width: 12px;
   height: 12px;
+  opacity: 0.8;
 }
 
 .step-action-selection-content {
@@ -79,6 +81,7 @@
   height: 12px;
   transition: transform 0.2s;
   transform: rotate(-90deg);
+  opacity: 0.8;
 }
 
 .step-action-selection-expand-icon.expanded {
