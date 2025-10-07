@@ -70,7 +70,6 @@
 }
 
 .step-action-code-block {
-  background-color: var(--vscode-textCodeBlock-background);
   border-radius: 4px;
   border: 1px solid var(--vscode-input-border);
   overflow: hidden;
