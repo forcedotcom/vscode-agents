@@ -7,7 +7,7 @@
       "returnValue": {
         "type": "AgentResponse",
         "sessionId": "sample-session-123",
-        "planId": "plan-001",
+        "planId": "001",
         "intent": "Product Inquiry",
         "topic": "General",
         "plan": [
@@ -40,7 +40,9 @@
           },
           {
             "type": "ReasoningStep",
-            "reason": "User is asking about products, should retrieve product catalog and present options"
+            "reason": "User is asking about products, should retrieve product catalog and present options",
+            "inputCode": "{true}",
+            "outputCode": "{false}"
           },
           {
             "type": "PlannerResponseStep",
@@ -56,7 +58,7 @@
       "returnValue": {
         "type": "AgentResponse",
         "sessionId": "sample-session-123",
-        "planId": "plan-002",
+        "planId": "002",
         "intent": "Category Selection",
         "topic": "Electronics",
         "plan": [
@@ -81,7 +83,9 @@
           },
           {
             "type": "ReasoningStep",
-            "reason": "User specified electronics category, should present subcategories and popular items"
+            "reason": "User specified electronics category, should present subcategories and popular items",
+            "inputCode": "{true}",
+            "outputCode": "{false}"
           },
           {
             "type": "PlannerResponseStep",

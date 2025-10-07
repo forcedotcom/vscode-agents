@@ -105,16 +105,26 @@ const AgentTracer: React.FC = () => {
                           ? `${(step.executionLatency / 1000).toFixed(2)} sec`
                           : '0.00 sec';
 
-                      switch (step.type) {
+                      // Type assertion for custom step types not in @salesforce/agents
+                      const stepWithType = step as typeof step & {
+                        type: string;
+                        actionName?: string;
+                        description?: string;
+                        timing?: string;
+                        inputCode?: string;
+                        outputCode?: string;
+                      };
+
+                      switch (stepWithType.type) {
                         case 'UserInputStep':
-                          return <StepUserMessage key={index} message={step.message} timing={timing} />;
+                          return <StepUserMessage key={index} message={(step as any).message} timing={timing} />;
                         case 'LLMExecutionStep':
                           return (
                             <StepTopicSelection
                               key={index}
                               timing={timing}
-                              promptUsed={<p>{step.promptContent}</p>}
-                              availableTopics={<p>{step.promptResponse}</p>}
+                              promptUsed={<p>{(step as any).promptContent}</p>}
+                              availableTopics={<p>{(step as any).promptResponse}</p>}
                               availableTopicsCount={1}
                             />
                           );
@@ -122,13 +132,13 @@ const AgentTracer: React.FC = () => {
                           return (
                             <StepTopic
                               key={index}
-                              topicName={step.topic}
-                              description={step.description}
+                              topicName={(step as any).topic}
+                              description={(step as any).description}
                               timing={timing}
-                              instructions={<p>{step.instructions.join('\n')}</p>}
-                              instructionsCount={step.instructions.length}
-                              availableTopics={<p>{step.availableFunctions.join(', ')}</p>}
-                              availableTopicsCount={step.availableFunctions.length}
+                              instructions={<p>{(step as any).instructions.join('\n')}</p>}
+                              instructionsCount={(step as any).instructions.length}
+                              availableTopics={<p>{(step as any).availableFunctions.join(', ')}</p>}
+                              availableTopicsCount={(step as any).availableFunctions.length}
                             />
                           );
                         case 'EventStep':
@@ -137,26 +147,42 @@ const AgentTracer: React.FC = () => {
                               key={index}
                               timing={timing}
                               promptUsed={
-                                <p>{`${step.eventName}: ${step.payload.oldTopic} → ${step.payload.newTopic}`}</p>
+                                <p>{`${(step as any).eventName}: ${(step as any).payload.oldTopic} → ${(step as any).payload.newTopic}`}</p>
                               }
                             />
                           );
-                        case 'ReasoningStep':
+                        case 'ReasoningStep': {
+                          const reasoningStep = step as any;
                           return (
                             <StepAction
                               key={index}
                               actionName="Reasoning"
-                              description={step.reason}
+                              description={reasoningStep.reason}
                               timing={timing}
-                              inputCode="{}"
-                              outputCode="{}"
+                              inputCode={reasoningStep.inputCode || "{}"}
+                              outputCode={reasoningStep.outputCode || "{}"}
                             />
                           );
+                        }
                         case 'PlannerResponseStep':
-                          return <StepAgentResponse key={index} response={step.message} />;
+                          return <StepAgentResponse key={index} response={(step as any).message} />;
                         default: {
                           const unknownStep = step as { type: string };
                           console.log('Unknown step type:', unknownStep.type);
+                          // Handle ActionStep as default case
+                          if (unknownStep.type === 'ActionStep') {
+                            const actionStep = step as any;
+                            return (
+                              <StepAction
+                                key={index}
+                                actionName={actionStep.actionName || 'Unknown Action'}
+                                description={actionStep.description || ''}
+                                timing={actionStep.timing || timing}
+                                inputCode={actionStep.inputCode}
+                                outputCode={actionStep.outputCode}
+                              />
+                            );
+                          }
                           return null;
                         }
                       }
