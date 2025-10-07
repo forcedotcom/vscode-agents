@@ -12,19 +12,32 @@
   "icon": "images/agentforce-dx.png",
   "license": "Apache-2.0",
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.104.0"
   },
   "categories": [
     "Other"
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "shelljs": "0.8.5",
+    "@salesforce/agents": "^0.17.11",
+    "@salesforce/core": "^8.23.2",
+    "@salesforce/kit": "^3.2.4",
+    "@salesforce/types": "^1.4.0",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
-    "semver": "^7.7.0"
+    "semver": "^7.7.0",
+    "shelljs": "0.8.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/cross-spawn": "^6.0.6",
+    "@types/node": "^24.7.0",
+    "@types/semver": "^7.7.1",
+    "@types/shelljs": "^0.8.17",
+    "@types/vscode": "^1.104.0",
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.25.10",
+    "typescript": "^5.9.3"
+  },
   "scripts": {
     "postinstall": "npm run install:combined",
     "install:combined": "cd webview && npm install",
