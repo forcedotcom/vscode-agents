@@ -44,7 +44,7 @@
   align-items: center;
   gap: 8px;
   color: var(--vscode-foreground);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .step-topic-selection-timing-icon {
