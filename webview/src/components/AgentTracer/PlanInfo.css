@@ -52,9 +52,6 @@
 .plan-id {
   color: var(--vscode-foreground);
   font-size: 11px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  border: 1px solid var(--vscode-panel-border);
   flex-shrink: 0;
 }
 
