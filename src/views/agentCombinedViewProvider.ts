@@ -373,12 +373,23 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         } else if (message.command === 'clearChat') {
           // Legacy no-op: kept for compatibility with older UI messages
         } else if (message.command === 'getTraceData') {
-          // Serve the sample tracer.json file from webview/src/data
+          // Serve the tracer.json file - either from user-configured path or built-in sample
           try {
-            const tracerJsonPath = path.join(this.context.extensionPath, 'webview', 'src', 'data', 'tracer.json');
+            const config = vscode.workspace.getConfiguration();
+            const customTracerPath = config.get<string>('salesforce.agentforceDX.tracerDataFilePath');
+
+            let tracerJsonPath: string;
+            if (customTracerPath && customTracerPath.trim() !== '') {
+              // Use custom path if configured
+              tracerJsonPath = customTracerPath.trim();
+            } else {
+              // Fall back to built-in sample data
+              tracerJsonPath = path.join(this.context.extensionPath, 'webview', 'src', 'data', 'tracer.json');
+            }
+
             if (!fs.existsSync(tracerJsonPath)) {
               throw new Error(
-                'tracer.json not found at webview/src/data/tracer.json. Please create this file to customize trace data.'
+                `tracer.json not found at ${tracerJsonPath}. Please check the path in your settings.`
               );
             }
             const data = JSON.parse(fs.readFileSync(tracerJsonPath, 'utf8')) as AgentTraceResponse;
