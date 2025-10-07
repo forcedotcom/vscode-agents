@@ -12,7 +12,7 @@
   "icon": "images/agentforce-dx.png",
   "license": "Apache-2.0",
   "engines": {
-    "vscode": "^1.99.3"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
@@ -33,7 +33,7 @@
     "@types/node": "^24.7.0",
     "@types/semver": "^7.7.1",
     "@types/shelljs": "^0.8.17",
-    "@types/vscode": "^1.104.0",
+    "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.6.2",
     "esbuild": "^0.25.10",
     "typescript": "^5.9.3"
