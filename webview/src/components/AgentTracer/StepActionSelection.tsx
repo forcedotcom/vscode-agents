@@ -1,7 +1,10 @@
 import React, { ReactNode, useState } from 'react';
-import chevronIcon from '../../assets/chevron.svg';
-import clockIcon from '../../assets/clock.svg';
-import sparklesIcon from '../../assets/sparkles.svg';
+import chevronIconDark from '../../assets/chevron-dark.svg';
+import chevronIconLight from '../../assets/chevron-light.svg';
+import clockIconDark from '../../assets/clock-dark.svg';
+import clockIconLight from '../../assets/clock-light.svg';
+import sparklesIconDark from '../../assets/sparkles-dark.svg';
+import sparklesIconLight from '../../assets/sparkles-light.svg';
 import './StepActionSelection.css';
 
 interface StepActionSelectionProps {
@@ -16,12 +19,13 @@ const ExpandableSection: React.FC<{
   defaultExpanded?: boolean;
 }> = ({ title, badge, children, defaultExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-action-selection-expandable">
       <button className="step-action-selection-expandable-header" onClick={() => setIsExpanded(!isExpanded)}>
         <img
-          src={chevronIcon}
+          src={isDark ? chevronIconDark : chevronIconLight}
           alt="Expand"
           className={`step-action-selection-expand-icon ${isExpanded ? 'expanded' : ''}`}
         />
@@ -34,16 +38,18 @@ const ExpandableSection: React.FC<{
 };
 
 export const StepActionSelection: React.FC<StepActionSelectionProps> = ({ timing, promptUsed }) => {
+  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+
   return (
     <div className="step-action-selection">
       <div className="step-action-selection-header">
         <div className="step-action-selection-title">
-          <img src={sparklesIcon} alt="Sparkles" className="step-action-selection-icon" />
+          <img src={isDark ? sparklesIconDark : sparklesIconLight} alt="Sparkles" className="step-action-selection-icon" />
           Reasoning: Action Selection
         </div>
         {timing && (
           <div className="step-action-selection-timing">
-            <img src={clockIcon} alt="Clock" className="step-action-selection-timing-icon" />
+            <img src={isDark ? clockIconDark : clockIconLight} alt="Clock" className="step-action-selection-timing-icon" />
             {timing}
           </div>
         )}

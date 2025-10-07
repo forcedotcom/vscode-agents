@@ -15,16 +15,15 @@
   width: 10px;
   height: 10px;
   pointer-events: none;
-  background-image: url('../../assets/chevron-dark.svg');
+  background-image: url('../../assets/chevron-light.svg');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  .agent-selector::after {
-    background-image: url('../../assets/chevron.svg');
-  }
+body.vscode-dark .agent-selector::after,
+body.vscode-high-contrast .agent-selector::after {
+  background-image: url('../../assets/chevron-dark.svg');
 }
 
 .agent-select {

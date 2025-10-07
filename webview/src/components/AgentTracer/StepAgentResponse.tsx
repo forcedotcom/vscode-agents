@@ -1,5 +1,6 @@
 import React from 'react';
-import agentIcon from '../../assets/agent.svg';
+import agentIconDark from '../../assets/agent-dark.svg';
+import agentIconLight from '../../assets/agent-light.svg';
 import './StepAgentResponse.css';
 
 interface StepAgentResponseProps {
@@ -7,11 +8,13 @@ interface StepAgentResponseProps {
 }
 
 export const StepAgentResponse: React.FC<StepAgentResponseProps> = ({ response }) => {
+  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+
   return (
     <div className="step-agent-response step-agent-response--response">
       <div className="step-agent-response-header">
         <div className="step-agent-response-title">
-          <img src={agentIcon} alt="Agent" className="step-agent-response-icon" />
+          <img src={isDark ? agentIconDark : agentIconLight} alt="Agent" className="step-agent-response-icon" />
           Agent Response
         </div>
       </div>

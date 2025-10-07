@@ -1,6 +1,8 @@
 import React from 'react';
-import boltIcon from '../../assets/bolt.svg';
-import clockIcon from '../../assets/clock.svg';
+import boltIconDark from '../../assets/bolt-dark.svg';
+import boltIconLight from '../../assets/bolt-light.svg';
+import clockIconDark from '../../assets/clock-dark.svg';
+import clockIconLight from '../../assets/clock-light.svg';
 import './StepAction.css';
 
 interface StepActionProps {
@@ -12,16 +14,18 @@ interface StepActionProps {
 }
 
 export const StepAction: React.FC<StepActionProps> = ({ actionName, description, timing, inputCode, outputCode }) => {
+  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+
   return (
     <div className="step-action step-action--default">
       <div className="step-action-header">
         <div className="step-action-title">
-          <img src={boltIcon} alt="Action" className="step-action-icon" />
+          <img src={isDark ? boltIconDark : boltIconLight} alt="Action" className="step-action-icon" />
           Action: {actionName}
         </div>
         {timing && (
           <div className="step-action-timing">
-            <img src={clockIcon} alt="Clock" className="step-action-timing-icon" />
+            <img src={isDark ? clockIconDark : clockIconLight} alt="Clock" className="step-action-timing-icon" />
             {timing}
           </div>
         )}

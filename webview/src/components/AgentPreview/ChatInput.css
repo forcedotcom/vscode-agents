@@ -63,14 +63,13 @@
   width: 24px;
   height: 24px;
   display: inline-block;
-  background-image: url('../../assets/send-dark.svg');
+  background-image: url('../../assets/send-light.svg');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  .send-icon {
-    background-image: url('../../assets/send.svg');
-  }
+body.vscode-dark .send-icon,
+body.vscode-high-contrast .send-icon {
+  background-image: url('../../assets/send-dark.svg');
 }

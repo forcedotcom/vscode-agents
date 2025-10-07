@@ -57,19 +57,19 @@
 }
 
 .tab-icon-comment {
-  background-image: url('../../assets/comment-dark.svg');
+  background-image: url('../../assets/comment-light.svg');
 }
 
 .tab-icon-tree {
-  background-image: url('../../assets/tree-dark.svg');
+  background-image: url('../../assets/tree-light.svg');
 }
 
-@media (prefers-color-scheme: dark) {
-  .tab-icon-comment {
-    background-image: url('../../assets/comment.svg');
-  }
+body.vscode-dark .tab-icon-comment,
+body.vscode-high-contrast .tab-icon-comment {
+  background-image: url('../../assets/comment-dark.svg');
+}
 
-  .tab-icon-tree {
-    background-image: url('../../assets/tree.svg');
-  }
+body.vscode-dark .tab-icon-tree,
+body.vscode-high-contrast .tab-icon-tree {
+  background-image: url('../../assets/tree-dark.svg');
 }
