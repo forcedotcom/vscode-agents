@@ -25,6 +25,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private apexDebugging = false;
   public webviewView?: vscode.WebviewView;
   private selectedClientApp?: string;
+  private sessionActive = false;
+  private currentAgentName?: string;
+  private currentAgentId?: string;
   private mockFile?: string;
   private preselectedAgentId?: string;
 
@@ -33,37 +36,99 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // Listen for configuration changes
     this.context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer(Mocked)')) {
+        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer')) {
           this.notifyConfigurationChange();
-        }
-        if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
-          // Get the new mock file path
-          const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-          const mockFile = config.get<string>('mockFile');
-
-          // Update internal state
-          this.updateMockFile(mockFile);
-
-          // Notify webview to refresh data
-          if (this.webviewView) {
-            this.webviewView.webview.postMessage({
-              command: 'getTraceData'
-            });
-          }
         }
       })
     );
   }
 
-  public updateMockFile(filePath: string | undefined): void {
-    // Trim any whitespace from the file path
-    this.mockFile = filePath?.trim();
+  /**
+   * Updates the session active state and context
+   */
+  private async setSessionActive(active: boolean): Promise<void> {
+    this.sessionActive = active;
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionActive', active);
+  }
 
-    // Trigger a data reload if we have a webview
+  /**
+   * Updates the debug mode state and context
+   */
+  private async setDebugMode(enabled: boolean): Promise<void> {
+    this.apexDebugging = enabled;
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', enabled);
+  }
+
+  /**
+   * Toggles debug mode on/off
+   */
+  public async toggleDebugMode(): Promise<void> {
+    const newDebugMode = !this.apexDebugging;
+    await this.setDebugMode(newDebugMode);
+
+    // If we have an active agent preview, update its debug mode
+    if (this.agentPreview) {
+      this.agentPreview.toggleApexDebugMode(newDebugMode);
+    }
+
+    // Notify webview
     if (this.webviewView) {
       this.webviewView.webview.postMessage({
-        command: 'getTraceData'
+        command: 'setDebugMode',
+        data: newDebugMode
       });
+    }
+
+    const statusMessage = newDebugMode ? 'Debug mode activated' : 'Debug mode deactivated';
+    vscode.window.showInformationMessage(`Agentforce DX: ${statusMessage}`);
+  }
+
+  /**
+   * Gets the currently selected agent ID
+   * @returns The current agent's Bot ID, or undefined if no agent is selected
+   */
+  public getCurrentAgentId(): string | undefined {
+    return this.currentAgentId;
+  }
+
+  /**
+   * Selects an agent and starts a session
+   * @param agentId The agent's Bot ID
+   */
+  public selectAndStartAgent(agentId: string): void {
+    if (this.webviewView) {
+      this.webviewView.webview.postMessage({
+        command: 'selectAgent',
+        data: { agentId }
+      });
+    }
+  }
+
+  /**
+   * Ends the current agent session
+   */
+  public async endSession(): Promise<void> {
+    if (this.agentPreview && this.sessionId) {
+      const agentName = this.currentAgentName;
+      await this.agentPreview.end(this.sessionId, 'UserRequest');
+      this.agentPreview = undefined;
+      this.sessionId = Date.now().toString();
+      this.currentAgentName = undefined;
+      // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
+      await this.setSessionActive(false);
+      await this.setDebugMode(false);
+
+      // Show notification
+      if (agentName) {
+        vscode.window.showInformationMessage(`Agentforce DX: Session ended with ${agentName}`);
+      }
+
+      if (this.webviewView) {
+        this.webviewView.webview.postMessage({
+          command: 'sessionEnded',
+          data: {}
+        });
+      }
     }
   }
 
@@ -81,7 +146,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.webviewView = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'agent-chat-and-trace', 'dist')]
+      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'webview', 'dist')]
     };
     webviewView.webview.onDidReceiveMessage(async message => {
       try {
@@ -119,8 +184,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             );
           }
 
-          console.log('Starting session with agent ID:', agentId);
           this.agentPreview = new AgentPreview(conn, agentId);
+
+          // Get agent name for notifications
+          const remoteAgents = await Agent.listRemote(conn);
+          const agent = remoteAgents?.find(bot => bot.Id === agentId);
+          this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
+          this.currentAgentId = agentId;
 
           // Enable debug mode if apex debugging is active
           if (this.apexDebugging) {
@@ -129,6 +199,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
+          await this.setSessionActive(true);
+
+          // Show notification
+          vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
@@ -145,7 +219,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               : { content: "Hi! I'm ready to help. What can I do for you?" }
           });
         } else if (message.command === 'setApexDebugging') {
-          this.apexDebugging = message.data;
+          await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
           if (this.agentPreview) {
             this.agentPreview.toggleApexDebugMode(this.apexDebugging);
@@ -207,15 +281,26 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             webviewView.webview.postMessage({
               command: 'debugLogInfo',
               data: {
-                message: 'Debug mode is enabled, but no Apex was executed during the last turn of your conversation.g'
+                message: 'Debug mode is enabled, but no Apex was executed.'
               }
             });
           }
         } else if (message.command === 'endSession') {
           if (this.agentPreview && this.sessionId) {
+            const agentName = this.currentAgentName;
             await this.agentPreview.end(this.sessionId, 'UserRequest');
             this.agentPreview = undefined;
             this.sessionId = Date.now().toString();
+            this.currentAgentName = undefined;
+            // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
+            await this.setSessionActive(false);
+            await this.setDebugMode(false);
+
+            // Show notification
+            if (agentName) {
+              vscode.window.showInformationMessage(`Agentforce DX: Session ended with ${agentName}`);
+            }
+
             webviewView.webview.postMessage({
               command: 'sessionEnded',
               data: {}
@@ -308,110 +393,36 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'clearChat') {
           // Legacy no-op: kept for compatibility with older UI messages
-        } else if (message.command === 'reset') {
-          // Fully reset state: client app selection and session
-          try {
-            // End any active session
-            if (this.agentPreview && this.sessionId) {
-              try {
-                await this.agentPreview.end(this.sessionId, 'UserRequest');
-              } catch (err) {
-                console.warn('Error ending session during reset:', err);
-              }
-            }
-            this.agentPreview = undefined;
-            this.sessionId = Date.now().toString();
-            this.selectedClientApp = undefined;
-
-            // Immediately re-evaluate current org and push appropriate UI messages
-            try {
-              const clientAppResult = await getAvailableClientApps();
-              if (clientAppResult.type === 'none') {
-                webviewView.webview.postMessage({
-                  command: 'clientAppRequired',
-                  data: {
-                    message:
-                      'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
-                    username: clientAppResult.username,
-                    error: clientAppResult.error
-                  }
-                });
-              } else if (clientAppResult.type === 'multiple') {
-                webviewView.webview.postMessage({
-                  command: 'selectClientApp',
-                  data: {
-                    clientApps: clientAppResult.clientApps,
-                    username: clientAppResult.username
-                  }
-                });
-              } else if (clientAppResult.type === 'single') {
-                this.selectedClientApp = clientAppResult.clientApps[0].name;
-                const conn = await createConnectionWithClientApp(this.selectedClientApp);
-                const remoteAgents = await Agent.listRemote(conn);
-                const activeAgents = (remoteAgents || [])
-                  .filter(bot => bot.BotVersions?.records?.some(v => v.Status === 'Active'))
-                  .map(bot => ({ name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent', id: bot.Id }))
-                  .filter(a => a.id);
-                webviewView.webview.postMessage({ command: 'availableAgents', data: activeAgents });
-                webviewView.webview.postMessage({ command: 'clientAppReady' });
-              }
-            } catch (e) {
-              console.error('Error reevaluating org after reset:', e);
-              webviewView.webview.postMessage({ command: 'clientAppRequired', data: { error: String(e) } });
-            }
-          } catch (err) {
-            console.error('Error during reset:', err);
-          }
-        } else if (message.command === 'getTraceIds') {
-          try {
-            if (!this.mockFile) {
-              throw new Error('Mock file not set. Please configure salesforce.agentforceDX.mockFile in settings.');
-            }
-
-            // Since we're using a single file now, we'll just return a single trace ID
-            const traceId = path.basename(this.mockFile, '.json').replace('api_trace_', '');
-            webviewView.webview.postMessage({
-              command: 'traceIds',
-              data: { traceIds: [traceId] }
-            });
-          } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            webviewView.webview.postMessage({
-              command: 'error',
-              data: { message: `Failed to read trace ID: ${errorMessage}` }
-            });
-          }
         } else if (message.command === 'getTraceData') {
+          // Serve the tracer.json file - either from user-configured path or built-in sample
           try {
-            if (!this.mockFile) {
-              throw new Error('Mock file not set. Please configure salesforce.agentforceDX.mockFile in settings.');
+            const config = vscode.workspace.getConfiguration();
+            const customTracerPath = config.get<string>('salesforce.agentforceDX.tracerDataFilePath');
+
+            let tracerJsonPath: string;
+            if (customTracerPath && customTracerPath.trim() !== '') {
+              // Use custom path if configured
+              tracerJsonPath = customTracerPath.trim();
+            } else {
+              // Fall back to built-in sample data
+              tracerJsonPath = path.join(this.context.extensionPath, 'webview', 'src', 'data', 'tracer.json');
             }
 
-            // Check if file exists before trying to read it
-            if (!fs.existsSync(this.mockFile)) {
+            if (!fs.existsSync(tracerJsonPath)) {
               throw new Error(
-                `Mock file does not exist at path: "${this.mockFile}". Please check the path and ensure it exists.`
+                `tracer.json not found at ${tracerJsonPath}. Please check the path in your settings.`
               );
             }
-
-            // const data = await AgentTrace.getTrace(await CoreExtensionService.getDefaultConnection(), traceId)
-            try {
-              const data = JSON.parse(fs.readFileSync(this.mockFile, 'utf8')) as AgentTraceResponse;
-
-              webviewView.webview.postMessage({
-                command: 'traceData',
-                data
-              });
-            } catch (parseError) {
-              throw new Error(
-                `Failed to parse mock file as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`
-              );
-            }
+            const data = JSON.parse(fs.readFileSync(tracerJsonPath, 'utf8')) as AgentTraceResponse;
+            webviewView.webview.postMessage({
+              command: 'traceData',
+              data
+            });
           } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             webviewView.webview.postMessage({
               command: 'error',
-              data: { message: `Failed to read trace data: ${errorMessage}` }
+              data: { message: errorMessage }
             });
           }
         } else if (message.command === 'clientAppSelected') {
@@ -486,6 +497,20 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               data: { section, value }
             });
           }
+        } else if (message.command === 'executeCommand') {
+          // Execute a VSCode command from the webview
+          const commandId = message.data?.commandId;
+          if (commandId && typeof commandId === 'string') {
+            await vscode.commands.executeCommand(commandId);
+          }
+        } else if (message.command === 'setSelectedAgentId') {
+          // Update the currently selected agent ID from the dropdown
+          const agentId = message.data?.agentId;
+          if (agentId && typeof agentId === 'string' && agentId !== '') {
+            this.currentAgentId = agentId;
+          } else {
+            this.currentAgentId = undefined;
+          }
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
@@ -522,7 +547,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private getHtmlForWebview(): string {
     // Read the built HTML file which contains everything inlined
-    const htmlPath = path.join(this.context.extensionPath, 'agent-chat-and-trace', 'dist', 'index.html');
+    const htmlPath = path.join(this.context.extensionPath, 'webview', 'dist', 'index.html');
     let html = fs.readFileSync(htmlPath, 'utf8');
 
     // Add VSCode webview API script injection
@@ -542,20 +567,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private notifyConfigurationChange(): void {
     if (this.webviewView) {
       const config = vscode.workspace.getConfiguration();
-      const showAgentTracer = config.get('salesforce.agentforceDX.showAgentTracer(Mocked)');
-      const mockFile = config.get('salesforce.agentforceDX.mockFile');
-
-      // Update internal state
-      this.updateMockFile(mockFile as string | undefined);
+      const showAgentTracer = config.get('salesforce.agentforceDX.showAgentTracer');
 
       // Notify webview of configuration changes
       this.webviewView.webview.postMessage({
         command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer(Mocked)', value: showAgentTracer }
-      });
-      this.webviewView.webview.postMessage({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.mockFile', value: mockFile }
+        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: showAgentTracer }
       });
     }
   }

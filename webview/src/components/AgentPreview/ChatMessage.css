@@ -1,0 +1,67 @@
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0;
+  position: relative;
+}
+
+.message-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-svg {
+  width: 24px;
+  height: 24px;
+  opacity: 0.8;
+}
+
+.message-content-wrapper {
+  flex: 1;
+  padding-top: 6px;
+}
+
+.message-content {
+  font-size: 13px;
+  line-height: 1.3333;
+  color: var(--vscode-foreground);
+}
+
+.message-actions {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.chat-message:hover .message-actions {
+  opacity: 1;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.action-button:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.action-icon {
+  width: 20px;
+  height: 20px;
+}

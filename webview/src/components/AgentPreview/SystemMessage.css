@@ -1,0 +1,17 @@
+.system-message {
+  text-align: center;
+  font-size: 13px;
+  padding: 8px 18px;
+}
+
+.system-message.debug {
+  font-weight: 400;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.system-message.error {
+  color: var(--vscode-errorForeground);
+  font-weight: 500;
+  font-size: 13px;
+}

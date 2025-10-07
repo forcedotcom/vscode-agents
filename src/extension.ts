@@ -142,24 +142,97 @@ const validateCLI = async () => {
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation
   const provider = new AgentCombinedViewProvider(context);
+  const disposables: vscode.Disposable[] = [];
 
-  // Update mock file when configuration changes
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
-        const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-        const newMockFile = mockConfig.get<string>('mockFile');
-        provider.updateMockFile(newMockFile);
-      }
+  // Register the webview provider
+  disposables.push(
+    vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
+      webviewOptions: { retainContextWhenHidden: true }
     })
   );
 
-  // Set initial mock file
-  const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-  const mockFile = mockConfig.get<string>('mockFile');
-  provider.updateMockFile(mockFile);
+  // Shared function for selecting and running an agent
+  const selectAndRunAgent = async () => {
+    const { Agent } = await import('@salesforce/agents');
+    const channelService = CoreExtensionService.getChannelService();
 
-  return vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
-    webviewOptions: { retainContextWhenHidden: true }
-  });
+    try {
+      // Check if there's already an agent selected in the dropdown
+      const currentAgentId = provider.getCurrentAgentId();
+      if (currentAgentId) {
+        // Restart the currently selected agent without showing the palette
+        await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+        provider.selectAndStartAgent(currentAgentId);
+        return;
+      }
+
+      const conn = await CoreExtensionService.getDefaultConnection();
+      const remoteAgents = await Agent.listRemote(conn);
+
+      if (!remoteAgents || remoteAgents.length === 0) {
+        vscode.window.showErrorMessage('Could not find agents in the org.');
+        channelService.appendLine('Could not find agents in the org.');
+        return;
+      }
+
+      // Filter to only agents with active BotVersions
+      const activeAgents = remoteAgents
+        .filter(bot => {
+          return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+        })
+        .map(bot => ({
+          label: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+          description: bot.DeveloperName,
+          id: bot.Id
+        }))
+        .filter(agent => agent.id);
+
+      if (activeAgents.length === 0) {
+        vscode.window.showErrorMessage('No active agents found in the org.');
+        channelService.appendLine('No active agents found in the org.');
+        return;
+      }
+
+      const selectedAgent = await vscode.window.showQuickPick(activeAgents, {
+        placeHolder: 'Select an agent to run'
+      });
+
+      if (selectedAgent) {
+        // Reveal the Agentforce DX panel
+        await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+
+        // Select and start the agent in the webview
+        provider.selectAndStartAgent(selectedAgent.id);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to list agents: ${errorMessage}`);
+      channelService.appendLine(`Failed to list agents: ${errorMessage}`);
+    }
+  };
+
+  // Register toolbar commands
+  disposables.push(vscode.commands.registerCommand('sf.agent.combined.view.run', selectAndRunAgent));
+
+  disposables.push(vscode.commands.registerCommand('sf.agent.selectAndRun', selectAndRunAgent));
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.stop', async () => {
+      await provider.endSession();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.debug', async () => {
+      await provider.toggleDebugMode();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.debugStop', async () => {
+      await provider.toggleDebugMode();
+    })
+  );
+
+  return vscode.Disposable.from(...disposables);
 };

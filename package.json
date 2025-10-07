@@ -19,54 +19,34 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "^0.17.10",
-    "@salesforce/core": "^8.22.0",
-    "@salesforce/types": "^1.3.0",
+    "@salesforce/agents": "^0.17.11",
+    "@salesforce/core": "^8.23.2",
+    "@salesforce/kit": "^3.2.4",
+    "@salesforce/types": "^1.4.0",
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
-    "semver": "^7.7.2",
-    "shelljs": "^0.8.5"
+    "semver": "^7.7.0",
+    "shelljs": "0.8.5"
   },
   "devDependencies": {
-    "@commitlint/config-conventional": "^19.6.0",
-    "@salesforce/dev-config": "^4.3.1",
-    "@tsconfig/node18": "^18.2.4",
     "@types/cross-spawn": "^6.0.6",
-    "@types/jest": "^29.5.14",
-    "@types/node": "^18.19.74",
-    "@types/semver": "7.5.8",
-    "@types/sinon": "^17.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.7.0",
+    "@types/semver": "^7.7.1",
+    "@types/shelljs": "^0.8.17",
     "@types/vscode": "^1.90.0",
-    "@types/vscode-webview": "^1.57.5",
-    "@typescript-eslint/eslint-plugin": "^8.22.0",
-    "@vscode/vsce": "^3.2.2",
-    "commitizen": "^4.3.1",
-    "cz-conventional-changelog": "3.3.0",
-    "esbuild": "^0.25.8",
-    "esbuild-plugin-pino": "^2.2.1",
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "9.0.0",
-    "eslint-plugin-header": "3.1.1",
-    "eslint-plugin-import": "2.29.0",
-    "eslint-plugin-jest-formatting": "3.1.0",
-    "eslint-plugin-jsdoc": "46.8.2",
-    "eslint-plugin-prefer-arrow": "1.2.3",
-    "jest": "^29.7.0",
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.25.10",
+    "jest": "^30.2.0",
     "jest-junit": "^16.0.0",
-    "prettier": "^3.4.2",
-    "sinon": "^19.0.2",
-    "ts-jest": "^29.2.5",
-    "ts-loader": "^9.5.2",
-    "ts-node": "^10.9.2",
-    "typedoc": "^0.27.7",
-    "typescript": "^5.7.3",
-    "vscode-test": "^1.6.1"
+    "ts-jest": "^29.4.4",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "postinstall": "npm run install:combined",
-    "install:combined": "cd agent-chat-and-trace && npm install",
+    "install:combined": "cd webview && npm install",
     "build": "tsc --build && npm run build:combined",
-    "build:combined": "cd agent-chat-and-trace && npm run build",
+    "build:combined": "cd webview && npm run build",
     "build:clean": "tsc --build --clean",
     "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
@@ -78,8 +58,9 @@
     "update-snapshots": "jest --updateSnapshot",
     "test": "jest --coverage",
     "bundle:extension": "node ./esbuild.config.js",
-    "vscode:package": "npm run compile && npm run vscode:package:prod",
-    "vscode:package:prod": "npm ci --omit=dev && npx vsce package && npm install",
+    "vscode:package": "npm run compile && npm run bundle:extension & npx vsce package",
+    "vscode:prepublish_disabled": "npm run update-for-packaging",
+    "update-for-packaging": "ts-node scripts/updatePackageJsonForVSIX.ts",
     "vsix:install": "find ./ -name '*.vsix' -exec code --install-extension {}",
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {}",
     "reformat": "node scripts/reformat-with-prettier.js"
@@ -97,16 +78,17 @@
       "properties": {
         "salesforce.agentforceDX.showGeneratedData": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Show generated data in test results output"
         },
-        "salesforce.agentforceDX.showAgentTracer(Mocked)": {
+        "salesforce.agentforceDX.showAgentTracer": {
           "type": "boolean",
-          "default": false,
-          "description": "Show the mocked Agent Tracer tab in the Agent Preview panel"
+          "default": true,
+          "description": "Show the Agent Tracer and enable tabs in the panel"
         },
-        "salesforce.agentforceDX.mockFile": {
+        "salesforce.agentforceDX.tracerDataFilePath": {
           "type": "string",
+          "default": "",
           "description": "Absolute path to the mock agent trace response file"
         },
         "salesforce.agentforceDX.demoAgentName": {
@@ -143,6 +125,26 @@
     },
     "menus": {
       "view/title": [
+        {
+          "command": "sf.agent.combined.view.run",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sf.agent.combined.view.stop",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sf.agent.combined.view.debug",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sf.agent.combined.view.debugStop",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:debugMode",
+          "group": "navigation@1"
+        },
         {
           "command": "sf.agent.test.view.runAll",
           "when": "never && view == sf.agent.test.view",
@@ -199,12 +201,12 @@
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@2"
+          "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@3"
+          "group": "agent@1"
         }
       ],
       "explorer/context": [
@@ -226,12 +228,12 @@
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@2"
+          "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@3"
+          "group": "agent@1"
         }
       ],
       "commandPalette": [
@@ -287,6 +289,10 @@
         "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
       },
       {
+        "command": "sf.agent.selectAndRun",
+        "when": "sf:project_opened"
+      },
+      {
         "command": "sf.agent.test.view.runAll",
         "when": "false"
       },
@@ -304,6 +310,30 @@
       }
     ],
     "commands": [
+      {
+        "command": "sf.agent.combined.view.run",
+        "title": "Run Agent",
+        "icon": "$(play-circle)"
+      },
+      {
+        "command": "sf.agent.selectAndRun",
+        "title": "Agentforce DX: Select an Agent to Run"
+      },
+      {
+        "command": "sf.agent.combined.view.stop",
+        "title": "Stop Agent",
+        "icon": "$(stop-circle)"
+      },
+      {
+        "command": "sf.agent.combined.view.debug",
+        "title": "Start Debug Mode",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "sf.agent.combined.view.debugStop",
+        "title": "Stop Debug Mode",
+        "icon": "$(debug)"
+      },
       {
         "command": "salesforcedx-vscode-agents.previewAgent",
         "title": "AFDX: Preview This Agent"
