@@ -50,16 +50,14 @@
 .toggle-all-button {
   background: transparent;
   border: none;
-  color: var(--vscode-editor-foreground);
+  color: var(--vscode-textLink-foreground);
   cursor: pointer;
-  font-size: var(--vscode-font-size);
-  padding: 2px 8px;
-  border-radius: 2px;
-  margin-right: 8px;
+  font-size: 12px;
+  padding: 2px 2px;
 }
 
 .toggle-all-button:hover {
-  background: var(--vscode-list-hoverBackground);
+  color: var(--vscode-textLink-activeForeground);
 }
 
 .session-info-content {
