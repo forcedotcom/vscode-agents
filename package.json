@@ -12,7 +12,7 @@
   "icon": "images/agentforce-dx.png",
   "license": "Apache-2.0",
   "engines": {
-    "vscode": "^1.104.0"
+    "vscode": "^1.99.3"
   },
   "categories": [
     "Other"
