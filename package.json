@@ -108,6 +108,10 @@
         "salesforce.agentforceDX.mockFile": {
           "type": "string",
           "description": "Absolute path to the mock agent trace response file"
+        },
+        "salesforce.agentforceDX.demoAgentName": {
+          "type": "string",
+          "description": "Developer name of the agent to use for preview"
         }
       }
     },

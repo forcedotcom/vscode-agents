@@ -20,10 +20,11 @@ export const registerPreviewAgentCommand = () => {
     }
 
     try {
-      // Get the demo agent developer name from environment variable
-      const demoAgentName = process.env.SF_DEMO_AGENT;
+      // Get the demo agent developer name from VSCode setting
+      const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+      const demoAgentName = config.get<string>('demoAgentName');
       if (!demoAgentName) {
-        vscode.window.showErrorMessage('SF_DEMO_AGENT environment variable not set. Please set it to the developer name of an agent to preview.');
+        vscode.window.showErrorMessage('Demo agent name not configured. Please set the "Salesforce › Agentforce DX: Demo Agent Name" setting to the developer name of an agent to preview.');
         return;
       }
 
