@@ -1,6 +1,6 @@
 .step-response-validation {
   border-radius: 8px;
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--vscode-input-border);
   margin-top: 16px;
   overflow: hidden;
   position: relative;
@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  background-color: var(--bg-input);
+  background-color: var(--vscode-input-background);
   height: 35px;
 }
 
@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   font-weight: 500;
 }
@@ -37,7 +37,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-size: 13px;
 }
 
@@ -53,29 +53,29 @@
 
 .step-response-validation-content p {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   line-height: 1.4;
 }
 
 .step-response-validation-code-block {
-  background-color: var(--bg-code);
+  background-color: var(--vscode-textCodeBlock-background);
   border-radius: 6px;
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--vscode-input-border);
   overflow: hidden;
 }
 
 .step-response-validation-code-block-header {
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
+  background-color: var(--vscode-sideBarSectionHeader-background);
+  color: var(--vscode-foreground);
   font-size: 12px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--vscode-panel-border);
   font-weight: 500;
 }
 
 .step-response-validation-code-block-content pre {
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
   line-height: 1.4;

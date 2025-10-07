@@ -1,9 +1,9 @@
 .session-info {
   border-radius: 8px;
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--vscode-input-border);
   margin-bottom: 16px;
   overflow: hidden;
-  background-color: var(--bg-input);
+  background-color: var(--vscode-input-background);
 }
 
 .session-info-header {
@@ -13,7 +13,7 @@
   padding: 0 12px;
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -24,7 +24,7 @@
 }
 
 .session-info-header:hover {
-  background-color: var(--bg-secondary);
+  background-color: var(--vscode-sideBarSectionHeader-background);
 }
 
 .session-icon {
@@ -59,27 +59,27 @@
 }
 
 .toggle-all-button:hover {
-  background: var(--vscode-button-hoverBackground);
+  background: var(--vscode-list-hoverBackground);
 }
 
 .session-info-content {
   padding: 12px;
-  background-color: var(--bg-primary);
-  border-top: 1px solid var(--border-input);
+  background-color: var(--vscode-sideBar-background);
+  border-top: 1px solid var(--vscode-input-border);
 }
 
 .session-date {
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   font-weight: 500;
   margin-bottom: 8px;
 }
 
 .session-id {
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 99px;
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--vscode-panel-border);
   display: inline-block;
 }

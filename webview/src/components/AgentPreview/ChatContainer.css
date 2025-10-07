@@ -26,7 +26,7 @@
 
 .loading-text {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--vscode-descriptionForeground);
 }
 
 body.vscode-dark .loading-spinner,

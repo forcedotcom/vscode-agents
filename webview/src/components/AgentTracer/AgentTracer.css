@@ -1,8 +1,8 @@
 .agent-tracer {
   height: 100%;
   overflow: auto;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: var(--vscode-sideBar-background);
+  color: var(--vscode-foreground);
 }
 
 .tracer-content {

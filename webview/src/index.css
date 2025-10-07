@@ -1,22 +1,4 @@
-:root {
-  --bg-primary: var(--vscode-sideBar-background);
-  --bg-secondary: var(--vscode-sideBarSectionHeader-background);
-  --bg-tertiary: var(--vscode-editorGroupHeader-tabsBackground);
-  --bg-code: var(--vscode-textCodeBlock-background);
-  --bg-input: var(--vscode-input-background);
-  --text-primary: var(--vscode-sideBar-foreground);
-  --text-secondary: var(--vscode-foreground);
-  --text-muted: var(--vscode-descriptionForeground);
-  --border-primary: var(--vscode-panel-border);
-  --border-input: var(--vscode-input-border);
-  --border-color: var(--vscode-input-border);
-  --brand-primary: var(--vscode-button-background);
-  --hover-overlay: var(--vscode-toolbar-hoverBackground);
-  --color-debug: var(--vscode-debugIcon-startForeground);
-  --color-user: var(--vscode-descriptionForeground);
-  --button-secondary-bg: var(--vscode-button-secondaryBackground);
-  --button-secondary-hover-bg: var(--vscode-button-secondaryHoverBackground);
-}
+/* No custom CSS variables - use VSCode theme tokens directly */
 
 * {
   margin: 0;
@@ -28,8 +10,8 @@ body {
   font-family: system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: var(--vscode-sideBar-background);
+  color: var(--vscode-sideBar-foreground);
   margin: 0;
   padding: 0;
 }

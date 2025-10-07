@@ -1,6 +1,6 @@
 .step-action-selection {
   border-radius: 8px;
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--vscode-input-border);
   margin-top: 16px;
   overflow: hidden;
   position: relative;
@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  background-color: var(--bg-input);
+  background-color: var(--vscode-input-background);
   height: 35px;
   min-width: 0;
 }
@@ -20,7 +20,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   font-weight: 500;
   min-width: 0;
@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-size: 13px;
 }
 
@@ -58,7 +58,7 @@
 
 .step-action-selection-content p {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -69,7 +69,7 @@
   gap: 8px;
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   cursor: pointer;
   width: 100%;
@@ -93,18 +93,18 @@
 }
 
 .step-action-selection-section-badge {
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 99px;
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--vscode-panel-border);
   margin-left: auto;
 }
 
 .step-action-selection-expandable-content {
   margin-left: 18px;
   padding: 8px 0;
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   line-height: 1.4;
   word-wrap: break-word;

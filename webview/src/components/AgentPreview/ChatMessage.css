@@ -30,7 +30,7 @@
 .message-content {
   font-size: 13px;
   line-height: 1.3333;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
 }
 
 .message-actions {
@@ -58,7 +58,7 @@
 }
 
 .action-button:hover {
-  background-color: var(--hover-overlay);
+  background-color: var(--vscode-list-hoverBackground);
 }
 
 .action-icon {

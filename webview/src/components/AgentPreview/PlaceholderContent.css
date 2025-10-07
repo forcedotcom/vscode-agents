@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--vscode-descriptionForeground);
   height: 100%;
   padding: 40px;
   max-width: 500px;
@@ -29,7 +29,7 @@ body.vscode-high-contrast .placeholder-icon {
 
 .placeholder-content p {
   margin-bottom: 30px;
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.5;

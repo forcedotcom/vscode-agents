@@ -1,9 +1,9 @@
 .plan-info {
   border-radius: 8px;
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--vscode-input-border);
   margin: 16px 0;
   overflow: hidden;
-  background-color: var(--bg-input);
+  background-color: var(--vscode-input-background);
 }
 
 .plan-info-header {
@@ -13,7 +13,7 @@
   padding: 0 12px;
   background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 13px;
   cursor: pointer;
   width: 100%;
@@ -23,7 +23,7 @@
 }
 
 .plan-info-header:hover {
-  background-color: var(--bg-secondary);
+  background-color: var(--vscode-sideBarSectionHeader-background);
 }
 
 .plan-icon {
@@ -45,22 +45,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--vscode-foreground);
 }
 
 .plan-id {
-  color: var(--text-secondary);
+  color: var(--vscode-foreground);
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 99px;
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--vscode-panel-border);
   flex-shrink: 0;
 }
 
 .plan-info-content {
   padding: 16px;
-  background-color: var(--bg-primary);
-  border-top: 1px solid var(--border-input);
+  background-color: var(--vscode-sideBar-background);
+  border-top: 1px solid var(--vscode-input-border);
 }
 
 .plan-info-content .tracer-steps {
@@ -76,8 +76,8 @@
   width: 1px;
   background: repeating-linear-gradient(
     to bottom,
-    var(--border-input) 0px,
-    var(--border-input) 2px,
+    var(--vscode-input-border) 0px,
+    var(--vscode-input-border) 2px,
     transparent 2px,
     transparent 4px
   );
@@ -87,7 +87,7 @@
 .plan-info-content .tracer-steps > * {
   position: relative;
   z-index: 2;
-  background-color: var(--bg-primary);
+  background-color: var(--vscode-sideBar-background);
   min-width: 0;
 }
 
