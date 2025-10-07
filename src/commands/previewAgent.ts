@@ -68,12 +68,20 @@ export const registerPreviewAgentCommand = () => {
       await vscode.commands.executeCommand('workbench.view.extension.agentforce-dx');
       vscode.commands.executeCommand('setContext', 'sf:project_opened', true);
       
-      // Wait a bit for the webview to be ready before sending the message
+      // Focus the panel to ensure it's visible
+      if (provider.webviewView) {
+        provider.webviewView.show?.(false);
+      }
+      
+      // Wait a bit for the webview to be ready, then send selectAgent message
+      // This works whether the panel is new or already open
       setTimeout(() => {
-        provider.webviewView?.webview.postMessage({
-          command: 'startSession',
-          data: { agentId: demoAgent.Id }
-        });
+        if (provider.webviewView?.webview) {
+          provider.webviewView.webview.postMessage({
+            command: 'selectAgent',
+            data: { agentId: demoAgent.Id }
+          });
+        }
       }, 500);
 
     } catch (e) {
