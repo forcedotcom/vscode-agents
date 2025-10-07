@@ -13,7 +13,7 @@ const PlaceholderContent: React.FC = () => {
       <div className="placeholder-icon"></div>
       <p>Agent Preview lets you see what an agent can do before deploying it. Simulate conversations from your IDE.</p>
       <button className="select-agent-button" onClick={handleSelectAgent}>
-        Select an Agent to get started
+        Select an Agent to Get Started
       </button>
     </div>
   );

@@ -69,7 +69,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
         value={message}
         onChange={e => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={disabled ? 'Select to an agent to start…' : 'Write something to start testing…'}
+        placeholder={disabled ? 'Select to an agent to get started…' : 'Write something to start testing…'}
         className="chat-input-field"
         disabled={disabled}
       />

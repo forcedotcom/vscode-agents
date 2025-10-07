@@ -75,7 +75,7 @@ const App: React.FC = () => {
           selectedAgent={selectedAgentId}
           onAgentChange={handleAgentChange}
         />
-        {showTracerTab && (
+        {showTracerTab && selectedAgentId !== '' && (
           <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
         )}
       </div>
