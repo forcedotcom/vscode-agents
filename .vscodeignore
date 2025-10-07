@@ -16,8 +16,17 @@ esbuild.config.js
 scripts/**
 .yarnrc
 .nvmrc
-node_modules
-lib/**
+dist/**
+
+# Webview development files
+webview/src/**
+webview/node_modules/**
+webview/public/**
+webview/.env*
+webview/vite.config.ts
+webview/tsconfig.json
+webview/package.json
+webview/package-lock.json
 
 # Ignore documentation and extra files
 CONTRIBUTING/**
