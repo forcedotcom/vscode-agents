@@ -85,7 +85,11 @@
         "salesforce.agentforceDX.tracerDataFilePath": {
           "type": "string",
           "default": "",
-          "description": "Absolute path to a custom tracer.json file for Agent Tracer data"
+          "description": "Absolute path to the mock agent trace response file"
+        },
+        "salesforce.agentforceDX.demoAgentName": {
+          "type": "string",
+          "description": "Developer name of the agent to use for preview"
         }
       }
     },
@@ -176,6 +180,16 @@
       ],
       "editor/context": [
         {
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
+        {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
           "group": "agent@1"
@@ -183,15 +197,25 @@
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@2"
+          "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@3"
+          "group": "agent@1"
         }
       ],
       "explorer/context": [
+        {
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
@@ -200,15 +224,23 @@
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@2"
+          "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@3"
+          "group": "agent@1"
         }
       ],
       "commandPalette": [
+        {
+          "command": "salesforcedx-vscode-agents.validateAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/"
+        },
         {
           "command": "sf.agent.test.view.goToTestResults",
           "when": "false"
@@ -299,6 +331,10 @@
         "icon": "$(debug)"
       },
       {
+        "command": "salesforcedx-vscode-agents.previewAgent",
+        "title": "AFDX: Preview This Agent"
+      },
+      {
         "command": "sf.agent.test.view.goToTestResults",
         "title": "%go_to_test_results%"
       },
@@ -368,6 +404,10 @@
           "light": "resources/light/check-off.svg",
           "dark": "resources/dark/check-off.svg"
         }
+      },
+      {
+        "command": "salesforcedx-vscode-agents.validateAgent",
+        "title": "AFDX: Validate This Agent"
       }
     ]
   }
