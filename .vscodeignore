@@ -28,6 +28,7 @@ webview/tsconfig.json
 webview/package.json
 webview/package-lock.json
 
+
 # Ignore documentation and extra files
 CONTRIBUTING/**
 SECURITY.md
