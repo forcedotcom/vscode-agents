@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, type AgentTraceResponse } from '@salesforce/agents';
+import { AgentPreview, Agent, type AgentTraceResponse, findAuthoringBundle } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
@@ -15,21 +15,19 @@ interface AgentMessage {
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.combined.view';
-  private static instance: AgentCombinedViewProvider;
+  public webviewView?: vscode.WebviewView;
 
-  public static getInstance(): AgentCombinedViewProvider {
-    return AgentCombinedViewProvider.instance;
-  }
+  private static instance: AgentCombinedViewProvider;
   private agentPreview?: AgentPreview;
   private sessionId = Date.now().toString();
   private apexDebugging = false;
-  public webviewView?: vscode.WebviewView;
   private selectedClientApp?: string;
   private sessionActive = false;
   private currentAgentName?: string;
   private currentAgentId?: string;
   private mockFile?: string;
   private preselectedAgentId?: string;
+
 
   constructor(private readonly context: vscode.ExtensionContext) {
     AgentCombinedViewProvider.instance = this;
@@ -41,6 +39,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         }
       })
     );
+  }
+
+  public static getInstance(): AgentCombinedViewProvider {
+    return AgentCombinedViewProvider.instance;
   }
 
   /**
@@ -211,9 +213,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             data: agentMessage
               ? {
                   content:
-                    (agentMessage as { message?: string; data?: string; body?: string }).message ||
-                    (agentMessage as { message?: string; data?: string; body?: string }).data ||
-                    (agentMessage as { message?: string; data?: string; body?: string }).body ||
+                    (agentMessage as { message?: string}).message ||
+                    (agentMessage as { data?:string  }).data ||
+                    (agentMessage as {  body?: string }).body ||
                     "Hi! I'm ready to help. What can I do for you?"
                 }
               : { content: "Hi! I'm ready to help. What can I do for you?" }
@@ -286,26 +288,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           }
         } else if (message.command === 'endSession') {
-          if (this.agentPreview && this.sessionId) {
-            const agentName = this.currentAgentName;
-            await this.agentPreview.end(this.sessionId, 'UserRequest');
-            this.agentPreview = undefined;
-            this.sessionId = Date.now().toString();
-            this.currentAgentName = undefined;
-            // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
-            await this.setSessionActive(false);
-            await this.setDebugMode(false);
-
-            // Show notification
-            if (agentName) {
-              vscode.window.showInformationMessage(`Agentforce DX: Session ended with ${agentName}`);
-            }
-
-            webviewView.webview.postMessage({
-              command: 'sessionEnded',
-              data: {}
-            });
-          }
+             await this.endSession()
         } else if (message.command === 'getAvailableAgents') {
           // First check client app requirements before getting agents
           try {
