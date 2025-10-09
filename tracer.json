@@ -82,6 +82,15 @@
             "availableFunctions": ["listCategories", "getFeaturedProducts", "getPricing"]
           },
           {
+            "type": "ActionStep",
+            "actionName": "Check Weather",
+            "description": "Checking weather data for the specified date",
+            "timing": "0.25 sec",
+            "inputCode": "{\n  \"dateToCheck\": \"2025-10-13\"\n}",
+            "outputCode": "{}",
+            "error": "UNKNOWN_EXCEPTION. An Apex error occurred: System.CalloutException: The callout couldn't access the endpoint. You might not have the required permissions, or the named credential \"WeatherEndpoint\" might not exist."
+          },
+          {
             "type": "ReasoningStep",
             "reason": "User specified electronics category, should present subcategories and popular items",
             "inputCode": "{true}",
