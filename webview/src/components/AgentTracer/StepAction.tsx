@@ -3,6 +3,8 @@ import boltIconDark from '../../assets/bolt-dark.svg';
 import boltIconLight from '../../assets/bolt-light.svg';
 import clockIconDark from '../../assets/clock-dark.svg';
 import clockIconLight from '../../assets/clock-light.svg';
+import errorIconDark from '../../assets/error-dark.svg';
+import errorIconLight from '../../assets/error-light.svg';
 import './StepAction.css';
 
 interface StepActionProps {
@@ -11,13 +13,14 @@ interface StepActionProps {
   timing?: string;
   inputCode?: string;
   outputCode?: string;
+  error?: string;
 }
 
-export const StepAction: React.FC<StepActionProps> = ({ actionName, description, timing, inputCode, outputCode }) => {
+export const StepAction: React.FC<StepActionProps> = ({ actionName, description, timing, inputCode, outputCode, error }) => {
   const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
-    <div className="step-action step-action--default">
+    <div className={`step-action step-action--default ${error ? 'step-action--error' : ''}`}>
       <div className="step-action-header">
         <div className="step-action-title">
           <img src={isDark ? boltIconDark : boltIconLight} alt="Action" className="step-action-icon" />
@@ -50,6 +53,12 @@ export const StepAction: React.FC<StepActionProps> = ({ actionName, description,
                 </div>
               </div>
             )}
+          </div>
+        )}
+        {error && (
+          <div className="step-action-error">
+            <img src={isDark ? errorIconDark : errorIconLight} alt="Error" className="step-action-error-icon" />
+            <span>{error}</span>
           </div>
         )}
       </div>

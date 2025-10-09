@@ -113,6 +113,7 @@ const AgentTracer: React.FC = () => {
                         timing?: string;
                         inputCode?: string;
                         outputCode?: string;
+                        error?: string;
                       };
 
                       switch (stepWithType.type) {
@@ -161,6 +162,7 @@ const AgentTracer: React.FC = () => {
                               timing={timing}
                               inputCode={reasoningStep.inputCode || "{}"}
                               outputCode={reasoningStep.outputCode || "{}"}
+                              error={reasoningStep.error}
                             />
                           );
                         }
@@ -180,6 +182,7 @@ const AgentTracer: React.FC = () => {
                                 timing={actionStep.timing || timing}
                                 inputCode={actionStep.inputCode}
                                 outputCode={actionStep.outputCode}
+                                error={actionStep.error}
                               />
                             );
                           }
