@@ -1,0 +1,76 @@
+.tab-navigation {
+  display: flex;
+  align-items: center;
+  background-color: var(--vscode-sideBar-background);
+  padding: 0 18px;
+  height: 35px;
+  margin-top: 6px;
+}
+
+.tab-navigation-left {
+  display: flex;
+  gap: 16px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  color: var(--vscode-tab-activeForeground);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+  font-weight: 500;
+}
+
+.tab:hover {
+  color: var(--vscode-tab-activeForeground);
+}
+
+.tab.active {
+  color: var(--vscode-tab-activeForeground);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--vscode-focusBorder);
+}
+
+.tab-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.8;
+}
+
+.tab-icon-comment {
+  background-image: url('../../assets/comment-light.svg');
+}
+
+.tab-icon-tree {
+  background-image: url('../../assets/tree-light.svg');
+}
+
+body.vscode-dark .tab-icon-comment,
+body.vscode-high-contrast .tab-icon-comment {
+  background-image: url('../../assets/comment-dark.svg');
+}
+
+body.vscode-dark .tab-icon-tree,
+body.vscode-high-contrast .tab-icon-tree {
+  background-image: url('../../assets/tree-dark.svg');
+}
