@@ -23,6 +23,7 @@ import { AgentCombinedViewProvider } from './views/agentCombinedViewProvider';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
+import { initializeDiagnosticCollection } from './commands/validateAgent';
 
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -42,6 +43,9 @@ export async function activate(context: vscode.ExtensionContext) {
       console.error('CLI validation failed:', err.message);
       vscode.window.showErrorMessage(`Failed to validate sf CLI and plugin-agent. ${err.message}`);
     });
+
+    // Initialize diagnostic collection for agent validation
+    initializeDiagnosticCollection(context);
 
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
