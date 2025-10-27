@@ -22,7 +22,7 @@ export const registerValidateAgentCommand = () => {
 
     // Attempt to compile the Agent
     try {
-      await Agent.compileAgent(await CoreExtensionService.getDefaultConnection(), fileContents);
+      await Agent.compileAgentScript(await CoreExtensionService.getDefaultConnection(), fileContents);
       vscode.window.showInformationMessage('Agent validation successful! 🎉');
     } catch (compileError) {
       const error = SfError.wrap(compileError);
