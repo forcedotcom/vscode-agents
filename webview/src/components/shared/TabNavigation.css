@@ -44,7 +44,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background-color: var(--vscode-focusBorder);
+  background-color: var(--vscode-panelTitle-activeBorder);
 }
 
 .tab-icon {
