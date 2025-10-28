@@ -43,7 +43,7 @@
   bottom: -1px;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 1px;
   background-color: var(--vscode-focusBorder);
 }
 
