@@ -3,6 +3,7 @@
 CLAUDE.md
 node_modules
 **/node_modules/
+ctx/
 out/
 lib/
 dist/
