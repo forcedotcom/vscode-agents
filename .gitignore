@@ -1,7 +1,6 @@
 .cursor
 .claude
 CLAUDE.md
-TODO.md
 node_modules
 **/node_modules/
 out/
