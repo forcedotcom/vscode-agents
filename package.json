@@ -131,7 +131,7 @@
           "group": "navigation@2"
         },
         {
-          "command": "sf.agent.combined.view.stop",
+          "command": "sf.agent.combined.view.refresh",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive",
           "group": "navigation@2"
         },
@@ -323,6 +323,11 @@
         "command": "sf.agent.combined.view.stop",
         "title": "Stop Agent",
         "icon": "$(stop-circle)"
+      },
+      {
+        "command": "sf.agent.combined.view.refresh",
+        "title": "Restart Agent",
+        "icon": "$(refresh)"
       },
       {
         "command": "sf.agent.combined.view.debug",
