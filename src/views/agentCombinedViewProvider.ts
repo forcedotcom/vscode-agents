@@ -54,6 +54,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Updates the agent selected state and context
+   */
+  private async setAgentSelected(selected: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:agentSelected', selected);
+  }
+
+  /**
    * Updates the debug mode state and context
    */
   private async setDebugMode(enabled: boolean): Promise<void> {
@@ -491,8 +498,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const agentId = message.data?.agentId;
           if (agentId && typeof agentId === 'string' && agentId !== '') {
             this.currentAgentId = agentId;
+            await this.setAgentSelected(true);
           } else {
             this.currentAgentId = undefined;
+            await this.setAgentSelected(false);
           }
         }
       } catch (err) {

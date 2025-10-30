@@ -127,7 +127,7 @@
       "view/title": [
         {
           "command": "sf.agent.combined.view.run",
-          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && agentforceDX:agentSelected",
           "group": "navigation@2"
         },
         {
