@@ -73,11 +73,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
         className="chat-input-field"
         disabled={disabled}
       />
-      {!disabled && (
-        <button type="submit" className="chat-input-button" disabled={!message.trim()}>
-          <span className="send-icon"></span>
-        </button>
-      )}
+      <button type="submit" className="chat-input-button" disabled={disabled || !message.trim()}>
+        <span className="send-icon"></span>
+      </button>
     </form>
   );
 };
