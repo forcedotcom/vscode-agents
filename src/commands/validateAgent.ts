@@ -21,18 +21,27 @@ export const registerValidateAgentCommand = () => {
     const fileContents = Buffer.from((await vscode.workspace.fs.readFile(vscode.Uri.file(filePath)))).toString();
 
     // Attempt to compile the Agent
-    try {
-      await Agent.compileAgent(await CoreExtensionService.getDefaultConnection(), fileContents);
-      vscode.window.showInformationMessage('Agent validation successful! 🎉');
-    } catch (compileError) {
-      const error = SfError.wrap(compileError);
+    const compilationResult = await Agent.compileAgentScript(await CoreExtensionService.getDefaultConnection(), fileContents);
+    
+    if (compilationResult.status === 'failure') {
       // Show the output channel
       channelService.showChannelOutput();
       channelService.clear();
       // Show error details in output
       channelService.appendLine('❌ Agent validation failed!');
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-      channelService.appendLine(`Error: ${error.message}`);
+      
+      if (compilationResult.errors && compilationResult.errors.length > 0) {
+        compilationResult.errors.forEach(error => {
+          channelService.appendLine(`Error: ${error.description}`);
+          channelService.appendLine(`  Location: Line ${error.lineStart}:${error.colStart} - Line ${error.lineEnd}:${error.colEnd}`);
+          channelService.appendLine('');
+        });
+      } else {
+        channelService.appendLine('Compilation failed with no specific error details.');
+      }
+    } else {
+      vscode.window.showInformationMessage('Agent validation successful! 🎉');
     }
   });
 };

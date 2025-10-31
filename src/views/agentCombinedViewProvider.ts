@@ -70,7 +70,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     // If we have an active agent preview, update its debug mode
     if (this.agentPreview) {
-      this.agentPreview.toggleApexDebugMode(newDebugMode);
+      this.agentPreview.setApexDebugMode(newDebugMode);
     }
 
     // Notify webview
@@ -196,7 +196,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Enable debug mode if apex debugging is active
           if (this.apexDebugging) {
-            this.agentPreview.toggleApexDebugMode(this.apexDebugging);
+            this.agentPreview.setApexDebugMode(this.apexDebugging);
           }
 
           const session = await this.agentPreview.start();
@@ -224,7 +224,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
           if (this.agentPreview) {
-            this.agentPreview.toggleApexDebugMode(this.apexDebugging);
+            this.agentPreview.setApexDebugMode(this.apexDebugging);
           }
 
           webviewView.webview.postMessage({
