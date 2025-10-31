@@ -6,6 +6,7 @@ import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
+import { Lifecycle } from '@salesforce/core';
 
 interface AgentMessage {
   type: string;
@@ -227,10 +228,38 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               throw new Error('No file path found for local agent.');
             }
 
+            // Set up lifecycle event listeners for compilation progress
+            const lifecycle = await Lifecycle.getInstance();
+            
+            // Listen for compilation events
+            const compilationListener = lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
+              if (data.error) {
+                webviewView.webview.postMessage({
+                  command: 'compilationError',
+                  data: { message: data.error }
+                });
+              } else {
+                webviewView.webview.postMessage({
+                  command: 'compilationStarting',
+                  data: { message: data.message || 'Compiling agent...' }
+                });
+              }
+            });
+
+            // Listen for simulation starting event
+            const simulationListener = lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
+              webviewView.webview.postMessage({
+                command: 'simulationStarting',
+                data: { message: data.message || 'Starting simulation...' }
+              });
+            });
+
             // Create AgentSimulate with just the file path
             // Type cast needed due to local dependency setup with separate @salesforce/core instances
             // mockActions=false means actions will run with real side effects
-            this.agentPreview = new AgentSimulate(conn as any, filePath, false);
+            // The lifecycle listeners will automatically handle compilation progress messages
+            // todo: figure out UX for mockActions=true and pass in here
+            this.agentPreview = new AgentSimulate(conn as any, filePath, true);
             this.currentAgentName = path.basename(filePath, '.agent');
             this.currentAgentId = agentId;
 
@@ -247,7 +276,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               );
             }
 
-            this.agentPreview = new AgentPreview(conn, agentId);
+            // Type cast needed due to local dependency setup with separate @salesforce/core instances
+            this.agentPreview = new AgentPreview(conn as any, agentId);
 
             // Get agent name for notifications
             const remoteAgents = await Agent.listRemote(conn as any);
@@ -261,6 +291,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           }
 
+          // Start the session - this will trigger compilation for local agents
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
           await this.setSessionActive(true);

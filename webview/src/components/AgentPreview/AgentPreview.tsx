@@ -64,6 +64,30 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setMessages([]); // Just clear messages without showing transition message
     });
 
+    vscodeApi.onMessage('compilationStarting', data => {
+      setIsLoading(true);
+      setLoadingMessage(data?.message || 'Compiling agent...');
+    });
+
+    vscodeApi.onMessage('compilationError', data => {
+      setIsLoading(false);
+      setAgentConnected(false);
+      
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'system',
+        content: `Compilation Error: ${data?.message || 'Failed to compile agent'}`,
+        systemType: 'error',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    });
+
+    vscodeApi.onMessage('simulationStarting', data => {
+      setIsLoading(true);
+      setLoadingMessage(data?.message || 'Starting simulation...');
+    });
+
     vscodeApi.onMessage('messageSent', data => {
       setIsLoading(false);
       if (data && data.content) {
