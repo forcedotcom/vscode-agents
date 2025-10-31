@@ -97,6 +97,11 @@ class VSCodeApiService {
     this.postMessage('clearChat');
   }
 
+  // Clear messages in the panel
+  clearMessages() {
+    this.postMessage('clearMessages');
+  }
+
   // Get configuration values
   getConfiguration(section: string) {
     this.postMessage('getConfiguration', { section });
@@ -120,6 +125,11 @@ class VSCodeApiService {
   // Notify the extension about the selected agent ID
   setSelectedAgentId(agentId: string) {
     this.postMessage('setSelectedAgentId', { agentId });
+  }
+
+  // Load conversation history for an agent without starting a session
+  loadAgentHistory(agentId: string) {
+    this.postMessage('loadAgentHistory', { agentId });
   }
 }
 

@@ -36,8 +36,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           setAgents(data.agents);
           if (data.selectedAgentId) {
             onAgentChange(data.selectedAgentId);
-            // Start session with preselected agent
-            vscodeApi.startSession(data.selectedAgentId);
+            // Load history for preselected agent (don't auto-start session)
+            vscodeApi.loadAgentHistory(data.selectedAgentId);
           }
         } else {
           setAgents([]);
@@ -67,42 +67,48 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
   // Handle external agent selection (e.g., from command palette)
   useEffect(() => {
-    const startSessionForSelectedAgent = async () => {
-      // Only start session if selectedAgent changed externally (not from dropdown)
+    const loadHistoryForSelectedAgent = async () => {
+      // Load history when agent changes externally (not from dropdown)
       if (selectedAgent && selectedAgent !== '' && selectedAgent !== previousAgent && agents.length > 0) {
         // Check if this agent exists in the available agents list
         const agentExists = agents.some(agent => agent.id === selectedAgent);
         if (agentExists) {
-          // End current session if one exists
-          if (previousAgent) {
+          // End session if switching agents
+          if (previousAgent && previousAgent !== '') {
             vscodeApi.endSession();
             await new Promise(resolve => setTimeout(resolve, 100));
           }
-          // Start session for the externally selected agent
-          vscodeApi.startSession(selectedAgent);
+          // Load history for the selected agent (don't auto-start session)
+          // This will clear the panel and show the new agent's history
+          vscodeApi.loadAgentHistory(selectedAgent);
           setPreviousAgent(selectedAgent);
         }
       }
     };
 
-    startSessionForSelectedAgent();
+    loadHistoryForSelectedAgent();
   }, [selectedAgent, agents, previousAgent]);
 
   const handleAgentChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
-    onAgentChange(agentId);
-    setPreviousAgent(agentId);
-
-    // End current session if one exists
-    if (selectedAgent) {
+    
+    // If switching to a different agent, end current session and clear
+    if (selectedAgent && selectedAgent !== agentId) {
       vscodeApi.endSession();
       // Small delay to ensure cleanup is complete
       await new Promise(resolve => setTimeout(resolve, 100));
     }
+    
+    onAgentChange(agentId);
+    setPreviousAgent(agentId);
 
-    // Only start session if a valid agent is selected
+    // Load history for the selected agent (don't auto-start session)
+    // This will clear the panel and show the new agent's history
     if (agentId && agentId !== '') {
-      vscodeApi.startSession(agentId);
+      vscodeApi.loadAgentHistory(agentId);
+    } else {
+      // If no agent selected, clear the panel
+      vscodeApi.clearMessages();
     }
   };
 

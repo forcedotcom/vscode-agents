@@ -19,14 +19,17 @@ const App: React.FC = () => {
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
 
   useEffect(() => {
-    // Listen for agent selection from external command (e.g., play-circle button)
+    // Listen for agent selection from external command (e.g., play-circle button or context menu)
+    // This will load history and start the session
     vscodeApi.onMessage('selectAgent', data => {
       if (data && data.agentId) {
+        // End any existing session
+        vscodeApi.endSession();
         // Update the selected agent in the dropdown
         setSelectedAgentId(data.agentId);
-        // Force restart the session even if it's the same agent
-        vscodeApi.endSession();
+        // Clear panel, load history, and start the session
         setTimeout(() => {
+          vscodeApi.loadAgentHistory(data.agentId);
           vscodeApi.startSession(data.agentId);
         }, 100);
       }

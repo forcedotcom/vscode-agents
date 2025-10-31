@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, type AgentTraceResponse, AgentPreviewBase } from '@salesforce/agents';
+import { AgentPreview, Agent, type AgentTraceResponse, AgentPreviewBase, readTranscriptEntries } from '@salesforce/agents';
 import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
@@ -144,6 +144,56 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   public setPreselectedAgentId(agentId: string) {
     this.preselectedAgentId = agentId;
+  }
+
+  /**
+   * Load conversation history for an agent and send it to the webview
+   * Uses readTranscriptEntries from @salesforce/agents library
+   */
+  private async loadAndSendConversationHistory(agentId: string, isLocalAgent: boolean, webviewView: vscode.WebviewView): Promise<void> {
+    try {
+      let agentName: string;
+      
+      if (isLocalAgent) {
+        // For local agents, use the full file name including .agent extension
+        const filePath = agentId.startsWith('local:') ? agentId.substring(6) : agentId;
+        agentName = path.basename(filePath); // Keep the .agent extension
+      } else {
+        // For org agents, use the agent ID (Bot ID) directly
+        agentName = agentId;
+      }
+
+      // Use readTranscriptEntries from @salesforce/agents library
+      // This reads from .sfdx/agents/conversations/<agentName>/history.json
+      // For local agents: <name>.agent
+      // For org agents: <agentId> (Bot ID)
+      const transcriptEntries = await readTranscriptEntries(agentName);
+      
+      if (transcriptEntries && transcriptEntries.length > 0) {
+        // Convert transcript entries to messages format for the webview
+        const historyMessages = transcriptEntries
+          .filter(entry => entry.text) // Only include entries with text content
+          .map(entry => ({
+            id: `${entry.timestamp}-${entry.sessionId}`,
+            type: entry.role === 'user' ? 'user' : 'agent',
+            content: entry.text || '',
+            timestamp: entry.timestamp
+          }));
+
+        if (historyMessages.length > 0) {
+          webviewView.webview.postMessage({
+            command: 'conversationHistory',
+            data: { messages: historyMessages }
+          });
+        }
+      }
+    } catch (err) {
+      // Log error details for debugging
+      console.error('Could not load conversation history:', err);
+      if (err instanceof Error) {
+        console.error('Error stack:', err.stack);
+      }
+    }
   }
 
   /**
@@ -299,6 +349,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // Show notification
           vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
 
+          // Note: Conversation history is now loaded when agent is selected, not when session starts
+          // We still load it here as a fallback in case history wasn't loaded during selection
+          await this.loadAndSendConversationHistory(agentId, isLocalAgent, webviewView);
+
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
           webviewView.webview.postMessage({
@@ -382,6 +436,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'endSession') {
              await this.endSession()
+        } else if (message.command === 'loadAgentHistory') {
+          // Load conversation history for the selected agent without starting a session
+          // This also clears any existing messages and shows the new agent's history
+          const agentId = message.data?.agentId;
+          if (agentId && typeof agentId === 'string') {
+            // First, clear any existing messages in the panel
+            webviewView.webview.postMessage({
+              command: 'clearMessages'
+            });
+            
+            const isLocalAgent = agentId.startsWith('local:');
+            await this.loadAndSendConversationHistory(agentId, isLocalAgent, webviewView);
+          }
         } else if (message.command === 'getAvailableAgents') {
           // Always get local .agent files first (they don't require client app)
           const localAgents = await this.discoverLocalAgents();

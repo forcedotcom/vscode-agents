@@ -34,6 +34,43 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
+    vscodeApi.onMessage('clearMessages', () => {
+      console.log('[Webview] Received clearMessages command');
+      // Clear all messages when switching agents
+      setMessages([]);
+      setSessionActive(false);
+      setAgentConnected(false);
+      setIsLoading(false);
+    });
+
+    vscodeApi.onMessage('conversationHistory', data => {
+      console.log('[Webview] Received conversationHistory message:', data);
+      if (data && data.messages && Array.isArray(data.messages)) {
+        console.log(`[Webview] Processing ${data.messages.length} history messages`);
+        // Load conversation history messages (this happens when agent is selected)
+        // Messages are already cleared by clearMessages command before this
+        const historyMessages: Message[] = data.messages.map((msg: any) => ({
+          id: msg.id || `${msg.timestamp}-${Date.now()}`,
+          type: msg.type as 'user' | 'agent',
+          content: msg.content || '',
+          timestamp: msg.timestamp || new Date().toISOString()
+        }));
+        console.log(`[Webview] Setting ${historyMessages.length} messages in state`);
+        setMessages(historyMessages);
+        // Reset session state - agent is selected but session not started yet
+        setSessionActive(false);
+        setAgentConnected(false);
+        setIsLoading(false);
+      } else {
+        console.log('[Webview] No valid messages in conversationHistory data');
+        // No history found - ensure panel is cleared
+        setMessages([]);
+        setSessionActive(false);
+        setAgentConnected(false);
+        setIsLoading(false);
+      }
+    });
+
     vscodeApi.onMessage('sessionStarted', data => {
       setSessionActive(true);
       setIsLoading(false);
@@ -45,7 +82,8 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
           content: data.content || "Hi! I'm ready to help. What can I do for you?",
           timestamp: new Date().toISOString()
         };
-        setMessages([welcomeMessage]);
+        // Append welcome message to existing messages (which may include history)
+        setMessages(prev => [...prev, welcomeMessage]);
       }
     });
 
@@ -61,7 +99,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setIsLoading(true);
       setLoadingMessage('Loading agent...');
       setAgentConnected(false); // Reset agent connected state while starting
-      setMessages([]); // Just clear messages without showing transition message
+      // Don't clear messages here - preserve history if it exists
     });
 
     vscodeApi.onMessage('compilationStarting', data => {
