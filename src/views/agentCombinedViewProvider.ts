@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, type AgentTraceResponse, findAuthoringBundle } from '@salesforce/agents';
+import { AgentPreview, Agent, type AgentTraceResponse, AgentPreviewBase } from '@salesforce/agents';
+import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
@@ -18,7 +19,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public webviewView?: vscode.WebviewView;
 
   private static instance: AgentCombinedViewProvider;
-  private agentPreview?: AgentPreview;
+  private agentPreview?: AgentPreviewBase;
   private sessionId = Date.now().toString();
   private apexDebugging = false;
   private selectedClientApp?: string;
@@ -112,7 +113,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public async endSession(): Promise<void> {
     if (this.agentPreview && this.sessionId) {
       const agentName = this.currentAgentName;
-      await this.agentPreview.end(this.sessionId, 'UserRequest');
+      // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
+      // Both extend AgentPreviewBase, so we need to handle this carefully
+      if (this.agentPreview instanceof AgentSimulate) {
+        await (this.agentPreview as AgentSimulate).end();
+      } else {
+        await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+      }
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
@@ -138,6 +145,31 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.preselectedAgentId = agentId;
   }
 
+  /**
+   * Discover local .agent files in the workspace
+   */
+  private async discoverLocalAgents(): Promise<Array<{ name: string; id: string; filePath: string }>> {
+    const localAgents: Array<{ name: string; id: string; filePath: string }> = [];
+    
+    try {
+      // Find all .agent files in the workspace
+      const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**');
+      
+      for (const agentFile of agentFiles) {
+        const fileName = path.basename(agentFile.fsPath, '.agent');
+        localAgents.push({
+          name: `${fileName} (Agent Script)`,
+          id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
+          filePath: agentFile.fsPath
+        });
+      }
+    } catch (err) {
+      console.warn('Error discovering local .agent files:', err);
+    }
+    
+    return localAgents;
+  }
+
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -161,7 +193,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // End existing session if one exists
           if (this.agentPreview && this.sessionId) {
             try {
-              await this.agentPreview.end(this.sessionId, 'UserRequest');
+              // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
+              if (this.agentPreview instanceof AgentSimulate) {
+                await (this.agentPreview as AgentSimulate).end();
+              } else {
+                await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+              }
             } catch (err) {
               console.warn('Error ending previous session:', err);
             }
@@ -179,24 +216,49 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
           }
 
-          // Validate that the agentId follows Salesforce Bot ID format (starts with "0X" and is 15 or 18 characters)
-          if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
-            throw new Error(
-              `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
-            );
-          }
+          // Check if this is a local agent (file path) or org agent (Bot ID)
+          const isLocalAgent = agentId.startsWith('local:');
 
-          this.agentPreview = new AgentPreview(conn, agentId);
+          if (isLocalAgent) {
+            // Handle local .agent file
+            const filePath = agentId.substring(6); // Remove "local:" prefix
+            
+            if (!filePath) {
+              throw new Error('No file path found for local agent.');
+            }
 
-          // Get agent name for notifications
-          const remoteAgents = await Agent.listRemote(conn);
-          const agent = remoteAgents?.find(bot => bot.Id === agentId);
-          this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
-          this.currentAgentId = agentId;
+            // Create AgentSimulate with just the file path
+            // Type cast needed due to local dependency setup with separate @salesforce/core instances
+            // mockActions=false means actions will run with real side effects
+            this.agentPreview = new AgentSimulate(conn as any, filePath, false);
+            this.currentAgentName = path.basename(filePath, '.agent');
+            this.currentAgentId = agentId;
 
-          // Enable debug mode if apex debugging is active
-          if (this.apexDebugging) {
-            this.agentPreview.setApexDebugMode(this.apexDebugging);
+            // Enable debug mode if apex debugging is active
+            if (this.apexDebugging) {
+              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            }
+          } else {
+            // Handle org agent (existing logic)
+            // Validate that the agentId follows Salesforce Bot ID format (starts with "0X" and is 15 or 18 characters)
+            if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
+              throw new Error(
+                `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
+              );
+            }
+
+            this.agentPreview = new AgentPreview(conn, agentId);
+
+            // Get agent name for notifications
+            const remoteAgents = await Agent.listRemote(conn as any);
+            const agent = remoteAgents?.find(bot => bot.Id === agentId);
+            this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
+            this.currentAgentId = agentId;
+
+            // Enable debug mode if apex debugging is active
+            if (this.apexDebugging) {
+              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            }
           }
 
           const session = await this.agentPreview.start();
@@ -290,7 +352,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         } else if (message.command === 'endSession') {
              await this.endSession()
         } else if (message.command === 'getAvailableAgents') {
-          // First check client app requirements before getting agents
+          // Always get local .agent files first (they don't require client app)
+          const localAgents = await this.discoverLocalAgents();
+
+          // First check client app requirements before getting remote agents
           try {
             // If a client app has already been selected, use it directly and skip prompting
             let conn;
@@ -301,7 +366,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
               // Handle the three cases
               if (clientAppResult.type === 'none') {
-                // Case 1: No client app available
+                // Case 1: No client app available - still return local agents
+                webviewView.webview.postMessage({
+                  command: 'availableAgents',
+                  data: {
+                    agents: localAgents,
+                    selectedAgentId: this.preselectedAgentId
+                  }
+                });
                 webviewView.webview.postMessage({
                   command: 'clientAppRequired',
                   data: {
@@ -311,9 +383,20 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     error: clientAppResult.error
                   }
                 });
+                // Clear preselected ID after sending
+                if (this.preselectedAgentId) {
+                  this.preselectedAgentId = undefined;
+                }
                 return;
               } else if (clientAppResult.type === 'multiple') {
-                // Case 3: Multiple client apps - need user selection
+                // Case 3: Multiple client apps - still return local agents
+                webviewView.webview.postMessage({
+                  command: 'availableAgents',
+                  data: {
+                    agents: localAgents,
+                    selectedAgentId: this.preselectedAgentId
+                  }
+                });
                 webviewView.webview.postMessage({
                   command: 'selectClientApp',
                   data: {
@@ -321,6 +404,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     username: clientAppResult.username
                   }
                 });
+                // Clear preselected ID after sending
+                if (this.preselectedAgentId) {
+                  this.preselectedAgentId = undefined;
+                }
                 return;
               } else if (clientAppResult.type === 'single') {
                 // Case 2: Single client app - use automatically
@@ -331,33 +418,31 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               }
             }
 
-            const remoteAgents = await Agent.listRemote(conn);
-
-            if (!remoteAgents || remoteAgents.length === 0) {
-              webviewView.webview.postMessage({
-                command: 'availableAgents',
-                data: []
-              });
-              return;
-            }
+            // Get remote agents from org
+            const remoteAgents = await Agent.listRemote(conn as any);
 
             // Filter to only agents with active BotVersions and map to the expected format
-            const activeAgents = remoteAgents
-              .filter(bot => {
-                // Check if the bot has any active BotVersions
-                return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-              })
-              .map(bot => ({
-                name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                id: bot.Id // Use the Bot ID from org
-              }))
-              .filter(agent => agent.id); // Only include agents with valid IDs
+            const activeRemoteAgents = remoteAgents
+              ? remoteAgents
+                  .filter(bot => {
+                    // Check if the bot has any active BotVersions
+                    return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+                  })
+                  .map(bot => ({
+                    name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+                    id: bot.Id // Use the Bot ID from org
+                  }))
+                  .filter(agent => agent.id) // Only include agents with valid IDs
+              : [];
+
+            // Combine local and remote agents
+            const allAgents = [...localAgents, ...activeRemoteAgents];
 
             // Send the available agents with preselected agent if we have one
             webviewView.webview.postMessage({
               command: 'availableAgents',
               data: {
-                agents: activeAgents,
+                agents: allAgents,
                 selectedAgentId: this.preselectedAgentId
               }
             });
@@ -424,27 +509,29 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               throw new Error('Client app not set');
             }
             const conn = await createConnectionWithClientApp(this.selectedClientApp);
-            const remoteAgents = await Agent.listRemote(conn);
-
-            if (!remoteAgents || remoteAgents.length === 0) {
-              webviewView.webview.postMessage({
-                command: 'availableAgents',
-                data: []
-              });
-              return;
-            }
+            
+            // Get local .agent files
+            const localAgents = await this.discoverLocalAgents();
+            
+            // Get remote agents from org
+            const remoteAgents = await Agent.listRemote(conn as any);
 
             // Filter to only agents with active BotVersions and map to the expected format
-            const activeAgents = remoteAgents
-              .filter(bot => {
-                // Check if the bot has any active BotVersions
-                return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-              })
-              .map(bot => ({
-                name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                id: bot.Id // Use the Bot ID from org
-              }))
-              .filter(agent => agent.id); // Only include agents with valid IDs
+            const activeRemoteAgents = remoteAgents
+              ? remoteAgents
+                  .filter(bot => {
+                    // Check if the bot has any active BotVersions
+                    return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+                  })
+                  .map(bot => ({
+                    name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+                    id: bot.Id // Use the Bot ID from org
+                  }))
+                  .filter(agent => agent.id) // Only include agents with valid IDs
+              : [];
+
+            // Combine local and remote agents
+            const allAgents = [...localAgents, ...activeRemoteAgents];
 
             // Notify the UI that client app is ready so it can clear selection UI
             webviewView.webview.postMessage({ command: 'clientAppReady' });
@@ -453,7 +540,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             webviewView.webview.postMessage({
               command: 'availableAgents',
               data: {
-                agents: activeAgents,
+                agents: allAgents,
                 selectedAgentId: this.preselectedAgentId
               }
             });
