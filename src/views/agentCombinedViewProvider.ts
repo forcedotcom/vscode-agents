@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, type AgentTraceResponse, AgentPreviewBase, readTranscriptEntries } from '@salesforce/agents';
+import { AgentPreview, Agent, type AgentTraceResponse, AgentPreviewBase, readTranscriptEntries, AgentSource } from '@salesforce/agents';
 import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
@@ -147,26 +147,57 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Determines the agent source type based on the agent ID
+   * @param agentId The agent identifier (either "local:<filepath>" for script agents or Bot ID for published agents)
+   * @returns AgentSource.SCRIPT for local .agent files, AgentSource.PUBLISHED for org agents
+   */
+  private getAgentSource(agentId: string): AgentSource {
+    return agentId.startsWith('local:') ? AgentSource.SCRIPT : AgentSource.PUBLISHED;
+  }
+
+  /**
+   * Extracts the file path from a local agent ID
+   * @param agentId The agent identifier with "local:" prefix
+   * @returns The file path without the "local:" prefix
+   */
+  private getLocalAgentFilePath(agentId: string): string {
+    return agentId.startsWith('local:') ? agentId.substring(6) : agentId;
+  }
+
+  /**
+   * Validates that an agent ID is a valid Salesforce Bot ID format
+   * @param agentId The agent ID to validate
+   * @throws Error if the agent ID is not a valid Bot ID format
+   */
+  private validatePublishedAgentId(agentId: string): void {
+    if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
+      throw new Error(
+        `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
+      );
+    }
+  }
+
+  /**
    * Load conversation history for an agent and send it to the webview
    * Uses readTranscriptEntries from @salesforce/agents library
    */
-  private async loadAndSendConversationHistory(agentId: string, isLocalAgent: boolean, webviewView: vscode.WebviewView): Promise<void> {
+  private async loadAndSendConversationHistory(agentId: string, agentSource: AgentSource, webviewView: vscode.WebviewView): Promise<void> {
     try {
       let agentName: string;
       
-      if (isLocalAgent) {
-        // For local agents, use the full file name including .agent extension
-        const filePath = agentId.startsWith('local:') ? agentId.substring(6) : agentId;
+      if (agentSource === AgentSource.SCRIPT) {
+        // For script agents, use the full file name including .agent extension
+        const filePath = this.getLocalAgentFilePath(agentId);
         agentName = path.basename(filePath); // Keep the .agent extension
       } else {
-        // For org agents, use the agent ID (Bot ID) directly
+        // For published agents, use the agent ID (Bot ID) directly
         agentName = agentId;
       }
 
       // Use readTranscriptEntries from @salesforce/agents library
       // This reads from .sfdx/agents/conversations/<agentName>/history.json
-      // For local agents: <name>.agent
-      // For org agents: <agentId> (Bot ID)
+      // For script agents: <name>.agent
+      // For published agents: <agentId> (Bot ID)
       const transcriptEntries = await readTranscriptEntries(agentName);
       
       if (transcriptEntries && transcriptEntries.length > 0) {
@@ -267,12 +298,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
           }
 
-          // Check if this is a local agent (file path) or org agent (Bot ID)
-          const isLocalAgent = agentId.startsWith('local:');
+          // Determine agent source type using the library's AgentSource enum
+          const agentSource = this.getAgentSource(agentId);
 
-          if (isLocalAgent) {
-            // Handle local .agent file
-            const filePath = agentId.substring(6); // Remove "local:" prefix
+          if (agentSource === AgentSource.SCRIPT) {
+            // Handle script agent (.agent file)
+            const filePath = this.getLocalAgentFilePath(agentId);
             
             if (!filePath) {
               throw new Error('No file path found for local agent.');
@@ -318,13 +349,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               this.agentPreview.setApexDebugMode(this.apexDebugging);
             }
           } else {
-            // Handle org agent (existing logic)
-            // Validate that the agentId follows Salesforce Bot ID format (starts with "0X" and is 15 or 18 characters)
-            if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
-              throw new Error(
-                `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
-              );
-            }
+            // Handle published agent (org agent)
+            // Validate that the agentId follows Salesforce Bot ID format
+            this.validatePublishedAgentId(agentId);
 
             // Type cast needed due to local dependency setup with separate @salesforce/core instances
             this.agentPreview = new AgentPreview(conn as any, agentId);
@@ -351,7 +378,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Note: Conversation history is now loaded when agent is selected, not when session starts
           // We still load it here as a fallback in case history wasn't loaded during selection
-          await this.loadAndSendConversationHistory(agentId, isLocalAgent, webviewView);
+          await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
@@ -446,8 +473,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               command: 'clearMessages'
             });
             
-            const isLocalAgent = agentId.startsWith('local:');
-            await this.loadAndSendConversationHistory(agentId, isLocalAgent, webviewView);
+            const agentSource = this.getAgentSource(agentId);
+            await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
           }
         } else if (message.command === 'getAvailableAgents') {
           // Always get local .agent files first (they don't require client app)
