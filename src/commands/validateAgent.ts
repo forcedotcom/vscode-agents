@@ -19,9 +19,10 @@ export const registerValidateAgentCommand = () => {
     }
 
     const fileContents = Buffer.from((await vscode.workspace.fs.readFile(vscode.Uri.file(filePath)))).toString();
+    const conn = await CoreExtensionService.getDefaultConnection();
 
     // Attempt to compile the Agent
-    const compilationResult = await Agent.compileAgentScript(await CoreExtensionService.getDefaultConnection(), fileContents);
+    const compilationResult = await Agent.compileAgentScript(conn, fileContents);
     
     if (compilationResult.status === 'failure') {
       // Show the output channel

@@ -13,23 +13,12 @@ interface ClientApp {
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'preview' | 'tracer'>('preview');
-  const [showTracerTab, setShowTracerTab] = useState<boolean>(false);
+  const [showTracerTab] = useState<boolean>(true); // Always show tracer tab by default
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
 
   useEffect(() => {
-    // Listen for configuration updates
-    vscodeApi.onMessage('configuration', data => {
-      if (data.section === 'salesforce.agentforceDX.showAgentTracer') {
-        setShowTracerTab(data.value === true);
-        // If tracer tab is being hidden and it's currently active, switch to preview
-        if (!data.value && activeTab === 'tracer') {
-          setActiveTab('preview');
-        }
-      }
-    });
-
     // Listen for agent selection from external command (e.g., play-circle button)
     vscodeApi.onMessage('selectAgent', data => {
       if (data && data.agentId) {
@@ -42,10 +31,7 @@ const App: React.FC = () => {
         }, 100);
       }
     });
-
-    // Request the current configuration
-    vscodeApi.getConfiguration('salesforce.agentforceDX.showAgentTracer');
-  }, [activeTab]);
+  }, []); // Empty dependency array means this runs once on mount
 
   const handleTabChange = (tab: 'preview' | 'tracer') => {
     setActiveTab(tab);
