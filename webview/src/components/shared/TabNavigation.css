@@ -10,6 +10,7 @@
 .tab-navigation-left {
   display: flex;
   gap: 16px;
+  position: relative;
 }
 
 .tab {
@@ -23,7 +24,6 @@
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
   transition: all 0.2s;
   position: relative;
   font-weight: 500;
@@ -37,14 +37,12 @@
   color: var(--vscode-tab-activeForeground);
 }
 
-.tab.active::after {
-  content: '';
+.tab-navigation-indicator {
   position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
+  bottom: 0;
+  height: 2px;
   background-color: var(--vscode-panelTitle-activeBorder);
+  transition: all 0.2s ease;
 }
 
 .tab-icon {
