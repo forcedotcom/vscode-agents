@@ -40,7 +40,7 @@
 .tab-navigation-indicator {
   position: absolute;
   bottom: 0;
-  height: 2px;
+  height: 1px;
   background-color: var(--vscode-panelTitle-activeBorder);
   transition: all 0.2s ease;
 }
