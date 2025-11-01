@@ -46,13 +46,15 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
             Agent Tracer
           </button>
         )}
-        <div
-          className="tab-navigation-indicator"
-          style={{
-            width: `${indicatorStyle.width}px`,
-            transform: `translateX(${indicatorStyle.left}px)`,
-          }}
-        />
+        {indicatorStyle.width > 0 && (
+          <div
+            className="tab-navigation-indicator"
+            style={{
+              width: `${indicatorStyle.width}px`,
+              transform: `translateX(${indicatorStyle.left}px)`,
+            }}
+          />
+        )}
       </div>
     </nav>
   );
