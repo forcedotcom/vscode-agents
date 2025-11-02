@@ -75,6 +75,7 @@ const App: React.FC = () => {
           selectedAgent={selectedAgentId}
           onAgentChange={handleAgentChange}
         />
+        <div className="app-menu-divider" />
         {showTracerTab && selectedAgentId !== '' && (
           <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
         )}

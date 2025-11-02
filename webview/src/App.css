@@ -10,6 +10,12 @@
   margin-bottom: 12px;
 }
 
+.app-menu-divider {
+  height: 1px;
+  background-color: var(--vscode-panel-border);
+  margin: 8px 16px;
+}
+
 .app-content {
   flex: 1;
   overflow: hidden;
