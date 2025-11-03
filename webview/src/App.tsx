@@ -190,15 +190,12 @@ const App: React.FC = () => {
 
         if (startSucceeded) {
           setDisplayedAgentIdState(nextAgentId);
-        } else {
-          setDesiredAgentId(previousAgentId);
         }
 
         handleSessionTransitionSettled();
       })
       .catch(err => {
         console.error('Error managing agent session:', err);
-        setDesiredAgentId(displayedAgentIdRef.current);
         handleSessionTransitionSettled();
       });
   }, [desiredAgentId, waitForSessionEnd, waitForSessionStart, handleSessionTransitionSettled]);
