@@ -35,9 +35,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   useEffect(() => {
     // Set up message handlers for VS Code communication
     vscodeApi.onMessage('sessionStarted', data => {
-      setSessionActive(true);
-      setIsLoading(false);
-      setAgentConnected(true); // Agent is now ready for conversation
+      // Set messages FIRST, then clear loading state to prevent blank state flash
       if (data) {
         const welcomeMessage: Message = {
           id: Date.now().toString(),
@@ -47,6 +45,11 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         };
         setMessages([welcomeMessage]);
       }
+
+      // Clear loading state AFTER messages are set
+      setSessionActive(true);
+      setAgentConnected(true); // Agent is now ready for conversation
+      setIsLoading(false);
     });
 
     // When backend confirms client app ready, clear any temp UI/messages
@@ -65,7 +68,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     });
 
     vscodeApi.onMessage('messageSent', data => {
-      setIsLoading(false);
+      // Add message FIRST, then clear loading state to prevent blank state flash
       if (data && data.content) {
         const agentMessage: Message = {
           id: Date.now().toString(),
@@ -75,6 +78,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         };
         setMessages(prev => [...prev, agentMessage]);
       }
+
+      // Clear loading state AFTER message is added
+      setIsLoading(false);
     });
 
     vscodeApi.onMessage('messageStarting', () => {
@@ -83,10 +89,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     });
 
     vscodeApi.onMessage('error', data => {
-      setIsLoading(false);
       setAgentConnected(false); // Reset agent connected state on error
 
-      // Remove the "Starting session..." message if it exists
+      // Update messages FIRST, then clear loading state to prevent blank state flash
       setMessages(prev => {
         const filteredMessages = prev.filter(msg => !(msg.type === 'system' && msg.content === 'Starting session...'));
 
@@ -101,6 +106,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
         return [...filteredMessages, errorMessage];
       });
+
+      // Clear loading state AFTER messages are updated
+      setIsLoading(false);
     });
 
     vscodeApi.onMessage('sessionEnded', () => {
