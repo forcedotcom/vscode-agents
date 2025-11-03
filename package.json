@@ -26,7 +26,8 @@
     "cross-spawn": "^7.0.6",
     "fast-xml-parser": "^4.5.1",
     "semver": "^7.7.0",
-    "shelljs": "0.8.5"
+    "shelljs": "0.8.5",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.6",
@@ -234,6 +235,11 @@
           "command": "salesforcedx-vscode-agents.deactivateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
+          "when": "explorerResourceIsFolder && resourcePath =~ /aiAuthoringBundles/",
+          "group": "agent@1"
         }
       ],
       "commandPalette": [
@@ -244,6 +250,10 @@
         {
           "command": "salesforcedx-vscode-agents.previewAgent",
           "when": "resourceFilename =~ /.*\\.agent$/"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
+          "when": "sf:project_opened"
         },
         {
           "command": "sf.agent.test.view.goToTestResults",
@@ -412,6 +422,10 @@
       {
         "command": "salesforcedx-vscode-agents.validateAgent",
         "title": "AFDX: Validate This Agent"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
+        "title": "AFDX: Create AI Authoring Bundle"
       }
     ]
   }
