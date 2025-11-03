@@ -31,10 +31,17 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Loading...');
   const [agentConnected, setAgentConnected] = useState(false);
+  const sessionErrorRef = React.useRef(false);
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
     vscodeApi.onMessage('sessionStarted', data => {
+      // Ignore sessionStarted if we just had an error
+      if (sessionErrorRef.current) {
+        console.warn('Ignoring sessionStarted after error');
+        return;
+      }
+
       // Set messages FIRST, then clear loading state to prevent blank state flash
       if (data) {
         const welcomeMessage: Message = {
@@ -63,7 +70,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     vscodeApi.onMessage('sessionStarting', () => {
       setIsLoading(true);
       setLoadingMessage('Loading agent...');
+      setSessionActive(false);
       setAgentConnected(false); // Reset agent connected state while starting
+      sessionErrorRef.current = false; // Clear any previous error state
       setMessages([]); // Just clear messages without showing transition message
     });
 
@@ -90,6 +99,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
     vscodeApi.onMessage('error', data => {
       setAgentConnected(false); // Reset agent connected state on error
+      sessionErrorRef.current = true; // Mark that an error occurred to prevent sessionStarted from processing
 
       // Update messages FIRST, then clear loading state to prevent blank state flash
       setMessages(prev => {
