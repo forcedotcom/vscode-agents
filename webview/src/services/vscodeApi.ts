@@ -39,24 +39,37 @@ export interface TraceStep {
   data: any;
 }
 
+type MessageHandler = (data: any) => void;
+
 class VSCodeApiService {
   private vscode = window.vscode;
-  private messageHandlers: Map<string, (data: any) => void> = new Map();
+  private messageHandlers: Map<string, Set<MessageHandler>> = new Map();
 
   constructor() {
     // Listen for messages from VS Code
     window.addEventListener('message', event => {
       const message = event.data;
-      const handler = this.messageHandlers.get(message.command);
-      if (handler) {
-        handler(message.data);
+      const handlers = this.messageHandlers.get(message.command);
+      if (handlers) {
+        handlers.forEach(handler => handler(message.data));
       }
     });
   }
 
   // Register a handler for specific message types
-  onMessage(command: string, handler: (data: any) => void) {
-    this.messageHandlers.set(command, handler);
+  onMessage(command: string, handler: MessageHandler): () => void {
+    if (!this.messageHandlers.has(command)) {
+      this.messageHandlers.set(command, new Set());
+    }
+    const handlers = this.messageHandlers.get(command)!;
+    handlers.add(handler);
+
+    return () => {
+      handlers.delete(handler);
+      if (handlers.size === 0) {
+        this.messageHandlers.delete(command);
+      }
+    };
   }
 
   // Send messages to VS Code
@@ -108,8 +121,8 @@ class VSCodeApiService {
   }
 
   // Informational message when client app is ready
-  onClientAppReady(handler: () => void) {
-    this.onMessage('clientAppReady', handler);
+  onClientAppReady(handler: () => void): () => void {
+    return this.onMessage('clientAppReady', handler);
   }
 
   // Execute a VSCode command
