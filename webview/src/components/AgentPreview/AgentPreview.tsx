@@ -31,16 +31,21 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Loading...');
   const [agentConnected, setAgentConnected] = useState(false);
-  const sessionErrorRef = React.useRef(false);
+  const sessionErrorTimestampRef = React.useRef<number>(0);
 
   useEffect(() => {
     // Set up message handlers for VS Code communication
     vscodeApi.onMessage('sessionStarted', data => {
-      // Ignore sessionStarted if we just had an error
-      if (sessionErrorRef.current) {
-        console.warn('Ignoring sessionStarted after error');
+      // Ignore sessionStarted if it arrives within 500ms of an error (race condition)
+      // But allow it if it comes later (successful retry after initial error)
+      const timeSinceError = Date.now() - sessionErrorTimestampRef.current;
+      if (sessionErrorTimestampRef.current > 0 && timeSinceError < 500) {
+        console.warn('Ignoring sessionStarted that arrived too soon after error (race condition)');
         return;
       }
+
+      // Clear error timestamp since we're successfully starting
+      sessionErrorTimestampRef.current = 0;
 
       // Set messages FIRST, then clear loading state to prevent blank state flash
       if (data) {
@@ -72,7 +77,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setLoadingMessage('Loading agent...');
       setSessionActive(false);
       setAgentConnected(false); // Reset agent connected state while starting
-      sessionErrorRef.current = false; // Clear any previous error state
+      sessionErrorTimestampRef.current = 0; // Clear any previous error timestamp
       setMessages([]); // Just clear messages without showing transition message
     });
 
@@ -99,7 +104,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
     vscodeApi.onMessage('error', data => {
       setAgentConnected(false); // Reset agent connected state on error
-      sessionErrorRef.current = true; // Mark that an error occurred to prevent sessionStarted from processing
+      sessionErrorTimestampRef.current = Date.now(); // Record error timestamp for race condition detection
 
       // Update messages FIRST, then clear loading state to prevent blank state flash
       setMessages(prev => {
