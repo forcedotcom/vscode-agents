@@ -389,10 +389,10 @@ describe('AgentCombinedViewProvider', () => {
       const localAgents = await (provider as any).discoverLocalAgents();
 
       expect(localAgents).toHaveLength(2);
-      expect(localAgents[0].name).toBe('agent1 (Agent Script)');
+      expect(localAgents[0].name).toBe('agent1');
       expect(localAgents[0].id).toBe('local:/workspace/agent1.agent');
       expect(localAgents[0].filePath).toBe('/workspace/agent1.agent');
-      expect(localAgents[1].name).toBe('agent2 (Agent Script)');
+      expect(localAgents[1].name).toBe('agent2');
       expect(localAgents[1].id).toBe('local:/workspace/agent2.agent');
     });
 

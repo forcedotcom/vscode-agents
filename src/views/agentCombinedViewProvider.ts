@@ -247,7 +247,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       for (const agentFile of agentFiles) {
         const fileName = path.basename(agentFile.fsPath, '.agent');
         localAgents.push({
-          name: `${fileName} (Agent Script)`,
+          name: fileName,
           id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
           type: 'script',
           filePath: agentFile.fsPath

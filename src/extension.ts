@@ -177,7 +177,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         for (const agentFile of agentFiles) {
           const fileName = agentFile.fsPath.split('/').pop()?.replace('.agent', '') || 'Unknown';
           localAgents.push({
-            label: `${fileName} (Agent Script)`,
+            label: fileName,
             description: agentFile.fsPath,
             id: `local:${agentFile.fsPath}`
           });
