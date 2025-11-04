@@ -787,6 +787,30 @@ describe('AgentCombinedViewProvider', () => {
         });
       }
     });
+
+    it('should handle getConfiguration command', async () => {
+      await expect(messageHandler({ command: 'getConfiguration' })).resolves.not.toThrow();
+    });
+
+    it('should handle clearChat command', async () => {
+      await expect(messageHandler({ command: 'clearChat' })).resolves.not.toThrow();
+    });
+
+    it('should handle setSelectedAgentId command', async () => {
+      await expect(messageHandler({ command: 'setSelectedAgentId', data: { agentId: '0X123' } })).resolves.not.toThrow();
+    });
+
+    it('should handle executeCommand', async () => {
+      await expect(messageHandler({ command: 'executeCommand', data: { command: 'test.command' } })).resolves.not.toThrow();
+    });
+
+    it('should handle sendChatMessage without active session', async () => {
+      await expect(messageHandler({ command: 'sendChatMessage', data: { message: 'Hello' } })).resolves.not.toThrow();
+    });
+
+    it('should handle endSession when no session active', async () => {
+      await expect(messageHandler({ command: 'endSession' })).resolves.not.toThrow();
+    });
   });
 });
 
