@@ -80,9 +80,18 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const publishedAgents = agents.filter(agent => agent.type === 'published');
   const scriptAgents = agents.filter(agent => agent.type === 'script');
 
+  // Get the selected agent's details for custom display
+  const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
+  const selectedAgentType = selectedAgentInfo?.type === 'script' ? 'Agent Script' : selectedAgentInfo?.type === 'published' ? 'Published' : null;
+
   return (
     <div className="agent-selector">
-      <select className="agent-select" value={selectedAgent} onChange={handleAgentChange} disabled={isLoading}>
+      <select
+        className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
+        value={selectedAgent}
+        onChange={handleAgentChange}
+        disabled={isLoading}
+      >
         <option value="">
           {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
         </option>
@@ -105,6 +114,12 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           </optgroup>
         )}
       </select>
+      {selectedAgentInfo && selectedAgentType && (
+        <div className="agent-select-display">
+          <span className="agent-name">{selectedAgentInfo.name}</span>
+          <span className="agent-type">({selectedAgentType})</span>
+        </div>
+      )}
     </div>
   );
 };

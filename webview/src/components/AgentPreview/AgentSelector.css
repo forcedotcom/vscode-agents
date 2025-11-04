@@ -45,6 +45,10 @@ body.vscode-high-contrast .agent-selector::after {
   text-overflow: ellipsis;
 }
 
+.agent-select.has-selection {
+  color: transparent;
+}
+
 .agent-select:hover {
   background: var(--vscode-dropdown-listBackground);
 }
@@ -52,4 +56,30 @@ body.vscode-high-contrast .agent-selector::after {
 .agent-select:focus {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
+}
+
+.agent-select-display {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 64px);
+}
+
+.agent-name {
+  color: var(--vscode-dropdown-foreground);
+  font-size: 13px;
+}
+
+.agent-type {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  opacity: 0.8;
 }
