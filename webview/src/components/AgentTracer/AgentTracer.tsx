@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { SessionInfo } from './SessionInfo';
-import { PlanInfo } from './PlanInfo';
-import { StepUserMessage } from './StepUserMessage';
-import { StepTopicSelection } from './StepTopicSelection';
-import { StepTopic } from './StepTopic';
-import { StepActionSelection } from './StepActionSelection';
-import { StepAction } from './StepAction';
-import { StepAgentResponse } from './StepAgentResponse';
+import { SessionInfo } from './SessionInfo.js';
+import { PlanInfo } from './PlanInfo.js';
+import { StepUserMessage } from './StepUserMessage.js';
+import { StepTopicSelection } from './StepTopicSelection.js';
+import { StepTopic } from './StepTopic.js';
+import { StepActionSelection } from './StepActionSelection.js';
+import { StepAction } from './StepAction.js';
+import { StepAgentResponse } from './StepAgentResponse.js';
 
-import { vscodeApi } from '../../services/vscodeApi';
+import { vscodeApi } from '../../services/vscodeApi.js';
 import { AgentTraceResponse } from '@salesforce/agents';
 import './AgentTracer.css';
 
