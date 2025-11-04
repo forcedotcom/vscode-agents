@@ -741,8 +741,12 @@ describe('AgentCombinedViewProvider', () => {
   describe('Message Handlers', () => {
     let messageHandler: (message: any) => Promise<void>;
     let mockWebviewView: any;
+    let consoleErrorSpy: jest.SpyInstance;
 
     beforeEach(() => {
+      // Suppress console.error for expected error scenarios in tests
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
       jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
 
       mockWebviewView = {
@@ -759,6 +763,10 @@ describe('AgentCombinedViewProvider', () => {
 
       // Initialize the webview to register message handlers
       provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
     });
 
     it('should handle startSession with invalid agentId', async () => {
