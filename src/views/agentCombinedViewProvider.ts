@@ -257,6 +257,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       console.warn('Error discovering local .agent files:', err);
     }
 
+    // Sort local agents alphabetically by name
+    localAgents.sort((a, b) => a.name.localeCompare(b.name));
+
     return localAgents;
   }
 
@@ -598,6 +601,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     type: 'published' as const
                   }))
                   .filter(agent => agent.id) // Only include agents with valid IDs
+                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
               : [];
 
             // Combine local and remote agents
@@ -694,6 +698,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     type: 'published' as const
                   }))
                   .filter(agent => agent.id) // Only include agents with valid IDs
+                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
               : [];
 
             // Combine local and remote agents

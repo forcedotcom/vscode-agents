@@ -186,6 +186,9 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         console.warn('Error discovering local .agent files:', err);
       }
 
+      // Sort local agents alphabetically
+      localAgents.sort((a, b) => a.label.localeCompare(b.label));
+
       // Get remote agents from org
       const conn = await CoreExtensionService.getDefaultConnection();
       const remoteAgents = await Agent.listRemote(conn as any);
@@ -202,6 +205,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
               id: bot.Id
             }))
             .filter(agent => agent.id)
+            .sort((a, b) => a.label.localeCompare(b.label)) // Sort remote agents alphabetically
         : [];
 
       // Combine local and remote agents
