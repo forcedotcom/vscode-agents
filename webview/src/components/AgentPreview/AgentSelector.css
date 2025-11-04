@@ -80,6 +80,6 @@ body.vscode-high-contrast .agent-selector::after {
 
 .agent-type {
   color: var(--vscode-descriptionForeground);
-  font-size: 11px;
+  font-size: 13px;
   opacity: 0.8;
 }
