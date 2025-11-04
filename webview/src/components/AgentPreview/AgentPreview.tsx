@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import ChatContainer from './ChatContainer';
-import FormContainer from './FormContainer';
-import PlaceholderContent from './PlaceholderContent';
-import { vscodeApi, Message } from '../../services/vscodeApi';
+import ChatContainer from './ChatContainer.js';
+import FormContainer from './FormContainer.js';
+import PlaceholderContent from './PlaceholderContent.js';
+import { vscodeApi, Message } from '../../services/vscodeApi.js';
 import './AgentPreview.css';
 
 interface ClientApp {

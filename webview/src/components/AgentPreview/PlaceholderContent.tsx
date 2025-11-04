@@ -1,5 +1,5 @@
 import React from 'react';
-import { vscodeApi } from '../../services/vscodeApi';
+import { vscodeApi } from '../../services/vscodeApi.js';
 import './PlaceholderContent.css';
 
 const PlaceholderContent: React.FC = () => {
