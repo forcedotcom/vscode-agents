@@ -46,12 +46,17 @@ jest.mock('vscode', () => ({
     executeCommand: jest.fn(),
     registerCommand: jest.fn()
   },
+  debug: {
+    onDidStartDebugSession: jest.fn(() => ({ dispose: jest.fn() })),
+    activeDebugSession: undefined
+  },
   ExtensionContext: jest.fn(),
   WebviewView: jest.fn(),
   Uri: {
     file: jest.fn((p: string) => ({ fsPath: p })),
     joinPath: jest.fn((base: any, ...segments: string[]) => ({
-      fsPath: path.join(base.fsPath || base, ...segments)
+      fsPath: path.join(base.fsPath || base, ...segments),
+      path: path.join(base.fsPath || base, ...segments)
     }))
   },
   ViewColumn: {},
@@ -2469,6 +2474,469 @@ describe('AgentCombinedViewProvider', () => {
       );
 
       expect(availableAgentsCall[0].data.agents[0].name).toBe('Dev_Agent');
+    });
+  });
+
+  describe('Configuration Change Handler', () => {
+    it('should trigger notifyConfigurationChange when showAgentTracer config changes', () => {
+      const mockContext = {
+        extensionUri: { fsPath: '/extension/path' },
+        extensionPath: '/extension/path',
+        subscriptions: []
+      } as any;
+
+      let configChangeHandler: any;
+      (vscode.workspace.onDidChangeConfiguration as jest.Mock).mockImplementation((handler) => {
+        configChangeHandler = handler;
+        return { dispose: jest.fn() };
+      });
+
+      const provider = new AgentCombinedViewProvider(mockContext);
+
+      const mockWebviewView = {
+        webview: {
+          postMessage: jest.fn()
+        }
+      } as any;
+      provider.webviewView = mockWebviewView;
+
+      // Trigger config change for showAgentTracer
+      const mockEvent = {
+        affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer'
+      };
+
+      const getConfigMock = jest.fn().mockReturnValue(true);
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: getConfigMock
+      });
+
+      configChangeHandler(mockEvent);
+
+      expect(getConfigMock).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'configuration',
+        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
+      });
+    });
+  });
+
+  describe('Edge Cases and Error Scenarios', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle script agent with no file path', async () => {
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      // Mock getLocalAgentFilePath to return empty string
+      jest.spyOn(provider as any, 'getLocalAgentFilePath').mockReturnValue('');
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'error',
+          data: expect.objectContaining({
+            message: expect.stringContaining('No file path found for local agent')
+          })
+        })
+      );
+    });
+
+    it('should handle setApexDebugging with active agent preview', async () => {
+      const mockAgentPreview = {
+        setApexDebugMode: jest.fn()
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+
+      await messageHandler({
+        command: 'setApexDebugging',
+        data: true
+      });
+
+      expect(mockAgentPreview.setApexDebugMode).toHaveBeenCalledWith(true);
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'debugModeChanged',
+        data: { enabled: true }
+      });
+    });
+
+    it('should handle getConfiguration with valid section', async () => {
+      const mockConfig = {
+        get: jest.fn().mockReturnValue('test-value')
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+
+      await messageHandler({
+        command: 'getConfiguration',
+        data: { section: 'test.section' }
+      });
+
+      expect(mockConfig.get).toHaveBeenCalledWith('test.section');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'configuration',
+        data: { section: 'test.section', value: 'test-value' }
+      });
+    });
+  });
+
+  describe('getHtmlForWebview', () => {
+    const fs = require('fs');
+
+    it('should read HTML file and inject vscode API script', () => {
+      const mockHtml = '<html><head></head><body>Test</body></html>';
+      (fs.readFileSync as jest.Mock).mockReturnValue(mockHtml);
+
+      const result = (provider as any).getHtmlForWebview();
+
+      const expectedPath = path.join('/extension/path', 'webview', 'dist', 'index.html');
+      expect(fs.readFileSync).toHaveBeenCalledWith(expectedPath, 'utf8');
+
+      expect(result).toContain('const vscode = acquireVsCodeApi()');
+      expect(result).toContain('window.vscode = vscode');
+      expect(result).toContain('<script>');
+    });
+
+    it('should inject script before closing head tag', () => {
+      const mockHtml = '<html><head><title>Test</title></head><body>Content</body></html>';
+      (fs.readFileSync as jest.Mock).mockReturnValue(mockHtml);
+
+      const result = (provider as any).getHtmlForWebview();
+
+      // Script should be before </head>
+      const headCloseIndex = result.indexOf('</head>');
+      const scriptIndex = result.indexOf('const vscode = acquireVsCodeApi()');
+
+      expect(scriptIndex).toBeLessThan(headCloseIndex);
+    });
+  });
+
+  describe('saveApexDebugLog', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should save apex debug log with selectedClientApp', async () => {
+      (provider as any).selectedClientApp = 'TestApp';
+
+      const mockConn = {
+        tooling: {
+          _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0',
+          request: jest.fn().mockResolvedValue('log content here')
+        }
+      };
+
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue(mockConn);
+      (vscode.workspace.fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+      (vscode.workspace.fs.createDirectory as jest.Mock).mockResolvedValue(undefined);
+
+      const mockApexLog = { Id: 'log123', LogLength: 1000 };
+      const result = await (provider as any).saveApexDebugLog(mockApexLog);
+
+      expect(createConnectionWithClientApp).toHaveBeenCalledWith('TestApp');
+      expect(mockConn.tooling.request).toHaveBeenCalledWith(
+        'https://test.salesforce.com/services/data/v56.0/sobjects/ApexLog/log123/Body'
+      );
+
+      // Verify the log was saved
+      expect(vscode.workspace.fs.createDirectory).toHaveBeenCalled();
+      expect(vscode.workspace.fs.writeFile).toHaveBeenCalled();
+
+      // Result should be a path containing the log file
+      if (result) {
+        expect(result).toContain('log123.log');
+      }
+    });
+
+    it('should use default connection when no selectedClientApp', async () => {
+      (provider as any).selectedClientApp = undefined;
+
+      const mockConn = {
+        tooling: {
+          _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0',
+          request: jest.fn().mockResolvedValue('log content')
+        }
+      };
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue(mockConn);
+      (vscode.workspace.fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+      (vscode.workspace.fs.createDirectory as jest.Mock).mockResolvedValue(undefined);
+
+      const mockApexLog = { Id: 'log456' };
+      await (provider as any).saveApexDebugLog(mockApexLog);
+
+      expect(CoreExtensionService.getDefaultConnection).toHaveBeenCalled();
+    });
+
+    it('should return undefined when no workspace folder', async () => {
+      const originalFolders = vscode.workspace.workspaceFolders;
+      (vscode.workspace as any).workspaceFolders = undefined;
+
+      const result = await (provider as any).saveApexDebugLog({ Id: 'log123' });
+
+      expect(result).toBeUndefined();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'No workspace folder found to save apex debug logs.'
+      );
+
+      (vscode.workspace as any).workspaceFolders = originalFolders;
+    });
+
+    it('should return undefined when no log ID', async () => {
+      const result = await (provider as any).saveApexDebugLog({});
+
+      expect(result).toBeUndefined();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'No Apex debug log ID found.'
+      );
+    });
+
+    it('should handle non-string log content', async () => {
+      (provider as any).selectedClientApp = 'TestApp';
+
+      const mockConn = {
+        tooling: {
+          _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0',
+          request: jest.fn().mockResolvedValue({ data: 'object content' })
+        }
+      };
+
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue(mockConn);
+      (vscode.workspace.fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+      (vscode.workspace.fs.createDirectory as jest.Mock).mockResolvedValue(undefined);
+
+      const mockApexLog = { Id: 'log789' };
+      await (provider as any).saveApexDebugLog(mockApexLog);
+
+      // Verify writeFile was called
+      expect(vscode.workspace.fs.writeFile).toHaveBeenCalled();
+
+      // Verify the buffer was created from the stringified object
+      if ((vscode.workspace.fs.writeFile as jest.Mock).mock.calls.length > 0) {
+        const callArgs = (vscode.workspace.fs.writeFile as jest.Mock).mock.calls[0];
+        expect(callArgs[1]).toBeDefined();
+        expect(Buffer.isBuffer(callArgs[1])).toBe(true);
+      }
+    });
+
+    it('should handle error and show error message', async () => {
+      (provider as any).selectedClientApp = 'TestApp';
+
+      (createConnectionWithClientApp as jest.Mock).mockRejectedValue(new Error('Connection failed'));
+
+      const result = await (provider as any).saveApexDebugLog({ Id: 'log123' });
+
+      expect(result).toBeUndefined();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'Error saving Apex debug log: Connection failed'
+      );
+    });
+  });
+
+  describe('setupAutoDebugListeners', () => {
+    let consoleLogSpy: jest.SpyInstance;
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      jest.clearAllMocks();
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+      jest.useRealTimers();
+    });
+
+    it('should set up debug session listener and auto-continue on apex-replay session', async () => {
+      let debugSessionHandler: any;
+      const mockDisposable = { dispose: jest.fn() };
+
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return mockDisposable;
+      });
+
+      (vscode.debug as any).activeDebugSession = { id: 'test-session' };
+
+      (provider as any).setupAutoDebugListeners();
+
+      // Trigger debug session start with apex-replay type
+      const mockSession = {
+        type: 'apex-replay',
+        name: 'Apex Replay Debugger'
+      };
+
+      debugSessionHandler(mockSession);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Debug session started - Type: "apex-replay", Name: "Apex Replay Debugger"'
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Apex replay debugger session detected: Apex Replay Debugger'
+      );
+
+      // Fast-forward the 1 second delay
+      jest.advanceTimersByTime(1000);
+      await Promise.resolve();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Auto-continuing Apex replay debugger to reach breakpoints...'
+      );
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('workbench.action.debug.continue');
+    });
+
+    it('should detect apex session by type "apex"', async () => {
+      let debugSessionHandler: any;
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return { dispose: jest.fn() };
+      });
+
+      (vscode.debug as any).activeDebugSession = { id: 'test' };
+
+      (provider as any).setupAutoDebugListeners();
+
+      const mockSession = { type: 'apex', name: 'Apex Debug' };
+      debugSessionHandler(mockSession);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith('Apex replay debugger session detected: Apex Debug');
+    });
+
+    it('should detect apex session by name containing "apex"', async () => {
+      let debugSessionHandler: any;
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return { dispose: jest.fn() };
+      });
+
+      (vscode.debug as any).activeDebugSession = { id: 'test' };
+
+      (provider as any).setupAutoDebugListeners();
+
+      const mockSession = { type: 'other', name: 'My Apex Session' };
+      debugSessionHandler(mockSession);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith('Apex replay debugger session detected: My Apex Session');
+    });
+
+    it('should detect apex session by name containing "replay"', async () => {
+      let debugSessionHandler: any;
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return { dispose: jest.fn() };
+      });
+
+      (vscode.debug as any).activeDebugSession = { id: 'test' };
+
+      (provider as any).setupAutoDebugListeners();
+
+      const mockSession = { type: 'other', name: 'Replay Debug Session' };
+      debugSessionHandler(mockSession);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith('Apex replay debugger session detected: Replay Debug Session');
+    });
+
+    it('should handle error when auto-continue fails', async () => {
+      let debugSessionHandler: any;
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return { dispose: jest.fn() };
+      });
+
+      (vscode.debug as any).activeDebugSession = { id: 'test' };
+      (vscode.commands.executeCommand as jest.Mock).mockRejectedValue(new Error('Command failed'));
+
+      (provider as any).setupAutoDebugListeners();
+
+      const mockSession = { type: 'apex-replay', name: 'Test' };
+      debugSessionHandler(mockSession);
+
+      jest.advanceTimersByTime(1000);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Could not auto-continue Apex replay debugger:',
+        expect.any(Error)
+      );
+    });
+
+    it('should cleanup after 15 seconds if no apex debugger detected', () => {
+      let debugSessionHandler: any;
+      const mockDisposable = { dispose: jest.fn() };
+
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return mockDisposable;
+      });
+
+      (provider as any).setupAutoDebugListeners();
+
+      // Trigger non-apex session
+      const mockSession = { type: 'node', name: 'Node Debug' };
+      debugSessionHandler(mockSession);
+
+      // Fast-forward 15 seconds
+      jest.advanceTimersByTime(15000);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'No Apex debugger session detected within timeout, cleaning up auto-continue listeners'
+      );
+      expect(mockDisposable.dispose).toHaveBeenCalled();
+    });
+
+    it('should not auto-continue when no active debug session', async () => {
+      let debugSessionHandler: any;
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return { dispose: jest.fn() };
+      });
+
+      (vscode.debug as any).activeDebugSession = undefined;
+
+      (provider as any).setupAutoDebugListeners();
+
+      const mockSession = { type: 'apex-replay', name: 'Test' };
+      debugSessionHandler(mockSession);
+
+      jest.advanceTimersByTime(1000);
+      await Promise.resolve();
+
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith('workbench.action.debug.continue');
     });
   });
 });
