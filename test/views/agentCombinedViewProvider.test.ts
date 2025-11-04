@@ -819,6 +819,432 @@ describe('AgentCombinedViewProvider', () => {
     it('should handle endSession when no session active', async () => {
       await expect(messageHandler({ command: 'endSession' })).resolves.not.toThrow();
     });
+
+    it('should handle getAvailableAgents command', async () => {
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({ type: 'none', username: 'test@example.com', error: 'No apps' });
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+
+      await expect(messageHandler({ command: 'getAvailableAgents' })).resolves.not.toThrow();
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalled();
+    });
+
+    it('should handle getTraceData command', async () => {
+      await expect(messageHandler({ command: 'getTraceData' })).resolves.not.toThrow();
+    });
+
+    it('should handle clientAppSelected command', async () => {
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({ type: 'single', clientApp: 'TestApp' });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+
+      await expect(messageHandler({ command: 'clientAppSelected', data: { clientAppId: 'TestApp' } })).resolves.not.toThrow();
+    });
+
+    it('should handle setApexDebugging command', async () => {
+      await expect(messageHandler({ command: 'setApexDebugging', data: true })).resolves.not.toThrow();
+    });
+
+    it('should handle loadAgentHistory command', async () => {
+      (readTranscriptEntries as jest.Mock).mockResolvedValue([]);
+
+      await expect(messageHandler({ command: 'loadAgentHistory', data: { agentId: '0X123' } })).resolves.not.toThrow();
+    });
+  });
+
+  describe('startSession Message Handler', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+    let consoleErrorSpy: jest.SpyInstance;
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should end existing session before starting new one', async () => {
+      // Set up an existing session
+      const mockExistingAgentPreview = {
+        end: jest.fn().mockResolvedValue(undefined),
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'new-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+
+      (provider as any).agentPreview = mockExistingAgentPreview;
+      (provider as any).sessionId = 'old-session';
+      Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
+
+      // Mock dependencies for new session
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com',
+        tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
+      });
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockResolvedValue([]);
+
+      // Start a new session with a published agent (using valid 15-char Bot ID)
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      // Verify old session was ended
+      expect(mockExistingAgentPreview.end).toHaveBeenCalled();
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'sessionStarting',
+        data: { message: 'Starting session...' }
+      });
+    });
+
+    it('should handle error when ending existing session', async () => {
+      // Set up an existing session that throws on end
+      const mockExistingAgentPreview = {
+        end: jest.fn().mockRejectedValue(new Error('End session failed')),
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'new-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+
+      (provider as any).agentPreview = mockExistingAgentPreview;
+      (provider as any).sessionId = 'old-session';
+      Object.setPrototypeOf((provider as any).agentPreview, AgentPreview.prototype);
+
+      // Mock dependencies
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com',
+        tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
+      });
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockResolvedValue([]);
+
+      // Should continue despite error ending old session (using valid 15-char Bot ID)
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Error ending previous session:', expect.any(Error));
+    });
+
+    it('should start session with script agent and set up lifecycle listeners', async () => {
+      const mockLifecycle = {
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+      };
+      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: [{ type: 'Inform', message: 'Hello from script' }]
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/testAgent.agent' }
+      });
+
+      // Verify lifecycle listeners were set up
+      expect(Lifecycle.getInstance).toHaveBeenCalled();
+      expect(mockLifecycle.on).toHaveBeenCalledWith('agents:compiling', expect.any(Function));
+      expect(mockLifecycle.on).toHaveBeenCalledWith('agents:simulation-starting', expect.any(Function));
+
+      // Verify AgentSimulate was created with correct params
+      expect(AgentSimulate).toHaveBeenCalledWith(
+        expect.any(Object),
+        '/workspace/testAgent.agent',
+        true
+      );
+
+      // Verify session was started
+      expect(mockAgentSimulate.start).toHaveBeenCalled();
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'sessionStarted'
+        })
+      );
+    });
+
+    it('should handle compilation error event from lifecycle', async () => {
+      let compilationListener: any;
+      const mockLifecycle = {
+        on: jest.fn((event, handler) => {
+          if (event === 'agents:compiling') {
+            compilationListener = handler;
+          }
+          return { dispose: jest.fn() };
+        })
+      };
+      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/testAgent.agent' }
+      });
+
+      // Trigger compilation error
+      await compilationListener({ error: 'Compilation failed!' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'compilationError',
+        data: { message: 'Compilation failed!' }
+      });
+    });
+
+    it('should handle compilation starting event from lifecycle', async () => {
+      let compilationListener: any;
+      const mockLifecycle = {
+        on: jest.fn((event, handler) => {
+          if (event === 'agents:compiling') {
+            compilationListener = handler;
+          }
+          return { dispose: jest.fn() };
+        })
+      };
+      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/testAgent.agent' }
+      });
+
+      // Trigger compilation starting
+      await compilationListener({ message: 'Compiling agent...' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'compilationStarting',
+        data: { message: 'Compiling agent...' }
+      });
+    });
+
+    it('should handle simulation starting event from lifecycle', async () => {
+      let simulationListener: any;
+      const mockLifecycle = {
+        on: jest.fn((event, handler) => {
+          if (event === 'agents:simulation-starting') {
+            simulationListener = handler;
+          }
+          return { dispose: jest.fn() };
+        })
+      };
+      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/testAgent.agent' }
+      });
+
+      // Trigger simulation starting
+      await simulationListener({ message: 'Starting simulation...' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'simulationStarting',
+        data: { message: 'Starting simulation...' }
+      });
+    });
+
+    it('should enable debug mode for script agent when apex debugging is active', async () => {
+      const mockLifecycle = {
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+      };
+      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
+
+      // Enable debug mode
+      (provider as any).apexDebugging = true;
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/testAgent.agent' }
+      });
+
+      expect(mockAgentSimulate.setApexDebugMode).toHaveBeenCalledWith(true);
+    });
+
+    it('should start session with published agent', async () => {
+      const mockAgentPreview = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'published-session',
+          messages: [{ type: 'Inform', message: 'Hello from published agent' }]
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentPreview as any).mockImplementation(() => mockAgentPreview);
+
+      // Mock the Agent.listRemote at the module level
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        { Id: '0X1234567890123', MasterLabel: 'Test Agent', DeveloperName: 'TestAgent' }
+      ]);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com',
+        tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
+      });
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      // Verify validation was called (implicitly by not throwing)
+      // Verify AgentPreview was created
+      expect(AgentPreview).toHaveBeenCalledWith(
+        expect.any(Object),
+        '0X1234567890123'
+      );
+
+      // Verify agent name was fetched
+      expect(Agent.listRemote).toHaveBeenCalled();
+
+      // Verify session was started
+      expect(mockAgentPreview.start).toHaveBeenCalled();
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Session started with Test Agent'
+      );
+    });
+
+    it('should enable debug mode for published agent when apex debugging is active', async () => {
+      const mockAgentPreview = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'published-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentPreview as any).mockImplementation(() => mockAgentPreview);
+
+      // Mock the Agent.listRemote at the module level
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        { Id: '0X1234567890123', MasterLabel: 'Test Agent' }
+      ]);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com',
+        tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
+      });
+
+      // Enable debug mode
+      (provider as any).apexDebugging = true;
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      expect(mockAgentPreview.setApexDebugMode).toHaveBeenCalledWith(true);
+    });
+
+    it('should use preselected agent ID if provided', async () => {
+      const mockAgentPreview = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'preselected-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentPreview as any).mockImplementation(() => mockAgentPreview);
+
+      // Mock the Agent.listRemote at the module level
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        { Id: '0X9999999999999', MasterLabel: 'Preselected Agent' }
+      ]);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com',
+        tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
+      });
+
+      // Set preselected agent ID (15 characters: 0X + 13 digits)
+      (provider as any).preselectedAgentId = '0X9999999999999';
+
+      await messageHandler({
+        command: 'startSession',
+        data: {}  // No agentId in message data
+      });
+
+      // Verify AgentPreview was created with preselected ID
+      expect(AgentPreview).toHaveBeenCalledWith(
+        expect.any(Object),
+        '0X9999999999999'
+      );
+    });
   });
 });
 
