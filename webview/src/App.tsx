@@ -81,14 +81,8 @@ const App: React.FC = () => {
   }, []);
 
   const handleAgentChange = useCallback((agentId: string) => {
-    // When user selects agent from dropdown, don't trigger session transition
-    // History loading is handled by AgentSelector calling loadAgentHistory()
-    // Session start is handled by:
-    // 1. Backend sends 'noHistoryFound' → AgentPreview auto-starts
-    // 2. User clicks play button → Manual start
-
-    // Only notify extension about selection, don't set desiredAgentId
-    // (desiredAgentId triggers session transition which auto-starts session)
+    setDesiredAgentId(agentId);
+    // Notify the extension about the selected agent
     vscodeApi.setSelectedAgentId(agentId);
   }, []);
 
