@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="21" failures="0" errors="0" time="0.894">
-  <testsuite name="vscodeApi" errors="0" failures="0" skipped="0" timestamp="2025-11-04T19:01:30" time="0.639" tests="21">
-    <testcase classname="vscodeApi Message Handling should register message handlers" name="vscodeApi Message Handling should register message handlers" time="0.002">
+<testsuites name="jest tests" tests="67" failures="0" errors="0" time="1.918">
+  <testsuite name="vscodeApi" errors="0" failures="0" skipped="0" timestamp="2025-11-04T19:06:29" time="0.764" tests="21">
+    <testcase classname="vscodeApi Message Handling should register message handlers" name="vscodeApi Message Handling should register message handlers" time="0.003">
     </testcase>
     <testcase classname="vscodeApi Message Handling should invoke handler when message is received" name="vscodeApi Message Handling should invoke handler when message is received" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Message Handling should support multiple handlers for the same command" name="vscodeApi Message Handling should support multiple handlers for the same command" time="0">
+    <testcase classname="vscodeApi Message Handling should support multiple handlers for the same command" name="vscodeApi Message Handling should support multiple handlers for the same command" time="0.001">
     </testcase>
     <testcase classname="vscodeApi Message Handling should dispose handler when dispose function is called" name="vscodeApi Message Handling should dispose handler when dispose function is called" time="0">
     </testcase>
@@ -21,27 +21,123 @@
     </testcase>
     <testcase classname="vscodeApi Debug Mode should send setApexDebugging message when enabling debug mode" name="vscodeApi Debug Mode should send setApexDebugging message when enabling debug mode" time="0">
     </testcase>
-    <testcase classname="vscodeApi Debug Mode should send setApexDebugging message when disabling debug mode" name="vscodeApi Debug Mode should send setApexDebugging message when disabling debug mode" time="0">
+    <testcase classname="vscodeApi Debug Mode should send setApexDebugging message when disabling debug mode" name="vscodeApi Debug Mode should send setApexDebugging message when disabling debug mode" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Agent Management should send getAvailableAgents message" name="vscodeApi Agent Management should send getAvailableAgents message" time="0.001">
+    <testcase classname="vscodeApi Agent Management should send getAvailableAgents message" name="vscodeApi Agent Management should send getAvailableAgents message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Agent Management should send setSelectedAgentId message" name="vscodeApi Agent Management should send setSelectedAgentId message" time="0">
+    <testcase classname="vscodeApi Agent Management should send setSelectedAgentId message" name="vscodeApi Agent Management should send setSelectedAgentId message" time="0.001">
     </testcase>
     <testcase classname="vscodeApi Agent Management should send loadAgentHistory message" name="vscodeApi Agent Management should send loadAgentHistory message" time="0">
     </testcase>
     <testcase classname="vscodeApi Configuration should send getConfiguration message with section" name="vscodeApi Configuration should send getConfiguration message with section" time="0">
     </testcase>
-    <testcase classname="vscodeApi Client App Selection should send clientAppSelected message" name="vscodeApi Client App Selection should send clientAppSelected message" time="0">
+    <testcase classname="vscodeApi Client App Selection should send clientAppSelected message" name="vscodeApi Client App Selection should send clientAppSelected message" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Client App Selection should register onClientAppReady handler" name="vscodeApi Client App Selection should register onClientAppReady handler" time="0.001">
+    <testcase classname="vscodeApi Client App Selection should register onClientAppReady handler" name="vscodeApi Client App Selection should register onClientAppReady handler" time="0">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send clearChat message" name="vscodeApi Utility Methods should send clearChat message" time="0">
+    <testcase classname="vscodeApi Utility Methods should send clearChat message" name="vscodeApi Utility Methods should send clearChat message" time="0.001">
     </testcase>
     <testcase classname="vscodeApi Utility Methods should send clearMessages message" name="vscodeApi Utility Methods should send clearMessages message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send getTraceData message" name="vscodeApi Utility Methods should send getTraceData message" time="0.001">
+    <testcase classname="vscodeApi Utility Methods should send getTraceData message" name="vscodeApi Utility Methods should send getTraceData message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send executeCommand message" name="vscodeApi Utility Methods should send executeCommand message" time="0">
+    <testcase classname="vscodeApi Utility Methods should send executeCommand message" name="vscodeApi Utility Methods should send executeCommand message" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="App Coverage Tests" errors="0" failures="0" skipped="0" timestamp="2025-11-04T19:06:29" time="1.254" tests="9">
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit line 94: resolver(true) on sessionStarted with pending resolver" name="App Coverage Tests Coverage: Session Promise Resolvers should hit line 94: resolver(true) on sessionStarted with pending resolver" time="0.026">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit lines 114 &amp; 118: error handlers with pending resolvers" name="App Coverage Tests Coverage: Session Promise Resolvers should hit lines 114 &amp; 118: error handlers with pending resolvers" time="0.086">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: early return in waitForSessionEnd when not active" name="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: early return in waitForSessionEnd when not active" time="0.052">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit lines 191-192: startSucceeded branch" name="App Coverage Tests Coverage: Session Promise Resolvers should hit lines 191-192: startSucceeded branch" time="0.025">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit lines 202-203: catch block in session management" name="App Coverage Tests Coverage: Session Promise Resolvers should hit lines 202-203: catch block in session management" time="0.003">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit line 118: startResolver(false) on error with startResolver pending" name="App Coverage Tests Coverage: Session Promise Resolvers should hit line 118: startResolver(false) on error with startResolver pending" time="0.073">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: Promise.resolve() when session not active" name="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: Promise.resolve() when session not active" time="0.053">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: race condition - session ends between check and waitForSessionEnd call" name="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: race condition - session ends between check and waitForSessionEnd call" time="0.026">
+    </testcase>
+    <testcase classname="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: explicit early return path" name="App Coverage Tests Coverage: Session Promise Resolvers should hit line 132: explicit early return path" time="0.084">
+    </testcase>
+  </testsuite>
+  <testsuite name="App" errors="0" failures="0" skipped="0" timestamp="2025-11-04T19:06:29" time="1.393" tests="37">
+    <testcase classname="App Initial Rendering should render without crashing" name="App Initial Rendering should render without crashing" time="0.015">
+    </testcase>
+    <testcase classname="App Initial Rendering should default to preview tab" name="App Initial Rendering should default to preview tab" time="0.002">
+    </testcase>
+    <testcase classname="App Initial Rendering should not show tracer tab by default" name="App Initial Rendering should not show tracer tab by default" time="0.001">
+    </testcase>
+    <testcase classname="App Initial Rendering should request configuration on mount" name="App Initial Rendering should request configuration on mount" time="0.001">
+    </testcase>
+    <testcase classname="App Tab Navigation should switch to tracer tab when tracer is clicked" name="App Tab Navigation should switch to tracer tab when tracer is clicked" time="0.031">
+    </testcase>
+    <testcase classname="App Tab Navigation should switch back to preview tab" name="App Tab Navigation should switch back to preview tab" time="0.005">
+    </testcase>
+    <testcase classname="App Agent Selection should update desiredAgentId when agent is selected" name="App Agent Selection should update desiredAgentId when agent is selected" time="0.034">
+    </testcase>
+    <testcase classname="App Agent Selection should handle agent selection via selectAgent message" name="App Agent Selection should handle agent selection via selectAgent message" time="0.002">
+    </testcase>
+    <testcase classname="App Session Management should register session message handlers" name="App Session Management should register session message handlers" time="0.001">
+    </testcase>
+    <testcase classname="App Session Management should track session state with sessionStarted message" name="App Session Management should track session state with sessionStarted message" time="0.001">
+    </testcase>
+    <testcase classname="App Session Management should track session end with sessionEnded message" name="App Session Management should track session end with sessionEnded message" time="0.001">
+    </testcase>
+    <testcase classname="App Session Management should handle session errors" name="App Session Management should handle session errors" time="0">
+    </testcase>
+    <testcase classname="App Session Management should end session and start new one when switching agents with active session" name="App Session Management should end session and start new one when switching agents with active session" time="0.058">
+    </testcase>
+    <testcase classname="App Force Restart (Play Button) should trigger session restart when selectAgent message received" name="App Force Restart (Play Button) should trigger session restart when selectAgent message received" time="0.003">
+    </testcase>
+    <testcase classname="App Force Restart (Play Button) should set transitioning state during force restart" name="App Force Restart (Play Button) should set transitioning state during force restart" time="0.007">
+    </testcase>
+    <testcase classname="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" name="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" time="0.004">
+    </testcase>
+    <testcase classname="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" name="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" time="0.006">
+    </testcase>
+    <testcase classname="App Tracer Tab Configuration should not show tracer tab without agent selected" name="App Tracer Tab Configuration should not show tracer tab without agent selected" time="0.001">
+    </testcase>
+    <testcase classname="App Client App State should handle client app required state" name="App Client App State should handle client app required state" time="0.002">
+    </testcase>
+    <testcase classname="App Client App State should handle client app selection" name="App Client App State should handle client app selection" time="0.001">
+    </testcase>
+    <testcase classname="App Session Transition State should clear displayed agent when no target agent" name="App Session Transition State should clear displayed agent when no target agent" time="0.015">
+    </testcase>
+    <testcase classname="App Session Transition State should show pending agent during transitions" name="App Session Transition State should show pending agent during transitions" time="0.005">
+    </testcase>
+    <testcase classname="App Session Promise Resolvers should resolve session start promise when sessionStarted is received" name="App Session Promise Resolvers should resolve session start promise when sessionStarted is received" time="0.004">
+    </testcase>
+    <testcase classname="App Session Promise Resolvers should resolve session end promise when sessionEnded is received" name="App Session Promise Resolvers should resolve session end promise when sessionEnded is received" time="0.06">
+    </testcase>
+    <testcase classname="App Session Promise Resolvers should resolve both session promises when error occurs" name="App Session Promise Resolvers should resolve both session promises when error occurs" time="0.003">
+    </testcase>
+    <testcase classname="App Session Promise Resolvers should handle waitForSessionEnd when session is not active" name="App Session Promise Resolvers should handle waitForSessionEnd when session is not active" time="0.003">
+    </testcase>
+    <testcase classname="App Edge Cases should handle configuration message for non-tracer sections" name="App Edge Cases should handle configuration message for non-tracer sections" time="0.001">
+    </testcase>
+    <testcase classname="App Edge Cases should handle selectAgent without agentId" name="App Edge Cases should handle selectAgent without agentId" time="0.001">
+    </testcase>
+    <testcase classname="App Edge Cases should handle multiple rapid agent switches" name="App Edge Cases should handle multiple rapid agent switches" time="0.002">
+    </testcase>
+    <testcase classname="App Edge Cases should handle session start failure gracefully" name="App Edge Cases should handle session start failure gracefully" time="0.011">
+    </testcase>
+    <testcase classname="App Edge Cases should handle sessionStarting message" name="App Edge Cases should handle sessionStarting message" time="0.002">
+    </testcase>
+    <testcase classname="App Edge Cases should handle switching to no agent while session is active" name="App Edge Cases should handle switching to no agent while session is active" time="0.014">
+    </testcase>
+    <testcase classname="App Edge Cases should update agent without starting session when not force restart" name="App Edge Cases should update agent without starting session when not force restart" time="0.011">
+    </testcase>
+    <testcase classname="App Edge Cases should handle session without active session when ending" name="App Edge Cases should handle session without active session when ending" time="0.002">
+    </testcase>
+    <testcase classname="App Edge Cases should handle session start success and update displayed agent" name="App Edge Cases should handle session start success and update displayed agent" time="0.053">
+    </testcase>
+    <testcase classname="App Edge Cases should handle session start failure by resolving promise with false" name="App Edge Cases should handle session start failure by resolving promise with false" time="0.203">
+    </testcase>
+    <testcase classname="App Error Handling in Session Management should catch and log errors in session management" name="App Error Handling in Session Management should catch and log errors in session management" time="0.004">
     </testcase>
   </testsuite>
 </testsuites>
