@@ -1,13 +1,36 @@
-import * as vscode from 'vscode';
-import { registerValidateAgentCommand, initializeDiagnosticCollection } from '../../src/commands/validateAgent';
+import type * as vscodeTypes from 'vscode';
+const vscode = require('vscode') as typeof import('vscode');
 import { Commands } from '../../src/enums/commands';
-import { Agent } from '@salesforce/agents';
+import { Agent, type CompilationError } from '@salesforce/agents';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { SfError } from '@salesforce/core';
+
+vscode.DiagnosticSeverity = {
+  Error: 0,
+  Warning: 1,
+  Information: 2,
+  Hint: 3
+} as any;
+
+class DiagnosticMock {
+  public source: string | undefined;
+  public code: unknown;
+  constructor(public range: unknown, public message: string, public severity: unknown) {
+    this.range = range;
+    this.message = message;
+    this.severity = severity;
+  }
+}
+
+vscode.Diagnostic = DiagnosticMock as any;
+
+const validateAgentModule = require('../../src/commands/validateAgent') as typeof import('../../src/commands/validateAgent');
+const { registerValidateAgentCommand, initializeDiagnosticCollection } = validateAgentModule;
 
 describe('validateAgent', () => {
   let commandSpy: jest.SpyInstance;
   let progressSpy: jest.SpyInstance;
+  let progressReportSpy: jest.Mock;
   let errorMessageSpy: jest.SpyInstance;
   let executeCommandSpy: jest.SpyInstance;
   let readFileSpy: jest.SpyInstance;
@@ -49,10 +72,11 @@ describe('validateAgent', () => {
     executeCommandSpy = jest.spyOn(vscode.commands, 'executeCommand').mockResolvedValue(undefined);
     errorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
 
+    progressReportSpy = jest.fn();
     progressSpy = jest
       .spyOn(vscode.window, 'withProgress')
       .mockImplementation(async (_options, task) => {
-        return await task({ report: jest.fn() }, {} as vscode.CancellationToken);
+        return await task({ report: progressReportSpy }, {} as vscodeTypes.CancellationToken);
       });
 
     jest.spyOn(vscode.languages, 'createDiagnosticCollection').mockReturnValue(diagnosticCollectionMock);
@@ -86,7 +110,7 @@ describe('validateAgent', () => {
     // Initialize diagnostic collection once for all tests
     const mockContext = {
       subscriptions: []
-    } as unknown as vscode.ExtensionContext;
+    } as unknown as vscodeTypes.ExtensionContext;
     initializeDiagnosticCollection(mockContext);
   });
 
@@ -98,7 +122,7 @@ describe('validateAgent', () => {
     it('creates and registers a diagnostic collection', () => {
       const mockContext = {
         subscriptions: []
-      } as unknown as vscode.ExtensionContext;
+      } as unknown as vscodeTypes.ExtensionContext;
 
       initializeDiagnosticCollection(mockContext);
 
@@ -138,6 +162,63 @@ describe('validateAgent', () => {
 
       expect(compileAgentScriptSpy).toHaveBeenCalledWith(fakeConnection, 'agent Test { }');
       expect(diagnosticCollectionMock.clear).toHaveBeenCalled();
+      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.validateAgent);
+    });
+
+    it('shows diagnostics when compilation fails', async () => {
+      const mockDiagnostics: Array<Partial<CompilationError>> = [
+        {
+          lineStart: 2,
+          lineEnd: 3,
+          colStart: 5,
+          colEnd: 10,
+          description: 'Missing semicolon',
+          errorType: 'ParserError'
+        },
+        {
+          lineStart: 10,
+          lineEnd: 10,
+          colStart: 1,
+          colEnd: 4,
+          description: 'Unknown token',
+          errorType: 'LexerError'
+        }
+      ];
+
+      compileAgentScriptSpy.mockResolvedValue({
+        status: 'failure',
+        errors: mockDiagnostics,
+        compiledArtifact: undefined,
+        syntacticMap: undefined,
+        dslVersion: '0.0.3.rc29'
+      });
+
+      const mockUri = vscode.Uri.file('/test/failing.agent');
+
+      registerValidateAgentCommand();
+      await commandSpy.mock.calls[0][1](mockUri);
+
+      expect(fakeChannelService.showChannelOutput).toHaveBeenCalled();
+      expect(fakeChannelService.clear).toHaveBeenCalled();
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringContaining('Found 2 error(s):')
+      );
+
+      expect(diagnosticCollectionMock.clear).not.toHaveBeenCalled();
+      expect(diagnosticCollectionMock.set).toHaveBeenCalledTimes(1);
+
+      const [uriArg, diagnosticsArg] = diagnosticCollectionMock.set.mock.calls[0];
+      expect(uriArg.fsPath).toBe('/test/failing.agent');
+      expect(diagnosticsArg).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ message: 'Missing semicolon', source: 'Agent Validation', code: 'ParserError' }),
+          expect.objectContaining({ message: 'Unknown token', source: 'Agent Validation', code: 'LexerError' })
+        ])
+      );
+
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed with 2 error(s)' });
+      expect(executeCommandSpy).toHaveBeenCalledWith('workbench.action.problems.focus');
       expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.validateAgent);
     });
 
@@ -209,4 +290,3 @@ describe('validateAgent', () => {
     });
   });
 });
-
