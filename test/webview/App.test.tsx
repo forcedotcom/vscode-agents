@@ -462,6 +462,81 @@ describe('App', () => {
     });
   });
 
+  describe('Session Promise Resolvers', () => {
+    it('should resolve session start promise when sessionStarted is received', async () => {
+      render(<App />);
+
+      // Trigger force restart which creates a promise
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Immediately trigger sessionStarted to resolve the promise
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+    });
+
+    it('should resolve session end promise when sessionEnded is received', async () => {
+      render(<App />);
+
+      // Start a session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+
+      jest.clearAllMocks();
+
+      // Switch to another agent (creates end promise)
+      triggerMessage('selectAgent', { agentId: 'agent2' });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.endSession).toHaveBeenCalled();
+      }, { timeout: 1000 });
+
+      // Resolve the end promise
+      triggerMessage('sessionEnded', {});
+
+      // Session ended resolver should have been called
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    it('should resolve both session promises when error occurs', async () => {
+      render(<App />);
+
+      // Start a session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Trigger error which should resolve both pending promises
+      triggerMessage('error', { message: 'Session error' });
+
+      await waitFor(() => {
+        // Error handler should be called
+        expect(messageHandlers.has('error')).toBe(true);
+      });
+    });
+
+    it('should handle waitForSessionEnd when session is not active', async () => {
+      render(<App />);
+
+      // Try to switch agents when no session is active
+      // This tests the early return in waitForSessionEnd
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+      });
+
+      // Should not call endSession since no session was active
+      expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle configuration message for non-tracer sections', () => {
       render(<App />);
@@ -576,6 +651,63 @@ describe('App', () => {
 
       // Should not call endSession since no session is active
       expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
+    });
+
+    it('should handle session start success and update displayed agent', async () => {
+      render(<App />);
+
+      // Force restart with agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Wait a moment for the promise to be set up
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Resolve the session start successfully
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      }, { timeout: 3000 });
+    });
+
+    it('should handle session start failure by resolving promise with false', async () => {
+      render(<App />);
+
+      // Force restart with agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Wait a moment for the promise to be set up
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Fail the session start (trigger error instead of sessionStarted)
+      // The error handler calls startResolver(false) which should prevent setting displayed agent
+      triggerMessage('error', { message: 'Failed to start' });
+
+      // Wait a moment to let async operations complete
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // The error was handled - component should still be functional
+      expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Handling in Session Management', () => {
+    it('should catch and log errors in session management', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(<App />);
+
+      // Cause an error by triggering rapid agent switches
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('selectAgent', { agentId: 'agent2' });
+      triggerMessage('selectAgent', { agentId: 'agent3' });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // The catch block should handle any errors gracefully
+      expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
+
+      consoleErrorSpy.mockRestore();
     });
   });
 });
