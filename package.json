@@ -67,6 +67,7 @@
     "update-snapshots": "jest --updateSnapshot",
     "test": "jest --coverage",
     "test:webview": "jest --config jest.config.webview.js --coverage",
+    "test:all": "npm run test && npm run test:webview",
     "bundle:extension": "node ./esbuild.config.js",
     "vscode:package": "npm run compile && npm run bundle:extension & npx vsce package",
     "vscode:prepublish_disabled": "npm run update-for-packaging",

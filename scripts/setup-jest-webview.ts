@@ -29,6 +29,27 @@ const mockWebApi = getMockWebviewApi();
 // Mock the global function supplied to web views
 (global as any).acquireVsCodeApi = () => mockWebApi;
 
+// Suppress React act() warnings in tests
+// These warnings occur when testing async state updates outside of user interactions
+// The tests are correctly structured but React's warning is overly strict for our test scenarios
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: An update to') ||
+       args[0].includes('Warning: `ReactDOMTestUtils.act`'))
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
+
 // Reset the mock before each test
 beforeEach(() => {
   jest.clearAllMocks();
