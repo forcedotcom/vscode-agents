@@ -237,7 +237,7 @@ describe('App Coverage Tests', () => {
       });
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 1));
       });
 
       // The catch block should have been hit (lines 202-203)
@@ -330,7 +330,7 @@ describe('App Coverage Tests', () => {
       });
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 1));
       });
 
       // The race condition should have been handled gracefully

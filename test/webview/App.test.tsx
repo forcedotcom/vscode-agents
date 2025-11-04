@@ -503,7 +503,7 @@ describe('App', () => {
       triggerMessage('sessionEnded', {});
 
       // Session ended resolver should have been called
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 1));
     });
 
     it('should resolve both session promises when error occurs', async () => {
@@ -579,7 +579,7 @@ describe('App', () => {
       triggerMessage('selectAgent', { agentId: 'agent1' });
 
       // Wait a bit
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 1));
 
       // Trigger error instead of sessionStarted
       triggerMessage('error', { message: 'Failed to start session' });
@@ -702,7 +702,7 @@ describe('App', () => {
       triggerMessage('selectAgent', { agentId: 'agent2' });
       triggerMessage('selectAgent', { agentId: 'agent3' });
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 1));
 
       // The catch block should handle any errors gracefully
       expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
