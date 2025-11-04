@@ -237,25 +237,29 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   /**
    * Discover local .agent files in the workspace
    */
-  private async discoverLocalAgents(): Promise<Array<{ name: string; id: string; filePath: string }>> {
-    const localAgents: Array<{ name: string; id: string; filePath: string }> = [];
-    
+  private async discoverLocalAgents(): Promise<Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }>> {
+    const localAgents: Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }> = [];
+
     try {
       // Find all .agent files in the workspace
       const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**');
-      
+
       for (const agentFile of agentFiles) {
         const fileName = path.basename(agentFile.fsPath, '.agent');
         localAgents.push({
-          name: `${fileName} (Agent Script)`,
+          name: fileName,
           id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
+          type: 'script',
           filePath: agentFile.fsPath
         });
       }
     } catch (err) {
       console.warn('Error discovering local .agent files:', err);
     }
-    
+
+    // Sort local agents alphabetically by name
+    localAgents.sort((a, b) => a.name.localeCompare(b.name));
+
     return localAgents;
   }
 
@@ -593,9 +597,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   })
                   .map(bot => ({
                     name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                    id: bot.Id // Use the Bot ID from org
+                    id: bot.Id, // Use the Bot ID from org
+                    type: 'published' as const
                   }))
                   .filter(agent => agent.id) // Only include agents with valid IDs
+                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
               : [];
 
             // Combine local and remote agents
@@ -688,9 +694,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   })
                   .map(bot => ({
                     name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                    id: bot.Id // Use the Bot ID from org
+                    id: bot.Id, // Use the Bot ID from org
+                    type: 'published' as const
                   }))
                   .filter(agent => agent.id) // Only include agents with valid IDs
+                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
               : [];
 
             // Combine local and remote agents
