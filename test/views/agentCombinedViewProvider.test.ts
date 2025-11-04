@@ -450,7 +450,7 @@ describe('AgentCombinedViewProvider', () => {
     it('should use correct file path extraction for script agents', () => {
       const localAgentId = 'local:/workspace/myAgent.agent';
       const filePath = (provider as any).getLocalAgentFilePath(localAgentId);
-      
+
       expect(filePath).toBe('/workspace/myAgent.agent');
     });
 
@@ -462,14 +462,220 @@ describe('AgentCombinedViewProvider', () => {
       expect(() => {
         (provider as any).validatePublishedAgentId(valid15CharBotId);
       }).not.toThrow();
-      
+
       expect(() => {
         (provider as any).validatePublishedAgentId(valid18CharBotId);
       }).not.toThrow();
-      
+
       expect(() => {
         (provider as any).validatePublishedAgentId(invalidBotId);
       }).toThrow();
+    });
+  });
+
+  describe('getInstance', () => {
+    it('should return the singleton instance', () => {
+      const instance = AgentCombinedViewProvider.getInstance();
+      expect(instance).toBe(provider);
+    });
+  });
+
+  describe('getCurrentAgentId', () => {
+    it('should return undefined when no agent is selected', () => {
+      expect(provider.getCurrentAgentId()).toBeUndefined();
+    });
+
+    it('should return the current agent ID when set', () => {
+      (provider as any).currentAgentId = '0X123456789012345';
+      expect(provider.getCurrentAgentId()).toBe('0X123456789012345');
+    });
+  });
+
+  describe('selectAndStartAgent', () => {
+    it('should post message to webview when webview exists', () => {
+      const agentId = '0X123456789012345';
+      provider.selectAndStartAgent(agentId);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId }
+      });
+    });
+
+    it('should not throw when webview does not exist', () => {
+      provider.webviewView = undefined;
+      expect(() => {
+        provider.selectAndStartAgent('0X123456789012345');
+      }).not.toThrow();
+    });
+  });
+
+  describe('toggleDebugMode', () => {
+    it('should toggle debug mode from false to true', async () => {
+      (provider as any).apexDebugging = false;
+
+      await provider.toggleDebugMode();
+
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:debugMode',
+        true
+      );
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'setDebugMode',
+        data: true
+      });
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Debug mode activated'
+      );
+    });
+
+    it('should toggle debug mode from true to false', async () => {
+      (provider as any).apexDebugging = true;
+
+      await provider.toggleDebugMode();
+
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:debugMode',
+        false
+      );
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'setDebugMode',
+        data: false
+      });
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Debug mode deactivated'
+      );
+    });
+
+    it('should update agent preview debug mode when agent preview exists', async () => {
+      const mockAgentPreview = {
+        setApexDebugMode: jest.fn()
+      };
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).apexDebugging = false;
+
+      await provider.toggleDebugMode();
+
+      expect(mockAgentPreview.setApexDebugMode).toHaveBeenCalledWith(true);
+    });
+
+    it('should work when webview does not exist', async () => {
+      provider.webviewView = undefined;
+      (provider as any).apexDebugging = false;
+
+      await expect(provider.toggleDebugMode()).resolves.not.toThrow();
+      expect(vscode.window.showInformationMessage).toHaveBeenCalled();
+    });
+  });
+
+  describe('endSession', () => {
+    it('should end AgentSimulate session', async () => {
+      const mockAgentSimulate = {
+        end: jest.fn().mockResolvedValue(undefined)
+      };
+      (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
+
+      (provider as any).agentPreview = Object.assign(mockAgentSimulate, {
+        constructor: { name: 'AgentSimulate' }
+      });
+      (provider as any).sessionId = 'test-session';
+      (provider as any).currentAgentName = 'TestAgent';
+
+      // Mock instanceof check
+      Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
+
+      await provider.endSession();
+
+      expect(mockAgentSimulate.end).toHaveBeenCalled();
+      expect((provider as any).agentPreview).toBeUndefined();
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Session ended with TestAgent'
+      );
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'sessionEnded',
+        data: {}
+      });
+    });
+
+    it('should end AgentPreview session', async () => {
+      const mockAgentPreview = {
+        end: jest.fn().mockResolvedValue(undefined)
+      };
+      (AgentPreview as any).mockImplementation(() => mockAgentPreview);
+
+      (provider as any).agentPreview = Object.assign(mockAgentPreview, {
+        constructor: { name: 'AgentPreview' }
+      });
+      (provider as any).sessionId = 'test-session';
+      (provider as any).currentAgentName = 'TestAgent';
+
+      // Mock instanceof check - NOT an AgentSimulate
+      Object.setPrototypeOf((provider as any).agentPreview, AgentPreview.prototype);
+
+      await provider.endSession();
+
+      expect(mockAgentPreview.end).toHaveBeenCalledWith('test-session', 'UserRequest');
+      expect((provider as any).agentPreview).toBeUndefined();
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Session ended with TestAgent'
+      );
+    });
+
+    it('should not throw when no active session', async () => {
+      (provider as any).agentPreview = undefined;
+      await expect(provider.endSession()).resolves.not.toThrow();
+      expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
+    });
+
+    it('should reset session state after ending', async () => {
+      const mockAgentSimulate = {
+        end: jest.fn().mockResolvedValue(undefined)
+      };
+      (provider as any).agentPreview = mockAgentSimulate;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).currentAgentName = 'TestAgent';
+      Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
+
+      await provider.endSession();
+
+      expect((provider as any).agentPreview).toBeUndefined();
+      expect((provider as any).currentAgentName).toBeUndefined();
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:sessionActive',
+        false
+      );
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:debugMode',
+        false
+      );
+    });
+  });
+
+  describe('notifyConfigurationChange', () => {
+    it('should post message to webview when configuration changes', () => {
+      const getConfigMock = jest.fn().mockReturnValue(true);
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: getConfigMock
+      });
+
+      (provider as any).notifyConfigurationChange();
+
+      expect(getConfigMock).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'configurationChanged',
+        data: { showAgentTracer: true }
+      });
+    });
+
+    it('should not throw when webview does not exist', () => {
+      provider.webviewView = undefined;
+      expect(() => {
+        (provider as any).notifyConfigurationChange();
+      }).not.toThrow();
     });
   });
 });
