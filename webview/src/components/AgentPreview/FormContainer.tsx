@@ -1,5 +1,5 @@
 import React from 'react';
-import ChatInput from './ChatInput';
+import ChatInput from './ChatInput.js';
 import './FormContainer.css';
 
 interface Message {

@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import AgentPreview from './components/AgentPreview/AgentPreview';
-import AgentTracer from './components/AgentTracer/AgentTracer';
-import AgentSelector from './components/AgentPreview/AgentSelector';
-import TabNavigation from './components/shared/TabNavigation';
-import { vscodeApi } from './services/vscodeApi';
+import AgentPreview from './components/AgentPreview/AgentPreview.js';
+import AgentTracer from './components/AgentTracer/AgentTracer.js';
+import AgentSelector from './components/AgentPreview/AgentSelector.js';
+import TabNavigation from './components/shared/TabNavigation.js';
+import { vscodeApi } from './services/vscodeApi.js';
 import './App.css';
 
 interface ClientApp {
   name: string;
   clientId: string;
+}
+
+interface ConfigurationMessage {
+  section: string;
+  value: any;
+}
+
+interface SelectAgentMessage {
+  agentId: string;
 }
 
 const App: React.FC = () => {
@@ -37,7 +46,7 @@ const App: React.FC = () => {
   }, [desiredAgentId]);
 
   useEffect(() => {
-    const disposeConfiguration = vscodeApi.onMessage('configuration', data => {
+    const disposeConfiguration = vscodeApi.onMessage('configuration', (data: ConfigurationMessage) => {
       if (data.section === 'salesforce.agentforceDX.showAgentTracer') {
         setShowTracerTab(data.value === true);
         // If tracer tab is being hidden and it's currently active, switch to preview
@@ -47,7 +56,7 @@ const App: React.FC = () => {
       }
     });
 
-    const disposeSelectAgent = vscodeApi.onMessage('selectAgent', data => {
+    const disposeSelectAgent = vscodeApi.onMessage('selectAgent', (data: SelectAgentMessage) => {
       if (data && data.agentId) {
         // Update the selected agent in the dropdown
         forceRestartRef.current = true;

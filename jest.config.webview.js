@@ -20,6 +20,7 @@ module.exports = {
   //   '!webview/src/vite-env.d.ts'
   // ],
   moduleNameMapper: {
+    '^(.+)\\.js$': '$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.svg$': '<rootDir>/test/__mocks__/fileMock.js',
     '^react$': '<rootDir>/webview/node_modules/react',
