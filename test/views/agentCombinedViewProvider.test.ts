@@ -1607,5 +1607,123 @@ describe('AgentCombinedViewProvider', () => {
       expect(readTranscriptEntries).not.toHaveBeenCalled();
     });
   });
+
+  describe('getTraceData Message Handler', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+    const fs = require('fs');
+
+    beforeEach(() => {
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+    });
+
+    it('should load tracer data from custom path when configured', async () => {
+      const customPath = '/custom/path/tracer.json';
+      const mockTraceData = { sessions: [], agents: [] };
+
+      const mockConfig = {
+        get: jest.fn().mockReturnValue(customPath)
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockTraceData));
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockConfig.get).toHaveBeenCalledWith('salesforce.agentforceDX.tracerDataFilePath');
+      expect(fs.existsSync).toHaveBeenCalledWith(customPath);
+      expect(fs.readFileSync).toHaveBeenCalledWith(customPath, 'utf8');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: mockTraceData
+      });
+    });
+
+    it('should trim whitespace from custom path', async () => {
+      const customPath = '  /custom/path/tracer.json  ';
+      const mockTraceData = { sessions: [] };
+
+      const mockConfig = {
+        get: jest.fn().mockReturnValue(customPath)
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockTraceData));
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(fs.existsSync).toHaveBeenCalledWith('/custom/path/tracer.json');
+    });
+
+    it('should use default path when no custom path configured', async () => {
+      const mockConfig = {
+        get: jest.fn().mockReturnValue('')
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+
+      const mockTraceData = { sessions: [] };
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockTraceData));
+
+      await messageHandler({ command: 'getTraceData' });
+
+      const expectedPath = path.join('/extension/path', 'webview', 'src', 'data', 'tracer.json');
+      expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
+    });
+
+    it('should send error when tracer file not found', async () => {
+      const customPath = '/custom/path/tracer.json';
+
+      const mockConfig = {
+        get: jest.fn().mockReturnValue(customPath)
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: {
+          message: `tracer.json not found at ${customPath}. Please check the path in your settings.`
+        }
+      });
+    });
+
+    it('should handle JSON parse error', async () => {
+      const mockConfig = {
+        get: jest.fn().mockReturnValue('/custom/path/tracer.json')
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue('invalid json{{{');
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: expect.stringContaining('Unexpected token') }
+      });
+    });
+  });
 });
 
