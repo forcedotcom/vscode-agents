@@ -102,6 +102,9 @@ const getMockVSCode = () => {
     Position: jest.fn((line, character) => {
       return new MockPosition(line, character);
     }),
+    Location: jest.fn((uri, range) => {
+      return { uri, range };
+    }),
     ProgressLocation: {
       SourceControl: 1,
       Window: 10,
