@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="36" failures="8" errors="0" time="5.68">
-  <testsuite name="vscodeApi" errors="0" failures="0" skipped="0" timestamp="2025-11-04T17:26:36" time="1.507" tests="20">
+<testsuites name="jest tests" tests="51" failures="0" errors="0" time="2.602">
+  <testsuite name="vscodeApi" errors="0" failures="0" skipped="0" timestamp="2025-11-04T17:33:28" time="1.493" tests="21">
     <testcase classname="vscodeApi Message Handling should register message handlers" name="vscodeApi Message Handling should register message handlers" time="0.003">
     </testcase>
     <testcase classname="vscodeApi Message Handling should invoke handler when message is received" name="vscodeApi Message Handling should invoke handler when message is received" time="0.001">
@@ -9,13 +9,15 @@
     </testcase>
     <testcase classname="vscodeApi Message Handling should dispose handler when dispose function is called" name="vscodeApi Message Handling should dispose handler when dispose function is called" time="0">
     </testcase>
-    <testcase classname="vscodeApi Message Handling should not invoke handler for different command" name="vscodeApi Message Handling should not invoke handler for different command" time="0.001">
+    <testcase classname="vscodeApi Message Handling should clean up handler set when last handler is disposed" name="vscodeApi Message Handling should clean up handler set when last handler is disposed" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Session Management should send startSession message with agentId" name="vscodeApi Session Management should send startSession message with agentId" time="0">
+    <testcase classname="vscodeApi Message Handling should not invoke handler for different command" name="vscodeApi Message Handling should not invoke handler for different command" time="0">
     </testcase>
-    <testcase classname="vscodeApi Session Management should send endSession message" name="vscodeApi Session Management should send endSession message" time="0.001">
+    <testcase classname="vscodeApi Session Management should send startSession message with agentId" name="vscodeApi Session Management should send startSession message with agentId" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Session Management should send sendChatMessage with message content" name="vscodeApi Session Management should send sendChatMessage with message content" time="0">
+    <testcase classname="vscodeApi Session Management should send endSession message" name="vscodeApi Session Management should send endSession message" time="0">
+    </testcase>
+    <testcase classname="vscodeApi Session Management should send sendChatMessage with message content" name="vscodeApi Session Management should send sendChatMessage with message content" time="0.001">
     </testcase>
     <testcase classname="vscodeApi Debug Mode should send setApexDebugging message when enabling debug mode" name="vscodeApi Debug Mode should send setApexDebugging message when enabling debug mode" time="0">
     </testcase>
@@ -23,9 +25,9 @@
     </testcase>
     <testcase classname="vscodeApi Agent Management should send getAvailableAgents message" name="vscodeApi Agent Management should send getAvailableAgents message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Agent Management should send setSelectedAgentId message" name="vscodeApi Agent Management should send setSelectedAgentId message" time="0.001">
+    <testcase classname="vscodeApi Agent Management should send setSelectedAgentId message" name="vscodeApi Agent Management should send setSelectedAgentId message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Agent Management should send loadAgentHistory message" name="vscodeApi Agent Management should send loadAgentHistory message" time="0">
+    <testcase classname="vscodeApi Agent Management should send loadAgentHistory message" name="vscodeApi Agent Management should send loadAgentHistory message" time="0.001">
     </testcase>
     <testcase classname="vscodeApi Configuration should send getConfiguration message with section" name="vscodeApi Configuration should send getConfiguration message with section" time="0">
     </testcase>
@@ -33,436 +35,75 @@
     </testcase>
     <testcase classname="vscodeApi Client App Selection should register onClientAppReady handler" name="vscodeApi Client App Selection should register onClientAppReady handler" time="0">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send clearChat message" name="vscodeApi Utility Methods should send clearChat message" time="0">
+    <testcase classname="vscodeApi Utility Methods should send clearChat message" name="vscodeApi Utility Methods should send clearChat message" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send clearMessages message" name="vscodeApi Utility Methods should send clearMessages message" time="0.001">
+    <testcase classname="vscodeApi Utility Methods should send clearMessages message" name="vscodeApi Utility Methods should send clearMessages message" time="0">
     </testcase>
     <testcase classname="vscodeApi Utility Methods should send getTraceData message" name="vscodeApi Utility Methods should send getTraceData message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send executeCommand message" name="vscodeApi Utility Methods should send executeCommand message" time="0">
+    <testcase classname="vscodeApi Utility Methods should send executeCommand message" name="vscodeApi Utility Methods should send executeCommand message" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="App" errors="0" failures="8" skipped="0" timestamp="2025-11-04T17:26:36" time="5.145" tests="16">
-    <testcase classname="App Initial Rendering should render without crashing" name="App Initial Rendering should render without crashing" time="0.019">
+  <testsuite name="App" errors="0" failures="0" skipped="0" timestamp="2025-11-04T17:33:28" time="2.067" tests="30">
+    <testcase classname="App Initial Rendering should render without crashing" name="App Initial Rendering should render without crashing" time="0.02">
     </testcase>
     <testcase classname="App Initial Rendering should default to preview tab" name="App Initial Rendering should default to preview tab" time="0.002">
     </testcase>
-    <testcase classname="App Initial Rendering should not show tracer tab by default" name="App Initial Rendering should not show tracer tab by default" time="0.001">
+    <testcase classname="App Initial Rendering should not show tracer tab by default" name="App Initial Rendering should not show tracer tab by default" time="0.002">
     </testcase>
-    <testcase classname="App Agent Selection should update desiredAgentId when agent is selected" name="App Agent Selection should update desiredAgentId when agent is selected" time="1.018">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: ObjectContaining {&quot;command&quot;: &quot;setSelectedAgentId&quot;}
-
-Number of calls: 0
-
-Ignored nodes: comments, script, style
-&lt;html&gt;
-  &lt;head /&gt;
-  &lt;body&gt;
-    &lt;div&gt;
-      &lt;div
-        class=&quot;app&quot;
-      &gt;
-        &lt;div
-          class=&quot;app-menu&quot;
-        &gt;
-          &lt;div
-            data-testid=&quot;agent-selector&quot;
-          &gt;
-            &lt;select
-              data-testid=&quot;agent-select&quot;
-            &gt;
-              &lt;option
-                value=&quot;&quot;
-              &gt;
-                Select agent...
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent1&quot;
-              &gt;
-                Agent 1
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent2&quot;
-              &gt;
-                Agent 2
-              &lt;/option&gt;
-            &lt;/select&gt;
-          &lt;/div&gt;
-          &lt;div
-            class=&quot;app-menu-divider&quot;
-          /&gt;
-        &lt;/div&gt;
-        &lt;div
-          class=&quot;app-content&quot;
-        &gt;
-          &lt;div
-            class=&quot;tab-content active&quot;
-          &gt;
-            &lt;div
-              data-testid=&quot;agent-preview&quot;
-            &gt;
-              &lt;div
-                data-testid=&quot;selected-agent&quot;
-              &gt;
-                none
-              &lt;/div&gt;
-              &lt;div
-                data-testid=&quot;pending-agent&quot;
-              &gt;
-                none
-              &lt;/div&gt;
-            &lt;/div&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-    at /Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:118:43
-    at runWithExpensiveErrorDiagnosticsDisabled (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/config.js:47:12)
-    at checkCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:124:77)
-    at checkRealTimersCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:118:16)
-    at Timeout.task [as _onTimeout] (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
-    at listOnTimeout (node:internal/timers:608:17)
-    at processTimers (node:internal/timers:543:7)</failure>
+    <testcase classname="App Initial Rendering should request configuration on mount" name="App Initial Rendering should request configuration on mount" time="0.001">
     </testcase>
-    <testcase classname="App Agent Selection should request configuration on mount" name="App Agent Selection should request configuration on mount" time="0.003">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: {&quot;command&quot;: &quot;getConfiguration&quot;, &quot;data&quot;: {&quot;section&quot;: &quot;salesforce.agentforceDX.showAgentTracer&quot;}}
-
-Number of calls: 0
-    at Object.&lt;anonymous&gt; (/Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:129:41)
-    at Promise.finally.completed (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
-    at _callCircusTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
-    at _runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
-    at /Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:849:7
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at run (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
-    at runAndTransformResultsToJestFormat (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
-    at jestAdapter (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/runner.js:101:19)
-    at runTestInternal (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:275:16)
-    at runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:343:7)
-    at Object.worker (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:497:12)</failure>
+    <testcase classname="App Tab Navigation should switch to tracer tab when tracer is clicked" name="App Tab Navigation should switch to tracer tab when tracer is clicked" time="0.018">
     </testcase>
-    <testcase classname="App Session Management should end session when switching agents" name="App Session Management should end session when switching agents" time="1.018">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: {&quot;command&quot;: &quot;endSession&quot;, &quot;data&quot;: undefined}
-
-Number of calls: 0
-
-Ignored nodes: comments, script, style
-&lt;html&gt;
-  &lt;head /&gt;
-  &lt;body&gt;
-    &lt;div&gt;
-      &lt;div
-        class=&quot;app&quot;
-      &gt;
-        &lt;div
-          class=&quot;app-menu&quot;
-        &gt;
-          &lt;div
-            data-testid=&quot;agent-selector&quot;
-          &gt;
-            &lt;select
-              data-testid=&quot;agent-select&quot;
-            &gt;
-              &lt;option
-                value=&quot;&quot;
-              &gt;
-                Select agent...
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent1&quot;
-              &gt;
-                Agent 1
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent2&quot;
-              &gt;
-                Agent 2
-              &lt;/option&gt;
-            &lt;/select&gt;
-          &lt;/div&gt;
-          &lt;div
-            class=&quot;app-menu-divider&quot;
-          /&gt;
-        &lt;/div&gt;
-        &lt;div
-          class=&quot;app-content&quot;
-        &gt;
-          &lt;div
-            class=&quot;tab-content active&quot;
-          &gt;
-            &lt;div
-              data-testid=&quot;agent-preview&quot;
-            &gt;
-              &lt;div
-                data-testid=&quot;selected-agent&quot;
-              &gt;
-                agent2
-              &lt;/div&gt;
-              &lt;div
-                data-testid=&quot;pending-agent&quot;
-              &gt;
-                none
-              &lt;/div&gt;
-            &lt;/div&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-    at /Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:155:43
-    at runWithExpensiveErrorDiagnosticsDisabled (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/config.js:47:12)
-    at checkCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:124:77)
-    at checkRealTimersCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:118:16)
-    at Timeout.task [as _onTimeout] (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
-    at listOnTimeout (node:internal/timers:608:17)
-    at processTimers (node:internal/timers:543:7)</failure>
+    <testcase classname="App Tab Navigation should switch back to preview tab" name="App Tab Navigation should switch back to preview tab" time="0.005">
     </testcase>
-    <testcase classname="App Session Management should track session state with sessionStarted message" name="App Session Management should track session state with sessionStarted message" time="0.008">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalled()
-
-Expected number of calls: &gt;= 1
-Received number of calls:    0
-    at Object.&lt;anonymous&gt; (/Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:173:41)
-    at Promise.finally.completed (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
-    at _callCircusTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
-    at _runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
-    at /Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:849:7
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at run (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
-    at runAndTransformResultsToJestFormat (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
-    at jestAdapter (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/runner.js:101:19)
-    at runTestInternal (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:275:16)
-    at runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:343:7)
-    at Object.worker (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:497:12)</failure>
+    <testcase classname="App Agent Selection should update desiredAgentId when agent is selected" name="App Agent Selection should update desiredAgentId when agent is selected" time="0.034">
     </testcase>
-    <testcase classname="App Session Management should track session end with sessionEnded message" name="App Session Management should track session end with sessionEnded message" time="0.007">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalled()
-
-Expected number of calls: &gt;= 1
-Received number of calls:    0
-    at Object.&lt;anonymous&gt; (/Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:186:41)
-    at Promise.finally.completed (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
-    at _callCircusTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
-    at _runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
-    at /Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:849:7
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at run (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
-    at runAndTransformResultsToJestFormat (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
-    at jestAdapter (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/runner.js:101:19)
-    at runTestInternal (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:275:16)
-    at runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:343:7)
-    at Object.worker (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:497:12)</failure>
+    <testcase classname="App Agent Selection should handle agent selection via selectAgent message" name="App Agent Selection should handle agent selection via selectAgent message" time="0.002">
     </testcase>
-    <testcase classname="App Session Management should handle session errors" name="App Session Management should handle session errors" time="0.004">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalled()
-
-Expected number of calls: &gt;= 1
-Received number of calls:    0
-    at Object.&lt;anonymous&gt; (/Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:199:41)
-    at Promise.finally.completed (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
-    at _callCircusTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
-    at _runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
-    at /Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:849:7
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at _runTestsForDescribeBlock (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at run (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
-    at runAndTransformResultsToJestFormat (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
-    at jestAdapter (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-circus/build/runner.js:101:19)
-    at runTestInternal (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:275:16)
-    at runTest (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:343:7)
-    at Object.worker (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jest-runner/build/testWorker.js:497:12)</failure>
+    <testcase classname="App Session Management should register session message handlers" name="App Session Management should register session message handlers" time="0.001">
     </testcase>
-    <testcase classname="App Force Restart (Play Button) should trigger session restart when selectAgent with forceRestart" name="App Force Restart (Play Button) should trigger session restart when selectAgent with forceRestart" time="1.01">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: ObjectContaining {&quot;command&quot;: &quot;setSelectedAgentId&quot;}
-
-Number of calls: 0
-
-Ignored nodes: comments, script, style
-&lt;html&gt;
-  &lt;head /&gt;
-  &lt;body&gt;
-    &lt;div&gt;
-      &lt;div
-        class=&quot;app&quot;
-      &gt;
-        &lt;div
-          class=&quot;app-menu&quot;
-        &gt;
-          &lt;div
-            data-testid=&quot;agent-selector&quot;
-          &gt;
-            &lt;select
-              data-testid=&quot;agent-select&quot;
-            &gt;
-              &lt;option
-                value=&quot;&quot;
-              &gt;
-                Select agent...
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent1&quot;
-              &gt;
-                Agent 1
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent2&quot;
-              &gt;
-                Agent 2
-              &lt;/option&gt;
-            &lt;/select&gt;
-          &lt;/div&gt;
-          &lt;div
-            class=&quot;app-menu-divider&quot;
-          /&gt;
-        &lt;/div&gt;
-        &lt;div
-          class=&quot;app-content&quot;
-        &gt;
-          &lt;div
-            class=&quot;tab-content active&quot;
-          &gt;
-            &lt;div
-              data-testid=&quot;agent-preview&quot;
-            &gt;
-              &lt;div
-                data-testid=&quot;selected-agent&quot;
-              &gt;
-                agent1
-              &lt;/div&gt;
-              &lt;div
-                data-testid=&quot;pending-agent&quot;
-              &gt;
-                none
-              &lt;/div&gt;
-            &lt;/div&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-    at /Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:215:43
-    at runWithExpensiveErrorDiagnosticsDisabled (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/config.js:47:12)
-    at checkCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:124:77)
-    at checkRealTimersCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:118:16)
-    at Timeout.task [as _onTimeout] (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
-    at listOnTimeout (node:internal/timers:608:17)
-    at processTimers (node:internal/timers:543:7)</failure>
+    <testcase classname="App Session Management should track session state with sessionStarted message" name="App Session Management should track session state with sessionStarted message" time="0.001">
     </testcase>
-    <testcase classname="App Force Restart (Play Button) should start session immediately when force restart is true" name="App Force Restart (Play Button) should start session immediately when force restart is true" time="1.014">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: {&quot;command&quot;: &quot;endSession&quot;, &quot;data&quot;: undefined}
-
-Number of calls: 0
-
-Ignored nodes: comments, script, style
-&lt;html&gt;
-  &lt;head /&gt;
-  &lt;body&gt;
-    &lt;div&gt;
-      &lt;div
-        class=&quot;app&quot;
-      &gt;
-        &lt;div
-          class=&quot;app-menu&quot;
-        &gt;
-          &lt;div
-            data-testid=&quot;agent-selector&quot;
-          &gt;
-            &lt;select
-              data-testid=&quot;agent-select&quot;
-            &gt;
-              &lt;option
-                value=&quot;&quot;
-              &gt;
-                Select agent...
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent1&quot;
-              &gt;
-                Agent 1
-              &lt;/option&gt;
-              &lt;option
-                value=&quot;agent2&quot;
-              &gt;
-                Agent 2
-              &lt;/option&gt;
-            &lt;/select&gt;
-          &lt;/div&gt;
-          &lt;div
-            class=&quot;app-menu-divider&quot;
-          /&gt;
-        &lt;/div&gt;
-        &lt;div
-          class=&quot;app-content&quot;
-        &gt;
-          &lt;div
-            class=&quot;tab-content active&quot;
-          &gt;
-            &lt;div
-              data-testid=&quot;agent-preview&quot;
-            &gt;
-              &lt;div
-                data-testid=&quot;selected-agent&quot;
-              &gt;
-                agent1
-              &lt;/div&gt;
-              &lt;div
-                data-testid=&quot;pending-agent&quot;
-              &gt;
-                none
-              &lt;/div&gt;
-            &lt;/div&gt;
-          &lt;/div&gt;
-        &lt;/div&gt;
-      &lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/body&gt;
-&lt;/html&gt;
-    at /Users/mllano/Documents/Code/afdx-vscode/test/webview/App.test.tsx:242:43
-    at runWithExpensiveErrorDiagnosticsDisabled (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/config.js:47:12)
-    at checkCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:124:77)
-    at checkRealTimersCallback (/Users/mllano/Documents/Code/afdx-vscode/node_modules/@testing-library/dom/dist/wait-for.js:118:16)
-    at Timeout.task [as _onTimeout] (/Users/mllano/Documents/Code/afdx-vscode/node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
-    at listOnTimeout (node:internal/timers:608:17)
-    at processTimers (node:internal/timers:543:7)</failure>
+    <testcase classname="App Session Management should track session end with sessionEnded message" name="App Session Management should track session end with sessionEnded message" time="0.001">
     </testcase>
-    <testcase classname="App Tracer Tab should show tracer tab when configuration is enabled" name="App Tracer Tab should show tracer tab when configuration is enabled" time="0.018">
+    <testcase classname="App Session Management should handle session errors" name="App Session Management should handle session errors" time="0.001">
     </testcase>
-    <testcase classname="App Tracer Tab should hide tracer tab when configuration is disabled" name="App Tracer Tab should hide tracer tab when configuration is disabled" time="0.005">
+    <testcase classname="App Session Management should end session and start new one when switching agents with active session" name="App Session Management should end session and start new one when switching agents with active session" time="0.058">
+    </testcase>
+    <testcase classname="App Force Restart (Play Button) should trigger session restart when selectAgent message received" name="App Force Restart (Play Button) should trigger session restart when selectAgent message received" time="0.003">
+    </testcase>
+    <testcase classname="App Force Restart (Play Button) should set transitioning state during force restart" name="App Force Restart (Play Button) should set transitioning state during force restart" time="0.008">
+    </testcase>
+    <testcase classname="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" name="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" time="0.004">
+    </testcase>
+    <testcase classname="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" name="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" time="0.012">
+    </testcase>
+    <testcase classname="App Tracer Tab Configuration should not show tracer tab without agent selected" name="App Tracer Tab Configuration should not show tracer tab without agent selected" time="0.001">
     </testcase>
     <testcase classname="App Client App State should handle client app required state" name="App Client App State should handle client app required state" time="0.001">
     </testcase>
-    <testcase classname="App Client App State should handle client app selection" name="App Client App State should handle client app selection" time="0.002">
+    <testcase classname="App Client App State should handle client app selection" name="App Client App State should handle client app selection" time="0.001">
     </testcase>
-    <testcase classname="App Session Transition State should set transitioning state when changing agents" name="App Session Transition State should set transitioning state when changing agents" time="0.003">
+    <testcase classname="App Session Transition State should clear displayed agent when no target agent" name="App Session Transition State should clear displayed agent when no target agent" time="0.016">
+    </testcase>
+    <testcase classname="App Session Transition State should show pending agent during transitions" name="App Session Transition State should show pending agent during transitions" time="0.005">
+    </testcase>
+    <testcase classname="App Edge Cases should handle configuration message for non-tracer sections" name="App Edge Cases should handle configuration message for non-tracer sections" time="0.001">
+    </testcase>
+    <testcase classname="App Edge Cases should handle selectAgent without agentId" name="App Edge Cases should handle selectAgent without agentId" time="0.001">
+    </testcase>
+    <testcase classname="App Edge Cases should handle multiple rapid agent switches" name="App Edge Cases should handle multiple rapid agent switches" time="0.003">
+    </testcase>
+    <testcase classname="App Edge Cases should handle session start failure gracefully" name="App Edge Cases should handle session start failure gracefully" time="0.103">
+    </testcase>
+    <testcase classname="App Edge Cases should handle sessionStarting message" name="App Edge Cases should handle sessionStarting message" time="0.004">
+    </testcase>
+    <testcase classname="App Edge Cases should handle switching to no agent while session is active" name="App Edge Cases should handle switching to no agent while session is active" time="0.016">
+    </testcase>
+    <testcase classname="App Edge Cases should update agent without starting session when not force restart" name="App Edge Cases should update agent without starting session when not force restart" time="0.012">
+    </testcase>
+    <testcase classname="App Edge Cases should handle session without active session when ending" name="App Edge Cases should handle session without active session when ending" time="0.003">
     </testcase>
   </testsuite>
 </testsuites>

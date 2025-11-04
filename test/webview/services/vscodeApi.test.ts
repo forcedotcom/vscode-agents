@@ -96,6 +96,28 @@ describe('vscodeApi', () => {
       expect(handler).not.toHaveBeenCalled();
     });
 
+    it('should clean up handler set when last handler is disposed', () => {
+      const handler1 = jest.fn();
+      const handler2 = jest.fn();
+
+      const dispose1 = vscodeApi.onMessage('testCommand', handler1);
+      const dispose2 = vscodeApi.onMessage('testCommand', handler2);
+
+      // Dispose both handlers
+      dispose1();
+      dispose2();
+
+      // Message should not be handled
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { command: 'testCommand', data: { test: 'data' } }
+        })
+      );
+
+      expect(handler1).not.toHaveBeenCalled();
+      expect(handler2).not.toHaveBeenCalled();
+    });
+
     it('should not invoke handler for different command', () => {
       const handler = jest.fn();
       vscodeApi.onMessage('testCommand', handler);

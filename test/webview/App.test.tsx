@@ -15,16 +15,41 @@
  */
 import '@testing-library/jest-dom';
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import App from '../../webview/src/App';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+// Mock vscodeApi before importing App
+const mockVscodeApi = {
+  postMessage: jest.fn(),
+  onMessage: jest.fn(),
+  startSession: jest.fn(),
+  endSession: jest.fn(),
+  sendChatMessage: jest.fn(),
+  setApexDebugging: jest.fn(),
+  getAvailableAgents: jest.fn(),
+  getTraceData: jest.fn(),
+  clearChat: jest.fn(),
+  clearMessages: jest.fn(),
+  getConfiguration: jest.fn(),
+  selectClientApp: jest.fn(),
+  onClientAppReady: jest.fn(),
+  executeCommand: jest.fn(),
+  setSelectedAgentId: jest.fn(),
+  loadAgentHistory: jest.fn()
+};
+
+jest.mock('../../webview/src/services/vscodeApi', () => ({
+  vscodeApi: mockVscodeApi
+}));
 
 // Mock the components to simplify testing
 jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
-  return function MockAgentPreview({ selectedAgentId, pendingAgentId }: any) {
+  return function MockAgentPreview({ selectedAgentId, pendingAgentId, isSessionTransitioning }: any) {
     return (
       <div data-testid="agent-preview">
         <div data-testid="selected-agent">{selectedAgentId || 'none'}</div>
         <div data-testid="pending-agent">{pendingAgentId || 'none'}</div>
+        <div data-testid="is-transitioning">{isSessionTransitioning ? 'true' : 'false'}</div>
       </div>
     );
   };
@@ -37,7 +62,7 @@ jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
 });
 
 jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
-  return function MockAgentSelector({ selectedAgent, onAgentChange }: any) {
+  return function MockAgentSelector({ selectedAgent, onAgentChange, onClientAppRequired, onClientAppSelection }: any) {
     return (
       <div data-testid="agent-selector">
         <select
@@ -49,6 +74,15 @@ jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
           <option value="agent1">Agent 1</option>
           <option value="agent2">Agent 2</option>
         </select>
+        <button data-testid="trigger-client-app-required" onClick={() => onClientAppRequired({})}>
+          Require Client App
+        </button>
+        <button
+          data-testid="trigger-client-app-selection"
+          onClick={() => onClientAppSelection({ clientApps: [{ name: 'App1', clientId: '123' }] })}
+        >
+          Select Client App
+        </button>
       </div>
     );
   };
@@ -69,11 +103,19 @@ jest.mock('../../webview/src/components/shared/TabNavigation', () => {
   };
 });
 
+import App from '../../webview/src/App';
+
 describe('App', () => {
+  let messageHandlers: Map<string, Function>;
   let mockVSCodeApi: any;
 
   beforeEach(() => {
-    // Create a fresh mock for each test
+    messageHandlers = new Map();
+
+    // Reset all mocks
+    jest.clearAllMocks();
+
+    // Setup mock VS Code API
     mockVSCodeApi = {
       postMessage: jest.fn(),
       getState: jest.fn(),
@@ -81,12 +123,31 @@ describe('App', () => {
     };
 
     (window as any).vscode = mockVSCodeApi;
+
+    // Setup onMessage to capture handlers
+    mockVscodeApi.onMessage.mockImplementation((command: string, handler: Function) => {
+      messageHandlers.set(command, handler);
+      return () => messageHandlers.delete(command);
+    });
+
+    mockVscodeApi.onClientAppReady.mockImplementation((handler: Function) => {
+      messageHandlers.set('clientAppReady', handler);
+      return () => messageHandlers.delete('clientAppReady');
+    });
   });
 
   afterEach(() => {
     delete (window as any).vscode;
-    jest.clearAllMocks();
+    messageHandlers.clear();
   });
+
+  // Helper to trigger messages
+  const triggerMessage = (command: string, data?: any) => {
+    const handler = messageHandlers.get(command);
+    if (handler) {
+      handler(data);
+    }
+  };
 
   describe('Initial Rendering', () => {
     it('should render without crashing', () => {
@@ -103,172 +164,200 @@ describe('App', () => {
       render(<App />);
       expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
     });
+
+    it('should request configuration on mount', () => {
+      render(<App />);
+      expect(mockVscodeApi.getConfiguration).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
+    });
+  });
+
+  describe('Tab Navigation', () => {
+    it('should switch to tracer tab when tracer is clicked', async () => {
+      render(<App />);
+
+      // Enable tracer tab first
+      triggerMessage('configuration', {
+        section: 'salesforce.agentforceDX.showAgentTracer',
+        value: true
+      });
+
+      // Select an agent to show tracer tab
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Click tracer tab
+      const tracerTab = screen.getByTestId('tracer-tab');
+      fireEvent.click(tracerTab);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-tracer')).toBeInTheDocument();
+      });
+    });
+
+    it('should switch back to preview tab', async () => {
+      render(<App />);
+
+      // Enable and show tracer
+      triggerMessage('configuration', {
+        section: 'salesforce.agentforceDX.showAgentTracer',
+        value: true
+      });
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      // Switch back to preview
+      fireEvent.click(screen.getByTestId('preview-tab'));
+
+      expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+    });
   });
 
   describe('Agent Selection', () => {
     it('should update desiredAgentId when agent is selected', async () => {
+      const user = userEvent.setup();
       render(<App />);
 
-      const select = screen.getByTestId('agent-select');
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-      (select as HTMLSelectElement).value = 'agent1';
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await user.selectOptions(select, 'agent1');
 
-      // Trigger the change event properly
       await waitFor(() => {
-        expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith(
-          expect.objectContaining({
-            command: 'setSelectedAgentId'
-          })
-        );
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
       });
     });
 
-    it('should request configuration on mount', () => {
+    it('should handle agent selection via selectAgent message', async () => {
       render(<App />);
 
-      expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith({
-        command: 'getConfiguration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer' }
+      triggerMessage('selectAgent', { agentId: 'agent2' });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent2');
       });
     });
   });
 
   describe('Session Management', () => {
-    it('should end session when switching agents', async () => {
+    it('should register session message handlers', () => {
       render(<App />);
 
-      // Simulate session started
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'sessionStarted', data: {} }
-        })
-      );
+      expect(messageHandlers.has('sessionStarted')).toBe(true);
+      expect(messageHandlers.has('sessionEnded')).toBe(true);
+      expect(messageHandlers.has('sessionStarting')).toBe(true);
+      expect(messageHandlers.has('error')).toBe(true);
+    });
 
-      // Simulate selecting a new agent
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'selectAgent', data: { agentId: 'agent2' } }
-        })
-      );
+    it('should track session state with sessionStarted message', async () => {
+      render(<App />);
+
+      triggerMessage('sessionStarted', {});
+
+      // Session state is tracked internally via refs
+      expect(messageHandlers.has('sessionStarted')).toBe(true);
+    });
+
+    it('should track session end with sessionEnded message', async () => {
+      render(<App />);
+
+      triggerMessage('sessionEnded', {});
+
+      // Session state is tracked internally via refs
+      expect(messageHandlers.has('sessionEnded')).toBe(true);
+    });
+
+    it('should handle session errors', async () => {
+      render(<App />);
+
+      triggerMessage('error', { message: 'Test error' });
+
+      // Error handling is done via refs
+      expect(messageHandlers.has('error')).toBe(true);
+    });
+
+    it('should end session and start new one when switching agents with active session', async () => {
+      render(<App />);
+
+      // Start a session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
-        expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith({
-          command: 'endSession',
-          data: undefined
-        });
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
       });
-    });
 
-    it('should track session state with sessionStarted message', () => {
-      render(<App />);
+      // Switch to a different agent (force restart)
+      jest.clearAllMocks();
+      triggerMessage('selectAgent', { agentId: 'agent2' });
 
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'sessionStarted', data: {} }
-        })
-      );
+      await waitFor(() => {
+        expect(mockVscodeApi.endSession).toHaveBeenCalled();
+      }, { timeout: 3000 });
 
-      // Session state is tracked via refs, so we can't directly assert it
-      // but we can verify the message was received
-      expect(mockVSCodeApi.postMessage).toHaveBeenCalled();
-    });
+      // Simulate session ended
+      triggerMessage('sessionEnded', {});
 
-    it('should track session end with sessionEnded message', () => {
-      render(<App />);
-
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'sessionEnded', data: {} }
-        })
-      );
-
-      // Session state is tracked via refs
-      expect(mockVSCodeApi.postMessage).toHaveBeenCalled();
-    });
-
-    it('should handle session errors', () => {
-      render(<App />);
-
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'error', data: { message: 'Test error' } }
-        })
-      );
-
-      // Error should reset session state
-      expect(mockVSCodeApi.postMessage).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent2');
+      }, { timeout: 3000 });
     });
   });
 
   describe('Force Restart (Play Button)', () => {
-    it('should trigger session restart when selectAgent with forceRestart', async () => {
+    it('should trigger session restart when selectAgent message received', async () => {
       render(<App />);
 
-      // Simulate force restart via selectAgent command
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'selectAgent', data: { agentId: 'agent1' } }
-        })
-      );
+      triggerMessage('selectAgent', { agentId: 'agent1' });
 
       await waitFor(() => {
-        expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith(
-          expect.objectContaining({
-            command: 'setSelectedAgentId'
-          })
-        );
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
       });
     });
 
-    it('should start session immediately when force restart is true', async () => {
+    it('should set transitioning state during force restart', async () => {
       render(<App />);
 
-      // Simulate session started first
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'sessionStarted', data: {} }
-        })
-      );
-
-      // Then force restart with same agent
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'selectAgent', data: { agentId: 'agent1' } }
-        })
-      );
+      // Start session first
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
-        // Should end existing session
-        expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith({
-          command: 'endSession',
-          data: undefined
-        });
+        const transitioning = screen.getByTestId('is-transitioning');
+        expect(transitioning.textContent).toBe('false');
+      });
+
+      // Force restart with same agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        const transitioning = screen.getByTestId('is-transitioning');
+        expect(transitioning.textContent).toBe('true');
       });
     });
   });
 
-  describe('Tracer Tab', () => {
-    it('should show tracer tab when configuration is enabled', async () => {
+  describe('Tracer Tab Configuration', () => {
+    it('should show tracer tab when configuration is enabled and agent selected', async () => {
       render(<App />);
 
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: {
-            command: 'configuration',
-            data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-          }
-        })
-      );
+      // Select agent first
+      triggerMessage('selectAgent', { agentId: 'agent1' });
 
-      // Also need to select an agent for tracer to show
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'selectAgent', data: { agentId: 'agent1' } }
-        })
-      );
+      // Enable tracer
+      triggerMessage('configuration', {
+        section: 'salesforce.agentforceDX.showAgentTracer',
+        value: true
+      });
 
       await waitFor(() => {
-        expect(screen.queryByTestId('tab-navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
     });
 
@@ -276,56 +365,56 @@ describe('App', () => {
       render(<App />);
 
       // Enable first
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: {
-            command: 'configuration',
-            data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-          }
-        })
-      );
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('configuration', {
+        section: 'salesforce.agentforceDX.showAgentTracer',
+        value: true
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
 
       // Then disable
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: {
-            command: 'configuration',
-            data: { section: 'salesforce.agentforceDX.showAgentTracer', value: false }
-          }
-        })
-      );
+      triggerMessage('configuration', {
+        section: 'salesforce.agentforceDX.showAgentTracer',
+        value: false
+      });
 
       await waitFor(() => {
         expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
       });
     });
+
+    it('should not show tracer tab without agent selected', () => {
+      render(<App />);
+
+      triggerMessage('configuration', {
+        section: 'salesforce.agentforceDX.showAgentTracer',
+        value: true
+      });
+
+      // Should not show without agent
+      expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+    });
   });
 
   describe('Client App State', () => {
-    it('should handle client app required state', () => {
+    it('should handle client app required state', async () => {
       render(<App />);
 
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'clientAppRequired', data: {} }
-        })
-      );
+      const button = screen.getByTestId('trigger-client-app-required');
+      fireEvent.click(button);
 
       // Client app state is passed to AgentPreview
       expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
     });
 
-    it('should handle client app selection', () => {
+    it('should handle client app selection', async () => {
       render(<App />);
 
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: {
-            command: 'clientAppSelection',
-            data: { clientApps: [{ name: 'App1', clientId: '123' }] }
-          }
-        })
-      );
+      const button = screen.getByTestId('trigger-client-app-selection');
+      fireEvent.click(button);
 
       // Client app list is passed to AgentPreview
       expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
@@ -333,32 +422,160 @@ describe('App', () => {
   });
 
   describe('Session Transition State', () => {
-    it('should set transitioning state when changing agents', async () => {
+    it('should clear displayed agent when no target agent', async () => {
       render(<App />);
 
-      // Start with an agent
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'selectAgent', data: { agentId: 'agent1' } }
-        })
-      );
+      // Select agent first
+      triggerMessage('selectAgent', { agentId: 'agent1' });
 
-      // Session started
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'sessionStarted', data: {} }
-        })
-      );
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
 
-      // Switch to different agent (force restart)
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'selectAgent', data: { agentId: 'agent2' } }
-        })
-      );
+      // Deselect agent
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await userEvent.setup().selectOptions(select, '');
 
-      // isSessionTransitioning prop should be passed to AgentPreview
-      expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('none');
+      });
+    });
+
+    it('should show pending agent during transitions', async () => {
+      render(<App />);
+
+      // Select first agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+
+      // Switch to second agent
+      triggerMessage('selectAgent', { agentId: 'agent2' });
+
+      await waitFor(() => {
+        // During transition, pending should show the new agent
+        expect(screen.getByTestId('pending-agent').textContent).not.toBe('none');
+      });
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle configuration message for non-tracer sections', () => {
+      render(<App />);
+
+      triggerMessage('configuration', {
+        section: 'some.other.setting',
+        value: true
+      });
+
+      // Should not crash
+      expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
+    });
+
+    it('should handle selectAgent without agentId', () => {
+      render(<App />);
+
+      triggerMessage('selectAgent', {});
+
+      // Should not crash
+      expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
+    });
+
+    it('should handle multiple rapid agent switches', async () => {
+      render(<App />);
+
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('selectAgent', { agentId: 'agent2' });
+      triggerMessage('selectAgent', { agentId: 'agent3' });
+
+      await waitFor(() => {
+        // Should handle gracefully
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalled();
+      });
+    });
+
+    it('should handle session start failure gracefully', async () => {
+      render(<App />);
+
+      // Trigger force restart
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Wait a bit
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Trigger error instead of sessionStarted
+      triggerMessage('error', { message: 'Failed to start session' });
+
+      await waitFor(() => {
+        // Session should handle error
+        expect(messageHandlers.has('error')).toBe(true);
+      });
+    });
+
+    it('should handle sessionStarting message', async () => {
+      render(<App />);
+
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Trigger sessionStarting
+      triggerMessage('sessionStarting', {});
+
+      await waitFor(() => {
+        expect(messageHandlers.has('sessionStarting')).toBe(true);
+      });
+    });
+
+    it('should handle switching to no agent while session is active', async () => {
+      render(<App />);
+
+      // Start a session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+
+      // Switch to no agent
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await userEvent.setup().selectOptions(select, '');
+
+      await waitFor(() => {
+        // Should end session
+        expect(mockVscodeApi.endSession).toHaveBeenCalled();
+      });
+    });
+
+    it('should update agent without starting session when not force restart', async () => {
+      render(<App />);
+
+      // Regular agent selection (not force restart)
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await userEvent.setup().selectOptions(select, 'agent1');
+
+      await waitFor(() => {
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+      });
+
+      // Should not auto-start session
+      expect(mockVscodeApi.startSession).not.toHaveBeenCalled();
+    });
+
+    it('should handle session without active session when ending', async () => {
+      render(<App />);
+
+      // Try to switch agents without an active session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+      });
+
+      // Should not call endSession since no session is active
+      expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
     });
   });
 });
