@@ -1471,5 +1471,141 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
   });
+
+  describe('loadAgentHistory Message Handler', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should load history for script agent and call loadAndSendConversationHistory when history exists', async () => {
+      const mockTranscriptEntries = [
+        { timestamp: '2025-01-01', sessionId: 'session1', role: 'user' as const, text: 'Hello' }
+      ];
+
+      (readTranscriptEntries as jest.Mock).mockResolvedValue(mockTranscriptEntries);
+      jest.spyOn(provider as any, 'loadAndSendConversationHistory').mockResolvedValue(undefined);
+
+      await messageHandler({
+        command: 'loadAgentHistory',
+        data: { agentId: 'local:/workspace/myAgent.agent' }
+      });
+
+      // Should clear messages first
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clearMessages'
+      });
+
+      // Should read transcript with agent file name
+      expect(readTranscriptEntries).toHaveBeenCalledWith('myAgent.agent');
+
+      // Should call loadAndSendConversationHistory when history exists
+      expect((provider as any).loadAndSendConversationHistory).toHaveBeenCalledWith(
+        'local:/workspace/myAgent.agent',
+        AgentSource.SCRIPT,
+        mockWebviewView
+      );
+    });
+
+    it('should load history for published agent when history exists', async () => {
+      const mockTranscriptEntries = [
+        { timestamp: '2025-01-01', sessionId: 'session1', role: 'user' as const, text: 'Hello' }
+      ];
+
+      (readTranscriptEntries as jest.Mock).mockResolvedValue(mockTranscriptEntries);
+      jest.spyOn(provider as any, 'loadAndSendConversationHistory').mockResolvedValue(undefined);
+
+      await messageHandler({
+        command: 'loadAgentHistory',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      // Should read transcript with Bot ID
+      expect(readTranscriptEntries).toHaveBeenCalledWith('0X1234567890123');
+
+      // Should call loadAndSendConversationHistory
+      expect((provider as any).loadAndSendConversationHistory).toHaveBeenCalledWith(
+        '0X1234567890123',
+        AgentSource.PUBLISHED,
+        mockWebviewView
+      );
+    });
+
+    it('should send noHistoryFound when no history exists', async () => {
+      (readTranscriptEntries as jest.Mock).mockResolvedValue([]);
+
+      await messageHandler({
+        command: 'loadAgentHistory',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'noHistoryFound',
+        data: { agentId: '0X1234567890123' }
+      });
+    });
+
+    it('should send noHistoryFound when transcriptEntries is null', async () => {
+      (readTranscriptEntries as jest.Mock).mockResolvedValue(null);
+
+      await messageHandler({
+        command: 'loadAgentHistory',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'noHistoryFound',
+        data: { agentId: '0X1234567890123' }
+      });
+    });
+
+    it('should handle error and send noHistoryFound', async () => {
+      (readTranscriptEntries as jest.Mock).mockRejectedValue(new Error('Failed to read history'));
+
+      await messageHandler({
+        command: 'loadAgentHistory',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error checking history:', expect.any(Error));
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'noHistoryFound',
+        data: { agentId: '0X1234567890123' }
+      });
+    });
+
+    it('should not process when agentId is invalid', async () => {
+      await messageHandler({
+        command: 'loadAgentHistory',
+        data: { agentId: null }
+      });
+
+      expect(readTranscriptEntries).not.toHaveBeenCalled();
+    });
+  });
 });
 
