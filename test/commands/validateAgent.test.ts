@@ -48,7 +48,7 @@ describe('validateAgent', () => {
     commandSpy = jest.spyOn(vscode.commands, 'registerCommand');
     executeCommandSpy = jest.spyOn(vscode.commands, 'executeCommand').mockResolvedValue(undefined);
     errorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
-    
+
     progressSpy = jest
       .spyOn(vscode.window, 'withProgress')
       .mockImplementation(async (_options, task) => {
@@ -82,6 +82,12 @@ describe('validateAgent', () => {
 
     // Mock Agent.compileAgentScript
     compileAgentScriptSpy = jest.spyOn(Agent, 'compileAgentScript');
+
+    // Initialize diagnostic collection once for all tests
+    const mockContext = {
+      subscriptions: []
+    } as unknown as vscode.ExtensionContext;
+    initializeDiagnosticCollection(mockContext);
   });
 
   afterEach(() => {
@@ -116,12 +122,6 @@ describe('validateAgent', () => {
     });
 
     it('validates successfully and clears diagnostics', async () => {
-      // Initialize diagnostic collection first
-      const mockContext = {
-        subscriptions: []
-      } as unknown as vscode.ExtensionContext;
-      initializeDiagnosticCollection(mockContext);
-      
       // Mock successful compilation
       compileAgentScriptSpy.mockResolvedValue({
         status: 'success',
@@ -142,12 +142,6 @@ describe('validateAgent', () => {
     });
 
     it('handles compilation errors with multiple errors', async () => {
-      // Initialize diagnostic collection first
-      const mockContext = {
-        subscriptions: []
-      } as unknown as vscode.ExtensionContext;
-      initializeDiagnosticCollection(mockContext);
-      
       // Mock compilation failure with multiple errors
       compileAgentScriptSpy.mockResolvedValue({
         status: 'failure',
@@ -175,27 +169,38 @@ describe('validateAgent', () => {
       });
 
       const mockUri = vscode.Uri.file('/test/agent.agent');
-      
-      registerValidateAgentCommand();
-      const handler = commandSpy.mock.calls[0][1];
-      
-      // Call handler - it will run async in background
-      handler(mockUri);
-      
-      // Give it a moment for the compile call
-      await new Promise(resolve => setImmediate(resolve));
 
-      // Verify compile was called and output shows errors
+      registerValidateAgentCommand();
+      // Wait for the command to fully complete including setTimeout
+      await commandSpy.mock.calls[0][1](mockUri);
+
+      // Verify the progress was shown
+      expect(progressSpy).toHaveBeenCalled();
+
+      // Verify compile was called
       expect(compileAgentScriptSpy).toHaveBeenCalled();
-    });
+
+      // Verify channel service was used to display errors
+      expect(fakeChannelService.showChannelOutput).toHaveBeenCalled();
+      expect(fakeChannelService.clear).toHaveBeenCalled();
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('────────────────────────────────────────────────────────────────────────');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s)'));
+
+      // Verify error details were logged for each error
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('1. [SyntaxError] Line 1:5'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Unexpected token'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('2. [TypeError] Line 3:1'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Invalid type'));
+
+      // Verify Problems panel was focused
+      expect(executeCommandSpy).toHaveBeenCalledWith('workbench.action.problems.focus');
+
+      // Note: diagnosticCollection.set is difficult to test due to module-level variable
+      // but the functionality is validated through channel service output
+    }, 10000); // Increase timeout to allow for setTimeout
 
     it('handles unexpected errors', async () => {
-      // Initialize diagnostic collection first
-      const mockContext = {
-        subscriptions: []
-      } as unknown as vscode.ExtensionContext;
-      initializeDiagnosticCollection(mockContext);
-      
       // Mock unexpected error
       compileAgentScriptSpy.mockRejectedValue(new Error('Connection failed'));
 
@@ -232,12 +237,6 @@ describe('validateAgent', () => {
     });
 
     it('uses active text editor when no URI is provided', async () => {
-      // Initialize diagnostic collection first
-      const mockContext = {
-        subscriptions: []
-      } as unknown as vscode.ExtensionContext;
-      initializeDiagnosticCollection(mockContext);
-
       // Mock successful compilation
       compileAgentScriptSpy.mockResolvedValue({
         status: 'success',
