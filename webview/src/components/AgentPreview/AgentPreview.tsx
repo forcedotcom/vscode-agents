@@ -54,21 +54,43 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   useEffect(() => {
     const disposers: Array<() => void> = [];
 
-    // Set up message handlers for VS Code communication
+    const disposeClearMessages = vscodeApi.onMessage('clearMessages', () => {
+      setMessages([]);
+      setSessionActive(false);
+      setAgentConnected(false);
+      setIsLoading(false);
+    });
+    disposers.push(disposeClearMessages);
+
+    const disposeConversationHistory = vscodeApi.onMessage('conversationHistory', data => {
+      if (data && Array.isArray(data.messages) && data.messages.length > 0) {
+        const historyMessages: Message[] = data.messages.map((msg: any) => ({
+          id: msg.id || `${msg.timestamp}-${Date.now()}`,
+          type: msg.type as 'user' | 'agent',
+          content: msg.content || '',
+          timestamp: msg.timestamp || new Date().toISOString()
+        }));
+        setMessages(historyMessages);
+      } else {
+        setMessages([]);
+      }
+
+      setSessionActive(false);
+      setAgentConnected(false);
+      setIsLoading(false);
+    });
+    disposers.push(disposeConversationHistory);
+
     const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', data => {
-      // Ignore sessionStarted if it arrives within 500ms of an error (race condition)
-      // But allow it if it comes later (successful retry after initial error)
       const timeSinceError = Date.now() - sessionErrorTimestampRef.current;
       if (sessionErrorTimestampRef.current > 0 && timeSinceError < 500) {
         console.warn('Ignoring sessionStarted that arrived too soon after error (race condition)');
         return;
       }
 
-      // Clear error timestamp since we're successfully starting
       sessionErrorTimestampRef.current = 0;
       sessionActiveStateRef.current = true;
 
-      // Set messages FIRST, then clear loading state to prevent blank state flash
       if (data) {
         const welcomeMessage: Message = {
           id: Date.now().toString(),
@@ -76,12 +98,11 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
           content: data.content || "Hi! I'm ready to help. What can I do for you?",
           timestamp: new Date().toISOString()
         };
-        setMessages([welcomeMessage]);
+        setMessages(prev => [...prev, welcomeMessage]);
       }
 
-      // Clear loading state AFTER messages are set
       setSessionActive(true);
-      setAgentConnected(true); // Agent is now ready for conversation
+      setAgentConnected(true);
       setIsLoading(false);
       onSessionTransitionSettled();
     });
@@ -89,8 +110,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
     const disposeClientAppReady = vscodeApi.onClientAppReady(() => {
       onClientAppStateChange('ready');
-      // Do not auto-start a session; user will still pick an agent from updated list
-      // Ensure chat area is clean
       setIsLoading(false);
     });
     disposers.push(disposeClientAppReady);
@@ -100,9 +119,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       const currentPendingAgentId = pendingAgentIdRef.current;
 
       setSessionActive(false);
-      setAgentConnected(false); // Reset agent connected state while starting
+      setAgentConnected(false);
       sessionActiveStateRef.current = false;
-      sessionErrorTimestampRef.current = 0; // Clear any previous error timestamp
+      sessionErrorTimestampRef.current = 0;
 
       if (currentSelectedAgentId === '') {
         setIsLoading(false);
@@ -113,7 +132,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       if (currentPendingAgentId && currentPendingAgentId === currentSelectedAgentId) {
         setIsLoading(true);
         setLoadingMessage('Connecting to agent...');
-        setMessages([]); // Clear messages to prep new agent view
       } else if (!currentPendingAgentId) {
         setIsLoading(true);
         setLoadingMessage('Loading agent...');
@@ -124,8 +142,34 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     });
     disposers.push(disposeSessionStarting);
 
+    const disposeCompilationStarting = vscodeApi.onMessage('compilationStarting', data => {
+      setIsLoading(true);
+      setLoadingMessage(data?.message || 'Compiling agent...');
+    });
+    disposers.push(disposeCompilationStarting);
+
+    const disposeCompilationError = vscodeApi.onMessage('compilationError', data => {
+      setIsLoading(false);
+      setAgentConnected(false);
+
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'system',
+        content: `Compilation Error: ${data?.message || 'Failed to compile agent'}`,
+        systemType: 'error',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    });
+    disposers.push(disposeCompilationError);
+
+    const disposeSimulationStarting = vscodeApi.onMessage('simulationStarting', data => {
+      setIsLoading(true);
+      setLoadingMessage(data?.message || 'Starting simulation...');
+    });
+    disposers.push(disposeSimulationStarting);
+
     const disposeMessageSent = vscodeApi.onMessage('messageSent', data => {
-      // Add message FIRST, then clear loading state to prevent blank state flash
       if (data && data.content) {
         const agentMessage: Message = {
           id: Date.now().toString(),
@@ -136,7 +180,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         setMessages(prev => [...prev, agentMessage]);
       }
 
-      // Clear loading state AFTER message is added
       setIsLoading(false);
     });
     disposers.push(disposeMessageSent);
@@ -148,15 +191,13 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     disposers.push(disposeMessageStarting);
 
     const disposeError = vscodeApi.onMessage('error', data => {
-      setAgentConnected(false); // Reset agent connected state on error
+      setAgentConnected(false);
       sessionActiveStateRef.current = false;
-      sessionErrorTimestampRef.current = Date.now(); // Record error timestamp for race condition detection
+      sessionErrorTimestampRef.current = Date.now();
 
-      // Update messages FIRST, then clear loading state to prevent blank state flash
       setMessages(prev => {
         const filteredMessages = prev.filter(msg => !(msg.type === 'system' && msg.content === 'Starting session...'));
 
-        // Add the error message
         const errorMessage: Message = {
           id: Date.now().toString(),
           type: 'system',
@@ -168,7 +209,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         return [...filteredMessages, errorMessage];
       });
 
-      // Clear loading state AFTER messages are updated
       setIsLoading(false);
       onSessionTransitionSettled();
     });
@@ -177,7 +217,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
       setSessionActive(false);
       setIsLoading(false);
-      setAgentConnected(false); // Reset agent connected state when session ends
+      setAgentConnected(false);
       sessionActiveStateRef.current = false;
       onSessionTransitionSettled();
     });
@@ -238,10 +278,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       }
     });
     disposers.push(disposeDebugLogInfo);
-
-    // Don't start session automatically - wait for agent selection
-    // The user should select an agent first
-    // Note: Agent selection from external commands is now handled in App.tsx
 
     return () => {
       disposers.forEach(dispose => dispose());

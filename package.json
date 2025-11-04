@@ -19,7 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "^0.18.1",
+    "@salesforce/agents": "nga",
     "@salesforce/core": "^8.23.2",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",
@@ -80,20 +80,6 @@
           "type": "boolean",
           "default": true,
           "description": "Show generated data in test results output"
-        },
-        "salesforce.agentforceDX.showAgentTracer": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show the Agent Tracer and enable tabs in the panel"
-        },
-        "salesforce.agentforceDX.tracerDataFilePath": {
-          "type": "string",
-          "default": "",
-          "description": "Absolute path to the mock agent trace response file"
-        },
-        "salesforce.agentforceDX.demoAgentName": {
-          "type": "string",
-          "description": "Developer name of the agent to use for preview"
         }
       }
     },
