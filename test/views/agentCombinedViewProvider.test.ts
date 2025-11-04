@@ -666,8 +666,8 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(getConfigMock).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'configurationChanged',
-        data: { showAgentTracer: true }
+        command: 'configuration',
+        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
       });
     });
 
