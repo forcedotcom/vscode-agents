@@ -105,11 +105,14 @@ describe('Bot Version File System Lookup', () => {
 
   it('should fall back to filename if file system lookup fails', async () => {
     const mockFilePath = path.join('path', 'to', 'v1.botVersion-meta.xml');
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
     (vscode.workspace.fs.readDirectory as jest.Mock).mockRejectedValue(new Error('File read error'));
 
     const botName = await getAgentNameFromFile('v1.botVersion-meta.xml', mockFilePath);
     expect(botName).toBe('v1'); // Should fall back to version name
+
+    consoleWarnSpy.mockRestore();
   });
 });
 
@@ -210,6 +213,7 @@ describe('Directory Path Handling', () => {
 
   it('should handle directory read errors gracefully', async () => {
     const mockDirectoryPath = path.join('path', 'to', 'force-app', 'main', 'default', 'botVersions', 'ErrorBot');
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({
       type: vscode.FileType.Directory
@@ -219,5 +223,7 @@ describe('Directory Path Handling', () => {
 
     const botName = await getAgentNameFromPath(mockDirectoryPath);
     expect(botName).toBe('ErrorBot'); // Should fall back to directory name
+
+    consoleWarnSpy.mockRestore();
   });
 });
