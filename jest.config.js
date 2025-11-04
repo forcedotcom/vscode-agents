@@ -7,7 +7,8 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/lib/', // Add this line to ignore the lib directory
-    '/extension/'
+    '/extension/',
+    '/test/webview/' // Ignore webview tests (they use a separate config)
   ],
   reporters: ['default', ['jest-junit', { outputName: 'junit-custom-unitTests.xml' }]],
   coverageReporters: ['lcov', 'text'],
