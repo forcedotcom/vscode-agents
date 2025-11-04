@@ -179,11 +179,20 @@ const App: React.FC = () => {
           return;
         }
 
-        // Update displayed agent ID but don't auto-start session
-        // Session start is now handled by history loading flow:
-        // - AgentSelector calls loadAgentHistory()
-        // - Backend sends 'noHistoryFound' (auto-start) or 'conversationHistory' (wait for play)
-        if (hasTargetAgent && changingAgents) {
+        // Handle session start based on context:
+        // - shouldForceRestart = true (play/refresh button): Start session immediately
+        // - shouldForceRestart = false (dropdown selection): Let history flow handle it
+        if (shouldForceRestart && hasTargetAgent) {
+          // Play/refresh button clicked - start session immediately
+          const waitForStart = waitForSessionStart();
+          vscodeApi.startSession(nextAgentId);
+          const startSucceeded = await waitForStart;
+
+          if (startSucceeded) {
+            setDisplayedAgentIdState(nextAgentId);
+          }
+        } else if (hasTargetAgent && changingAgents) {
+          // Dropdown selection - just update UI, history flow handles session start
           setDisplayedAgentIdState(nextAgentId);
         }
 
