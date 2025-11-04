@@ -76,18 +76,50 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   };
 
+  // Group agents by type
+  const publishedAgents = agents.filter(agent => agent.type === 'published');
+  const scriptAgents = agents.filter(agent => agent.type === 'script');
+
+  // Get the selected agent's details for custom display
+  const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
+  const selectedAgentType = selectedAgentInfo?.type === 'script' ? 'Agent Script' : selectedAgentInfo?.type === 'published' ? 'Published' : null;
+
   return (
     <div className="agent-selector">
-      <select className="agent-select" value={selectedAgent} onChange={handleAgentChange} disabled={isLoading}>
+      <select
+        className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
+        value={selectedAgent}
+        onChange={handleAgentChange}
+        disabled={isLoading}
+      >
         <option value="">
           {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
         </option>
-        {agents.map(agent => (
-          <option key={agent.id} value={agent.id}>
-            {agent.name}
-          </option>
-        ))}
+        {publishedAgents.length > 0 && (
+          <optgroup label="Published">
+            {publishedAgents.map(agent => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {scriptAgents.length > 0 && (
+          <optgroup label="Agent Script">
+            {scriptAgents.map(agent => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
+      {selectedAgentInfo && selectedAgentType && (
+        <div className="agent-select-display">
+          <span className="agent-name">{selectedAgentInfo.name}</span>
+          <span className="agent-type">({selectedAgentType})</span>
+        </div>
+      )}
     </div>
   );
 };

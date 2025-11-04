@@ -389,11 +389,28 @@ describe('AgentCombinedViewProvider', () => {
       const localAgents = await (provider as any).discoverLocalAgents();
 
       expect(localAgents).toHaveLength(2);
-      expect(localAgents[0].name).toBe('agent1 (Agent Script)');
+      expect(localAgents[0].name).toBe('agent1');
       expect(localAgents[0].id).toBe('local:/workspace/agent1.agent');
       expect(localAgents[0].filePath).toBe('/workspace/agent1.agent');
-      expect(localAgents[1].name).toBe('agent2 (Agent Script)');
+      expect(localAgents[1].name).toBe('agent2');
       expect(localAgents[1].id).toBe('local:/workspace/agent2.agent');
+    });
+
+    it('should sort discovered agents alphabetically by name', async () => {
+      const mockAgentFiles = [
+        { fsPath: '/workspace/zebra.agent' },
+        { fsPath: '/workspace/alpha.agent' },
+        { fsPath: '/workspace/beta.agent' }
+      ];
+
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockAgentFiles as any);
+
+      const localAgents = await (provider as any).discoverLocalAgents();
+
+      expect(localAgents).toHaveLength(3);
+      expect(localAgents[0].name).toBe('alpha');
+      expect(localAgents[1].name).toBe('beta');
+      expect(localAgents[2].name).toBe('zebra');
     });
 
     it('should handle errors when discovering agents', async () => {
