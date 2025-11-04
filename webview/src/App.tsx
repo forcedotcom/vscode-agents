@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [showTracerTab, setShowTracerTab] = useState<boolean>(false);
   const [displayedAgentId, setDisplayedAgentIdState] = useState('');
   const [desiredAgentId, setDesiredAgentId] = useState('');
+  const [restartTrigger, setRestartTrigger] = useState(0);
   const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
@@ -53,6 +54,8 @@ const App: React.FC = () => {
         console.log('[Session Message] Setting forceRestart=true and desiredAgentId=', data.agentId);
         forceRestartRef.current = true;
         setDesiredAgentId(data.agentId);
+        // Increment restart trigger to force useEffect to run even if agent ID is the same
+        setRestartTrigger(prev => prev + 1);
         vscodeApi.setSelectedAgentId(data.agentId);
       }
     });
@@ -233,7 +236,7 @@ const App: React.FC = () => {
         console.error('Error managing agent session:', err);
         handleSessionTransitionSettled();
       });
-  }, [desiredAgentId, waitForSessionEnd, waitForSessionStart, handleSessionTransitionSettled]);
+  }, [desiredAgentId, restartTrigger, waitForSessionEnd, waitForSessionStart, handleSessionTransitionSettled]);
 
   const previewAgentId = desiredAgentId !== '' ? desiredAgentId : displayedAgentId;
   const pendingAgentId = desiredAgentId !== displayedAgentId ? desiredAgentId : null;
