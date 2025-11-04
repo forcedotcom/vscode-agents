@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { vscodeApi, AgentInfo } from '../../services/vscodeApi';
+import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentSelector.css';
 
 interface AgentSelectorProps {

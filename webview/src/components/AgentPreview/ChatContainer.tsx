@@ -1,6 +1,6 @@
 import React from 'react';
-import ChatMessage from './ChatMessage';
-import SystemMessage from './SystemMessage';
+import ChatMessage from './ChatMessage.js';
+import SystemMessage from './SystemMessage.js';
 import './ChatContainer.css';
 
 interface Message {

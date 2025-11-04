@@ -14,3 +14,7 @@ dist/
 lib/
 node_modules
 out/
+
+# Test result files
+junit-*.xml
+*-tests.xml

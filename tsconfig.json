@@ -12,6 +12,7 @@
     "strict": true,
     "moduleResolution": "Node16",
     "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
     /* Additional Checks */
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": true,
@@ -19,5 +20,5 @@
     "jsx": "preserve",
     "resolveJsonModule": true
   },
-  "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "webview"]
+  "exclude": ["test/**/*.test.ts", "test/**/*.test.tsx", "node_modules", "scripts", "webview"]
 }
