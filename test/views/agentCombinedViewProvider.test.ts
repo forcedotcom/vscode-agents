@@ -737,5 +737,56 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockWebviewView.webview.onDidReceiveMessage).toHaveBeenCalledWith(expect.any(Function));
     });
   });
+
+  describe('Message Handlers', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+
+    beforeEach(() => {
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      // Initialize the webview to register message handlers
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+    });
+
+    it('should handle startSession with invalid agentId', async () => {
+      await messageHandler({ command: 'startSession', data: {} });
+
+      // Should post error back to webview
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: expect.stringMatching(/error|sessionError/)
+        })
+      );
+    });
+
+    it('should handle configuration change event when webview exists', () => {
+      // Configuration handler is set up in constructor, find it
+      const configHandlerCalls = (vscode.workspace.onDidChangeConfiguration as jest.Mock).mock.calls;
+
+      if (configHandlerCalls.length > 0) {
+        const configHandler = configHandlerCalls[configHandlerCalls.length - 1][0];
+
+        configHandler({ affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer' });
+
+        expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+          command: 'configuration',
+          data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
+        });
+      }
+    });
+  });
 });
 
