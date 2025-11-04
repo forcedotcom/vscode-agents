@@ -179,19 +179,11 @@ const App: React.FC = () => {
           return;
         }
 
-        const shouldStartSession =
-          hasTargetAgent && (changingAgents || shouldForceRestart || !sessionActiveRef.current);
-
-        if (!shouldStartSession) {
-          handleSessionTransitionSettled();
-          return;
-        }
-
-        const waitForStart = waitForSessionStart();
-        vscodeApi.startSession(nextAgentId);
-        const startSucceeded = await waitForStart;
-
-        if (startSucceeded) {
+        // Update displayed agent ID but don't auto-start session
+        // Session start is now handled by history loading flow:
+        // - AgentSelector calls loadAgentHistory()
+        // - Backend sends 'noHistoryFound' (auto-start) or 'conversationHistory' (wait for play)
+        if (hasTargetAgent && changingAgents) {
           setDisplayedAgentIdState(nextAgentId);
         }
 
