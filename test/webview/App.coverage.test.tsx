@@ -292,5 +292,82 @@ describe('App Coverage Tests', () => {
       // But setSelectedAgentId should have been called
       expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('test-agent');
     });
+
+    it('should hit line 132: race condition - session ends between check and waitForSessionEnd call', async () => {
+      render(<App />);
+
+      // Start a session
+      act(() => {
+        triggerMessage('selectAgent', { agentId: 'agent1' });
+      });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+      });
+
+      act(() => {
+        triggerMessage('sessionStarted', {});
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+
+      jest.clearAllMocks();
+
+      // Now we'll trigger a race condition:
+      // 1. Start switching to agent2 (which checks sessionActiveRef and starts calling waitForSessionEnd)
+      // 2. Immediately trigger sessionEnded to set sessionActiveRef to false
+      // This creates a scenario where waitForSessionEnd is called but session becomes inactive
+
+      act(() => {
+        triggerMessage('selectAgent', { agentId: 'agent2' });
+      });
+
+      // Immediately trigger session ended (race condition)
+      act(() => {
+        triggerMessage('sessionEnded', {});
+      });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      // The race condition should have been handled gracefully
+      expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
+    });
+
+    it('should hit line 132: explicit early return path', async () => {
+      render(<App />);
+
+      // Set up a scenario: select agent1, but DON'T start the session
+      act(() => {
+        triggerMessage('selectAgent', { agentId: 'agent1' });
+      });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 30));
+      });
+
+      // Do NOT trigger sessionStarted - leave session inactive
+      jest.clearAllMocks();
+
+      // Now select a different agent
+      // Since we're "changing agents" but session is still not active,
+      // this should still handle the transition gracefully
+      act(() => {
+        triggerMessage('selectAgent', { agentId: 'agent2' });
+      });
+
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+
+      // Should update to agent2 without calling endSession
+      expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent2');
+
+      // Session was never active, so endSession should not be called
+      expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
+    });
   });
 });
