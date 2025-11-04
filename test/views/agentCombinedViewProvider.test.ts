@@ -2270,6 +2270,28 @@ describe('AgentCombinedViewProvider', () => {
         data: []
       });
     });
+
+    it('should use default connection when clientAppResult has unexpected type', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+
+      // Return an unexpected type (not 'none', 'single', or 'multiple')
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'unknown' as any,
+        clientApps: []
+      });
+
+      const mockConn = {
+        instanceUrl: 'https://test.salesforce.com'
+      };
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue(mockConn);
+      Agent.listRemote = jest.fn().mockResolvedValue([]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      // Should fall back to default connection
+      expect(CoreExtensionService.getDefaultConnection).toHaveBeenCalled();
+      expect(Agent.listRemote).toHaveBeenCalledWith(mockConn);
+    });
   });
 
   describe('clientAppSelected Message Handler', () => {
@@ -2449,6 +2471,41 @@ describe('AgentCombinedViewProvider', () => {
         command: 'error',
         data: { message: 'Error selecting client app: Connection failed' }
       });
+    });
+
+    it('should handle edge case where selectedClientApp becomes falsy after assignment', async () => {
+      // This tests the redundant check on line 678
+      // Create a spy that will set selectedClientApp to undefined after it's set
+      const originalDescriptor = Object.getOwnPropertyDescriptor(provider, 'selectedClientApp');
+
+      let backingValue: string | undefined;
+      Object.defineProperty(provider, 'selectedClientApp', {
+        get() { return backingValue; },
+        set(value) {
+          // Simulate a weird edge case where setting the value fails
+          if (value === 'FailApp') {
+            backingValue = undefined; // Force it to be falsy
+          } else {
+            backingValue = value;
+          }
+        },
+        configurable: true
+      });
+
+      await messageHandler({
+        command: 'clientAppSelected',
+        data: { clientAppName: 'FailApp' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'Error selecting client app: Client app not set' }
+      });
+
+      // Restore original property descriptor
+      if (originalDescriptor) {
+        Object.defineProperty(provider, 'selectedClientApp', originalDescriptor);
+      }
     });
 
     it('should use DeveloperName when MasterLabel is missing', async () => {
