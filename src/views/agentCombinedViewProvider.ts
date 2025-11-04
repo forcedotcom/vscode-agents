@@ -383,9 +383,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // Show notification
           vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
 
-          // Note: Conversation history is now loaded when agent is selected, not when session starts
-          // We still load it here as a fallback in case history wasn't loaded during selection
-          await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
+          // History loading is now exclusively handled by loadAgentHistory flow
+          // Don't load history here to avoid duplicate messages
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
