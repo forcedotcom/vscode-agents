@@ -12,6 +12,13 @@ module.exports = {
     '/test/views/',
     '/test/services/'
   ],
+  // Don't force coverage collection from untested files
+  // collectCoverageFrom: [
+  //   'webview/src/**/*.{ts,tsx}',
+  //   '!webview/src/**/*.d.ts',
+  //   '!webview/src/main.tsx',
+  //   '!webview/src/vite-env.d.ts'
+  // ],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.svg$': '<rootDir>/test/__mocks__/fileMock.js',
@@ -21,11 +28,7 @@ module.exports = {
   moduleDirectories: ['node_modules', 'webview/node_modules'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true
-      }
+      tsconfig: './tsconfig.test.json'
     }]
   },
   reporters: ['default', ['jest-junit', { outputName: 'junit-webview-tests.xml' }]],

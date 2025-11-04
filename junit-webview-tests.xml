@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="51" failures="0" errors="0" time="1.771">
-  <testsuite name="vscodeApi" errors="0" failures="0" skipped="0" timestamp="2025-11-04T17:38:27" time="0.903" tests="21">
-    <testcase classname="vscodeApi Message Handling should register message handlers" name="vscodeApi Message Handling should register message handlers" time="0.003">
+<testsuites name="jest tests" tests="51" failures="0" errors="0" time="1.643">
+  <testsuite name="vscodeApi" errors="0" failures="0" skipped="0" timestamp="2025-11-04T17:57:12" time="0.615" tests="21">
+    <testcase classname="vscodeApi Message Handling should register message handlers" name="vscodeApi Message Handling should register message handlers" time="0.002">
     </testcase>
     <testcase classname="vscodeApi Message Handling should invoke handler when message is received" name="vscodeApi Message Handling should invoke handler when message is received" time="0.001">
     </testcase>
@@ -27,37 +27,37 @@
     </testcase>
     <testcase classname="vscodeApi Agent Management should send setSelectedAgentId message" name="vscodeApi Agent Management should send setSelectedAgentId message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Agent Management should send loadAgentHistory message" name="vscodeApi Agent Management should send loadAgentHistory message" time="0">
+    <testcase classname="vscodeApi Agent Management should send loadAgentHistory message" name="vscodeApi Agent Management should send loadAgentHistory message" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Configuration should send getConfiguration message with section" name="vscodeApi Configuration should send getConfiguration message with section" time="0.001">
+    <testcase classname="vscodeApi Configuration should send getConfiguration message with section" name="vscodeApi Configuration should send getConfiguration message with section" time="0">
     </testcase>
     <testcase classname="vscodeApi Client App Selection should send clientAppSelected message" name="vscodeApi Client App Selection should send clientAppSelected message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Client App Selection should register onClientAppReady handler" name="vscodeApi Client App Selection should register onClientAppReady handler" time="0.001">
+    <testcase classname="vscodeApi Client App Selection should register onClientAppReady handler" name="vscodeApi Client App Selection should register onClientAppReady handler" time="0">
     </testcase>
     <testcase classname="vscodeApi Utility Methods should send clearChat message" name="vscodeApi Utility Methods should send clearChat message" time="0">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send clearMessages message" name="vscodeApi Utility Methods should send clearMessages message" time="0">
+    <testcase classname="vscodeApi Utility Methods should send clearMessages message" name="vscodeApi Utility Methods should send clearMessages message" time="0.001">
     </testcase>
-    <testcase classname="vscodeApi Utility Methods should send getTraceData message" name="vscodeApi Utility Methods should send getTraceData message" time="0.001">
+    <testcase classname="vscodeApi Utility Methods should send getTraceData message" name="vscodeApi Utility Methods should send getTraceData message" time="0">
     </testcase>
     <testcase classname="vscodeApi Utility Methods should send executeCommand message" name="vscodeApi Utility Methods should send executeCommand message" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="App" errors="0" failures="0" skipped="0" timestamp="2025-11-04T17:38:27" time="1.29" tests="30">
-    <testcase classname="App Initial Rendering should render without crashing" name="App Initial Rendering should render without crashing" time="0.015">
+  <testsuite name="App" errors="0" failures="0" skipped="0" timestamp="2025-11-04T17:57:12" time="0.76" tests="30">
+    <testcase classname="App Initial Rendering should render without crashing" name="App Initial Rendering should render without crashing" time="0.012">
     </testcase>
     <testcase classname="App Initial Rendering should default to preview tab" name="App Initial Rendering should default to preview tab" time="0.002">
     </testcase>
-    <testcase classname="App Initial Rendering should not show tracer tab by default" name="App Initial Rendering should not show tracer tab by default" time="0.001">
+    <testcase classname="App Initial Rendering should not show tracer tab by default" name="App Initial Rendering should not show tracer tab by default" time="0.002">
     </testcase>
-    <testcase classname="App Initial Rendering should request configuration on mount" name="App Initial Rendering should request configuration on mount" time="0.002">
+    <testcase classname="App Initial Rendering should request configuration on mount" name="App Initial Rendering should request configuration on mount" time="0.001">
     </testcase>
-    <testcase classname="App Tab Navigation should switch to tracer tab when tracer is clicked" name="App Tab Navigation should switch to tracer tab when tracer is clicked" time="0.02">
+    <testcase classname="App Tab Navigation should switch to tracer tab when tracer is clicked" name="App Tab Navigation should switch to tracer tab when tracer is clicked" time="0.016">
     </testcase>
-    <testcase classname="App Tab Navigation should switch back to preview tab" name="App Tab Navigation should switch back to preview tab" time="0.005">
+    <testcase classname="App Tab Navigation should switch back to preview tab" name="App Tab Navigation should switch back to preview tab" time="0.004">
     </testcase>
-    <testcase classname="App Agent Selection should update desiredAgentId when agent is selected" name="App Agent Selection should update desiredAgentId when agent is selected" time="0.042">
+    <testcase classname="App Agent Selection should update desiredAgentId when agent is selected" name="App Agent Selection should update desiredAgentId when agent is selected" time="0.043">
     </testcase>
     <testcase classname="App Agent Selection should handle agent selection via selectAgent message" name="App Agent Selection should handle agent selection via selectAgent message" time="0.003">
     </testcase>
@@ -69,41 +69,41 @@
     </testcase>
     <testcase classname="App Session Management should handle session errors" name="App Session Management should handle session errors" time="0.001">
     </testcase>
-    <testcase classname="App Session Management should end session and start new one when switching agents with active session" name="App Session Management should end session and start new one when switching agents with active session" time="0.057">
+    <testcase classname="App Session Management should end session and start new one when switching agents with active session" name="App Session Management should end session and start new one when switching agents with active session" time="0.059">
     </testcase>
-    <testcase classname="App Force Restart (Play Button) should trigger session restart when selectAgent message received" name="App Force Restart (Play Button) should trigger session restart when selectAgent message received" time="0.003">
+    <testcase classname="App Force Restart (Play Button) should trigger session restart when selectAgent message received" name="App Force Restart (Play Button) should trigger session restart when selectAgent message received" time="0.002">
     </testcase>
-    <testcase classname="App Force Restart (Play Button) should set transitioning state during force restart" name="App Force Restart (Play Button) should set transitioning state during force restart" time="0.007">
+    <testcase classname="App Force Restart (Play Button) should set transitioning state during force restart" name="App Force Restart (Play Button) should set transitioning state during force restart" time="0.008">
     </testcase>
-    <testcase classname="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" name="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" time="0.005">
+    <testcase classname="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" name="App Tracer Tab Configuration should show tracer tab when configuration is enabled and agent selected" time="0.004">
     </testcase>
-    <testcase classname="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" name="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" time="0.006">
+    <testcase classname="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" name="App Tracer Tab Configuration should hide tracer tab when configuration is disabled" time="0.007">
     </testcase>
     <testcase classname="App Tracer Tab Configuration should not show tracer tab without agent selected" name="App Tracer Tab Configuration should not show tracer tab without agent selected" time="0.001">
     </testcase>
     <testcase classname="App Client App State should handle client app required state" name="App Client App State should handle client app required state" time="0.001">
     </testcase>
-    <testcase classname="App Client App State should handle client app selection" name="App Client App State should handle client app selection" time="0.002">
+    <testcase classname="App Client App State should handle client app selection" name="App Client App State should handle client app selection" time="0.001">
     </testcase>
-    <testcase classname="App Session Transition State should clear displayed agent when no target agent" name="App Session Transition State should clear displayed agent when no target agent" time="0.016">
+    <testcase classname="App Session Transition State should clear displayed agent when no target agent" name="App Session Transition State should clear displayed agent when no target agent" time="0.014">
     </testcase>
-    <testcase classname="App Session Transition State should show pending agent during transitions" name="App Session Transition State should show pending agent during transitions" time="0.007">
+    <testcase classname="App Session Transition State should show pending agent during transitions" name="App Session Transition State should show pending agent during transitions" time="0.005">
     </testcase>
     <testcase classname="App Edge Cases should handle configuration message for non-tracer sections" name="App Edge Cases should handle configuration message for non-tracer sections" time="0.001">
     </testcase>
-    <testcase classname="App Edge Cases should handle selectAgent without agentId" name="App Edge Cases should handle selectAgent without agentId" time="0.001">
+    <testcase classname="App Edge Cases should handle selectAgent without agentId" name="App Edge Cases should handle selectAgent without agentId" time="0">
     </testcase>
     <testcase classname="App Edge Cases should handle multiple rapid agent switches" name="App Edge Cases should handle multiple rapid agent switches" time="0.002">
     </testcase>
-    <testcase classname="App Edge Cases should handle session start failure gracefully" name="App Edge Cases should handle session start failure gracefully" time="0.104">
+    <testcase classname="App Edge Cases should handle session start failure gracefully" name="App Edge Cases should handle session start failure gracefully" time="0.103">
     </testcase>
     <testcase classname="App Edge Cases should handle sessionStarting message" name="App Edge Cases should handle sessionStarting message" time="0.003">
     </testcase>
-    <testcase classname="App Edge Cases should handle switching to no agent while session is active" name="App Edge Cases should handle switching to no agent while session is active" time="0.017">
+    <testcase classname="App Edge Cases should handle switching to no agent while session is active" name="App Edge Cases should handle switching to no agent while session is active" time="0.016">
     </testcase>
-    <testcase classname="App Edge Cases should update agent without starting session when not force restart" name="App Edge Cases should update agent without starting session when not force restart" time="0.013">
+    <testcase classname="App Edge Cases should update agent without starting session when not force restart" name="App Edge Cases should update agent without starting session when not force restart" time="0.012">
     </testcase>
-    <testcase classname="App Edge Cases should handle session without active session when ending" name="App Edge Cases should handle session without active session when ending" time="0.002">
+    <testcase classname="App Edge Cases should handle session without active session when ending" name="App Edge Cases should handle session without active session when ending" time="0.003">
     </testcase>
   </testsuite>
 </testsuites>

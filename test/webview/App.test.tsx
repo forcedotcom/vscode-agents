@@ -15,7 +15,7 @@
  */
 import '@testing-library/jest-dom';
 import React from 'react';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock vscodeApi before importing App
