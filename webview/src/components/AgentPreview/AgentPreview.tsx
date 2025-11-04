@@ -75,11 +75,22 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         setMessages([]);
       }
 
+      // History loaded - show it without starting session
+      // User will manually click play button to start new session
       setSessionActive(false);
       setAgentConnected(false);
       setIsLoading(false);
     });
     disposers.push(disposeConversationHistory);
+
+    const disposeNoHistoryFound = vscodeApi.onMessage('noHistoryFound', data => {
+      // No history found - auto-start the session
+      if (data && data.agentId) {
+        setIsLoading(true);
+        vscodeApi.startSession(data.agentId);
+      }
+    });
+    disposers.push(disposeNoHistoryFound);
 
     const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', data => {
       const timeSinceError = Date.now() - sessionErrorTimestampRef.current;
