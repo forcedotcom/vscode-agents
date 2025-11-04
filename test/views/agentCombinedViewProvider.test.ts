@@ -678,5 +678,64 @@ describe('AgentCombinedViewProvider', () => {
       }).not.toThrow();
     });
   });
+
+  describe('setPreselectedAgentId', () => {
+    it('should set preselected agent ID', () => {
+      provider.setPreselectedAgentId('0X123456789012345');
+      expect((provider as any).preselectedAgentId).toBe('0X123456789012345');
+    });
+
+    it('should update preselected agent ID when called multiple times', () => {
+      provider.setPreselectedAgentId('0X111111111111111');
+      expect((provider as any).preselectedAgentId).toBe('0X111111111111111');
+
+      provider.setPreselectedAgentId('0X222222222222222');
+      expect((provider as any).preselectedAgentId).toBe('0X222222222222222');
+    });
+  });
+
+  describe('resolveWebviewView', () => {
+    it('should set webview options with correct settings', () => {
+      // Mock getHtmlForWebview to avoid file system operations
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><head></head><body>Test</body></html>');
+
+      const mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+          html: '',
+          postMessage: jest.fn()
+        }
+      } as any;
+
+      const mockToken = {} as vscode.CancellationToken;
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, mockToken);
+
+      expect(mockWebviewView.webview.options).toHaveProperty('enableScripts', true);
+      expect(mockWebviewView.webview.options).toHaveProperty('localResourceRoots');
+      expect(mockWebviewView.webview.onDidReceiveMessage).toHaveBeenCalled();
+    });
+
+    it('should register message handler', () => {
+      // Mock getHtmlForWebview to avoid file system operations
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><head></head><body>Test</body></html>');
+
+      const mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn(() => ({ dispose: jest.fn() })),
+          html: '',
+          postMessage: jest.fn()
+        }
+      } as any;
+
+      const mockToken = {} as vscode.CancellationToken;
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, mockToken);
+
+      expect(mockWebviewView.webview.onDidReceiveMessage).toHaveBeenCalledWith(expect.any(Function));
+    });
+  });
 });
 
