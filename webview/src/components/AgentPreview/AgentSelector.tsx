@@ -17,27 +17,24 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    // Listen for available agents from VS Code
     const disposeAvailableAgents = vscodeApi.onMessage(
       'availableAgents',
       (data: { agents: AgentInfo[]; selectedAgentId?: string } | AgentInfo[]) => {
         setIsLoading(false);
         if (Array.isArray(data)) {
           // Handle legacy format
-          if (data.length > 0) {
-            setAgents(data);
-          } else {
-            setAgents([]);
-          }
+          setAgents(data);
         } else {
-          // Handle new format with selectedAgentId
           if (data.agents && data.agents.length > 0) {
             setAgents(data.agents);
             if (data.selectedAgentId) {
               const agentExists = data.agents.some(agent => agent.id === data.selectedAgentId);
               if (agentExists) {
                 onAgentChange(data.selectedAgentId);
+                vscodeApi.clearMessages();
+                vscodeApi.loadAgentHistory(data.selectedAgentId);
               }
             }
           } else {
@@ -47,20 +44,14 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       }
     );
 
-    // Listen for client app required message (Case 1) - pass to parent
     const disposeClientAppRequired = vscodeApi.onMessage('clientAppRequired', data => {
       setIsLoading(false);
-      if (onClientAppRequired) {
-        onClientAppRequired(data);
-      }
+      onClientAppRequired?.(data);
     });
 
-    // Listen for client app selection required (Case 3) - pass to parent
     const disposeSelectClientApp = vscodeApi.onMessage('selectClientApp', data => {
       setIsLoading(false);
-      if (onClientAppSelection) {
-        onClientAppSelection(data);
-      }
+      onClientAppSelection?.(data);
     });
 
     // Request available agents (this will trigger the client app checking)
@@ -76,6 +67,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
     onAgentChange(agentId);
+
+    if (agentId && agentId !== '') {
+      vscodeApi.clearMessages();
+      vscodeApi.loadAgentHistory(agentId);
+    } else {
+      vscodeApi.clearMessages();
+    }
   };
 
   return (
