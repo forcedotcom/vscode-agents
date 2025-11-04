@@ -1246,5 +1246,230 @@ describe('AgentCombinedViewProvider', () => {
       );
     });
   });
+
+  describe('sendChatMessage Message Handler', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+    let consoleErrorSpy: jest.SpyInstance;
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should send chat message and receive response', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{ message: 'Agent response' }],
+          apexDebugLog: null
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Hello agent' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'messageStarting',
+        data: { message: 'Sending message...' }
+      });
+
+      expect(mockAgentPreview.send).toHaveBeenCalledWith('test-session', 'Hello agent');
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'messageSent',
+        data: { content: 'Agent response' }
+      });
+    });
+
+    it('should use default message when agent response is empty', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{}], // No message property
+          apexDebugLog: null
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Hello' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'messageSent',
+        data: { content: 'I received your message.' }
+      });
+    });
+
+    it('should handle apex debug log when debugging is enabled', async () => {
+      const mockApexLog = {
+        Id: 'logId123',
+        LogLength: 1000
+      };
+
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{ message: 'Response' }],
+          apexDebugLog: mockApexLog
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).apexDebugging = true;
+
+      // Mock saveApexDebugLog
+      jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue('/path/to/log.log');
+      // Mock setupAutoDebugListeners
+      jest.spyOn(provider as any, 'setupAutoDebugListeners').mockImplementation();
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test message' }
+      });
+
+      expect((provider as any).saveApexDebugLog).toHaveBeenCalledWith(mockApexLog);
+      expect((provider as any).setupAutoDebugListeners).toHaveBeenCalled();
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'sf.launch.replay.debugger.logfile.path',
+        '/path/to/log.log'
+      );
+    });
+
+    it('should handle error when launching apex debugger fails', async () => {
+      const mockApexLog = { Id: 'logId123' };
+
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{ message: 'Response' }],
+          apexDebugLog: mockApexLog
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).apexDebugging = true;
+
+      jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue('/path/to/log.log');
+      jest.spyOn(provider as any, 'setupAutoDebugListeners').mockImplementation();
+      (vscode.commands.executeCommand as jest.Mock).mockRejectedValue(new Error('Debugger not found'));
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Could not launch Apex Replay Debugger:', expect.any(Error));
+    });
+
+    it('should handle error when saving apex debug log fails', async () => {
+      const mockApexLog = { Id: 'logId123' };
+
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{ message: 'Response' }],
+          apexDebugLog: mockApexLog
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).apexDebugging = true;
+
+      jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue(new Error('Failed to save log'));
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error handling apex debug log:', expect.any(Error));
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Error processing debug log: Failed to save log');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'debugLogError',
+        data: { message: 'Error processing debug log: Failed to save log' }
+      });
+    });
+
+    it('should skip debugger launch when saveApexDebugLog returns undefined', async () => {
+      const mockApexLog = { Id: 'logId123' };
+
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{ message: 'Response' }],
+          apexDebugLog: mockApexLog
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).apexDebugging = true;
+
+      jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue(undefined);
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith(
+        'sf.launch.replay.debugger.logfile.path',
+        expect.anything()
+      );
+    });
+
+    it('should notify when debug mode is enabled but no apex was executed', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{ message: 'Response' }],
+          apexDebugLog: null // No debug log
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).apexDebugging = true;
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'debugLogInfo',
+        data: { message: 'Debug mode is enabled, but no Apex was executed.' }
+      });
+    });
+  });
 });
 
