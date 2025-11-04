@@ -160,36 +160,27 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async message => {
       try {
         if (message.command === 'startSession') {
-          console.log('[Provider] Received startSession message:', message.data);
           webviewView.webview.postMessage({
             command: 'sessionStarting',
             data: { message: 'Starting session...' }
           });
-          console.log('[Provider] Sent sessionStarting message');
 
           // End existing session if one exists
           if (this.agentPreview && this.sessionId) {
-            console.log('[Provider] Ending existing session:', this.sessionId);
             try {
               await this.agentPreview.end(this.sessionId, 'UserRequest');
-              console.log('[Provider] Existing session ended');
             } catch (err) {
               console.warn('Error ending previous session:', err);
             }
-          } else {
-            console.log('[Provider] No existing session to end');
           }
 
           // If a client app was previously selected, reuse it to avoid re-prompt loops
-          console.log('[Provider] Getting connection...');
           const conn = this.selectedClientApp
             ? await createConnectionWithClientApp(this.selectedClientApp)
             : await CoreExtensionService.getDefaultConnection();
-          console.log('[Provider] Connection obtained');
 
           // Extract agentId from the message data and pass it as botId
           const agentId = this.preselectedAgentId || message.data?.agentId;
-          console.log('[Provider] Using agentId:', agentId, '(preselected:', this.preselectedAgentId, ', from message:', message.data?.agentId, ')');
 
           if (!agentId || typeof agentId !== 'string') {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
@@ -202,37 +193,28 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             );
           }
 
-          console.log('[Provider] Creating AgentPreview instance');
           this.agentPreview = new AgentPreview(conn, agentId);
 
           // Get agent name for notifications
-          console.log('[Provider] Getting remote agents...');
           const remoteAgents = await Agent.listRemote(conn);
           const agent = remoteAgents?.find(bot => bot.Id === agentId);
           this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
           this.currentAgentId = agentId;
-          console.log('[Provider] Agent name:', this.currentAgentName);
 
           // Enable debug mode if apex debugging is active
           if (this.apexDebugging) {
-            console.log('[Provider] Enabling debug mode');
             this.agentPreview.toggleApexDebugMode(this.apexDebugging);
           }
 
-          console.log('[Provider] Starting agent session...');
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
-          console.log('[Provider] Session started with ID:', this.sessionId);
-
           await this.setSessionActive(true);
-          console.log('[Provider] Session active flag set');
 
           // Show notification
           vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
-          console.log('[Provider] Sending sessionStarted message to webview');
           webviewView.webview.postMessage({
             command: 'sessionStarted',
             data: agentMessage
@@ -245,7 +227,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 }
               : { content: "Hi! I'm ready to help. What can I do for you?" }
           });
-          console.log('[Provider] sessionStarted message sent');
         } else if (message.command === 'setApexDebugging') {
           await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode

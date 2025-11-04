@@ -48,10 +48,8 @@ const App: React.FC = () => {
     });
 
     const disposeSelectAgent = vscodeApi.onMessage('selectAgent', data => {
-      console.log('[Session Message] Received selectAgent:', data);
       if (data && data.agentId) {
         // Update the selected agent in the dropdown
-        console.log('[Session Message] Setting forceRestart=true and desiredAgentId=', data.agentId);
         forceRestartRef.current = true;
         setDesiredAgentId(data.agentId);
         // Increment restart trigger to force useEffect to run even if agent ID is the same
@@ -90,45 +88,33 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', () => {
-      console.log('[Session Message] Received sessionStarted');
       sessionActiveRef.current = true;
       const resolver = sessionStartResolversRef.current.shift();
       if (resolver) {
-        console.log('[Session Message] Resolving sessionStarted promise');
         resolver(true);
-      } else {
-        console.warn('[Session Message] No resolver found for sessionStarted');
       }
     });
 
     const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
-      console.log('[Session Message] Received sessionEnded');
       sessionActiveRef.current = false;
       const resolver = sessionEndResolversRef.current.shift();
       if (resolver) {
-        console.log('[Session Message] Resolving sessionEnded promise');
         resolver();
-      } else {
-        console.log('[Session Message] No resolver for sessionEnded (this is OK if not waiting)');
       }
     });
 
     const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
-      console.log('[Session Message] Received sessionStarting');
       sessionActiveRef.current = false;
     });
 
-    const disposeSessionError = vscodeApi.onMessage('error', (data) => {
-      console.log('[Session Message] Received error:', data);
+    const disposeSessionError = vscodeApi.onMessage('error', () => {
       sessionActiveRef.current = false;
       const endResolver = sessionEndResolversRef.current.shift();
       if (endResolver) {
-        console.log('[Session Message] Resolving sessionEnd promise due to error');
         endResolver();
       }
       const startResolver = sessionStartResolversRef.current.shift();
       if (startResolver) {
-        console.log('[Session Message] Resolving sessionStart promise with false due to error');
         startResolver(false);
       }
     });
@@ -173,36 +159,21 @@ const App: React.FC = () => {
         const hasTargetAgent = nextAgentId !== '';
         const changingAgents = shouldForceRestart || previousAgentId !== nextAgentId;
 
-        console.log('[Session Transition] Debug:', {
-          shouldForceRestart,
-          previousAgentId,
-          nextAgentId,
-          hasExistingAgent,
-          hasTargetAgent,
-          changingAgents,
-          sessionActive: sessionActiveRef.current
-        });
-
         if (!changingAgents && !hasExistingAgent && !hasTargetAgent) {
-          console.log('[Session Transition] No action needed - early return');
           return;
         }
 
         if (changingAgents || shouldForceRestart) {
-          console.log('[Session Transition] Setting transitioning state');
           setIsSessionTransitioning(true);
         }
 
         if (hasExistingAgent && (changingAgents || shouldForceRestart) && sessionActiveRef.current) {
-          console.log('[Session Transition] Ending existing session');
           const waitForEnd = waitForSessionEnd();
           vscodeApi.endSession();
           await waitForEnd;
-          console.log('[Session Transition] Session ended');
         }
 
         if (!hasTargetAgent) {
-          console.log('[Session Transition] No target agent - clearing');
           setDisplayedAgentIdState('');
           handleSessionTransitionSettled();
           return;
@@ -211,20 +182,14 @@ const App: React.FC = () => {
         const shouldStartSession =
           hasTargetAgent && (changingAgents || shouldForceRestart || !sessionActiveRef.current);
 
-        console.log('[Session Transition] Should start session?', shouldStartSession);
-
         if (!shouldStartSession) {
-          console.log('[Session Transition] Not starting session - settling');
           handleSessionTransitionSettled();
           return;
         }
 
-        console.log('[Session Transition] Starting session for:', nextAgentId);
         const waitForStart = waitForSessionStart();
         vscodeApi.startSession(nextAgentId);
         const startSucceeded = await waitForStart;
-
-        console.log('[Session Transition] Session start result:', startSucceeded);
 
         if (startSucceeded) {
           setDisplayedAgentIdState(nextAgentId);
