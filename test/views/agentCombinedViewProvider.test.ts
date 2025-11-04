@@ -1930,5 +1930,341 @@ describe('AgentCombinedViewProvider', () => {
       );
     });
   });
+
+  describe('getAvailableAgents Message Handler', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+    let consoleErrorSpy: jest.SpyInstance;
+    const { Agent } = require('@salesforce/agents');
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+
+      // Reset selectedClientApp
+      (provider as any).selectedClientApp = undefined;
+
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should use existing selectedClientApp when already set', async () => {
+      (provider as any).selectedClientApp = 'ExistingApp';
+
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        {
+          Id: '0X1234567890123',
+          MasterLabel: 'Test Agent',
+          BotVersions: { records: [{ Status: 'Active' }] }
+        }
+      ]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      expect(createConnectionWithClientApp).toHaveBeenCalledWith('ExistingApp');
+      expect(getAvailableClientApps).not.toHaveBeenCalled();
+    });
+
+    it('should handle no client app available case', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
+        { fsPath: '/workspace/local.agent' }
+      ]);
+
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'none',
+        username: 'test@example.com',
+        error: 'No client app found'
+      });
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'availableAgents',
+        data: {
+          agents: expect.arrayContaining([
+            expect.objectContaining({ name: 'local', type: 'script' })
+          ]),
+          selectedAgentId: undefined
+        }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clientAppRequired',
+        data: {
+          message: expect.stringContaining('Preview an Agent'),
+          username: 'test@example.com',
+          error: 'No client app found'
+        }
+      });
+    });
+
+    it('should clear preselectedAgentId when no client app available', async () => {
+      (provider as any).preselectedAgentId = '0X1234567890123';
+
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'none',
+        username: 'test@example.com',
+        error: 'No client app'
+      });
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      expect((provider as any).preselectedAgentId).toBeUndefined();
+    });
+
+    it('should handle multiple client apps case', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'multiple',
+        username: 'test@example.com',
+        clientApps: [
+          { name: 'App1', consumerKey: 'key1' },
+          { name: 'App2', consumerKey: 'key2' }
+        ]
+      });
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'availableAgents',
+        data: {
+          agents: [],
+          selectedAgentId: undefined
+        }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'selectClientApp',
+        data: {
+          clientApps: expect.arrayContaining([
+            expect.objectContaining({ name: 'App1' }),
+            expect.objectContaining({ name: 'App2' })
+          ]),
+          username: 'test@example.com'
+        }
+      });
+    });
+
+    it('should clear preselectedAgentId when multiple client apps', async () => {
+      (provider as any).preselectedAgentId = '0X1234567890123';
+
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'multiple',
+        username: 'test@example.com',
+        clientApps: [{ name: 'App1' }]
+      });
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      expect((provider as any).preselectedAgentId).toBeUndefined();
+    });
+
+    it('should handle single client app case and set selectedClientApp', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'single',
+        clientApps: [{ name: 'SingleApp', consumerKey: 'key1' }]
+      });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+      Agent.listRemote = jest.fn().mockResolvedValue([]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      expect((provider as any).selectedClientApp).toBe('SingleApp');
+      expect(createConnectionWithClientApp).toHaveBeenCalledWith('SingleApp');
+    });
+
+    it('should filter agents with active BotVersions', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'single',
+        clientApps: [{ name: 'TestApp' }]
+      });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        {
+          Id: '0X1111111111111',
+          MasterLabel: 'Active Agent',
+          BotVersions: { records: [{ Status: 'Active' }] }
+        },
+        {
+          Id: '0X2222222222222',
+          MasterLabel: 'Inactive Agent',
+          BotVersions: { records: [{ Status: 'Inactive' }] }
+        },
+        {
+          Id: '0X3333333333333',
+          MasterLabel: 'Mixed Agent',
+          BotVersions: { records: [{ Status: 'Inactive' }, { Status: 'Active' }] }
+        }
+      ]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      const availableAgentsCall = mockWebviewView.webview.postMessage.mock.calls.find(
+        (call: any) => call[0].command === 'availableAgents'
+      );
+
+      expect(availableAgentsCall[0].data.agents).toHaveLength(2);
+      expect(availableAgentsCall[0].data.agents[0].name).toBe('Active Agent');
+      expect(availableAgentsCall[0].data.agents[1].name).toBe('Mixed Agent');
+    });
+
+    it('should sort remote agents alphabetically', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'single',
+        clientApps: [{ name: 'TestApp' }]
+      });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        {
+          Id: '0X1111111111111',
+          MasterLabel: 'Zebra Agent',
+          BotVersions: { records: [{ Status: 'Active' }] }
+        },
+        {
+          Id: '0X2222222222222',
+          MasterLabel: 'Alpha Agent',
+          BotVersions: { records: [{ Status: 'Active' }] }
+        }
+      ]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      const availableAgentsCall = mockWebviewView.webview.postMessage.mock.calls.find(
+        (call: any) => call[0].command === 'availableAgents'
+      );
+
+      expect(availableAgentsCall[0].data.agents[0].name).toBe('Alpha Agent');
+      expect(availableAgentsCall[0].data.agents[1].name).toBe('Zebra Agent');
+    });
+
+    it('should use DeveloperName when MasterLabel is missing', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'single',
+        clientApps: [{ name: 'TestApp' }]
+      });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        {
+          Id: '0X1111111111111',
+          DeveloperName: 'Dev_Agent',
+          BotVersions: { records: [{ Status: 'Active' }] }
+        }
+      ]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      const availableAgentsCall = mockWebviewView.webview.postMessage.mock.calls.find(
+        (call: any) => call[0].command === 'availableAgents'
+      );
+
+      expect(availableAgentsCall[0].data.agents[0].name).toBe('Dev_Agent');
+    });
+
+    it('should combine local and remote agents', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
+        { fsPath: '/workspace/local.agent' }
+      ]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'single',
+        clientApps: [{ name: 'TestApp' }]
+      });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      Agent.listRemote = jest.fn().mockResolvedValue([
+        {
+          Id: '0X1111111111111',
+          MasterLabel: 'Remote Agent',
+          BotVersions: { records: [{ Status: 'Active' }] }
+        }
+      ]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      const availableAgentsCall = mockWebviewView.webview.postMessage.mock.calls.find(
+        (call: any) => call[0].command === 'availableAgents'
+      );
+
+      expect(availableAgentsCall[0].data.agents).toHaveLength(2);
+      expect(availableAgentsCall[0].data.agents[0].type).toBe('script');
+      expect(availableAgentsCall[0].data.agents[1].type).toBe('published');
+    });
+
+    it('should send preselectedAgentId and then clear it', async () => {
+      (provider as any).preselectedAgentId = '0X1234567890123';
+
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'single',
+        clientApps: [{ name: 'TestApp' }]
+      });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+      Agent.listRemote = jest.fn().mockResolvedValue([]);
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      const availableAgentsCall = mockWebviewView.webview.postMessage.mock.calls.find(
+        (call: any) => call[0].command === 'availableAgents'
+      );
+
+      expect(availableAgentsCall[0].data.selectedAgentId).toBe('0X1234567890123');
+      expect((provider as any).preselectedAgentId).toBeUndefined();
+    });
+
+    it('should handle error and return empty list', async () => {
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
+      (getAvailableClientApps as jest.Mock).mockRejectedValue(new Error('Connection failed'));
+
+      await messageHandler({ command: 'getAvailableAgents' });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error getting available agents from org:', expect.any(Error));
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'availableAgents',
+        data: []
+      });
+    });
+  });
 });
 
