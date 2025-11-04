@@ -1725,5 +1725,210 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
   });
+
+  describe('Error Message Formatting', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should format agent deactivation error message', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockRejectedValue(new Error('404 NOT_FOUND No valid version available'))
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: {
+          message: 'This agent is currently deactivated and cannot be used for conversations. Please activate the agent first using the "Activate Agent" right click menu option or through the Salesforce Setup.'
+        }
+      });
+    });
+
+    it('should format agent not found error message', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockRejectedValue(new Error('404 NOT_FOUND Agent does not exist'))
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: {
+          message: 'The selected agent could not be found. It may have been deleted or you may not have access to it.'
+        }
+      });
+    });
+
+    it('should format permission error message (403)', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockRejectedValue(new Error('403 Access denied'))
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: {
+          message: "You don't have permission to use this agent. Please check with your administrator."
+        }
+      });
+    });
+
+    it('should format permission error message (FORBIDDEN)', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockRejectedValue(new Error('FORBIDDEN: Insufficient privileges'))
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: {
+          message: "You don't have permission to use this agent. Please check with your administrator."
+        }
+      });
+    });
+  });
+
+  describe('executeCommand and setSelectedAgentId Handlers', () => {
+    let messageHandler: (message: any) => Promise<void>;
+    let mockWebviewView: any;
+
+    beforeEach(() => {
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          html: '',
+          postMessage: jest.fn()
+        }
+      };
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+    });
+
+    it('should execute VSCode command when valid commandId provided', async () => {
+      await messageHandler({
+        command: 'executeCommand',
+        data: { commandId: 'workbench.action.files.save' }
+      });
+
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('workbench.action.files.save');
+    });
+
+    it('should not execute command when commandId is not a string', async () => {
+      await messageHandler({
+        command: 'executeCommand',
+        data: { commandId: 123 }
+      });
+
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
+    });
+
+    it('should set current agent ID and mark agent as selected', async () => {
+      await messageHandler({
+        command: 'setSelectedAgentId',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      expect((provider as any).currentAgentId).toBe('0X1234567890123');
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:agentSelected',
+        true
+      );
+    });
+
+    it('should clear current agent ID when agentId is empty string', async () => {
+      // First set an agent ID
+      (provider as any).currentAgentId = '0X1234567890123';
+
+      await messageHandler({
+        command: 'setSelectedAgentId',
+        data: { agentId: '' }
+      });
+
+      expect((provider as any).currentAgentId).toBeUndefined();
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:agentSelected',
+        false
+      );
+    });
+
+    it('should clear current agent ID when agentId is null', async () => {
+      // First set an agent ID
+      (provider as any).currentAgentId = '0X1234567890123';
+
+      await messageHandler({
+        command: 'setSelectedAgentId',
+        data: { agentId: null }
+      });
+
+      expect((provider as any).currentAgentId).toBeUndefined();
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:agentSelected',
+        false
+      );
+    });
+  });
 });
 
