@@ -16,7 +16,7 @@
 }
 
 .chat-input-field::placeholder {
-  color: var(--vscode-descriptionForeground);
+  color: var(--vscode-input-placeholderForeground);
   opacity: 0.7;
 }
 

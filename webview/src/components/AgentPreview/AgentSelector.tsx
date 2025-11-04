@@ -17,97 +17,61 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [previousAgent, setPreviousAgent] = useState('');
 
   useEffect(() => {
-    // Listen for available agents from VS Code
-    vscodeApi.onMessage('availableAgents', (data: { agents: AgentInfo[], selectedAgentId?: string } | AgentInfo[]) => {
-      setIsLoading(false);
-      if (Array.isArray(data)) {
-        // Handle legacy format
-        if (data.length > 0) {
+    const disposeAvailableAgents = vscodeApi.onMessage(
+      'availableAgents',
+      (data: { agents: AgentInfo[]; selectedAgentId?: string } | AgentInfo[]) => {
+        setIsLoading(false);
+        if (Array.isArray(data)) {
+          // Handle legacy format
           setAgents(data);
         } else {
-          setAgents([]);
-        }
-      } else {
-        // Handle new format with selectedAgentId
-        if (data.agents && data.agents.length > 0) {
-          setAgents(data.agents);
-          if (data.selectedAgentId) {
-            onAgentChange(data.selectedAgentId);
-            // Load history for preselected agent (don't auto-start session)
-            vscodeApi.loadAgentHistory(data.selectedAgentId);
+          if (data.agents && data.agents.length > 0) {
+            setAgents(data.agents);
+            if (data.selectedAgentId) {
+              const agentExists = data.agents.some(agent => agent.id === data.selectedAgentId);
+              if (agentExists) {
+                onAgentChange(data.selectedAgentId);
+                vscodeApi.clearMessages();
+                vscodeApi.loadAgentHistory(data.selectedAgentId);
+              }
+            }
+          } else {
+            setAgents([]);
           }
-        } else {
-          setAgents([]);
         }
       }
+    );
+
+    const disposeClientAppRequired = vscodeApi.onMessage('clientAppRequired', data => {
+      setIsLoading(false);
+      onClientAppRequired?.(data);
     });
 
-    // Listen for client app required message (Case 1) - pass to parent
-    vscodeApi.onMessage('clientAppRequired', data => {
+    const disposeSelectClientApp = vscodeApi.onMessage('selectClientApp', data => {
       setIsLoading(false);
-      if (onClientAppRequired) {
-        onClientAppRequired(data);
-      }
-    });
-
-    // Listen for client app selection required (Case 3) - pass to parent
-    vscodeApi.onMessage('selectClientApp', data => {
-      setIsLoading(false);
-      if (onClientAppSelection) {
-        onClientAppSelection(data);
-      }
+      onClientAppSelection?.(data);
     });
 
     // Request available agents (this will trigger the client app checking)
     vscodeApi.getAvailableAgents();
-  }, [onClientAppRequired, onClientAppSelection]);
 
-  // Handle external agent selection (e.g., from command palette)
-  useEffect(() => {
-    const loadHistoryForSelectedAgent = async () => {
-      // Load history when agent changes externally (not from dropdown)
-      if (selectedAgent && selectedAgent !== '' && selectedAgent !== previousAgent && agents.length > 0) {
-        // Check if this agent exists in the available agents list
-        const agentExists = agents.some(agent => agent.id === selectedAgent);
-        if (agentExists) {
-          // End session if switching agents
-          if (previousAgent && previousAgent !== '') {
-            vscodeApi.endSession();
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-          // Load history for the selected agent (don't auto-start session)
-          // This will clear the panel and show the new agent's history
-          vscodeApi.loadAgentHistory(selectedAgent);
-          setPreviousAgent(selectedAgent);
-        }
-      }
+    return () => {
+      disposeAvailableAgents();
+      disposeClientAppRequired();
+      disposeSelectClientApp();
     };
+  }, [onClientAppRequired, onClientAppSelection, onAgentChange]);
 
-    loadHistoryForSelectedAgent();
-  }, [selectedAgent, agents, previousAgent]);
-
-  const handleAgentChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
-    
-    // If switching to a different agent, end current session and clear
-    if (selectedAgent && selectedAgent !== agentId) {
-      vscodeApi.endSession();
-      // Small delay to ensure cleanup is complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
     onAgentChange(agentId);
-    setPreviousAgent(agentId);
 
-    // Load history for the selected agent (don't auto-start session)
-    // This will clear the panel and show the new agent's history
     if (agentId && agentId !== '') {
+      vscodeApi.clearMessages();
       vscodeApi.loadAgentHistory(agentId);
     } else {
-      // If no agent selected, clear the panel
       vscodeApi.clearMessages();
     }
   };

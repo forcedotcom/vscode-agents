@@ -243,6 +243,27 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.refresh', async () => {
+      // Get the current agent ID before ending the session
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('No agent selected to restart.');
+        return;
+      }
+
+      // End the current session
+      await provider.endSession();
+
+      // Wait a brief moment for the session to fully end
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Restart the agent session
+      provider.selectAndStartAgent(currentAgentId);
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.debug', async () => {
       await provider.toggleDebugMode();
     })

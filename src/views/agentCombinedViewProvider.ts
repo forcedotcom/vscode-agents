@@ -56,6 +56,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Updates the agent selected state and context
+   */
+  private async setAgentSelected(selected: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:agentSelected', selected);
+  }
+
+  /**
    * Updates the debug mode state and context
    */
   private async setDebugMode(enabled: boolean): Promise<void> {
@@ -376,9 +383,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // Show notification
           vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
 
-          // Note: Conversation history is now loaded when agent is selected, not when session starts
-          // We still load it here as a fallback in case history wasn't loaded during selection
-          await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
+          // History loading is now exclusively handled by loadAgentHistory flow
+          // Don't load history here to avoid duplicate messages
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
@@ -464,17 +470,49 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         } else if (message.command === 'endSession') {
              await this.endSession()
         } else if (message.command === 'loadAgentHistory') {
-          // Load conversation history for the selected agent without starting a session
-          // This also clears any existing messages and shows the new agent's history
+          // Load conversation history for the selected agent
+          // If history exists: Show it and wait for user to manually start session
+          // If no history: Send noHistoryFound signal so webview can auto-start session
           const agentId = message.data?.agentId;
           if (agentId && typeof agentId === 'string') {
             // First, clear any existing messages in the panel
             webviewView.webview.postMessage({
               command: 'clearMessages'
             });
-            
+
             const agentSource = this.getAgentSource(agentId);
-            await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
+
+            // Check if history exists
+            try {
+              let agentName: string;
+              if (agentSource === AgentSource.SCRIPT) {
+                const filePath = this.getLocalAgentFilePath(agentId);
+                agentName = path.basename(filePath);
+              } else {
+                agentName = agentId;
+              }
+
+              const transcriptEntries = await readTranscriptEntries(agentName);
+              const hasHistory = transcriptEntries && transcriptEntries.length > 0;
+
+              if (hasHistory) {
+                // History exists - send it to webview (user will manually start session)
+                await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
+              } else {
+                // No history - signal webview to auto-start session
+                webviewView.webview.postMessage({
+                  command: 'noHistoryFound',
+                  data: { agentId }
+                });
+              }
+            } catch (err) {
+              // Error loading history - treat as no history, auto-start session
+              console.error('Error checking history:', err);
+              webviewView.webview.postMessage({
+                command: 'noHistoryFound',
+                data: { agentId }
+              });
+            }
           }
         } else if (message.command === 'getAvailableAgents') {
           // Always get local .agent files first (they don't require client app)
@@ -703,8 +741,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const agentId = message.data?.agentId;
           if (agentId && typeof agentId === 'string' && agentId !== '') {
             this.currentAgentId = agentId;
+            await this.setAgentSelected(true);
           } else {
             this.currentAgentId = undefined;
+            await this.setAgentSelected(false);
           }
         }
       } catch (err) {

@@ -21,20 +21,25 @@ const AgentTracer: React.FC = () => {
 
   useEffect(() => {
     // Listen for trace data response
-    vscodeApi.onMessage('traceData', data => {
+    const disposeTraceData = vscodeApi.onMessage('traceData', data => {
       setTraceData(data);
       setLoading(false);
       setError(null);
     });
 
     // Listen for errors
-    vscodeApi.onMessage('error', data => {
+    const disposeError = vscodeApi.onMessage('error', data => {
       setError(data.message);
       setLoading(false);
     });
 
     // Request trace data when component mounts
     vscodeApi.getTraceData();
+
+    return () => {
+      disposeTraceData();
+      disposeError();
+    };
   }, []);
 
   if (error) {
