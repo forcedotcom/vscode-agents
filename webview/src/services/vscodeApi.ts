@@ -16,6 +16,7 @@ export interface Message {
 export interface AgentInfo {
   name: string;
   id: string;
+  type: 'published' | 'script';
 }
 
 export interface TraceData {

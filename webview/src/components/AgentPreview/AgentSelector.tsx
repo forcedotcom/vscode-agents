@@ -76,17 +76,34 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   };
 
+  // Group agents by type
+  const publishedAgents = agents.filter(agent => agent.type === 'published');
+  const scriptAgents = agents.filter(agent => agent.type === 'script');
+
   return (
     <div className="agent-selector">
       <select className="agent-select" value={selectedAgent} onChange={handleAgentChange} disabled={isLoading}>
         <option value="">
           {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
         </option>
-        {agents.map(agent => (
-          <option key={agent.id} value={agent.id}>
-            {agent.name}
-          </option>
-        ))}
+        {publishedAgents.length > 0 && (
+          <optgroup label="Published">
+            {publishedAgents.map(agent => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {scriptAgents.length > 0 && (
+          <optgroup label="Agent Script">
+            {scriptAgents.map(agent => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
     </div>
   );
