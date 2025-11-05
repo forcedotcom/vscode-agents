@@ -529,8 +529,14 @@ describe('App', () => {
       triggerMessage('selectAgent', { agentId: 'agent1' });
 
       await waitFor(() => {
-        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+        expect(screen.getByTestId('is-transitioning').textContent).toBe('false');
       });
+
+      // No session lifecycle methods should fire
+      expect(mockVscodeApi.startSession).not.toHaveBeenCalled();
+
+      // Ensure state updates propagated
+      expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
 
       // Should not call endSession since no session was active
       expect(mockVscodeApi.endSession).not.toHaveBeenCalled();

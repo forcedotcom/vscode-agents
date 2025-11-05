@@ -906,19 +906,45 @@ describe('AgentCombinedViewProvider', () => {
     });
 
     it('should handle getConfiguration command', async () => {
-      await expect(messageHandler({ command: 'getConfiguration' })).resolves.not.toThrow();
+      jest.clearAllMocks();
+      const configGet = jest.fn().mockReturnValue('test-value');
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({ get: configGet });
+
+      await messageHandler({
+        command: 'getConfiguration',
+        data: { section: 'salesforce.agentforceDX.someSetting' }
+      });
+
+      expect(vscode.workspace.getConfiguration).toHaveBeenCalled();
+      expect(configGet).toHaveBeenCalledWith('salesforce.agentforceDX.someSetting');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'configuration',
+        data: { section: 'salesforce.agentforceDX.someSetting', value: 'test-value' }
+      });
     });
 
     it('should handle clearChat command', async () => {
+      jest.clearAllMocks();
       await expect(messageHandler({ command: 'clearChat' })).resolves.not.toThrow();
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
+      expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
     });
 
     it('should handle setSelectedAgentId command', async () => {
-      await expect(messageHandler({ command: 'setSelectedAgentId', data: { agentId: '0X123' } })).resolves.not.toThrow();
+      jest.clearAllMocks();
+      await messageHandler({ command: 'setSelectedAgentId', data: { agentId: '0X123' } });
+
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:agentSelected',
+        true
+      );
     });
 
-    it('should handle executeCommand', async () => {
+    it('should ignore executeCommand messages without commandId', async () => {
+      jest.clearAllMocks();
       await expect(messageHandler({ command: 'executeCommand', data: { command: 'test.command' } })).resolves.not.toThrow();
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
     });
 
     it('should handle sendChatMessage without active session', async () => {
