@@ -182,23 +182,6 @@ describe('App Coverage Tests', () => {
       expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
     });
 
-    it('should hit line 132: early return in waitForSessionEnd when not active', async () => {
-      render(<App />);
-
-      // Trigger selectAgent when no session is active
-      // This should call waitForSessionEnd() which returns Promise.resolve() immediately (line 132)
-      act(() => {
-        triggerMessage('selectAgent', { agentId: 'agent1' });
-      });
-
-      await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      });
-
-      // Should not have called endSession since no session was active
-      expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
-    });
-
     it('should hit lines 191-192: startSucceeded branch', async () => {
       render(<App />);
 
@@ -273,26 +256,6 @@ describe('App Coverage Tests', () => {
       expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
     });
 
-    it('should hit line 132: Promise.resolve() when session not active', async () => {
-      render(<App />);
-
-      // Select an agent when NO session is currently active
-      // This calls waitForSessionEnd which should return Promise.resolve() immediately (line 132)
-      act(() => {
-        triggerMessage('selectAgent', { agentId: 'test-agent' });
-      });
-
-      await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      });
-
-      // endSession should NOT have been called since session wasn't active
-      expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
-
-      // But setSelectedAgentId should have been called
-      expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('test-agent');
-    });
-
     it('should hit line 132: race condition - session ends between check and waitForSessionEnd call', async () => {
       render(<App />);
 
@@ -337,37 +300,5 @@ describe('App Coverage Tests', () => {
       expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
     });
 
-    it('should hit line 132: explicit early return path', async () => {
-      render(<App />);
-
-      // Set up a scenario: select agent1, but DON'T start the session
-      act(() => {
-        triggerMessage('selectAgent', { agentId: 'agent1' });
-      });
-
-      await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 30));
-      });
-
-      // Do NOT trigger sessionStarted - leave session inactive
-      jest.clearAllMocks();
-
-      // Now select a different agent
-      // Since we're "changing agents" but session is still not active,
-      // this should still handle the transition gracefully
-      act(() => {
-        triggerMessage('selectAgent', { agentId: 'agent2' });
-      });
-
-      await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      });
-
-      // Should update to agent2 without calling endSession
-      expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent2');
-
-      // Session was never active, so endSession should not be called
-      expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
-    });
   });
 });

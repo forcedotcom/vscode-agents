@@ -315,4 +315,32 @@ describe('parseAgentTestsFromProject', () => {
 
     expect(result.size).toBe(0);
   });
+
+  it('should propagate read errors from workspace files', async () => {
+    const mockUri = {
+      fsPath: '/test/BrokenAgent.aiEvaluationDefinition-meta.xml'
+    } as vscode.Uri;
+
+    jest.spyOn(vscode.workspace, 'findFiles').mockResolvedValue([mockUri]);
+    jest
+      .spyOn(vscode.workspace.fs, 'readFile')
+      .mockRejectedValue(new Error('read failure'));
+
+    await expect(parseAgentTestsFromProject()).rejects.toThrow('read failure');
+  });
+
+  it('should throw when XML is missing test cases', async () => {
+    const mockUri = {
+      fsPath: '/test/EmptyAgent.aiEvaluationDefinition-meta.xml'
+    } as vscode.Uri;
+
+    const mockXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<AiEvaluationDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
+</AiEvaluationDefinition>`;
+
+    jest.spyOn(vscode.workspace, 'findFiles').mockResolvedValue([mockUri]);
+    jest.spyOn(vscode.workspace.fs, 'readFile').mockResolvedValue(Buffer.from(mockXmlContent));
+
+    await expect(parseAgentTestsFromProject()).rejects.toThrow();
+  });
 });
