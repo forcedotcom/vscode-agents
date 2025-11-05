@@ -56,6 +56,14 @@ describe('Bot Version File System Lookup', () => {
     expect(botName).toBe('TestAgent');
   });
 
+  it('should handle genAiPlannerBundle files', async () => {
+    const botName = await getAgentNameFromFile(
+      'MyAgent.genAiPlannerBundle',
+      path.join('path', 'to', 'MyAgent.genAiPlannerBundle')
+    );
+    expect(botName).toBe('MyAgent');
+  });
+
   it('should handle case when no .bot-meta.xml file is found', async () => {
     const mockFilePath = path.join(
       'path',
@@ -113,6 +121,29 @@ describe('Bot Version File System Lookup', () => {
     expect(botName).toBe('v1'); // Should fall back to version name
 
     consoleWarnSpy.mockRestore();
+  });
+
+  it('should fall back to filename when no .bot-meta.xml found and path lacks botVersions structure', async () => {
+    const mockFilePath = path.join('path', 'to', 'randomLocation', 'v1.botVersion-meta.xml');
+
+    const mockFiles: [string, vscode.FileType][] = [
+      ['v1.botVersion-meta.xml', vscode.FileType.File],
+      ['someOtherFile.txt', vscode.FileType.File]
+      // No .bot-meta.xml file and no 'botVersions' in path
+    ];
+
+    (vscode.workspace.fs.readDirectory as jest.Mock).mockResolvedValue(mockFiles);
+
+    const botName = await getAgentNameFromFile('v1.botVersion-meta.xml', mockFilePath);
+    expect(botName).toBe('v1'); // Should fall back to filename
+  });
+
+  it('should return filename as-is for unrecognized file types', async () => {
+    const botName = await getAgentNameFromFile(
+      'someRandomFile.xml',
+      path.join('path', 'to', 'someRandomFile.xml')
+    );
+    expect(botName).toBe('someRandomFile.xml');
   });
 });
 

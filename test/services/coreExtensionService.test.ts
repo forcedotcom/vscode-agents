@@ -227,4 +227,24 @@ describe('CoreExtensionService', () => {
   it('should throw error when getting default connection before initialization', async () => {
     await expect(CoreExtensionService.getDefaultConnection()).rejects.toThrow(NOT_INITIALIZED_ERROR);
   });
+
+  it('should not reinitialize if already initialized', async () => {
+    const validateSpy = jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+
+    // First initialization
+    await CoreExtensionService.loadDependencies(mockContext);
+    expect(validateSpy).toHaveBeenCalledTimes(1);
+    expect(CoreExtensionService.isInitialized).toBe(true);
+
+    // Second call should not reinitialize
+    await CoreExtensionService.loadDependencies(mockContext);
+    expect(validateSpy).toHaveBeenCalledTimes(1); // Still only called once
+    expect(CoreExtensionService.isInitialized).toBe(true);
+  });
 });
