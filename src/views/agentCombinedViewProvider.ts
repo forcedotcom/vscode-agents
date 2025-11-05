@@ -33,14 +33,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   constructor(private readonly context: vscode.ExtensionContext) {
     AgentCombinedViewProvider.instance = this;
-    // Listen for configuration changes
-    this.context.subscriptions.push(
-      vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer')) {
-          this.notifyConfigurationChange();
-        }
-      })
-    );
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -191,7 +183,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async loadAndSendConversationHistory(agentId: string, agentSource: AgentSource, webviewView: vscode.WebviewView): Promise<void> {
     try {
       let agentName: string;
-      
+
       if (agentSource === AgentSource.SCRIPT) {
         // For script agents, use the full file name including .agent extension
         const filePath = this.getLocalAgentFilePath(agentId);
@@ -206,7 +198,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       // For script agents: <name>.agent
       // For published agents: <agentId> (Bot ID)
       const transcriptEntries = await readTranscriptEntries(agentName);
-      
+
       if (transcriptEntries && transcriptEntries.length > 0) {
         // Convert transcript entries to messages format for the webview
         const historyMessages = transcriptEntries
@@ -315,14 +307,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           if (agentSource === AgentSource.SCRIPT) {
             // Handle script agent (.agent file)
             const filePath = this.getLocalAgentFilePath(agentId);
-            
+
             if (!filePath) {
               throw new Error('No file path found for local agent.');
             }
 
             // Set up lifecycle event listeners for compilation progress
             const lifecycle = await Lifecycle.getInstance();
-            
+
             // Listen for compilation events
             const compilationListener = lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
               if (data.error) {
@@ -678,10 +670,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               throw new Error('Client app not set');
             }
             const conn = await createConnectionWithClientApp(this.selectedClientApp);
-            
+
             // Get local .agent files
             const localAgents = await this.discoverLocalAgents();
-            
+
             // Get remote agents from org
             const remoteAgents = await Agent.listRemote(conn as any);
 
@@ -807,18 +799,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     return html;
   }
 
-  private notifyConfigurationChange(): void {
-    if (this.webviewView) {
-      const config = vscode.workspace.getConfiguration();
-      const showAgentTracer = config.get('salesforce.agentforceDX.showAgentTracer');
-
-      // Notify webview of configuration changes
-      this.webviewView.webview.postMessage({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: showAgentTracer }
-      });
-    }
-  }
 
   /**
    * Automatically continues the Apex Replay Debugger after it's launched,
