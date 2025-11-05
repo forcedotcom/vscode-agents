@@ -9,7 +9,7 @@ export interface Message {
   id: string;
   type: 'user' | 'agent' | 'system';
   content: string;
-  systemType?: 'session' | 'debug' | 'error';
+  systemType?: 'session' | 'debug' | 'error' | 'warning';
   timestamp?: string;
 }
 

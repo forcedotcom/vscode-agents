@@ -180,6 +180,20 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     });
     disposers.push(disposeSimulationStarting);
 
+    const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
+      if (data && data.message) {
+        const disclaimerMessage: Message = {
+          id: Date.now().toString(),
+          type: 'system',
+          content: data.message,
+          systemType: 'warning',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, disclaimerMessage]);
+      }
+    });
+    disposers.push(disposePreviewDisclaimer);
+
     const disposeMessageSent = vscodeApi.onMessage('messageSent', data => {
       if (data && data.content) {
         const agentMessage: Message = {
