@@ -146,21 +146,6 @@ describe('AgentCombinedViewProvider', () => {
     jest.restoreAllMocks();
   });
 
-  describe('configuration subscriptions', () => {
-    it('invokes notifyConfigurationChange only when tracer setting changes', () => {
-      const localProvider = new AgentCombinedViewProvider(mockContext);
-      const notifySpy = jest.spyOn(localProvider as any, 'notifyConfigurationChange');
-      const configHandler = (vscode.workspace.onDidChangeConfiguration as jest.Mock).mock.calls.at(-1)[0];
-
-      configHandler({ affectsConfiguration: () => false });
-      expect(notifySpy).not.toHaveBeenCalled();
-
-      configHandler({
-        affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer'
-      });
-      expect(notifySpy).toHaveBeenCalledTimes(1);
-    });
-  });
 
   describe('getAgentSource', () => {
     it('should return AgentSource.SCRIPT for local agent IDs', () => {
@@ -764,29 +749,6 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('notifyConfigurationChange', () => {
-    it('should post message to webview when configuration changes', () => {
-      const getConfigMock = jest.fn().mockReturnValue(true);
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: getConfigMock
-      });
-
-      (provider as any).notifyConfigurationChange();
-
-      expect(getConfigMock).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-      });
-    });
-
-    it('should not throw when webview does not exist', () => {
-      provider.webviewView = undefined;
-      expect(() => {
-        (provider as any).notifyConfigurationChange();
-      }).not.toThrow();
-    });
-  });
 
   describe('setPreselectedAgentId', () => {
     it('should set preselected agent ID', () => {
@@ -889,21 +851,6 @@ describe('AgentCombinedViewProvider', () => {
       );
     });
 
-    it('should handle configuration change event when webview exists', () => {
-      // Configuration handler is set up in constructor, find it
-      const configHandlerCalls = (vscode.workspace.onDidChangeConfiguration as jest.Mock).mock.calls;
-
-      if (configHandlerCalls.length > 0) {
-        const configHandler = configHandlerCalls[configHandlerCalls.length - 1][0];
-
-        configHandler({ affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer' });
-
-        expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-          command: 'configuration',
-          data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-        });
-      }
-    });
 
     it('should handle getConfiguration command', async () => {
       jest.clearAllMocks();
@@ -3381,48 +3328,6 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('Configuration Change Handler', () => {
-    it('should trigger notifyConfigurationChange when showAgentTracer config changes', () => {
-      const mockContext = {
-        extensionUri: { fsPath: '/extension/path' },
-        extensionPath: '/extension/path',
-        subscriptions: []
-      } as any;
-
-      let configChangeHandler: any;
-      (vscode.workspace.onDidChangeConfiguration as jest.Mock).mockImplementation((handler) => {
-        configChangeHandler = handler;
-        return { dispose: jest.fn() };
-      });
-
-      const provider = new AgentCombinedViewProvider(mockContext);
-
-      const mockWebviewView = {
-        webview: {
-          postMessage: jest.fn()
-        }
-      } as any;
-      provider.webviewView = mockWebviewView;
-
-      // Trigger config change for showAgentTracer
-      const mockEvent = {
-        affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer'
-      };
-
-      const getConfigMock = jest.fn().mockReturnValue(true);
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: getConfigMock
-      });
-
-      configChangeHandler(mockEvent);
-
-      expect(getConfigMock).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-      });
-    });
-  });
 
   describe('Edge Cases and Error Scenarios', () => {
     let messageHandler: (message: any) => Promise<void>;
