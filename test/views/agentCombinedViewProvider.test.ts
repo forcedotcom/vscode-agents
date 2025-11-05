@@ -1638,6 +1638,36 @@ describe('AgentCombinedViewProvider', () => {
       expect(sessionStartedCall?.[0].data.content).toBe('Message in body property');
     });
 
+    it('should prioritize message property for agent message content', async () => {
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: [{ type: 'Inform', message: 'Message in message property', data: 'Should not use this', body: 'Or this' }]
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
+
+      const mockLifecycle = {
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+      };
+      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/testAgent.agent' }
+      });
+
+      const sessionStartedCall = mockWebviewView.webview.postMessage.mock.calls.find(
+        (call: any[]) => call[0].command === 'sessionStarted'
+      );
+      expect(sessionStartedCall?.[0].data.content).toBe('Message in message property');
+    });
+
     it('should enable debug mode for published agent when apex debugging is active', async () => {
       const mockAgentPreview = {
         start: jest.fn().mockResolvedValue({
@@ -1932,6 +1962,35 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'debugLogError',
         data: { message: 'Error processing debug log: Failed to save log' }
+      });
+    });
+
+    it('should handle non-Error exceptions when saving apex debug log fails', async () => {
+      const mockApexLog = { Id: 'logId123' };
+
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{ message: 'Response' }],
+          apexDebugLog: mockApexLog
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).apexDebugging = true;
+
+      jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue('string error');
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error handling apex debug log:', 'string error');
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Error processing debug log: Unknown error');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'debugLogError',
+        data: { message: 'Error processing debug log: Unknown error' }
       });
     });
 
@@ -2238,6 +2297,28 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: expect.stringContaining('Unexpected token') }
       });
     });
+
+    it('should handle non-Error exceptions', async () => {
+      const mockConfig = {
+        get: jest.fn().mockReturnValue('')
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+
+      // Mock file exists so we get past that check
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      // Mock fs.readFileSync to throw a non-Error exception
+      (fs.readFileSync as jest.Mock).mockImplementation(() => {
+        throw 'string error';
+      });
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'string error' }
+      });
+    });
   });
 
   describe('Error Message Formatting', () => {
@@ -2351,6 +2432,28 @@ describe('AgentCombinedViewProvider', () => {
         data: {
           message: "You don't have permission to use this agent. Please check with your administrator."
         }
+      });
+    });
+
+    it('should handle non-Error exceptions in main message handler', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockImplementation(() => {
+          throw 'string error';
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Test' }
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('AgentCombinedViewProvider Error:', 'string error');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'Unknown error occurred' }
       });
     });
   });
