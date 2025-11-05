@@ -3810,6 +3810,32 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockDisposable.dispose).toHaveBeenCalled();
     });
 
+    it('should not log timeout message when apex debugger is detected', () => {
+      let debugSessionHandler: any;
+      const mockDisposable = { dispose: jest.fn() };
+
+      (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
+        debugSessionHandler = handler;
+        return mockDisposable;
+      });
+
+      (provider as any).setupAutoDebugListeners();
+
+      // Trigger apex-replay session (debuggerLaunched becomes true)
+      const mockApexSession = { type: 'apex-replay', name: 'Apex Replay Debug' };
+      debugSessionHandler(mockApexSession);
+
+      // Fast-forward 15 seconds
+      jest.advanceTimersByTime(15000);
+
+      // Should NOT log the "No Apex debugger" message since debuggerLaunched is true
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(
+        'No Apex debugger session detected within timeout, cleaning up auto-continue listeners'
+      );
+      // But should still call cleanup
+      expect(mockDisposable.dispose).toHaveBeenCalled();
+    });
+
     it('should not auto-continue when no active debug session', async () => {
       let debugSessionHandler: any;
       (vscode.debug.onDidStartDebugSession as jest.Mock).mockImplementation((handler) => {
