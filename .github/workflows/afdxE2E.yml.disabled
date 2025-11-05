@@ -1,4 +1,4 @@
-name: Agentforce DXs End to End Tests (disabled)
+#name: Agentforce DXs End to End Tests
 #
 #on:
 #  workflow_dispatch:
