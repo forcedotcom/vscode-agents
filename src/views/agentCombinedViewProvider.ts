@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, type AgentTraceResponse, AgentPreviewBase, readTranscriptEntries, AgentSource } from '@salesforce/agents';
+import { AgentPreview, Agent, AgentPreviewBase, readTranscriptEntries, AgentSource } from '@salesforce/agents';
 import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
@@ -27,8 +27,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private sessionActive = false;
   private currentAgentName?: string;
   private currentAgentId?: string;
-  private mockFile?: string;
   private preselectedAgentId?: string;
+  private latestPlanId?: string;
 
 
   constructor(private readonly context: vscode.ExtensionContext) {
@@ -123,6 +123,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
+      this.latestPlanId = undefined;
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setDebugMode(false);
@@ -289,6 +290,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           }
 
+          // Reset planId when starting a new session
+          this.latestPlanId = undefined;
+
           // If a client app was previously selected, reuse it to avoid re-prompt loops
           const conn = this.selectedClientApp
             ? await createConnectionWithClientApp(this.selectedClientApp)
@@ -420,10 +424,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const response = await this.agentPreview.send(this.sessionId, message.data.message);
 
           // Get the latest agent response
-          const latestMessage = response.messages.at(-1);
+          this.latestPlanId = response.messages?.at(-1)?.planId;
+
           webviewView.webview.postMessage({
             command: 'messageSent',
-            data: { content: latestMessage?.message || 'I received your message.' }
+            data: { content: this.latestPlanId || 'I received your message.' }
           });
 
           if (this.apexDebugging && response.apexDebugLog) {
@@ -620,34 +625,30 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               data: []
             });
           }
-        } else if (message.command === 'clearChat') {
-          // Legacy no-op: kept for compatibility with older UI messages
         } else if (message.command === 'getTraceData') {
-          // Serve the tracer.json file - either from user-configured path or built-in sample
           try {
-            const config = vscode.workspace.getConfiguration();
-            const customTracerPath = config.get<string>('salesforce.agentforceDX.tracerDataFilePath');
+            // If no agent preview or session, return empty data instead of throwing error
+            if (!this.agentPreview || !this.sessionId) {
+              webviewView.webview.postMessage({
+                command: 'traceData',
+                data: { plan: [], planId: '', sessionId: '' }
+              });
+              return;
+            }
 
-            let tracerJsonPath: string;
-            if (customTracerPath && customTracerPath.trim() !== '') {
-              // Use custom path if configured
-              tracerJsonPath = customTracerPath.trim();
+            let data;
+            if(this.agentPreview instanceof AgentSimulate && this.latestPlanId) {
+              data = await this.agentPreview.trace(this.sessionId, this.latestPlanId);
             } else {
-              // Fall back to built-in sample data
-              tracerJsonPath = path.join(this.context.extensionPath, 'webview', 'src', 'data', 'tracer.json');
+              // For AgentPreview, return empty plan structure
+              data = { plan: [], planId: '', sessionId: '' };
             }
 
-            if (!fs.existsSync(tracerJsonPath)) {
-              throw new Error(
-                `tracer.json not found at ${tracerJsonPath}. Please check the path in your settings.`
-              );
-            }
-            const data = JSON.parse(fs.readFileSync(tracerJsonPath, 'utf8')) as AgentTraceResponse;
             webviewView.webview.postMessage({
               command: 'traceData',
               data
             });
-          } catch (error: unknown) {
+          } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             webviewView.webview.postMessage({
               command: 'error',
