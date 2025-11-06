@@ -165,21 +165,11 @@ describe('App', () => {
       expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
     });
 
-    it('should request configuration on mount', () => {
-      render(<App />);
-      expect(mockVscodeApi.getConfiguration).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
-    });
   });
 
   describe('Tab Navigation', () => {
     it('should switch to tracer tab when tracer is clicked', async () => {
       render(<App />);
-
-      // Enable tracer tab first
-      triggerMessage('configuration', {
-        section: 'salesforce.agentforceDX.showAgentTracer',
-        value: true
-      });
 
       // Select an agent to show tracer tab
       triggerMessage('selectAgent', { agentId: 'agent1' });
@@ -200,11 +190,7 @@ describe('App', () => {
     it('should switch back to preview tab', async () => {
       render(<App />);
 
-      // Enable and show tracer
-      triggerMessage('configuration', {
-        section: 'salesforce.agentforceDX.showAgentTracer',
-        value: true
-      });
+      // Select agent to show tracer
       triggerMessage('selectAgent', { agentId: 'agent1' });
 
       await waitFor(() => {
@@ -343,61 +329,6 @@ describe('App', () => {
     });
   });
 
-  describe('Tracer Tab Configuration', () => {
-    it('should show tracer tab when configuration is enabled and agent selected', async () => {
-      render(<App />);
-
-      // Select agent first
-      triggerMessage('selectAgent', { agentId: 'agent1' });
-
-      // Enable tracer
-      triggerMessage('configuration', {
-        section: 'salesforce.agentforceDX.showAgentTracer',
-        value: true
-      });
-
-      await waitFor(() => {
-        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
-      });
-    });
-
-    it('should hide tracer tab when configuration is disabled', async () => {
-      render(<App />);
-
-      // Enable first
-      triggerMessage('selectAgent', { agentId: 'agent1' });
-      triggerMessage('configuration', {
-        section: 'salesforce.agentforceDX.showAgentTracer',
-        value: true
-      });
-
-      await waitFor(() => {
-        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
-      });
-
-      // Then disable
-      triggerMessage('configuration', {
-        section: 'salesforce.agentforceDX.showAgentTracer',
-        value: false
-      });
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should not show tracer tab without agent selected', () => {
-      render(<App />);
-
-      triggerMessage('configuration', {
-        section: 'salesforce.agentforceDX.showAgentTracer',
-        value: true
-      });
-
-      // Should not show without agent
-      expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
-    });
-  });
 
   describe('Client App State', () => {
     it('should handle client app required state', async () => {
@@ -544,17 +475,6 @@ describe('App', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle configuration message for non-tracer sections', () => {
-      render(<App />);
-
-      triggerMessage('configuration', {
-        section: 'some.other.setting',
-        value: true
-      });
-
-      // Should not crash
-      expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
-    });
 
     it('should handle selectAgent without agentId', () => {
       render(<App />);

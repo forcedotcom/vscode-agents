@@ -146,21 +146,6 @@ describe('AgentCombinedViewProvider', () => {
     jest.restoreAllMocks();
   });
 
-  describe('configuration subscriptions', () => {
-    it('invokes notifyConfigurationChange only when tracer setting changes', () => {
-      const localProvider = new AgentCombinedViewProvider(mockContext);
-      const notifySpy = jest.spyOn(localProvider as any, 'notifyConfigurationChange');
-      const configHandler = (vscode.workspace.onDidChangeConfiguration as jest.Mock).mock.calls.at(-1)[0];
-
-      configHandler({ affectsConfiguration: () => false });
-      expect(notifySpy).not.toHaveBeenCalled();
-
-      configHandler({
-        affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer'
-      });
-      expect(notifySpy).toHaveBeenCalledTimes(1);
-    });
-  });
 
   describe('getAgentSource', () => {
     it('should return AgentSource.SCRIPT for local agent IDs', () => {
@@ -764,29 +749,6 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('notifyConfigurationChange', () => {
-    it('should post message to webview when configuration changes', () => {
-      const getConfigMock = jest.fn().mockReturnValue(true);
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: getConfigMock
-      });
-
-      (provider as any).notifyConfigurationChange();
-
-      expect(getConfigMock).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-      });
-    });
-
-    it('should not throw when webview does not exist', () => {
-      provider.webviewView = undefined;
-      expect(() => {
-        (provider as any).notifyConfigurationChange();
-      }).not.toThrow();
-    });
-  });
 
   describe('setPreselectedAgentId', () => {
     it('should set preselected agent ID', () => {
@@ -889,21 +851,6 @@ describe('AgentCombinedViewProvider', () => {
       );
     });
 
-    it('should handle configuration change event when webview exists', () => {
-      // Configuration handler is set up in constructor, find it
-      const configHandlerCalls = (vscode.workspace.onDidChangeConfiguration as jest.Mock).mock.calls;
-
-      if (configHandlerCalls.length > 0) {
-        const configHandler = configHandlerCalls[configHandlerCalls.length - 1][0];
-
-        configHandler({ affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer' });
-
-        expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-          command: 'configuration',
-          data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-        });
-      }
-    });
 
     it('should handle getConfiguration command', async () => {
       jest.clearAllMocks();
@@ -1088,25 +1035,6 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should handle getTraceData command', async () => {
       await expect(messageHandler({ command: 'getTraceData' })).resolves.not.toThrow();
-    });
-
-    it('should surface tracer data errors when file does not exist', async () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: jest.fn(() => '')
-      });
-
-      await messageHandler({ command: 'getTraceData' });
-
-      const errorCall = mockWebviewView.webview.postMessage.mock.calls.find(
-        (call: any[]) => call[0].command === 'error'
-      );
-      expect(errorCall?.[0].data?.message).toContain('tracer.json not found');
-
-      (fs.existsSync as jest.Mock).mockReset();
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: jest.fn(() => true)
-      });
     });
 
     it('should handle clientAppSelected command', async () => {
@@ -1853,7 +1781,7 @@ describe('AgentCombinedViewProvider', () => {
     it('should send chat message and receive response', async () => {
       const mockAgentPreview = {
         send: jest.fn().mockResolvedValue({
-          messages: [{ message: 'Agent response' }],
+          messages: [{ message: 'Agent response', planId: 'test-plan-id' }],
           apexDebugLog: null
         })
       };
@@ -1873,16 +1801,17 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockAgentPreview.send).toHaveBeenCalledWith('test-session', 'Hello agent');
 
+      expect((provider as any).latestPlanId).toBe('test-plan-id');
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
-        data: { content: 'Agent response' }
+        data: { content: 'test-plan-id' }
       });
     });
 
     it('should use default message when agent response is empty', async () => {
       const mockAgentPreview = {
         send: jest.fn().mockResolvedValue({
-          messages: [{}], // No message property
+          messages: [{}], // No message or planId property
           apexDebugLog: null
         })
       };
@@ -1895,6 +1824,7 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Hello' }
       });
 
+      expect((provider as any).latestPlanId).toBeUndefined();
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
         data: { content: 'I received your message.' }
@@ -2210,7 +2140,6 @@ describe('AgentCombinedViewProvider', () => {
   describe('getTraceData Message Handler', () => {
     let messageHandler: (message: any) => Promise<void>;
     let mockWebviewView: any;
-    const fs = require('fs');
 
     beforeEach(() => {
       jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
@@ -2231,112 +2160,117 @@ describe('AgentCombinedViewProvider', () => {
       jest.clearAllMocks();
     });
 
-    it('should load tracer data from custom path when configured', async () => {
-      const customPath = '/custom/path/tracer.json';
-      const mockTraceData = { sessions: [], agents: [] };
-
-      const mockConfig = {
-        get: jest.fn().mockReturnValue(customPath)
-      };
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
-
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockTraceData));
+    it('should return empty data when no agent preview or session', async () => {
+      (provider as any).agentPreview = undefined;
+      (provider as any).sessionId = undefined;
 
       await messageHandler({ command: 'getTraceData' });
 
-      expect(mockConfig.get).toHaveBeenCalledWith('salesforce.agentforceDX.tracerDataFilePath');
-      expect(fs.existsSync).toHaveBeenCalledWith(customPath);
-      expect(fs.readFileSync).toHaveBeenCalledWith(customPath, 'utf8');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: { plan: [], planId: '', sessionId: '' }
+      });
+    });
+
+    it('should return empty data when no sessionId', async () => {
+      (provider as any).agentPreview = {};
+      (provider as any).sessionId = undefined;
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: { plan: [], planId: '', sessionId: '' }
+      });
+    });
+
+    it('should call trace API for AgentSimulate with planId', async () => {
+      const mockTraceData = {
+        type: 'PlanSuccessResponse',
+        planId: 'test-plan-id',
+        sessionId: 'test-session',
+        plan: [{ type: 'UserInputStep', message: 'Hello' }]
+      };
+
+      const mockAgentSimulate = {
+        trace: jest.fn().mockResolvedValue(mockTraceData)
+      };
+
+      (provider as any).agentPreview = mockAgentSimulate;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).latestPlanId = 'test-plan-id';
+      Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockAgentSimulate.trace).toHaveBeenCalledWith('test-session', 'test-plan-id');
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'traceData',
         data: mockTraceData
       });
     });
 
-    it('should trim whitespace from custom path', async () => {
-      const customPath = '  /custom/path/tracer.json  ';
-      const mockTraceData = { sessions: [] };
+    it('should return empty data for AgentPreview (not AgentSimulate)', async () => {
+      const mockAgentPreview = {};
 
-      const mockConfig = {
-        get: jest.fn().mockReturnValue(customPath)
-      };
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
-
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockTraceData));
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+      Object.setPrototypeOf((provider as any).agentPreview, AgentPreview.prototype);
 
       await messageHandler({ command: 'getTraceData' });
 
-      expect(fs.existsSync).toHaveBeenCalledWith('/custom/path/tracer.json');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: { plan: [], planId: '', sessionId: '' }
+      });
     });
 
-    it('should use default path when no custom path configured', async () => {
-      const mockConfig = {
-        get: jest.fn().mockReturnValue('')
+    it('should return empty data when AgentSimulate but no planId', async () => {
+      const mockAgentSimulate = {
+        trace: jest.fn()
       };
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
 
-      const mockTraceData = { sessions: [] };
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockTraceData));
+      (provider as any).agentPreview = mockAgentSimulate;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).latestPlanId = undefined;
+      Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
 
-      const expectedPath = path.join('/extension/path', 'webview', 'src', 'data', 'tracer.json');
-      expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
+      expect(mockAgentSimulate.trace).not.toHaveBeenCalled();
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: { plan: [], planId: '', sessionId: '' }
+      });
     });
 
-    it('should send error when tracer file not found', async () => {
-      const customPath = '/custom/path/tracer.json';
-
-      const mockConfig = {
-        get: jest.fn().mockReturnValue(customPath)
+    it('should handle trace API errors', async () => {
+      const mockAgentSimulate = {
+        trace: jest.fn().mockRejectedValue(new Error('Trace API failed'))
       };
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
 
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      (provider as any).agentPreview = mockAgentSimulate;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).latestPlanId = 'test-plan-id';
+      Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
 
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'error',
-        data: {
-          message: `tracer.json not found at ${customPath}. Please check the path in your settings.`
-        }
+        data: { message: 'Trace API failed' }
       });
     });
 
-    it('should handle JSON parse error', async () => {
-      const mockConfig = {
-        get: jest.fn().mockReturnValue('/custom/path/tracer.json')
+    it('should handle non-Error exceptions from trace API', async () => {
+      const mockAgentSimulate = {
+        trace: jest.fn().mockRejectedValue('string error')
       };
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
 
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue('invalid json{{{');
-
-      await messageHandler({ command: 'getTraceData' });
-
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'error',
-        data: { message: expect.stringContaining('Unexpected token') }
-      });
-    });
-
-    it('should handle non-Error exceptions', async () => {
-      const mockConfig = {
-        get: jest.fn().mockReturnValue('')
-      };
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
-
-      // Mock file exists so we get past that check
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-      // Mock fs.readFileSync to throw a non-Error exception
-      (fs.readFileSync as jest.Mock).mockImplementation(() => {
-        throw 'string error';
-      });
+      (provider as any).agentPreview = mockAgentSimulate;
+      (provider as any).sessionId = 'test-session';
+      (provider as any).latestPlanId = 'test-plan-id';
+      Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
 
@@ -3381,48 +3315,6 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('Configuration Change Handler', () => {
-    it('should trigger notifyConfigurationChange when showAgentTracer config changes', () => {
-      const mockContext = {
-        extensionUri: { fsPath: '/extension/path' },
-        extensionPath: '/extension/path',
-        subscriptions: []
-      } as any;
-
-      let configChangeHandler: any;
-      (vscode.workspace.onDidChangeConfiguration as jest.Mock).mockImplementation((handler) => {
-        configChangeHandler = handler;
-        return { dispose: jest.fn() };
-      });
-
-      const provider = new AgentCombinedViewProvider(mockContext);
-
-      const mockWebviewView = {
-        webview: {
-          postMessage: jest.fn()
-        }
-      } as any;
-      provider.webviewView = mockWebviewView;
-
-      // Trigger config change for showAgentTracer
-      const mockEvent = {
-        affectsConfiguration: (section: string) => section === 'salesforce.agentforceDX.showAgentTracer'
-      };
-
-      const getConfigMock = jest.fn().mockReturnValue(true);
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: getConfigMock
-      });
-
-      configChangeHandler(mockEvent);
-
-      expect(getConfigMock).toHaveBeenCalledWith('salesforce.agentforceDX.showAgentTracer');
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: true }
-      });
-    });
-  });
 
   describe('Edge Cases and Error Scenarios', () => {
     let messageHandler: (message: any) => Promise<void>;

@@ -3,7 +3,7 @@ import './SystemMessage.css';
 
 interface SystemMessageProps {
   content: string;
-  type?: 'session' | 'debug' | 'error';
+  type?: 'session' | 'debug' | 'error' | 'warning';
 }
 
 const SystemMessage: React.FC<SystemMessageProps> = ({ content, type = 'session' }) => {

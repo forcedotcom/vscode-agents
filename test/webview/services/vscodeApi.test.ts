@@ -212,11 +212,11 @@ describe('vscodeApi', () => {
 
   describe('Configuration', () => {
     it('should send getConfiguration message with section', () => {
-      vscodeApi.getConfiguration('salesforce.agentforceDX.showAgentTracer');
+      vscodeApi.getConfiguration('salesforce.agentforceDX.someSetting');
 
       expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith({
         command: 'getConfiguration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer' }
+        data: { section: 'salesforce.agentforceDX.someSetting' }
       });
     });
   });

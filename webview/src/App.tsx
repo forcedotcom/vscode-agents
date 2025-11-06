@@ -11,18 +11,12 @@ interface ClientApp {
   clientId: string;
 }
 
-interface ConfigurationMessage {
-  section: string;
-  value: any;
-}
-
 interface SelectAgentMessage {
   agentId: string;
 }
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'preview' | 'tracer'>('preview');
-  const [showTracerTab, setShowTracerTab] = useState<boolean>(false);
   const [displayedAgentId, setDisplayedAgentIdState] = useState('');
   const [desiredAgentId, setDesiredAgentId] = useState('');
   const [restartTrigger, setRestartTrigger] = useState(0);
@@ -46,16 +40,6 @@ const App: React.FC = () => {
   }, [desiredAgentId]);
 
   useEffect(() => {
-    const disposeConfiguration = vscodeApi.onMessage('configuration', (data: ConfigurationMessage) => {
-      if (data.section === 'salesforce.agentforceDX.showAgentTracer') {
-        setShowTracerTab(data.value === true);
-        // If tracer tab is being hidden and it's currently active, switch to preview
-        if (!data.value) {
-          setActiveTab(prev => (prev === 'tracer' ? 'preview' : prev));
-        }
-      }
-    });
-
     const disposeSelectAgent = vscodeApi.onMessage('selectAgent', (data: SelectAgentMessage) => {
       if (data && data.agentId) {
         // Update the selected agent in the dropdown
@@ -67,11 +51,7 @@ const App: React.FC = () => {
       }
     });
 
-    // Request the current configuration
-    vscodeApi.getConfiguration('salesforce.agentforceDX.showAgentTracer');
-
     return () => {
-      disposeConfiguration();
       disposeSelectAgent();
     };
   }, []);
@@ -226,8 +206,8 @@ const App: React.FC = () => {
           onAgentChange={handleAgentChange}
         />
         <div className="app-menu-divider" />
-        {showTracerTab && previewAgentId !== '' && (
-          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={showTracerTab} />
+        {previewAgentId !== '' && (
+          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={true} />
         )}
       </div>
       <div className="app-content">
@@ -243,11 +223,9 @@ const App: React.FC = () => {
             pendingAgentId={pendingAgentId}
           />
         </div>
-        {showTracerTab && (
-          <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
-            <AgentTracer />
-          </div>
-        )}
+        <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
+          <AgentTracer />
+        </div>
       </div>
     </div>
   );
