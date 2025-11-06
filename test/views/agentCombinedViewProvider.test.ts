@@ -851,6 +851,39 @@ describe('AgentCombinedViewProvider', () => {
       );
     });
 
+    it('should rollback session state when startSession fails', async () => {
+      // Set up initial state to simulate a partially started session
+      (provider as any).agentPreview = { mockPreview: true };
+      (provider as any).sessionActive = true;
+      (provider as any).currentAgentName = 'TestAgent';
+      (provider as any).latestPlanId = 'test-plan-id';
+
+      // Mock Agent.listRemote to throw an error during session start
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockRejectedValueOnce(new Error('Connection failed'));
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: '0Xx000000000001' } // Valid Bot ID format
+      });
+
+      // Verify session state was rolled back
+      expect((provider as any).agentPreview).toBeUndefined();
+      expect((provider as any).sessionActive).toBe(false);
+      expect((provider as any).currentAgentName).toBeUndefined();
+      expect((provider as any).latestPlanId).toBeUndefined();
+
+      // Verify error was sent to webview
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: 'error',
+          data: expect.objectContaining({
+            message: expect.any(String)
+          })
+        })
+      );
+    });
+
 
     it('should handle getConfiguration command', async () => {
       jest.clearAllMocks();
