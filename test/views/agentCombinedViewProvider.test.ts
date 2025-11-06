@@ -1844,7 +1844,7 @@ describe('AgentCombinedViewProvider', () => {
       expect((provider as any).latestPlanId).toBe('test-plan-id');
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
-        data: { content: 'test-plan-id' }
+        data: { content: 'Agent response' }
       });
     });
 
@@ -1867,7 +1867,36 @@ describe('AgentCombinedViewProvider', () => {
       expect((provider as any).latestPlanId).toBeUndefined();
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
-        data: { content: 'I received your message.' }
+        data: { content: undefined }
+      });
+    });
+
+    it('should send error message from server response when no planId', async () => {
+      const mockAgentPreview = {
+        send: jest.fn().mockResolvedValue({
+          messages: [{
+            type: 'Inform',
+            message: 'Unfortunately a system error occurred. Please try again.',
+            metrics: {},
+            result: [],
+            citedReferences: []
+          }],
+          apexDebugLog: null
+        })
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'test-session';
+
+      await messageHandler({
+        command: 'sendChatMessage',
+        data: { message: 'Hello' }
+      });
+
+      expect((provider as any).latestPlanId).toBeUndefined();
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'messageSent',
+        data: { content: 'Unfortunately a system error occurred. Please try again.' }
       });
     });
 

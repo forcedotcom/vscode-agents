@@ -432,12 +432,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const response = await this.agentPreview.send(this.sessionId, message.data.message);
 
           // Get the latest agent response
-          this.latestPlanId = response.messages?.at(-1)?.planId;
+          const lastMessage = response.messages?.at(-1);
+          this.latestPlanId = lastMessage?.planId;
 
           webviewView.webview.postMessage({
             command: 'messageSent',
-            data: { content: this.latestPlanId || 'I received your message.' }
+            data: { content: lastMessage?.message }
           });
+          
 
           if (this.apexDebugging && response.apexDebugLog) {
             try {
