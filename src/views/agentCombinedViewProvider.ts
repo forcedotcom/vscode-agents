@@ -760,6 +760,17 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
 
+        // Clean up session state if connection failed
+        // This ensures UI doesn't show as "connected" when the session actually failed
+        if (this.agentPreview || this.sessionActive) {
+          this.agentPreview = undefined;
+          this.sessionId = Date.now().toString();
+          this.currentAgentName = undefined;
+          this.latestPlanId = undefined;
+          await this.setSessionActive(false);
+          await this.setDebugMode(false);
+        }
+
         // Check for specific agent deactivation error
         if (
           errorMessage.includes('404') &&
