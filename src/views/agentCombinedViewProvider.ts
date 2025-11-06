@@ -317,10 +317,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
 
             // Set up lifecycle event listeners for compilation progress
-            const lifecycle = await Lifecycle.getInstance();
+            // Remove all existing listeners for these events to prevent duplicates
+            const lifecycle = Lifecycle.getInstance();
+            (lifecycle).removeAllListeners?.('agents:compiling');
+            (lifecycle).removeAllListeners?.('agents:simulation-starting');
 
             // Listen for compilation events
-            const compilationListener = lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
+            lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
               if (data.error) {
                 webviewView.webview.postMessage({
                   command: 'compilationError',
@@ -335,12 +338,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
 
             // Listen for simulation starting event
-            const simulationListener = lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
+            lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
               webviewView.webview.postMessage({
                 command: 'simulationStarting',
                 data: { message: data.message || 'Starting simulation...' }
               });
-              
+
               // Show disclaimer for agent preview (script agents only)
               webviewView.webview.postMessage({
                 command: 'previewDisclaimer',
@@ -355,7 +358,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // mockActions=false means actions will run with real side effects
             // The lifecycle listeners will automatically handle compilation progress messages
             // todo: figure out UX for mockActions=true and pass in here
-            this.agentPreview = new AgentSimulate(conn as any, filePath, true);
+            this.agentPreview = new AgentSimulate(conn as any, filePath, false);
             this.currentAgentName = path.basename(filePath, '.agent');
             this.currentAgentId = agentId;
 
@@ -439,7 +442,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             command: 'messageSent',
             data: { content: lastMessage?.message }
           });
-          
+
 
           if (this.apexDebugging && response.apexDebugLog) {
             try {
