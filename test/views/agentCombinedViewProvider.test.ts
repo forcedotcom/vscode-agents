@@ -1233,9 +1233,10 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should start session with script agent and set up lifecycle listeners', async () => {
       const mockLifecycle = {
-        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1262,7 +1263,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(AgentSimulate).toHaveBeenCalledWith(
         expect.any(Object),
         '/workspace/testAgent.agent',
-        true
+        false
       );
 
       // Verify session was started
@@ -1282,9 +1283,10 @@ describe('AgentCombinedViewProvider', () => {
             compilationListener = handler;
           }
           return { dispose: jest.fn() };
-        })
+        }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1319,9 +1321,10 @@ describe('AgentCombinedViewProvider', () => {
             compilationListener = handler;
           }
           return { dispose: jest.fn() };
-        })
+        }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1356,9 +1359,10 @@ describe('AgentCombinedViewProvider', () => {
             simulationListener = handler;
           }
           return { dispose: jest.fn() };
-        })
+        }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1393,9 +1397,10 @@ describe('AgentCombinedViewProvider', () => {
             compilationListener = handler;
           }
           return { dispose: jest.fn() };
-        })
+        }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1430,9 +1435,10 @@ describe('AgentCombinedViewProvider', () => {
             simulationListener = handler;
           }
           return { dispose: jest.fn() };
-        })
+        }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1461,9 +1467,10 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should enable debug mode for script agent when apex debugging is active', async () => {
       const mockLifecycle = {
-        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1495,9 +1502,10 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       const mockLifecycle = {
-        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       const mockAgentSimulate = {
         start: jest.fn().mockResolvedValue({
@@ -1583,9 +1591,10 @@ describe('AgentCombinedViewProvider', () => {
       (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
 
       const mockLifecycle = {
-        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
         instanceUrl: 'https://test.salesforce.com'
@@ -1613,9 +1622,10 @@ describe('AgentCombinedViewProvider', () => {
       (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
 
       const mockLifecycle = {
-        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
         instanceUrl: 'https://test.salesforce.com'
@@ -1643,9 +1653,10 @@ describe('AgentCombinedViewProvider', () => {
       (AgentSimulate as any).mockImplementation(() => mockAgentSimulate);
 
       const mockLifecycle = {
-        on: jest.fn().mockReturnValue({ dispose: jest.fn() })
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
       };
-      (Lifecycle.getInstance as jest.Mock).mockResolvedValue(mockLifecycle);
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
         instanceUrl: 'https://test.salesforce.com'
