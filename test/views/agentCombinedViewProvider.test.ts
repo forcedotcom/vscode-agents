@@ -853,7 +853,11 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should rollback session state when startSession fails', async () => {
       // Set up initial state to simulate a partially started session
-      (provider as any).agentPreview = { mockPreview: true };
+      const mockAgentPreview = {
+        end: jest.fn().mockResolvedValue(undefined)
+      };
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).sessionId = 'existing-session';
       (provider as any).sessionActive = true;
       (provider as any).currentAgentName = 'TestAgent';
       (provider as any).latestPlanId = 'test-plan-id';
@@ -867,7 +871,10 @@ describe('AgentCombinedViewProvider', () => {
         data: { agentId: '0Xx000000000001' } // Valid Bot ID format
       });
 
-      // Verify session state was rolled back
+      // Verify the old session was properly ended before attempting new connection
+      expect(mockAgentPreview.end).toHaveBeenCalledWith('existing-session', 'UserRequest');
+
+      // Verify session state was rolled back after connection error
       expect((provider as any).agentPreview).toBeUndefined();
       expect((provider as any).sessionActive).toBe(false);
       expect((provider as any).currentAgentName).toBeUndefined();
