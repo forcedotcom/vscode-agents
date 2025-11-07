@@ -45,6 +45,14 @@
   gap: 6px;
 }
 
+/* Compact start button */
+.agent-selector__start-button {
+  font-size: 12px;
+  padding: 2px 8px;
+  height: 20px;
+  line-height: 16px;
+}
+
 .agent-selector__main {
   display: flex;
   align-items: center;

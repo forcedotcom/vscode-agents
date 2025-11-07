@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import { Toggle } from '../shared/Toggle.js';
+import { Button } from '../shared/Button.js';
 import './AgentSelector.css';
 
 interface AgentSelectorProps {
@@ -102,6 +103,15 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     console.log(`Debug mode changed to: ${checked ? 'On' : 'Off'}`);
   };
 
+  const handleStartClick = () => {
+    // TODO: Implement start action (e.g., notify extension)
+    console.log('Start button clicked', {
+      agent: selectedAgent,
+      debugMode: isDebugMode,
+      liveMode: isLiveMode
+    });
+  };
+
   return (
     <div className="agent-selector">
       <div className="agent-selector__main">
@@ -155,6 +165,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             onChange={handleModeChange}
             size="small"
           />
+          <Button
+            appearance="primary"
+            onClick={handleStartClick}
+            className="agent-selector__start-button"
+          >
+            Start
+          </Button>
         </div>
       )}
     </div>
