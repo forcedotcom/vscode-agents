@@ -151,11 +151,27 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         )}
       </div>
       {isScriptAgent && (
-        <div className="agent-selector__toggles">
+        <>
+          <div className="agent-selector__toggles">
+            <Toggle
+              label="Debug"
+              checked={isDebugMode}
+              onChange={handleDebugChange}
+              size="small"
+            />
+            <Toggle
+              leftLabel="Mock Actions"
+              rightLabel="Live Actions"
+              checked={isLiveMode}
+              onChange={handleModeChange}
+              size="small"
+            />
+          </div>
           <Button
             appearance="primary"
             size="small"
             onClick={handleStartClick}
+            className="agent-selector__start-button"
             startIcon={
               <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
                 <path d="M3.78 2L3 2.41v12l.78.42 9-6V8l-9-6zM4 13.48V3.35l7.6 5.07L4 13.48z"/>
@@ -164,20 +180,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           >
             Start
           </Button>
-          <Toggle
-            label="Debug"
-            checked={isDebugMode}
-            onChange={handleDebugChange}
-            size="small"
-          />
-          <Toggle
-            leftLabel="Mock Actions"
-            rightLabel="Live Actions"
-            checked={isLiveMode}
-            onChange={handleModeChange}
-            size="small"
-          />
-        </div>
+        </>
       )}
     </div>
   );

@@ -45,6 +45,11 @@
   gap: 6px;
 }
 
+/* Full width start button */
+.agent-selector__start-button {
+  width: 100%;
+}
+
 .agent-selector__main {
   display: flex;
   align-items: center;
