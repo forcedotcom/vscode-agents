@@ -51,6 +51,15 @@
   width: 100%;
 }
 
+.agent-selector__start-button .vscode-button__start {
+  margin-inline-end: 6px;
+}
+
+.agent-selector__start-button .vscode-button__start svg {
+  width: 14px;
+  height: 14px;
+}
+
 .agent-selector__main {
   display: flex;
   align-items: center;
