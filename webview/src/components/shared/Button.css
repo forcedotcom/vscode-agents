@@ -109,7 +109,7 @@
 /* Icon Button Styles */
 .vscode-button--icon {
 	background: transparent;
-	border-radius: 5px;
+	border-radius: 2px;
 	color: var(--vscode-foreground);
 	padding: 3px;
 	border: none;
