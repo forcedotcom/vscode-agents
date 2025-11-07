@@ -20,6 +20,10 @@
   font-size: 12px;
 }
 
+.agent-selector__toggles .vscode-toggle--small .vscode-toggle__label {
+  padding-inline-start: 6px;
+}
+
 .agent-selector__toggles .vscode-toggle--small .vscode-toggle__track {
   width: 28px;
   height: 14px;
