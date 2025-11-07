@@ -93,7 +93,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     const checked = e.target.checked;
     setIsLiveMode(checked);
     // TODO: Implement mode change logic (e.g., notify extension)
-    console.log(`Agent mode changed to: ${checked ? 'Live Apex calls' : 'Mock Apex calls'}`);
+    console.log(`Agent mode changed to: ${checked ? 'Live Test' : 'Simulate'}`);
   };
 
   const handleDebugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +160,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               size="small"
             />
             <Toggle
-              label={isLiveMode ? "Live Apex calls" : "Mock Apex calls"}
+              leftLabel="Simulate"
+              rightLabel="Live Test"
               checked={isLiveMode}
               onChange={handleModeChange}
               size="small"
