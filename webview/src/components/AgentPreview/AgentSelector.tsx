@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
+import { Toggle } from '../shared/Toggle.js';
 import './AgentSelector.css';
 
 interface AgentSelectorProps {
@@ -17,6 +18,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLiveMode, setIsLiveMode] = useState(false);
 
   useEffect(() => {
     const disposeAvailableAgents = vscodeApi.onMessage(
@@ -83,42 +85,60 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   // Get the selected agent's details for custom display
   const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
   const selectedAgentType = selectedAgentInfo?.type === 'script' ? 'Agent Script' : selectedAgentInfo?.type === 'published' ? 'Published' : null;
+  const isScriptAgent = selectedAgentInfo?.type === 'script';
+
+  const handleModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setIsLiveMode(checked);
+    // TODO: Implement mode change logic (e.g., notify extension)
+    console.log(`Agent mode changed to: ${checked ? 'Live' : 'Mock'}`);
+  };
 
   return (
     <div className="agent-selector">
-      <select
-        className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
-        value={selectedAgent}
-        onChange={handleAgentChange}
-        disabled={isLoading}
-      >
-        <option value="">
-          {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
-        </option>
-        {publishedAgents.length > 0 && (
-          <optgroup label="Published">
-            {publishedAgents.map(agent => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name}
-              </option>
-            ))}
-          </optgroup>
+      <div className="agent-selector__main">
+        <select
+          className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
+          value={selectedAgent}
+          onChange={handleAgentChange}
+          disabled={isLoading}
+        >
+          <option value="">
+            {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
+          </option>
+          {publishedAgents.length > 0 && (
+            <optgroup label="Published">
+              {publishedAgents.map(agent => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {scriptAgents.length > 0 && (
+            <optgroup label="Agent Script">
+              {scriptAgents.map(agent => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+        {selectedAgentInfo && selectedAgentType && (
+          <div className="agent-select-display">
+            <span className="agent-name">{selectedAgentInfo.name}</span>
+            <span className="agent-type">({selectedAgentType})</span>
+          </div>
         )}
-        {scriptAgents.length > 0 && (
-          <optgroup label="Agent Script">
-            {scriptAgents.map(agent => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name}
-              </option>
-            ))}
-          </optgroup>
-        )}
-      </select>
-      {selectedAgentInfo && selectedAgentType && (
-        <div className="agent-select-display">
-          <span className="agent-name">{selectedAgentInfo.name}</span>
-          <span className="agent-type">({selectedAgentType})</span>
-        </div>
+      </div>
+      {isScriptAgent && (
+        <Toggle
+          leftLabel="Mock"
+          rightLabel="Live"
+          checked={isLiveMode}
+          onChange={handleModeChange}
+        />
       )}
     </div>
   );

@@ -1,17 +1,24 @@
 .agent-selector {
   display: flex;
-  align-items: center;
-  position: relative;
+  flex-direction: column;
+  gap: 0;
   width: 100%;
   padding: 0 16px;
   background-color: var(--vscode-sideBar-background);
   flex-shrink: 0;
 }
 
-.agent-selector::after {
+.agent-selector__main {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.agent-selector__main::after {
   content: '';
   position: absolute;
-  right: 26px;
+  right: 10px;
   width: 10px;
   height: 10px;
   pointer-events: none;
@@ -22,8 +29,8 @@
   opacity: 0.8;
 }
 
-body.vscode-dark .agent-selector::after,
-body.vscode-high-contrast .agent-selector::after {
+body.vscode-dark .agent-selector__main::after,
+body.vscode-high-contrast .agent-selector__main::after {
   background-image: url('../../assets/chevron-dark.svg');
 }
 
