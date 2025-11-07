@@ -177,7 +177,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               </svg>
             }
           >
-            Start
+            Start Preview
           </Button>
         </>
       )}
