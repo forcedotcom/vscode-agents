@@ -11,7 +11,7 @@
 .agent-selector__toggles {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
   flex-wrap: wrap;
 }
 
@@ -45,12 +45,11 @@
   gap: 6px;
 }
 
-/* Compact start button */
+/* Start button */
 .agent-selector__start-button {
-  font-size: 12px;
-  padding: 2px 8px;
-  height: 20px;
-  line-height: 16px;
+  font-size: 13px;
+  padding: 4px 16px;
+  height: auto;
 }
 
 .agent-selector__main {
