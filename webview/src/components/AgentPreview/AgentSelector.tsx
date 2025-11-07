@@ -157,8 +157,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             onClick={handleStartClick}
             className="agent-selector__start-button"
             startIcon={
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4.5 3L12.5 8L4.5 13V3Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="miter" />
+              <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <path d="M3.78 2L3 2.41v12l.78.42 9-6V8l-9-6zM4 13.48V3.35l7.6 5.07L4 13.48z"/>
               </svg>
             }
           >
