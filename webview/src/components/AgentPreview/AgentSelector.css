@@ -22,6 +22,7 @@
 
 .agent-selector__toggles .vscode-toggle--small .vscode-toggle__label {
   padding-inline-start: 6px;
+  font-weight: 500;
 }
 
 .agent-selector__toggles .vscode-toggle--small .vscode-toggle__track {
