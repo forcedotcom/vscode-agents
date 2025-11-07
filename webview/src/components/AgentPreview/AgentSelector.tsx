@@ -93,7 +93,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     const checked = e.target.checked;
     setIsLiveMode(checked);
     // TODO: Implement mode change logic (e.g., notify extension)
-    console.log(`Agent mode changed to: ${checked ? 'Live Actions' : 'Mock Actions'}`);
+    console.log(`Agent mode changed to: ${checked ? 'Live actions' : 'Mock actions'}`);
   };
 
   const handleDebugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,13 +154,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         <>
           <div className="agent-selector__toggles">
             <Toggle
-              label="Debug Mode"
+              label="Debug mode"
               checked={isDebugMode}
               onChange={handleDebugChange}
               size="small"
             />
             <Toggle
-              label={isLiveMode ? "Live Actions" : "Mock Actions"}
+              label={isLiveMode ? "Live actions" : "Mock actions"}
               checked={isLiveMode}
               onChange={handleModeChange}
               size="small"
