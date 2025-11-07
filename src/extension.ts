@@ -171,34 +171,54 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         return;
       }
 
-      const conn = await CoreExtensionService.getDefaultConnection();
-      const remoteAgents = await Agent.listRemote(conn);
-
-      if (!remoteAgents || remoteAgents.length === 0) {
-        vscode.window.showErrorMessage('Could not find agents in the org.');
-        channelService.appendLine('Could not find agents in the org.');
-        return;
+      // Discover local .agent files
+      const localAgents: Array<{ label: string; description: string; id: string }> = [];
+      try {
+        const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**');
+        for (const agentFile of agentFiles) {
+          const fileName = agentFile.fsPath.split('/').pop()?.replace('.agent', '') || 'Unknown';
+          localAgents.push({
+            label: fileName,
+            description: agentFile.fsPath,
+            id: `local:${agentFile.fsPath}`
+          });
+        }
+      } catch (err) {
+        console.warn('Error discovering local .agent files:', err);
       }
+
+      // Sort local agents alphabetically
+      localAgents.sort((a, b) => a.label.localeCompare(b.label));
+
+      // Get remote agents from org
+      const conn = await CoreExtensionService.getDefaultConnection();
+      const remoteAgents = await Agent.listRemote(conn as any);
 
       // Filter to only agents with active BotVersions
-      const activeAgents = remoteAgents
-        .filter(bot => {
-          return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-        })
-        .map(bot => ({
-          label: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-          description: bot.DeveloperName,
-          id: bot.Id
-        }))
-        .filter(agent => agent.id);
+      const activeRemoteAgents = remoteAgents
+        ? remoteAgents
+            .filter(bot => {
+              return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+            })
+            .map(bot => ({
+              label: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+              description: bot.DeveloperName,
+              id: bot.Id
+            }))
+            .filter(agent => agent.id)
+            .sort((a, b) => a.label.localeCompare(b.label)) // Sort remote agents alphabetically
+        : [];
 
-      if (activeAgents.length === 0) {
-        vscode.window.showErrorMessage('No active agents found in the org.');
-        channelService.appendLine('No active agents found in the org.');
+      // Combine local and remote agents
+      const allAgents = [...localAgents, ...activeRemoteAgents];
+
+      if (allAgents.length === 0) {
+        vscode.window.showErrorMessage('No agents found.');
+        channelService.appendLine('No agents found.');
         return;
       }
 
-      const selectedAgent = await vscode.window.showQuickPick(activeAgents, {
+      const selectedAgent = await vscode.window.showQuickPick(allAgents, {
         placeHolder: 'Select an agent to run'
       });
 
@@ -224,6 +244,27 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.stop', async () => {
       await provider.endSession();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.refresh', async () => {
+      // Get the current agent ID before ending the session
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('No agent selected to restart.');
+        return;
+      }
+
+      // End the current session
+      await provider.endSession();
+
+      // Wait a brief moment for the session to fully end
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Restart the agent session
+      provider.selectAndStartAgent(currentAgentId);
     })
   );
 

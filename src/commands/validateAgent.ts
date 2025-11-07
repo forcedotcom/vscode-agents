@@ -18,13 +18,14 @@ export const registerValidateAgentCommand = () => {
     const channelService = CoreExtensionService.getChannelService();
     telemetryService.sendCommandEvent(Commands.validateAgent);
 
-    // Get the file path from the context menu
-    const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
+    
+      // Get the file path from the context menu
+      const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
 
-    if (!filePath) {
-      vscode.window.showErrorMessage('No .agent file selected.');
-      return;
-    }
+      if (!filePath) {
+        vscode.window.showErrorMessage('No .agent file selected.');
+        return;
+      }
 
     const fileUri = vscode.Uri.file(filePath);
     const fileContents = Buffer.from((await vscode.workspace.fs.readFile(fileUri))).toString();

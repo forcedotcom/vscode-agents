@@ -1,1 +1,22 @@
-npm run lint && npm run prettier && npm run compile
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running pre-push checks..."
+
+# Compile the code
+echo "Compiling TypeScript..."
+npm run build
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed! Please fix compilation errors before pushing."
+  exit 1
+fi
+
+# Run unit tests
+echo "Running unit tests..."
+npm run test:backend
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed! Please fix failing tests before pushing."
+  exit 1
+fi
+
+echo "✅ All pre-push checks passed!"

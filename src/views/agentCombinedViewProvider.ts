@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, type AgentTraceResponse, findAuthoringBundle } from '@salesforce/agents';
+import { AgentPreview, Agent, AgentPreviewBase, readTranscriptEntries, AgentSource } from '@salesforce/agents';
+import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
+import { Lifecycle } from '@salesforce/core';
 
 interface AgentMessage {
   type: string;
@@ -18,27 +20,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public webviewView?: vscode.WebviewView;
 
   private static instance: AgentCombinedViewProvider;
-  private agentPreview?: AgentPreview;
+  private agentPreview?: AgentPreviewBase;
   private sessionId = Date.now().toString();
   private apexDebugging = false;
   private selectedClientApp?: string;
   private sessionActive = false;
   private currentAgentName?: string;
   private currentAgentId?: string;
-  private mockFile?: string;
   private preselectedAgentId?: string;
+  private latestPlanId?: string;
 
 
   constructor(private readonly context: vscode.ExtensionContext) {
     AgentCombinedViewProvider.instance = this;
-    // Listen for configuration changes
-    this.context.subscriptions.push(
-      vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('salesforce.agentforceDX.showAgentTracer')) {
-          this.notifyConfigurationChange();
-        }
-      })
-    );
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -51,6 +45,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async setSessionActive(active: boolean): Promise<void> {
     this.sessionActive = active;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionActive', active);
+  }
+
+  /**
+   * Updates the agent selected state and context
+   */
+  private async setAgentSelected(selected: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:agentSelected', selected);
   }
 
   /**
@@ -70,7 +71,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     // If we have an active agent preview, update its debug mode
     if (this.agentPreview) {
-      this.agentPreview.toggleApexDebugMode(newDebugMode);
+      this.agentPreview.setApexDebugMode(newDebugMode);
     }
 
     // Notify webview
@@ -112,10 +113,17 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public async endSession(): Promise<void> {
     if (this.agentPreview && this.sessionId) {
       const agentName = this.currentAgentName;
-      await this.agentPreview.end(this.sessionId, 'UserRequest');
+      // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
+      // Both extend AgentPreviewBase, so we need to handle this carefully
+      if (this.agentPreview instanceof AgentSimulate) {
+        await (this.agentPreview as AgentSimulate).end();
+      } else {
+        await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+      }
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
+      this.latestPlanId = undefined;
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setDebugMode(false);
@@ -136,6 +144,116 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   public setPreselectedAgentId(agentId: string) {
     this.preselectedAgentId = agentId;
+  }
+
+  /**
+   * Determines the agent source type based on the agent ID
+   * @param agentId The agent identifier (either "local:<filepath>" for script agents or Bot ID for published agents)
+   * @returns AgentSource.SCRIPT for local .agent files, AgentSource.PUBLISHED for org agents
+   */
+  private getAgentSource(agentId: string): AgentSource {
+    return agentId.startsWith('local:') ? AgentSource.SCRIPT : AgentSource.PUBLISHED;
+  }
+
+  /**
+   * Extracts the file path from a local agent ID
+   * @param agentId The agent identifier with "local:" prefix
+   * @returns The file path without the "local:" prefix
+   */
+  private getLocalAgentFilePath(agentId: string): string {
+    return agentId.startsWith('local:') ? agentId.substring(6) : agentId;
+  }
+
+  /**
+   * Validates that an agent ID is a valid Salesforce Bot ID format
+   * @param agentId The agent ID to validate
+   * @throws Error if the agent ID is not a valid Bot ID format
+   */
+  private validatePublishedAgentId(agentId: string): void {
+    if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
+      throw new Error(
+        `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
+      );
+    }
+  }
+
+  /**
+   * Load conversation history for an agent and send it to the webview
+   * Uses readTranscriptEntries from @salesforce/agents library
+   */
+  private async loadAndSendConversationHistory(agentId: string, agentSource: AgentSource, webviewView: vscode.WebviewView): Promise<void> {
+    try {
+      let agentName: string;
+
+      if (agentSource === AgentSource.SCRIPT) {
+        // For script agents, use the full file name including .agent extension
+        const filePath = this.getLocalAgentFilePath(agentId);
+        agentName = path.basename(filePath); // Keep the .agent extension
+      } else {
+        // For published agents, use the agent ID (Bot ID) directly
+        agentName = agentId;
+      }
+
+      // Use readTranscriptEntries from @salesforce/agents library
+      // This reads from .sfdx/agents/conversations/<agentName>/history.json
+      // For script agents: <name>.agent
+      // For published agents: <agentId> (Bot ID)
+      const transcriptEntries = await readTranscriptEntries(agentName);
+
+      if (transcriptEntries && transcriptEntries.length > 0) {
+        // Convert transcript entries to messages format for the webview
+        const historyMessages = transcriptEntries
+          .filter(entry => entry.text) // Only include entries with text content
+          .map(entry => ({
+            id: `${entry.timestamp}-${entry.sessionId}`,
+            type: entry.role === 'user' ? 'user' : 'agent',
+            content: entry.text || '',
+            timestamp: entry.timestamp
+          }));
+
+        if (historyMessages.length > 0) {
+          webviewView.webview.postMessage({
+            command: 'conversationHistory',
+            data: { messages: historyMessages }
+          });
+        }
+      }
+    } catch (err) {
+      // Log error details for debugging
+      console.error('Could not load conversation history:', err);
+      if (err instanceof Error) {
+        console.error('Error stack:', err.stack);
+      }
+    }
+  }
+
+  /**
+   * Discover local .agent files in the workspace
+   */
+  private async discoverLocalAgents(): Promise<Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }>> {
+    const localAgents: Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }> = [];
+
+    try {
+      // Find all .agent files in the workspace
+      const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**');
+
+      for (const agentFile of agentFiles) {
+        const fileName = path.basename(agentFile.fsPath, '.agent');
+        localAgents.push({
+          name: fileName,
+          id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
+          type: 'script',
+          filePath: agentFile.fsPath
+        });
+      }
+    } catch (err) {
+      console.warn('Error discovering local .agent files:', err);
+    }
+
+    // Sort local agents alphabetically by name
+    localAgents.sort((a, b) => a.name.localeCompare(b.name));
+
+    return localAgents;
   }
 
   public resolveWebviewView(
@@ -161,11 +279,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // End existing session if one exists
           if (this.agentPreview && this.sessionId) {
             try {
-              await this.agentPreview.end(this.sessionId, 'UserRequest');
+              // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
+              if (this.agentPreview instanceof AgentSimulate) {
+                await (this.agentPreview as AgentSimulate).end();
+              } else {
+                await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+              }
             } catch (err) {
               console.warn('Error ending previous session:', err);
             }
           }
+
+          // Reset planId when starting a new session
+          this.latestPlanId = undefined;
 
           // If a client app was previously selected, reuse it to avoid re-prompt loops
           const conn = this.selectedClientApp
@@ -179,32 +305,97 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
           }
 
-          // Validate that the agentId follows Salesforce Bot ID format (starts with "0X" and is 15 or 18 characters)
-          if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
-            throw new Error(
-              `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
-            );
+          // Determine agent source type using the library's AgentSource enum
+          const agentSource = this.getAgentSource(agentId);
+
+          if (agentSource === AgentSource.SCRIPT) {
+            // Handle script agent (.agent file)
+            const filePath = this.getLocalAgentFilePath(agentId);
+
+            if (!filePath) {
+              throw new Error('No file path found for local agent.');
+            }
+
+            // Set up lifecycle event listeners for compilation progress
+            // Remove all existing listeners for these events to prevent duplicates
+            const lifecycle = Lifecycle.getInstance();
+            (lifecycle).removeAllListeners?.('agents:compiling');
+            (lifecycle).removeAllListeners?.('agents:simulation-starting');
+
+            // Listen for compilation events
+            lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
+              if (data.error) {
+                webviewView.webview.postMessage({
+                  command: 'compilationError',
+                  data: { message: data.error }
+                });
+              } else {
+                webviewView.webview.postMessage({
+                  command: 'compilationStarting',
+                  data: { message: data.message || 'Compiling agent...' }
+                });
+              }
+            });
+
+            // Listen for simulation starting event
+            lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
+              webviewView.webview.postMessage({
+                command: 'simulationStarting',
+                data: { message: data.message || 'Starting simulation...' }
+              });
+
+              // Show disclaimer for agent preview (script agents only)
+              webviewView.webview.postMessage({
+                command: 'previewDisclaimer',
+                data: {
+                  message: 'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).'
+                }
+              });
+            });
+
+            // Create AgentSimulate with just the file path
+            // Type cast needed due to local dependency setup with separate @salesforce/core instances
+            // mockActions=false means actions will run with real side effects
+            // The lifecycle listeners will automatically handle compilation progress messages
+            // todo: figure out UX for mockActions=true and pass in here
+            this.agentPreview = new AgentSimulate(conn as any, filePath, false);
+            this.currentAgentName = path.basename(filePath, '.agent');
+            this.currentAgentId = agentId;
+
+            // Enable debug mode if apex debugging is active
+            if (this.apexDebugging) {
+              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            }
+          } else {
+            // Handle published agent (org agent)
+            // Validate that the agentId follows Salesforce Bot ID format
+            this.validatePublishedAgentId(agentId);
+
+            // Type cast needed due to local dependency setup with separate @salesforce/core instances
+            this.agentPreview = new AgentPreview(conn as any, agentId);
+
+            // Get agent name for notifications
+            const remoteAgents = await Agent.listRemote(conn as any);
+            const agent = remoteAgents?.find(bot => bot.Id === agentId);
+            this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
+            this.currentAgentId = agentId;
+
+            // Enable debug mode if apex debugging is active
+            if (this.apexDebugging) {
+              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            }
           }
 
-          this.agentPreview = new AgentPreview(conn, agentId);
-
-          // Get agent name for notifications
-          const remoteAgents = await Agent.listRemote(conn);
-          const agent = remoteAgents?.find(bot => bot.Id === agentId);
-          this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
-          this.currentAgentId = agentId;
-
-          // Enable debug mode if apex debugging is active
-          if (this.apexDebugging) {
-            this.agentPreview.toggleApexDebugMode(this.apexDebugging);
-          }
-
+          // Start the session - this will trigger compilation for local agents
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
           await this.setSessionActive(true);
 
           // Show notification
           vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
+
+          // History loading is now exclusively handled by loadAgentHistory flow
+          // Don't load history here to avoid duplicate messages
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
@@ -224,7 +415,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
           if (this.agentPreview) {
-            this.agentPreview.toggleApexDebugMode(this.apexDebugging);
+            this.agentPreview.setApexDebugMode(this.apexDebugging);
           }
 
           webviewView.webview.postMessage({
@@ -244,11 +435,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const response = await this.agentPreview.send(this.sessionId, message.data.message);
 
           // Get the latest agent response
-          const latestMessage = response.messages.at(-1);
+          const lastMessage = response.messages?.at(-1);
+          this.latestPlanId = lastMessage?.planId;
+
           webviewView.webview.postMessage({
             command: 'messageSent',
-            data: { content: latestMessage?.message || 'I received your message.' }
+            data: { content: lastMessage?.message }
           });
+
 
           if (this.apexDebugging && response.apexDebugLog) {
             try {
@@ -289,8 +483,56 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'endSession') {
              await this.endSession()
+        } else if (message.command === 'loadAgentHistory') {
+          // Load conversation history for the selected agent
+          // If history exists: Show it and wait for user to manually start session
+          // If no history: Send noHistoryFound signal so webview can auto-start session
+          const agentId = message.data?.agentId;
+          if (agentId && typeof agentId === 'string') {
+            // First, clear any existing messages in the panel
+            webviewView.webview.postMessage({
+              command: 'clearMessages'
+            });
+
+            const agentSource = this.getAgentSource(agentId);
+
+            // Check if history exists
+            try {
+              let agentName: string;
+              if (agentSource === AgentSource.SCRIPT) {
+                const filePath = this.getLocalAgentFilePath(agentId);
+                agentName = path.basename(filePath);
+              } else {
+                agentName = agentId;
+              }
+
+              const transcriptEntries = await readTranscriptEntries(agentName);
+              const hasHistory = transcriptEntries && transcriptEntries.length > 0;
+
+              if (hasHistory) {
+                // History exists - send it to webview (user will manually start session)
+                await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
+              } else {
+                // No history - signal webview to auto-start session
+                webviewView.webview.postMessage({
+                  command: 'noHistoryFound',
+                  data: { agentId }
+                });
+              }
+            } catch (err) {
+              // Error loading history - treat as no history, auto-start session
+              console.error('Error checking history:', err);
+              webviewView.webview.postMessage({
+                command: 'noHistoryFound',
+                data: { agentId }
+              });
+            }
+          }
         } else if (message.command === 'getAvailableAgents') {
-          // First check client app requirements before getting agents
+          // Always get local .agent files first (they don't require client app)
+          const localAgents = await this.discoverLocalAgents();
+
+          // First check client app requirements before getting remote agents
           try {
             // If a client app has already been selected, use it directly and skip prompting
             let conn;
@@ -301,7 +543,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
               // Handle the three cases
               if (clientAppResult.type === 'none') {
-                // Case 1: No client app available
+                // Case 1: No client app available - still return local agents
+                webviewView.webview.postMessage({
+                  command: 'availableAgents',
+                  data: {
+                    agents: localAgents,
+                    selectedAgentId: this.preselectedAgentId
+                  }
+                });
                 webviewView.webview.postMessage({
                   command: 'clientAppRequired',
                   data: {
@@ -311,9 +560,20 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     error: clientAppResult.error
                   }
                 });
+                // Clear preselected ID after sending
+                if (this.preselectedAgentId) {
+                  this.preselectedAgentId = undefined;
+                }
                 return;
               } else if (clientAppResult.type === 'multiple') {
-                // Case 3: Multiple client apps - need user selection
+                // Case 3: Multiple client apps - still return local agents
+                webviewView.webview.postMessage({
+                  command: 'availableAgents',
+                  data: {
+                    agents: localAgents,
+                    selectedAgentId: this.preselectedAgentId
+                  }
+                });
                 webviewView.webview.postMessage({
                   command: 'selectClientApp',
                   data: {
@@ -321,6 +581,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     username: clientAppResult.username
                   }
                 });
+                // Clear preselected ID after sending
+                if (this.preselectedAgentId) {
+                  this.preselectedAgentId = undefined;
+                }
                 return;
               } else if (clientAppResult.type === 'single') {
                 // Case 2: Single client app - use automatically
@@ -331,33 +595,33 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               }
             }
 
-            const remoteAgents = await Agent.listRemote(conn);
-
-            if (!remoteAgents || remoteAgents.length === 0) {
-              webviewView.webview.postMessage({
-                command: 'availableAgents',
-                data: []
-              });
-              return;
-            }
+            // Get remote agents from org
+            const remoteAgents = await Agent.listRemote(conn as any);
 
             // Filter to only agents with active BotVersions and map to the expected format
-            const activeAgents = remoteAgents
-              .filter(bot => {
-                // Check if the bot has any active BotVersions
-                return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-              })
-              .map(bot => ({
-                name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                id: bot.Id // Use the Bot ID from org
-              }))
-              .filter(agent => agent.id); // Only include agents with valid IDs
+            const activeRemoteAgents = remoteAgents
+              ? remoteAgents
+                  .filter(bot => {
+                    // Check if the bot has any active BotVersions
+                    return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+                  })
+                  .map(bot => ({
+                    name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+                    id: bot.Id, // Use the Bot ID from org
+                    type: 'published' as const
+                  }))
+                  .filter(agent => agent.id) // Only include agents with valid IDs
+                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
+              : [];
+
+            // Combine local and remote agents
+            const allAgents = [...localAgents, ...activeRemoteAgents];
 
             // Send the available agents with preselected agent if we have one
             webviewView.webview.postMessage({
               command: 'availableAgents',
               data: {
-                agents: activeAgents,
+                agents: allAgents,
                 selectedAgentId: this.preselectedAgentId
               }
             });
@@ -374,34 +638,30 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               data: []
             });
           }
-        } else if (message.command === 'clearChat') {
-          // Legacy no-op: kept for compatibility with older UI messages
         } else if (message.command === 'getTraceData') {
-          // Serve the tracer.json file - either from user-configured path or built-in sample
           try {
-            const config = vscode.workspace.getConfiguration();
-            const customTracerPath = config.get<string>('salesforce.agentforceDX.tracerDataFilePath');
+            // If no agent preview or session, return empty data instead of throwing error
+            if (!this.agentPreview || !this.sessionId) {
+              webviewView.webview.postMessage({
+                command: 'traceData',
+                data: { plan: [], planId: '', sessionId: '' }
+              });
+              return;
+            }
 
-            let tracerJsonPath: string;
-            if (customTracerPath && customTracerPath.trim() !== '') {
-              // Use custom path if configured
-              tracerJsonPath = customTracerPath.trim();
+            let data;
+            if(this.agentPreview instanceof AgentSimulate && this.latestPlanId) {
+              data = await this.agentPreview.trace(this.sessionId, this.latestPlanId);
             } else {
-              // Fall back to built-in sample data
-              tracerJsonPath = path.join(this.context.extensionPath, 'webview', 'src', 'data', 'tracer.json');
+              // For AgentPreview, return empty plan structure
+              data = { plan: [], planId: '', sessionId: '' };
             }
 
-            if (!fs.existsSync(tracerJsonPath)) {
-              throw new Error(
-                `tracer.json not found at ${tracerJsonPath}. Please check the path in your settings.`
-              );
-            }
-            const data = JSON.parse(fs.readFileSync(tracerJsonPath, 'utf8')) as AgentTraceResponse;
             webviewView.webview.postMessage({
               command: 'traceData',
               data
             });
-          } catch (error: unknown) {
+          } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             webviewView.webview.postMessage({
               command: 'error',
@@ -424,27 +684,31 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               throw new Error('Client app not set');
             }
             const conn = await createConnectionWithClientApp(this.selectedClientApp);
-            const remoteAgents = await Agent.listRemote(conn);
 
-            if (!remoteAgents || remoteAgents.length === 0) {
-              webviewView.webview.postMessage({
-                command: 'availableAgents',
-                data: []
-              });
-              return;
-            }
+            // Get local .agent files
+            const localAgents = await this.discoverLocalAgents();
+
+            // Get remote agents from org
+            const remoteAgents = await Agent.listRemote(conn as any);
 
             // Filter to only agents with active BotVersions and map to the expected format
-            const activeAgents = remoteAgents
-              .filter(bot => {
-                // Check if the bot has any active BotVersions
-                return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-              })
-              .map(bot => ({
-                name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                id: bot.Id // Use the Bot ID from org
-              }))
-              .filter(agent => agent.id); // Only include agents with valid IDs
+            const activeRemoteAgents = remoteAgents
+              ? remoteAgents
+                  .filter(bot => {
+                    // Check if the bot has any active BotVersions
+                    return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+                  })
+                  .map(bot => ({
+                    name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+                    id: bot.Id, // Use the Bot ID from org
+                    type: 'published' as const
+                  }))
+                  .filter(agent => agent.id) // Only include agents with valid IDs
+                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
+              : [];
+
+            // Combine local and remote agents
+            const allAgents = [...localAgents, ...activeRemoteAgents];
 
             // Notify the UI that client app is ready so it can clear selection UI
             webviewView.webview.postMessage({ command: 'clientAppReady' });
@@ -453,7 +717,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             webviewView.webview.postMessage({
               command: 'availableAgents',
               data: {
-                agents: activeAgents,
+                agents: allAgents,
                 selectedAgentId: this.preselectedAgentId
               }
             });
@@ -491,13 +755,26 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const agentId = message.data?.agentId;
           if (agentId && typeof agentId === 'string' && agentId !== '') {
             this.currentAgentId = agentId;
+            await this.setAgentSelected(true);
           } else {
             this.currentAgentId = undefined;
+            await this.setAgentSelected(false);
           }
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+
+        // Clean up session state if connection failed
+        // This ensures UI doesn't show as "connected" when the session actually failed
+        if (this.agentPreview || this.sessionActive) {
+          this.agentPreview = undefined;
+          this.sessionId = Date.now().toString();
+          this.currentAgentName = undefined;
+          this.latestPlanId = undefined;
+          await this.setSessionActive(false);
+          await this.setDebugMode(false);
+        }
 
         // Check for specific agent deactivation error
         if (
@@ -547,18 +824,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     return html;
   }
 
-  private notifyConfigurationChange(): void {
-    if (this.webviewView) {
-      const config = vscode.workspace.getConfiguration();
-      const showAgentTracer = config.get('salesforce.agentforceDX.showAgentTracer');
-
-      // Notify webview of configuration changes
-      this.webviewView.webview.postMessage({
-        command: 'configuration',
-        data: { section: 'salesforce.agentforceDX.showAgentTracer', value: showAgentTracer }
-      });
-    }
-  }
 
   /**
    * Automatically continues the Apex Replay Debugger after it's launched,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { vscodeApi, AgentInfo } from '../../services/vscodeApi';
+import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentSelector.css';
 
 interface AgentSelectorProps {
@@ -17,107 +17,109 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [previousAgent, setPreviousAgent] = useState('');
 
   useEffect(() => {
-    // Listen for available agents from VS Code
-    vscodeApi.onMessage('availableAgents', (data: { agents: AgentInfo[], selectedAgentId?: string } | AgentInfo[]) => {
-      setIsLoading(false);
-      if (Array.isArray(data)) {
-        // Handle legacy format
-        if (data.length > 0) {
+    const disposeAvailableAgents = vscodeApi.onMessage(
+      'availableAgents',
+      (data: { agents: AgentInfo[]; selectedAgentId?: string } | AgentInfo[]) => {
+        setIsLoading(false);
+        if (Array.isArray(data)) {
+          // Handle legacy format
           setAgents(data);
         } else {
-          setAgents([]);
-        }
-      } else {
-        // Handle new format with selectedAgentId
-        if (data.agents && data.agents.length > 0) {
-          setAgents(data.agents);
-          if (data.selectedAgentId) {
-            onAgentChange(data.selectedAgentId);
-            // Start session with preselected agent
-            vscodeApi.startSession(data.selectedAgentId);
+          if (data.agents && data.agents.length > 0) {
+            setAgents(data.agents);
+            if (data.selectedAgentId) {
+              const agentExists = data.agents.some(agent => agent.id === data.selectedAgentId);
+              if (agentExists) {
+                onAgentChange(data.selectedAgentId);
+                vscodeApi.clearMessages();
+                vscodeApi.loadAgentHistory(data.selectedAgentId);
+              }
+            }
+          } else {
+            setAgents([]);
           }
-        } else {
-          setAgents([]);
         }
       }
+    );
+
+    const disposeClientAppRequired = vscodeApi.onMessage('clientAppRequired', data => {
+      setIsLoading(false);
+      onClientAppRequired?.(data);
     });
 
-    // Listen for client app required message (Case 1) - pass to parent
-    vscodeApi.onMessage('clientAppRequired', data => {
+    const disposeSelectClientApp = vscodeApi.onMessage('selectClientApp', data => {
       setIsLoading(false);
-      if (onClientAppRequired) {
-        onClientAppRequired(data);
-      }
-    });
-
-    // Listen for client app selection required (Case 3) - pass to parent
-    vscodeApi.onMessage('selectClientApp', data => {
-      setIsLoading(false);
-      if (onClientAppSelection) {
-        onClientAppSelection(data);
-      }
+      onClientAppSelection?.(data);
     });
 
     // Request available agents (this will trigger the client app checking)
     vscodeApi.getAvailableAgents();
-  }, [onClientAppRequired, onClientAppSelection]);
 
-  // Handle external agent selection (e.g., from command palette)
-  useEffect(() => {
-    const startSessionForSelectedAgent = async () => {
-      // Only start session if selectedAgent changed externally (not from dropdown)
-      if (selectedAgent && selectedAgent !== '' && selectedAgent !== previousAgent && agents.length > 0) {
-        // Check if this agent exists in the available agents list
-        const agentExists = agents.some(agent => agent.id === selectedAgent);
-        if (agentExists) {
-          // End current session if one exists
-          if (previousAgent) {
-            vscodeApi.endSession();
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-          // Start session for the externally selected agent
-          vscodeApi.startSession(selectedAgent);
-          setPreviousAgent(selectedAgent);
-        }
-      }
+    return () => {
+      disposeAvailableAgents();
+      disposeClientAppRequired();
+      disposeSelectClientApp();
     };
+  }, [onClientAppRequired, onClientAppSelection, onAgentChange]);
 
-    startSessionForSelectedAgent();
-  }, [selectedAgent, agents, previousAgent]);
-
-  const handleAgentChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
     onAgentChange(agentId);
-    setPreviousAgent(agentId);
 
-    // End current session if one exists
-    if (selectedAgent) {
-      vscodeApi.endSession();
-      // Small delay to ensure cleanup is complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    // Only start session if a valid agent is selected
     if (agentId && agentId !== '') {
-      vscodeApi.startSession(agentId);
+      vscodeApi.clearMessages();
+      vscodeApi.loadAgentHistory(agentId);
+    } else {
+      vscodeApi.clearMessages();
     }
   };
 
+  // Group agents by type
+  const publishedAgents = agents.filter(agent => agent.type === 'published');
+  const scriptAgents = agents.filter(agent => agent.type === 'script');
+
+  // Get the selected agent's details for custom display
+  const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
+  const selectedAgentType = selectedAgentInfo?.type === 'script' ? 'Agent Script' : selectedAgentInfo?.type === 'published' ? 'Published' : null;
+
   return (
     <div className="agent-selector">
-      <select className="agent-select" value={selectedAgent} onChange={handleAgentChange} disabled={isLoading}>
+      <select
+        className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
+        value={selectedAgent}
+        onChange={handleAgentChange}
+        disabled={isLoading}
+      >
         <option value="">
           {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
         </option>
-        {agents.map(agent => (
-          <option key={agent.id} value={agent.id}>
-            {agent.name}
-          </option>
-        ))}
+        {publishedAgents.length > 0 && (
+          <optgroup label="Published">
+            {publishedAgents.map(agent => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {scriptAgents.length > 0 && (
+          <optgroup label="Agent Script">
+            {scriptAgents.map(agent => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
+      {selectedAgentInfo && selectedAgentType && (
+        <div className="agent-select-display">
+          <span className="agent-name">{selectedAgentInfo.name}</span>
+          <span className="agent-type">({selectedAgentType})</span>
+        </div>
+      )}
     </div>
   );
 };

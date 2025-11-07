@@ -1,13 +1,13 @@
 import React from 'react';
-import ChatMessage from './ChatMessage';
-import SystemMessage from './SystemMessage';
+import ChatMessage from './ChatMessage.js';
+import SystemMessage from './SystemMessage.js';
 import './ChatContainer.css';
 
 interface Message {
   id: string;
   type: 'user' | 'agent' | 'system';
   content: string;
-  systemType?: 'session' | 'debug' | 'error';
+  systemType?: 'session' | 'debug' | 'error' | 'warning';
   timestamp?: string;
 }
 

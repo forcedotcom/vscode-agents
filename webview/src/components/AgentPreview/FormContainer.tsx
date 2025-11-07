@@ -1,12 +1,12 @@
 import React from 'react';
-import ChatInput from './ChatInput';
+import ChatInput from './ChatInput.js';
 import './FormContainer.css';
 
 interface Message {
   id: string;
   type: 'user' | 'agent' | 'system';
   content: string;
-  systemType?: 'session' | 'debug' | 'error';
+  systemType?: 'session' | 'debug' | 'error' | 'warning';
   timestamp?: string;
 }
 
