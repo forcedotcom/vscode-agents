@@ -8,6 +8,13 @@
   flex-shrink: 0;
 }
 
+.agent-selector__toggles {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .agent-selector__main {
   display: flex;
   align-items: center;

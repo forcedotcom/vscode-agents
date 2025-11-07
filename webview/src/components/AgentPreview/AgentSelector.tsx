@@ -19,6 +19,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(false);
+  const [isDebugMode, setIsDebugMode] = useState(false);
 
   useEffect(() => {
     const disposeAvailableAgents = vscodeApi.onMessage(
@@ -94,6 +95,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     console.log(`Agent mode changed to: ${checked ? 'Live' : 'Mock'}`);
   };
 
+  const handleDebugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked;
+    setIsDebugMode(checked);
+    // TODO: Implement debug mode change logic (e.g., notify extension)
+    console.log(`Debug mode changed to: ${checked ? 'On' : 'Off'}`);
+  };
+
   return (
     <div className="agent-selector">
       <div className="agent-selector__main">
@@ -133,13 +141,21 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         )}
       </div>
       {isScriptAgent && (
-        <Toggle
-          leftLabel="Mock"
-          rightLabel="Live"
-          checked={isLiveMode}
-          onChange={handleModeChange}
-          size="small"
-        />
+        <div className="agent-selector__toggles">
+          <Toggle
+            label="Debug mode"
+            checked={isDebugMode}
+            onChange={handleDebugChange}
+            size="small"
+          />
+          <Toggle
+            leftLabel="Mock"
+            rightLabel="Live"
+            checked={isLiveMode}
+            onChange={handleModeChange}
+            size="small"
+          />
+        </div>
       )}
     </div>
   );
