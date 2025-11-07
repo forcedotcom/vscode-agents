@@ -154,14 +154,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         <>
           <div className="agent-selector__toggles">
             <Toggle
-              label="Debug"
+              label="Debug Mode"
               checked={isDebugMode}
               onChange={handleDebugChange}
               size="small"
             />
             <Toggle
-              leftLabel="Mock Actions"
-              rightLabel="Live Actions"
+              label={isLiveMode ? "Live Actions" : "Mock Actions"}
               checked={isLiveMode}
               onChange={handleModeChange}
               size="small"
