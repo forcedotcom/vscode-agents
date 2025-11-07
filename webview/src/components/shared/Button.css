@@ -132,3 +132,20 @@
 .vscode-button--icon:disabled {
 	background: transparent;
 }
+
+/* Small Button Styles */
+.vscode-button--small {
+	font-size: 12px;
+	padding: 2px 8px;
+	line-height: 16px;
+}
+
+.vscode-button--small .vscode-button__start svg,
+.vscode-button--small .vscode-button__start span {
+	width: 14px;
+	height: 14px;
+}
+
+.vscode-button--small .vscode-button__start {
+	margin-inline-end: 6px;
+}

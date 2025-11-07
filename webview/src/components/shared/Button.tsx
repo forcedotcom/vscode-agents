@@ -10,6 +10,12 @@ import './Button.css';
  */
 export type ButtonAppearance = 'primary' | 'secondary' | 'icon';
 
+/**
+ * Types of button size.
+ * @public
+ */
+export type ButtonSize = 'default' | 'small';
+
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	/**
 	 * The appearance the button should have.
@@ -19,6 +25,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 	 * Content to display before the button text (e.g., icons)
 	 */
 	startIcon?: React.ReactNode;
+	/**
+	 * The size of the button
+	 */
+	size?: ButtonSize;
 }
 
 /**
@@ -30,10 +40,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
  * @public
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-	({ appearance = 'primary', startIcon, children, className, ...props }, ref) => {
+	({ appearance = 'primary', size = 'default', startIcon, children, className, ...props }, ref) => {
 		const buttonClass = [
 			'vscode-button',
 			`vscode-button--${appearance}`,
+			size === 'small' && 'vscode-button--small',
 			className
 		].filter(Boolean).join(' ');
 
