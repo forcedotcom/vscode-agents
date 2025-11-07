@@ -15,6 +15,32 @@
   flex-wrap: wrap;
 }
 
+/* Make small toggles even more compact in the selector */
+.agent-selector__toggles .vscode-toggle--small {
+  font-size: 12px;
+}
+
+.agent-selector__toggles .vscode-toggle--small .vscode-toggle__track {
+  width: 28px;
+  height: 14px;
+  border-radius: 7px;
+}
+
+.agent-selector__toggles .vscode-toggle--small .vscode-toggle__thumb {
+  width: 8px;
+  height: 8px;
+  top: 3px;
+  left: 3px;
+}
+
+.agent-selector__toggles .vscode-toggle--small.vscode-toggle--checked .vscode-toggle__thumb {
+  transform: translateX(14px);
+}
+
+.agent-selector__toggles .vscode-toggle--small.vscode-toggle--two-sided {
+  gap: 6px;
+}
+
 .agent-selector__main {
   display: flex;
   align-items: center;
