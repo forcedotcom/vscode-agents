@@ -138,6 +138,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           rightLabel="Live"
           checked={isLiveMode}
           onChange={handleModeChange}
+          size="small"
         />
       )}
     </div>
