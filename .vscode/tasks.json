@@ -27,7 +27,19 @@
       "type": "shell",
       "command": "cd webview && npm run watch",
       "label": "watch-webview",
-      "problemMatcher": [],
+      "problemMatcher": {
+        "pattern": {
+          "regexp": ".",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "built in"
+        }
+      },
       "isBackground": true,
       "presentation": {
         "reveal": "never",
@@ -38,7 +50,8 @@
       "label": "watch",
       "dependsOn": ["watch-extension", "watch-webview"],
       "problemMatcher": [],
-      "isBackground": true
+      "isBackground": true,
+      "dependsOrder": "parallel"
     }
   ]
 }
