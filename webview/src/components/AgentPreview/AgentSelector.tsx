@@ -87,7 +87,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   // Get the selected agent's details for custom display
   const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
   const selectedAgentType = selectedAgentInfo?.type === 'script' ? 'Agent Script' : selectedAgentInfo?.type === 'published' ? 'Published' : null;
-  const isScriptAgent = selectedAgentInfo?.type === 'script';
 
   const handleModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
@@ -104,12 +103,12 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   };
 
   const handleStartClick = () => {
-    // TODO: Implement start action (e.g., notify extension)
-    console.log('Start button clicked', {
-      agent: selectedAgent,
-      debugMode: isDebugMode,
-      liveMode: isLiveMode
-    });
+    if (!selectedAgent) {
+      return;
+    }
+
+    // Start session with the selected agent (same as play button)
+    vscodeApi.startSession(selectedAgent);
   };
 
   return (
@@ -150,38 +149,37 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           </div>
         )}
       </div>
-      {isScriptAgent && (
-        <>
-          <div className="agent-selector__toggles">
-            <Toggle
-              label="Debug mode"
-              checked={isDebugMode}
-              onChange={handleDebugChange}
-              size="small"
-            />
-            <Toggle
-              leftLabel="Simulate"
-              rightLabel="Live Test"
-              checked={isLiveMode}
-              onChange={handleModeChange}
-              size="small"
-            />
-          </div>
-          <Button
-            appearance="primary"
-            size="small"
-            onClick={handleStartClick}
-            className="agent-selector__start-button"
-            startIcon={
-              <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                <path d="M3.78 2L3 2.41v12l.78.42 9-6V8l-9-6zM4 13.48V3.35l7.6 5.07L4 13.48z"/>
-              </svg>
-            }
-          >
-            Start Preview
-          </Button>
-        </>
-      )}
+      <div className="agent-selector__toggles">
+        <Toggle
+          label="Debug mode"
+          checked={isDebugMode}
+          onChange={handleDebugChange}
+          size="small"
+          disabled={!selectedAgent || isLoading}
+        />
+        <Toggle
+          leftLabel="Simulate"
+          rightLabel="Live Test"
+          checked={isLiveMode}
+          onChange={handleModeChange}
+          size="small"
+          disabled={!selectedAgent || isLoading}
+        />
+      </div>
+      <Button
+        appearance="primary"
+        size="small"
+        onClick={handleStartClick}
+        className="agent-selector__start-button"
+        disabled={!selectedAgent || isLoading}
+        startIcon={
+          <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M3.78 2L3 2.41v12l.78.42 9-6V8l-9-6zM4 13.48V3.35l7.6 5.07L4 13.48z"/>
+          </svg>
+        }
+      >
+        Start Preview
+      </Button>
     </div>
   );
 };
