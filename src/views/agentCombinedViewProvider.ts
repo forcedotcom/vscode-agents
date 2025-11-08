@@ -812,6 +812,22 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     });
 
     webviewView.webview.html = this.getHtmlForWebview();
+
+    // Setup file watcher for development mode to auto-reload webview on changes
+    if (this.context.extensionMode === vscode.ExtensionMode.Development) {
+      const webviewHtmlPath = path.join(this.context.extensionPath, 'webview', 'dist', 'index.html');
+      const watcher = fs.watch(webviewHtmlPath, (eventType) => {
+        if (eventType === 'change' && this.webviewView) {
+          console.log('Webview file changed, reloading...');
+          this.webviewView.webview.html = this.getHtmlForWebview();
+        }
+      });
+
+      // Clean up watcher when webview is disposed
+      webviewView.onDidDispose(() => {
+        watcher.close();
+      });
+    }
   }
 
   private getHtmlForWebview(): string {
