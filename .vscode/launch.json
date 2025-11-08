@@ -22,7 +22,10 @@
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/lib/**/*.js"],
-      "preLaunchTask": "watch"
+      "preLaunchTask": "watch",
+      "env": {
+        "SF_TEST_API": "true"
+      }
     }
   ]
 }
