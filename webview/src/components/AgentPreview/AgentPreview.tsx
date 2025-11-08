@@ -109,33 +109,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
           content: data.content || "Hi! I'm ready to help. What can I do for you?",
           timestamp: new Date().toISOString()
         };
-
-        // Test messages to preview styling
-        const debugTestMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'system',
-          content: 'Debug mode is enabled, but no Apex was executed.',
-          systemType: 'debug',
-          timestamp: new Date().toISOString()
-        };
-
-        const warningTestMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          type: 'system',
-          content: 'Agent preview does not provide strict adherence to connection endpoint configuration.',
-          systemType: 'warning',
-          timestamp: new Date().toISOString()
-        };
-
-        const errorTestMessage: Message = {
-          id: (Date.now() + 3).toString(),
-          type: 'system',
-          content: 'Error: Failed to connect to the agent service.',
-          systemType: 'error',
-          timestamp: new Date().toISOString()
-        };
-
-        setMessages(prev => [...prev, welcomeMessage, debugTestMessage, warningTestMessage, errorTestMessage]);
+        setMessages(prev => [...prev, welcomeMessage]);
       }
 
       setSessionActive(true);
