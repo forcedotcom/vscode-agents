@@ -197,7 +197,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           )
         }
       >
-        {isSessionStarting ? 'Starting...' : isSessionActive ? 'Stop Preview' : 'Start Preview'}
+        {isSessionStarting ? 'Starting preview...' : isSessionActive ? 'Stop Preview' : 'Start Preview'}
       </Button>
     </div>
   );
