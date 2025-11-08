@@ -25,6 +25,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private apexDebugging = false;
   private selectedClientApp?: string;
   private sessionActive = false;
+  private sessionStarting = false;
   private currentAgentName?: string;
   private currentAgentId?: string;
   private preselectedAgentId?: string;
@@ -45,6 +46,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async setSessionActive(active: boolean): Promise<void> {
     this.sessionActive = active;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionActive', active);
+  }
+
+  private async setSessionStarting(starting: boolean): Promise<void> {
+    this.sessionStarting = starting;
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', starting);
   }
 
   /**
@@ -271,6 +277,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async message => {
       try {
         if (message.command === 'startSession') {
+          await this.setSessionStarting(true);
           webviewView.webview.postMessage({
             command: 'sessionStarting',
             data: { message: 'Starting session...' }
@@ -390,6 +397,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const session = await this.agentPreview.start();
           this.sessionId = session.sessionId;
           await this.setSessionActive(true);
+          await this.setSessionStarting(false);
 
           // Show notification
           vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
@@ -773,6 +781,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           this.currentAgentName = undefined;
           this.latestPlanId = undefined;
           await this.setSessionActive(false);
+          await this.setSessionStarting(false);
           await this.setDebugMode(false);
         }
 
