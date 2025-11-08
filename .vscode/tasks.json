@@ -15,12 +15,30 @@
     {
       "type": "npm",
       "script": "watch",
-      "label": "watch",
+      "label": "watch-extension",
       "problemMatcher": ["$tsc-watch"],
       "isBackground": true,
       "presentation": {
-        "reveal": "never"
+        "reveal": "never",
+        "group": "watch"
       }
+    },
+    {
+      "type": "shell",
+      "command": "cd webview && npm run watch",
+      "label": "watch-webview",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never",
+        "group": "watch"
+      }
+    },
+    {
+      "label": "watch",
+      "dependsOn": ["watch-extension", "watch-webview"],
+      "problemMatcher": [],
+      "isBackground": true
     }
   ]
 }
