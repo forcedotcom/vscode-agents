@@ -9,13 +9,15 @@ interface AgentSelectorProps {
   onClientAppSelection?: (data: any) => void;
   selectedAgent: string;
   onAgentChange: (agentId: string) => void;
+  isSessionActive?: boolean;
 }
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({
   onClientAppRequired,
   onClientAppSelection,
   selectedAgent,
-  onAgentChange
+  onAgentChange,
+  isSessionActive = false
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,8 +109,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       return;
     }
 
-    // Start session with the selected agent (same as play button)
-    vscodeApi.startSession(selectedAgent);
+    if (isSessionActive) {
+      // Stop the active session
+      vscodeApi.endSession();
+    } else {
+      // Start session with the selected agent
+      vscodeApi.startSession(selectedAgent);
+    }
   };
 
   return (
@@ -173,12 +180,18 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         className="agent-selector__start-button"
         disabled={!selectedAgent || isLoading}
         startIcon={
-          <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-            <path d="M3.78 2L3 2.41v12l.78.42 9-6V8l-9-6zM4 13.48V3.35l7.6 5.07L4 13.48z"/>
-          </svg>
+          isSessionActive ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+              <path d="M2 2v12h12V2H2zm10.75 10.75h-9.5v-9.5h9.5v9.5z"/>
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+              <path d="M3.78 2L3 2.41v12l.78.42 9-6V8l-9-6zM4 13.48V3.35l7.6 5.07L4 13.48z"/>
+            </svg>
+          )
         }
       >
-        Start Preview
+        {isSessionActive ? 'Stop Preview' : 'Start Preview'}
       </Button>
     </div>
   );

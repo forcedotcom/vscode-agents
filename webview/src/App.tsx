@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
+  const [isSessionActive, setIsSessionActive] = useState(false);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
   const desiredAgentIdRef = useRef<string>('');
@@ -78,6 +79,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', () => {
       sessionActiveRef.current = true;
+      setIsSessionActive(true);
       const resolver = sessionStartResolversRef.current.shift();
       if (resolver) {
         resolver(true);
@@ -86,6 +88,7 @@ const App: React.FC = () => {
 
     const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
       sessionActiveRef.current = false;
+      setIsSessionActive(false);
       const resolver = sessionEndResolversRef.current.shift();
       if (resolver) {
         resolver();
@@ -94,10 +97,12 @@ const App: React.FC = () => {
 
     const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
       sessionActiveRef.current = false;
+      setIsSessionActive(false);
     });
 
     const disposeSessionError = vscodeApi.onMessage('error', () => {
       sessionActiveRef.current = false;
+      setIsSessionActive(false);
       const endResolver = sessionEndResolversRef.current.shift();
       if (endResolver) {
         endResolver();
@@ -204,6 +209,7 @@ const App: React.FC = () => {
           onClientAppSelection={handleClientAppSelection}
           selectedAgent={desiredAgentId}
           onAgentChange={handleAgentChange}
+          isSessionActive={isSessionActive}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && (
