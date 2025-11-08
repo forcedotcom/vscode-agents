@@ -3,6 +3,7 @@
   font-size: 12px;
   font-weight: 400;
   padding: 8px 18px;
+  margin-bottom: 16px;
 }
 
 .system-message.debug {
