@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isSessionStarting, setIsSessionStarting] = useState(false);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
   const desiredAgentIdRef = useRef<string>('');
@@ -80,6 +81,7 @@ const App: React.FC = () => {
     const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', () => {
       sessionActiveRef.current = true;
       setIsSessionActive(true);
+      setIsSessionStarting(false);
       const resolver = sessionStartResolversRef.current.shift();
       if (resolver) {
         resolver(true);
@@ -89,6 +91,7 @@ const App: React.FC = () => {
     const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
+      setIsSessionStarting(false);
       const resolver = sessionEndResolversRef.current.shift();
       if (resolver) {
         resolver();
@@ -98,11 +101,13 @@ const App: React.FC = () => {
     const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
+      setIsSessionStarting(true);
     });
 
     const disposeSessionError = vscodeApi.onMessage('error', () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
+      setIsSessionStarting(false);
       const endResolver = sessionEndResolversRef.current.shift();
       if (endResolver) {
         endResolver();
@@ -210,6 +215,7 @@ const App: React.FC = () => {
           selectedAgent={desiredAgentId}
           onAgentChange={handleAgentChange}
           isSessionActive={isSessionActive}
+          isSessionStarting={isSessionStarting}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && (

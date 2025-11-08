@@ -10,6 +10,7 @@ interface AgentSelectorProps {
   selectedAgent: string;
   onAgentChange: (agentId: string) => void;
   isSessionActive?: boolean;
+  isSessionStarting?: boolean;
 }
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({
@@ -17,7 +18,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   onClientAppSelection,
   selectedAgent,
   onAgentChange,
-  isSessionActive = false
+  isSessionActive = false,
+  isSessionStarting = false
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -178,9 +180,14 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         size="small"
         onClick={handleStartClick}
         className="agent-selector__start-button"
-        disabled={!selectedAgent || isLoading}
+        disabled={!selectedAgent || isLoading || isSessionStarting}
         startIcon={
-          isSessionActive ? (
+          isSessionStarting ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="loading-spinner">
+              <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8z" opacity=".4"/>
+              <path d="M8 0a8 8 0 018 8h-1.5A6.5 6.5 0 008 1.5V0z"/>
+            </svg>
+          ) : isSessionActive ? (
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3.805 3.74H6.805V6.74H3.805V3.74ZM5.725 0.02C6.31167 0.0466666 6.87167 0.193333 7.405 0.46C7.965 0.726666 8.45833 1.07333 8.885 1.5C9.89833 2.59333 10.405 3.87333 10.405 5.34C10.405 6.48667 10.005 7.58 9.205 8.62C8.805 9.1 8.35167 9.5 7.845 9.82C7.33833 10.1133 6.79167 10.3133 6.205 10.42C4.925 10.66 3.765 10.4867 2.725 9.9C2.19167 9.60667 1.725 9.23333 1.325 8.78C0.925 8.32667 0.618333 7.82 0.405 7.26C0.191667 6.7 0.0583333 6.11333 0.005 5.5C-0.0216667 4.88667 0.0583333 4.3 0.245 3.74C0.645 2.51333 1.35167 1.56667 2.365 0.9C2.845 0.58 3.365 0.34 3.925 0.18C4.51167 0.02 5.11167 -0.0333333 5.725 0.02ZM6.125 9.7C7.13833 9.46 7.97833 8.92667 8.645 8.1C9.31167 7.19333 9.61833 6.24667 9.565 5.26C9.565 4.64667 9.445 4.06 9.205 3.5C8.99167 2.94 8.685 2.44667 8.285 2.02C7.51167 1.24667 6.61833 0.82 5.605 0.74C5.09833 0.713333 4.59167 0.766667 4.085 0.9C3.57833 1.00667 3.125 1.20667 2.725 1.5C1.87167 2.14 1.285 2.98 0.965 4.02C0.671667 5.06 0.738333 6.06 1.165 7.02C1.61833 7.98 2.29833 8.71333 3.205 9.22C3.63167 9.48667 4.09833 9.66 4.605 9.74C5.11167 9.82 5.61833 9.80667 6.125 9.7Z" fill="currentColor"/>
             </svg>
@@ -191,7 +198,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           )
         }
       >
-        {isSessionActive ? 'Stop Preview' : 'Start Preview'}
+        {isSessionStarting ? 'Starting...' : isSessionActive ? 'Stop Preview' : 'Start Preview'}
       </Button>
     </div>
   );

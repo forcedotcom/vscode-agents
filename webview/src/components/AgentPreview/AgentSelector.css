@@ -142,3 +142,17 @@ body.vscode-high-contrast .agent-selector__main::after {
   font-size: 13px;
   opacity: 0.8;
 }
+
+/* Loading spinner animation */
+@keyframes spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spinner-rotate 1s linear infinite;
+}
