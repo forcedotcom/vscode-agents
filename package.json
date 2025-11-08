@@ -61,7 +61,6 @@
     "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
     "reinstall": "git checkout -- package-lock.json && git clean -xfd && npm install",
-    "watch": "tsc --build --watch",
     "prettier": "prettier --write .",
     "prettier-check": "prettier --check .",
     "lint": "eslint . --ext .ts",
