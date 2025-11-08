@@ -186,7 +186,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
           id: Date.now().toString(),
           type: 'system',
           content: data.message,
-          systemType: 'debug',
+          systemType: 'error',
           timestamp: new Date().toISOString()
         };
         setMessages(prev => [...prev, disclaimerMessage]);
