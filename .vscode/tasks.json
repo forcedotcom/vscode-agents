@@ -19,33 +19,7 @@
       "problemMatcher": ["$tsc-watch"],
       "isBackground": true,
       "presentation": {
-        "reveal": "never"
-      }
-    },
-    {
-      "type": "shell",
-      "command": "cd webview && npm run watch",
-      "label": "watch-webview",
-      "problemMatcher": {
-        "pattern": {
-          "regexp": ".",
-          "file": 1,
-          "location": 2,
-          "message": 3
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": ".",
-          "endsPattern": "built in"
-        }
-      },
-      "isBackground": true,
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      },
-      "runOptions": {
-        "runOn": "folderOpen"
+        "reveal": "always"
       }
     }
   ]
