@@ -124,11 +124,6 @@
     "menus": {
       "view/title": [
         {
-          "command": "sf.agent.combined.view.run",
-          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && agentforceDX:agentSelected",
-          "group": "navigation@2"
-        },
-        {
           "command": "sf.agent.combined.view.refresh",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive",
           "group": "navigation@2"
