@@ -15,17 +15,6 @@
       "env": {
         "SF_TEST_API": "true"
       }
-    },
-    {
-      "name": "Run Extension (Watch Mode)",
-      "type": "extensionHost",
-      "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-      "outFiles": ["${workspaceFolder}/lib/**/*.js"],
-      "preLaunchTask": "watch",
-      "env": {
-        "SF_TEST_API": "true"
-      }
     }
   ]
 }
