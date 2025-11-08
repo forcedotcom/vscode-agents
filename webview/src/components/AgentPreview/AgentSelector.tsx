@@ -127,7 +127,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
           value={selectedAgent}
           onChange={handleAgentChange}
-          disabled={isLoading}
+          disabled={isLoading || isSessionActive || isSessionStarting}
         >
           <option value="">
             {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
@@ -164,7 +164,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           checked={isDebugMode}
           onChange={handleDebugChange}
           size="small"
-          disabled={!selectedAgent || isLoading}
+          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting}
         />
         <Toggle
           leftLabel="Simulate"
@@ -172,7 +172,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           checked={isLiveMode}
           onChange={handleModeChange}
           size="small"
-          disabled={!selectedAgent || isLoading}
+          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting}
         />
       </div>
       <Button
