@@ -183,7 +183,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           checked={isDebugMode}
           onChange={handleDebugChange}
           size="small"
-          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting || selectedAgentInfo?.type === 'published'}
+          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting}
         />
         <Toggle
           leftLabel="Simulate"
