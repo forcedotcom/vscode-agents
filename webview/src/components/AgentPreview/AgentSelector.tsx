@@ -25,6 +25,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
+  // Store live mode preference per agent script
+  const [agentModePreferences, setAgentModePreferences] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const disposeAvailableAgents = vscodeApi.onMessage(
@@ -77,6 +79,16 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     onAgentChange(agentId);
 
     if (agentId && agentId !== '') {
+      const selectedAgent = agents.find(agent => agent.id === agentId);
+
+      if (selectedAgent?.type === 'published') {
+        // Auto-enable live mode for published agents
+        setIsLiveMode(true);
+      } else if (selectedAgent?.type === 'script') {
+        // Restore saved preference for agent scripts, default to simulate (false)
+        setIsLiveMode(agentModePreferences[agentId] ?? false);
+      }
+
       vscodeApi.clearMessages();
       vscodeApi.loadAgentHistory(agentId);
     } else {
@@ -95,15 +107,19 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const handleModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsLiveMode(checked);
-    // TODO: Implement mode change logic (e.g., notify extension)
-    console.log(`Agent mode changed to: ${checked ? 'Live Test' : 'Simulate'}`);
+
+    // Save preference for agent scripts
+    if (selectedAgent && selectedAgentInfo?.type === 'script') {
+      setAgentModePreferences(prev => ({
+        ...prev,
+        [selectedAgent]: checked
+      }));
+    }
   };
 
   const handleDebugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsDebugMode(checked);
-    // TODO: Implement debug mode change logic (e.g., notify extension)
-    console.log(`Debug mode changed to: ${checked ? 'On' : 'Off'}`);
   };
 
   const handleStartClick = () => {
@@ -115,8 +131,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       // Stop the active session
       vscodeApi.endSession();
     } else {
-      // Start session with the selected agent
-      vscodeApi.startSession(selectedAgent);
+      // Start session with the selected agent and current mode settings
+      vscodeApi.startSession(selectedAgent, {
+        isDebugMode,
+        isLiveMode
+      });
     }
   };
 
@@ -172,7 +191,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           checked={isLiveMode}
           onChange={handleModeChange}
           size="small"
-          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting}
+          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting || selectedAgentInfo?.type === 'published'}
         />
       </div>
       <Button

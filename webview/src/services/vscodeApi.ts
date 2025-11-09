@@ -79,8 +79,8 @@ class VSCodeApiService {
   }
 
   // Agent session management
-  startSession(agentId: string) {
-    this.postMessage('startSession', { agentId });
+  startSession(agentId: string, options?: { isDebugMode?: boolean; isLiveMode?: boolean }) {
+    this.postMessage('startSession', { agentId, ...options });
   }
 
   endSession() {

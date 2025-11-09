@@ -323,6 +323,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               throw new Error('No file path found for local agent.');
             }
 
+            // Determine mode before setting up listeners
+            const isLiveMode = message.data?.isLiveMode ?? false;
+
             // Set up lifecycle event listeners for compilation progress
             // Remove all existing listeners for these events to prevent duplicates
             const lifecycle = Lifecycle.getInstance();
@@ -346,9 +349,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Listen for simulation starting event
             lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
+              const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
               webviewView.webview.postMessage({
                 command: 'simulationStarting',
-                data: { message: data.message || 'Starting simulation...' }
+                data: { message: data.message || modeMessage }
               });
 
               // Show disclaimer for agent preview (script agents only)
@@ -362,16 +366,17 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Create AgentSimulate with just the file path
             // Type cast needed due to local dependency setup with separate @salesforce/core instances
-            // mockActions=false means actions will run with real side effects
+            // mockActions: true = simulate (mock actions), false = live test (real side effects)
             // The lifecycle listeners will automatically handle compilation progress messages
-            // todo: figure out UX for mockActions=true and pass in here
-            this.agentPreview = new AgentSimulate(conn as any, filePath, false);
+            const mockActions = !isLiveMode; // Simulate = true, Live Test = false
+            this.agentPreview = new AgentSimulate(conn as any, filePath, mockActions);
             this.currentAgentName = path.basename(filePath, '.agent');
             this.currentAgentId = agentId;
 
-            // Enable debug mode if apex debugging is active
-            if (this.apexDebugging) {
-              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            // Enable debug mode from UI toggle or existing apex debugging setting
+            const debugMode = message.data?.isDebugMode ?? this.apexDebugging;
+            if (debugMode) {
+              this.agentPreview.setApexDebugMode(debugMode);
             }
           } else {
             // Handle published agent (org agent)
@@ -387,9 +392,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
             this.currentAgentId = agentId;
 
-            // Enable debug mode if apex debugging is active
-            if (this.apexDebugging) {
-              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            // Enable debug mode from UI toggle or existing apex debugging setting
+            const debugMode = message.data?.isDebugMode ?? this.apexDebugging;
+            if (debugMode) {
+              this.agentPreview.setApexDebugMode(debugMode);
             }
           }
 
