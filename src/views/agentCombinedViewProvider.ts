@@ -362,10 +362,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Create AgentSimulate with just the file path
             // Type cast needed due to local dependency setup with separate @salesforce/core instances
-            // mockActions=false means actions will run with real side effects
+            // mockActions: true = simulate (mock actions), false = live test (real side effects)
             // The lifecycle listeners will automatically handle compilation progress messages
-            // todo: figure out UX for mockActions=true and pass in here
-            this.agentPreview = new AgentSimulate(conn as any, filePath, false);
+            const isLiveMode = message.data?.isLiveMode ?? false;
+            const mockActions = !isLiveMode; // Simulate = true, Live Test = false
+            this.agentPreview = new AgentSimulate(conn as any, filePath, mockActions);
             this.currentAgentName = path.basename(filePath, '.agent');
             this.currentAgentId = agentId;
 
