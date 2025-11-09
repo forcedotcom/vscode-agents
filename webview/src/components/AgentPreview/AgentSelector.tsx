@@ -95,15 +95,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const handleModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsLiveMode(checked);
-    // TODO: Implement mode change logic (e.g., notify extension)
-    console.log(`Agent mode changed to: ${checked ? 'Live Test' : 'Simulate'}`);
   };
 
   const handleDebugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsDebugMode(checked);
-    // TODO: Implement debug mode change logic (e.g., notify extension)
-    console.log(`Debug mode changed to: ${checked ? 'On' : 'Off'}`);
   };
 
   const handleStartClick = () => {
@@ -115,8 +111,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       // Stop the active session
       vscodeApi.endSession();
     } else {
-      // Start session with the selected agent
-      vscodeApi.startSession(selectedAgent);
+      // Start session with the selected agent and current mode settings
+      vscodeApi.startSession(selectedAgent, {
+        isDebugMode,
+        isLiveMode
+      });
     }
   };
 
