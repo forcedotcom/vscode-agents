@@ -323,6 +323,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               throw new Error('No file path found for local agent.');
             }
 
+            // Determine mode before setting up listeners
+            const isLiveMode = message.data?.isLiveMode ?? false;
+
             // Set up lifecycle event listeners for compilation progress
             // Remove all existing listeners for these events to prevent duplicates
             const lifecycle = Lifecycle.getInstance();
@@ -346,9 +349,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Listen for simulation starting event
             lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
+              const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
               webviewView.webview.postMessage({
                 command: 'simulationStarting',
-                data: { message: data.message || 'Starting simulation...' }
+                data: { message: data.message || modeMessage }
               });
 
               // Show disclaimer for agent preview (script agents only)
@@ -364,7 +368,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // Type cast needed due to local dependency setup with separate @salesforce/core instances
             // mockActions: true = simulate (mock actions), false = live test (real side effects)
             // The lifecycle listeners will automatically handle compilation progress messages
-            const isLiveMode = message.data?.isLiveMode ?? false;
             const mockActions = !isLiveMode; // Simulate = true, Live Test = false
             this.agentPreview = new AgentSimulate(conn as any, filePath, mockActions);
             this.currentAgentName = path.basename(filePath, '.agent');
