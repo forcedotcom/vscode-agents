@@ -369,9 +369,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentName = path.basename(filePath, '.agent');
             this.currentAgentId = agentId;
 
-            // Enable debug mode if apex debugging is active
-            if (this.apexDebugging) {
-              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            // Enable debug mode from UI toggle or existing apex debugging setting
+            const debugMode = message.data?.isDebugMode ?? this.apexDebugging;
+            if (debugMode) {
+              this.agentPreview.setApexDebugMode(debugMode);
             }
           } else {
             // Handle published agent (org agent)
@@ -387,9 +388,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
             this.currentAgentId = agentId;
 
-            // Enable debug mode if apex debugging is active
-            if (this.apexDebugging) {
-              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            // Enable debug mode from UI toggle or existing apex debugging setting
+            const debugMode = message.data?.isDebugMode ?? this.apexDebugging;
+            if (debugMode) {
+              this.agentPreview.setApexDebugMode(debugMode);
             }
           }
 
