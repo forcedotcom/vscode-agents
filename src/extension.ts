@@ -237,8 +237,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   };
 
   // Register toolbar commands
-  disposables.push(vscode.commands.registerCommand('sf.agent.combined.view.run', selectAndRunAgent));
-
   disposables.push(vscode.commands.registerCommand('sf.agent.selectAndRun', selectAndRunAgent));
 
   disposables.push(
@@ -265,18 +263,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
       // Restart the agent session
       provider.selectAndStartAgent(currentAgentId);
-    })
-  );
-
-  disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.debug', async () => {
-      await provider.toggleDebugMode();
-    })
-  );
-
-  disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.debugStop', async () => {
-      await provider.toggleDebugMode();
     })
   );
 
