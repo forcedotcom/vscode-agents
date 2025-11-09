@@ -77,6 +77,12 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     onAgentChange(agentId);
 
     if (agentId && agentId !== '') {
+      // Auto-enable live mode for published agents
+      const selectedAgent = agents.find(agent => agent.id === agentId);
+      if (selectedAgent?.type === 'published') {
+        setIsLiveMode(true);
+      }
+
       vscodeApi.clearMessages();
       vscodeApi.loadAgentHistory(agentId);
     } else {
