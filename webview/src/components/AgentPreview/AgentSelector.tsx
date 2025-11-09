@@ -132,18 +132,18 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           <option value="">
             {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
           </option>
-          {publishedAgents.length > 0 && (
-            <optgroup label="Published">
-              {publishedAgents.map(agent => (
+          {scriptAgents.length > 0 && (
+            <optgroup label="Agent Script">
+              {scriptAgents.map(agent => (
                 <option key={agent.id} value={agent.id}>
                   {agent.name}
                 </option>
               ))}
             </optgroup>
           )}
-          {scriptAgents.length > 0 && (
-            <optgroup label="Agent Script">
-              {scriptAgents.map(agent => (
+          {publishedAgents.length > 0 && (
+            <optgroup label="Published">
+              {publishedAgents.map(agent => (
                 <option key={agent.id} value={agent.id}>
                   {agent.name}
                 </option>
