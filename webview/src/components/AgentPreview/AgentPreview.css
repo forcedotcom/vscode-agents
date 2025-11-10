@@ -1,0 +1,9 @@
+.agent-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--vscode-sideBar-background);
+  color: var(--vscode-foreground);
+  margin: 0;
+  padding: 0;
+}
