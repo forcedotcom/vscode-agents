@@ -1,12 +1,9 @@
-import type * as vscodeTypes from 'vscode';
-import vscode = require('vscode');
+import * as vscode from 'vscode';
 import { Commands } from '../../src/enums/commands';
 import { Agent, type CompilationError } from '@salesforce/agents';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { SfProject, Lifecycle } from '@salesforce/core';
-
-const publishAgentModule = require('../../src/commands/publishAgent') as typeof import('../../src/commands/publishAgent');
-const { registerPublishAgentCommand } = publishAgentModule;
+import { registerPublishAgentCommand } from '../../src/commands';
 
 describe('publishAgent', () => {
   let commandSpy: jest.SpyInstance;
@@ -83,7 +80,10 @@ describe('publishAgent', () => {
     progressSpy = jest
       .spyOn(vscode.window, 'withProgress')
       .mockImplementation(async (_options, task) => {
-        return await task({ report: progressReportSpy }, {} as vscodeTypes.CancellationToken);
+        return await task({ report: progressReportSpy }, {
+          isCancellationRequested: false,
+          onCancellationRequested: undefined
+        });
       });
 
     readFileSpy = jest.spyOn(vscode.workspace.fs, 'readFile').mockResolvedValue(
