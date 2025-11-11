@@ -265,6 +265,47 @@ describe('publishAgent', () => {
       );
     });
 
+    it('handles JWT access token error during retrieve step', async () => {
+      // Mock successful compilation
+      const mockCompiledArtifact = { name: 'TestAgent', version: '1.0' };
+      compileAgentScriptSpy.mockResolvedValue({
+        status: 'success',
+        compiledArtifact: mockCompiledArtifact,
+        errors: [],
+        syntacticMap: { blocks: [] },
+        dslVersion: '0.0.3.rc29'
+      });
+
+      // Mock publish failure with JWT access token error (occurs during retrieve)
+      const jwtError = new Error(
+        'SOAP API does not support JWT-based access tokens. You must disable the "Issue JSON Web Token (JWT)-based access tokens" setting in your Connected App or External Client App'
+      );
+      publishAgentJsonSpy.mockRejectedValue(jwtError);
+
+      const mockUri = vscode.Uri.file('/test/TestAgent.agent');
+
+      registerPublishAgentCommand();
+      await commandSpy.mock.calls[0][1](mockUri);
+
+      expect(compileAgentScriptSpy).toHaveBeenCalled();
+      expect(publishAgentJsonSpy).toHaveBeenCalled();
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent publish failed!');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringContaining('SOAP API does not support JWT-based access tokens')
+      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringContaining('You must disable the "Issue JSON Web Token (JWT)-based access tokens"')
+      );
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed' });
+      expect(errorMessageSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to publish agent: SOAP API does not support JWT-based access tokens')
+      );
+      expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith(
+        'agent_publish_failed',
+        expect.stringContaining('SOAP API does not support JWT-based access tokens')
+      );
+    });
+
     it('handles unexpected errors in outer catch', async () => {
       // Mock error that occurs before withProgress (e.g., SfProject.getInstance fails)
       jest.spyOn(SfProject, 'getInstance').mockImplementation(() => {
