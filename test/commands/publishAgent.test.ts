@@ -80,10 +80,7 @@ describe('publishAgent', () => {
     progressSpy = jest
       .spyOn(vscode.window, 'withProgress')
       .mockImplementation(async (_options, task) => {
-        return await task({ report: progressReportSpy }, {
-          isCancellationRequested: false,
-          onCancellationRequested: undefined
-        });
+        return await task({ report: progressReportSpy }, {} as vscode.CancellationToken);
       });
 
     readFileSpy = jest.spyOn(vscode.workspace.fs, 'readFile').mockResolvedValue(
