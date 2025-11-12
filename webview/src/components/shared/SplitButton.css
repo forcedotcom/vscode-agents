@@ -84,6 +84,7 @@
 	position: absolute;
 	top: 0;
 	right: 0;
+	width: 40px;
 	height: 100%;
 	opacity: 0;
 	cursor: pointer;
@@ -91,7 +92,7 @@
 	border: none;
 	background: transparent;
 	font-size: 13px;
-	padding: 0 35px 0 10px;
+	padding: 0;
 }
 
 /* Primary Button Styles */
