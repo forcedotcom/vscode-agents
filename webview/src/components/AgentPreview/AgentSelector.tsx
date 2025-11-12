@@ -24,7 +24,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(false);
-  const [isDebugMode, setIsDebugMode] = useState(false);
   // Store live mode preference per agent script
   const [agentModePreferences, setAgentModePreferences] = useState<Record<string, boolean>>({});
 
@@ -117,11 +116,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   };
 
-  const handleDebugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setIsDebugMode(checked);
-  };
-
   const handleStartClick = () => {
     if (!selectedAgent) {
       return;
@@ -133,7 +127,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     } else {
       // Start session with the selected agent and current mode settings
       vscodeApi.startSession(selectedAgent, {
-        isDebugMode,
         isLiveMode
       });
     }
@@ -185,13 +178,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           onChange={handleModeChange}
           size="small"
           disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting || selectedAgentInfo?.type === 'published'}
-        />
-        <Toggle
-          label="Debug mode"
-          checked={isDebugMode}
-          onChange={handleDebugChange}
-          size="small"
-          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting}
         />
       </div>
       <Button

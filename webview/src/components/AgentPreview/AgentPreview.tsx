@@ -31,7 +31,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   pendingAgentId,
   selectedAgentId
 }) => {
-  const [debugMode, setDebugMode] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -363,20 +362,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     vscodeApi.sendChatMessage(content);
   };
 
-  const handleDebugModeChange = (enabled: boolean) => {
-    setDebugMode(enabled);
-    vscodeApi.setApexDebugging(enabled);
-
-    const debugMessage: Message = {
-      id: Date.now().toString(),
-      type: 'system',
-      content: `Debug mode ${enabled ? 'activated' : 'deactivated'}.`,
-      systemType: 'debug',
-      timestamp: new Date().toISOString()
-    };
-    setMessages(prev => [...prev, debugMessage]);
-  };
-
   const handleClientAppSelected = (clientAppName: string) => {
     // Hide client app selection UI and reset chat area to normal
     onClientAppStateChange('ready');
@@ -394,7 +379,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         vscodeApi.endSession();
       }
       // Reset to placeholder state
-      setDebugMode(false);
       setSessionActive(false);
       setIsLoading(false);
       setAgentConnected(false);
@@ -435,8 +419,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         {renderAgentSelection()}
         <PlaceholderContent />
         <FormContainer
-          debugMode={debugMode}
-          onDebugModeChange={handleDebugModeChange}
           onSendMessage={handleSendMessage}
           sessionActive={false}
           isLoading={isLoading}
@@ -451,8 +433,6 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       {renderAgentSelection()}
       <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
       <FormContainer
-        debugMode={debugMode}
-        onDebugModeChange={handleDebugModeChange}
         onSendMessage={handleSendMessage}
         sessionActive={agentConnected}
         isLoading={isLoading}

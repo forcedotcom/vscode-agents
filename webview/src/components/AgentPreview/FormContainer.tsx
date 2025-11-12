@@ -11,8 +11,6 @@ interface Message {
 }
 
 interface FormContainerProps {
-  debugMode: boolean;
-  onDebugModeChange: (enabled: boolean) => void;
   onSendMessage: (message: string) => void;
   sessionActive: boolean; // Now represents agent connection status
   isLoading: boolean;
@@ -20,8 +18,6 @@ interface FormContainerProps {
 }
 
 const FormContainer: React.FC<FormContainerProps> = ({
-  debugMode: _debugMode,
-  onDebugModeChange: _onDebugModeChange,
   onSendMessage,
   sessionActive,
   isLoading: _isLoading, // Renamed to indicate it's intentionally unused
