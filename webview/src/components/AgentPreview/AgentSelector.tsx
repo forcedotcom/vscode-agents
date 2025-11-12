@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
-import { Toggle } from '../shared/Toggle.js';
-import { Button } from '../shared/Button.js';
+import { SplitButton } from '../shared/SplitButton.js';
 import './AgentSelector.css';
 
 interface AgentSelectorProps {
@@ -103,15 +102,15 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
   const selectedAgentType = selectedAgentInfo?.type === 'script' ? 'Agent Script' : selectedAgentInfo?.type === 'published' ? 'Published' : null;
 
-  const handleModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setIsLiveMode(checked);
+  const handleModeSelect = (value: string) => {
+    const isLive = value === 'live';
+    setIsLiveMode(isLive);
 
     // Save preference for agent scripts
     if (selectedAgent && selectedAgentInfo?.type === 'script') {
       setAgentModePreferences(prev => ({
         ...prev,
-        [selectedAgent]: checked
+        [selectedAgent]: isLive
       }));
     }
   };
@@ -170,20 +169,16 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           </div>
         )}
       </div>
-      <div className="agent-selector__toggles">
-        <Toggle
-          leftLabel="Simulate"
-          rightLabel="Live Test"
-          checked={isLiveMode}
-          onChange={handleModeChange}
-          size="small"
-          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting || selectedAgentInfo?.type === 'published'}
-        />
-      </div>
-      <Button
+      <SplitButton
         appearance="primary"
         size="small"
         onClick={handleStartClick}
+        onSelect={handleModeSelect}
+        value={isLiveMode ? 'live' : 'simulate'}
+        options={[
+          { label: 'Simulate', value: 'simulate', disabled: selectedAgentInfo?.type === 'published' },
+          { label: 'Live Test', value: 'live', disabled: selectedAgentInfo?.type === 'published' }
+        ]}
         className="agent-selector__start-button"
         disabled={!selectedAgent || isLoading || isSessionStarting}
         startIcon={
@@ -203,7 +198,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         }
       >
         {isSessionStarting ? 'Starting preview...' : isSessionActive ? 'Stop Preview' : 'Start Preview'}
-      </Button>
+      </SplitButton>
     </div>
   );
 };

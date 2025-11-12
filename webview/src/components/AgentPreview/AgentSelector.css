@@ -8,54 +8,18 @@
   flex-shrink: 0;
 }
 
-.agent-selector__toggles {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-/* Make small toggles even more compact in the selector */
-.agent-selector__toggles .vscode-toggle--small {
-  font-size: 12px;
-}
-
-.agent-selector__toggles .vscode-toggle--small .vscode-toggle__label {
-  padding-inline-start: 6px;
-  font-weight: 500;
-}
-
-.agent-selector__toggles .vscode-toggle--small .vscode-toggle__track {
-  width: 28px;
-  height: 14px;
-  border-radius: 7px;
-}
-
-.agent-selector__toggles .vscode-toggle--small .vscode-toggle__thumb {
-  width: 8px;
-  height: 8px;
-  top: 3px;
-  left: 3px;
-}
-
-.agent-selector__toggles .vscode-toggle--small.vscode-toggle--checked .vscode-toggle__thumb {
-  transform: translateX(14px);
-}
-
-.agent-selector__toggles .vscode-toggle--small.vscode-toggle--two-sided {
-  gap: 6px;
-}
-
 /* Full width start button */
 .agent-selector__start-button {
   width: 100%;
 }
 
-.agent-selector__start-button .vscode-button__start {
+.agent-selector__start-button .vscode-button__start,
+.agent-selector__start-button .vscode-split-button__start {
   margin-inline-end: 6px;
 }
 
-.agent-selector__start-button .vscode-button__start svg {
+.agent-selector__start-button .vscode-button__start svg,
+.agent-selector__start-button .vscode-split-button__start svg {
   width: 10px;
   height: 10px;
 }
