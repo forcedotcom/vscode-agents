@@ -103,7 +103,7 @@
 }
 
 .vscode-split-button--primary .vscode-split-button__divider {
-	background: rgba(0, 0, 0, 0.2);
+	background: transparent;
 }
 
 .vscode-split-button--primary .vscode-split-button__main:hover,
@@ -134,7 +134,7 @@
 }
 
 .vscode-split-button--secondary .vscode-split-button__divider {
-	background: rgba(0, 0, 0, 0.15);
+	background: transparent;
 }
 
 .vscode-split-button--secondary .vscode-split-button__main:hover,
@@ -166,7 +166,7 @@
 }
 
 .vscode-split-button--icon .vscode-split-button__divider {
-	background: rgba(90, 93, 94, 0.31);
+	background: transparent;
 }
 
 .vscode-split-button--icon .vscode-split-button__main:hover,
@@ -193,12 +193,14 @@
 }
 
 /* Small size variant */
-.vscode-split-button--small .vscode-split-button__main,
-.vscode-split-button--small .vscode-split-button__trigger {
-	font-size: calc(var(--vscode-font-size) - 1px);
-	padding: 2px 8px;
+.vscode-split-button--small .vscode-split-button__main {
+	font-size: 13px;
+	padding: 6px 12px;
+	font-weight: 500;
 }
 
 .vscode-split-button--small .vscode-split-button__trigger {
-	padding: 2px 4px;
+	font-size: 13px;
+	padding: 6px 8px;
+	font-weight: 500;
 }
