@@ -4,8 +4,8 @@ import './PlaceholderContent.css';
 
 const PlaceholderContent: React.FC = () => {
   const handleSelectAgent = () => {
-    // Trigger the same command as the play-circle icon
-    vscodeApi.executeCommand('sf.agent.combined.view.run');
+    // Open the agent picker to select and start an agent
+    vscodeApi.executeCommand('sf.agent.selectAndRun');
   };
 
   return (
