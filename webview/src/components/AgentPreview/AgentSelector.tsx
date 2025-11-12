@@ -102,8 +102,10 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
   const selectedAgentType = selectedAgentInfo?.type === 'script' ? 'Agent Script' : selectedAgentInfo?.type === 'published' ? 'Published' : null;
 
-  const handleModeSelect = (value: string) => {
+  const handleModeSelect = async (value: string) => {
     const isLive = value === 'live';
+    const modeChanged = isLive !== isLiveMode;
+
     setIsLiveMode(isLive);
 
     // Save preference for agent scripts
@@ -112,6 +114,15 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         ...prev,
         [selectedAgent]: isLive
       }));
+    }
+
+    // If session is active and mode changed, restart with new mode
+    if (modeChanged && isSessionActive && selectedAgent) {
+      await vscodeApi.endSession();
+      // Wait a brief moment for the session to fully end
+      await new Promise(resolve => setTimeout(resolve, 100));
+      // Restart with new mode
+      vscodeApi.startSession(selectedAgent, { isLiveMode: isLive });
     }
   };
 
@@ -176,8 +187,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         onSelect={handleModeSelect}
         value={isLiveMode ? 'live' : 'simulate'}
         options={[
-          { label: 'Simulation', value: 'simulate', disabled: selectedAgentInfo?.type === 'published' },
-          { label: 'Live Test', value: 'live', disabled: selectedAgentInfo?.type === 'published' }
+          { label: 'Simulation', value: 'simulate' },
+          { label: 'Live Test', value: 'live' }
         ]}
         className="agent-selector__start-button"
         disabled={!selectedAgent || isLoading || isSessionStarting}
