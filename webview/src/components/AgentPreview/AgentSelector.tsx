@@ -176,7 +176,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         onSelect={handleModeSelect}
         value={isLiveMode ? 'live' : 'simulate'}
         options={[
-          { label: 'Simulate', value: 'simulate', disabled: selectedAgentInfo?.type === 'published' },
+          { label: 'Simulation', value: 'simulate', disabled: selectedAgentInfo?.type === 'published' },
           { label: 'Live Test', value: 'live', disabled: selectedAgentInfo?.type === 'published' }
         ]}
         className="agent-selector__start-button"
