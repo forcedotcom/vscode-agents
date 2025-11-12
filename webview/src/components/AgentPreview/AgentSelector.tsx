@@ -179,19 +179,19 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       </div>
       <div className="agent-selector__toggles">
         <Toggle
-          label="Debug mode"
-          checked={isDebugMode}
-          onChange={handleDebugChange}
-          size="small"
-          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting}
-        />
-        <Toggle
           leftLabel="Simulate"
           rightLabel="Live Test"
           checked={isLiveMode}
           onChange={handleModeChange}
           size="small"
           disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting || selectedAgentInfo?.type === 'published'}
+        />
+        <Toggle
+          label="Debug mode"
+          checked={isDebugMode}
+          onChange={handleDebugChange}
+          size="small"
+          disabled={!selectedAgent || isLoading || isSessionActive || isSessionStarting}
         />
       </div>
       <Button
