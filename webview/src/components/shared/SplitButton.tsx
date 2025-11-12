@@ -97,10 +97,18 @@ export const SplitButton = React.forwardRef<HTMLDivElement, SplitButtonProps>(
 			}
 		};
 
-		const handleDropdownClick = () => {
+		const handleDropdownClick = (e: React.MouseEvent) => {
 			if (!disabled && selectRef.current) {
-				// Programmatically open the select dropdown
-				selectRef.current.showPicker?.();
+				e.stopPropagation();
+				// Try to programmatically open the select dropdown
+				// Note: showPicker() is not supported in all browsers
+				if (selectRef.current.showPicker) {
+					selectRef.current.showPicker();
+				} else {
+					// Fallback: focus and trigger click
+					selectRef.current.focus();
+					selectRef.current.click();
+				}
 			}
 		};
 
