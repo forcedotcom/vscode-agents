@@ -30,6 +30,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private currentAgentId?: string;
   private preselectedAgentId?: string;
   private latestPlanId?: string;
+  private isLiveMode = false;
 
 
   constructor(private readonly context: vscode.ExtensionContext) {
@@ -66,6 +67,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async setDebugMode(enabled: boolean): Promise<void> {
     this.apexDebugging = enabled;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', enabled);
+  }
+
+  /**
+   * Updates the live mode state and context
+   */
+  private async setLiveMode(isLive: boolean): Promise<void> {
+    this.isLiveMode = isLive;
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:isLiveMode', isLive);
   }
 
   /**
@@ -133,6 +142,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setDebugMode(false);
+      await this.setLiveMode(false);
 
       // Show notification
       if (agentName) {
@@ -325,6 +335,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Determine mode before setting up listeners
             const isLiveMode = message.data?.isLiveMode ?? false;
+            await this.setLiveMode(isLiveMode);
 
             // Set up lifecycle event listeners for compilation progress
             // Remove all existing listeners for these events to prevent duplicates
@@ -381,6 +392,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // Handle published agent (org agent)
             // Validate that the agentId follows Salesforce Bot ID format
             this.validatePublishedAgentId(agentId);
+
+            // Published agents are always in live mode
+            await this.setLiveMode(true);
 
             // Type cast needed due to local dependency setup with separate @salesforce/core instances
             this.agentPreview = new AgentPreview(conn as any, agentId);
