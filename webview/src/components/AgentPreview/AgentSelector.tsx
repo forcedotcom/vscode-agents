@@ -198,10 +198,10 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         }
       >
         {isSessionStarting
-          ? (isLiveMode ? 'Starting live test...' : 'Starting preview...')
+          ? (isLiveMode ? 'Starting Live Test...' : 'Starting Simulation...')
           : isSessionActive
-            ? (isLiveMode ? 'Stop Live Test' : 'Stop Preview')
-            : (isLiveMode ? 'Start Live Test' : 'Start Preview')
+            ? (isLiveMode ? 'Stop Live Test' : 'Stop Simulation')
+            : (isLiveMode ? 'Start Live Test' : 'Start Simulation')
         }
       </SplitButton>
     </div>
