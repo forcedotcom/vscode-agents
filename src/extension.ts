@@ -177,9 +177,10 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**');
         for (const agentFile of agentFiles) {
           const fileName = agentFile.fsPath.split('/').pop()?.replace('.agent', '') || 'Unknown';
+          const relativePath = vscode.workspace.asRelativePath(agentFile.fsPath);
           localAgents.push({
             label: fileName,
-            description: agentFile.fsPath,
+            description: relativePath,
             id: `local:${agentFile.fsPath}`
           });
         }
