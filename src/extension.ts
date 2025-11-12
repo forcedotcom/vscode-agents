@@ -209,8 +209,18 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
             .sort((a, b) => a.label.localeCompare(b.label)) // Sort remote agents alphabetically
         : [];
 
-      // Combine local and remote agents
-      const allAgents = [...localAgents, ...activeRemoteAgents];
+      // Combine local and remote agents with group separators
+      const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> = [];
+
+      if (localAgents.length > 0) {
+        allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
+        allAgents.push(...localAgents);
+      }
+
+      if (activeRemoteAgents.length > 0) {
+        allAgents.push({ label: 'Published', kind: vscode.QuickPickItemKind.Separator });
+        allAgents.push(...activeRemoteAgents);
+      }
 
       if (allAgents.length === 0) {
         vscode.window.showErrorMessage('No agents found.');
@@ -222,7 +232,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         placeHolder: 'Select an agent to run'
       });
 
-      if (selectedAgent) {
+      if (selectedAgent && selectedAgent.id) {
         // Reveal the Agentforce DX panel
         await vscode.commands.executeCommand('sf.agent.combined.view.focus');
 
