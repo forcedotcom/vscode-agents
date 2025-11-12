@@ -87,10 +87,6 @@ export const SplitButton = React.forwardRef<HTMLDivElement, SplitButtonProps>(
 		// Use controlled value if provided, otherwise use internal state
 		const currentValue = controlledValue !== undefined ? controlledValue : internalValue;
 
-		// Find the selected option to display its label
-		const selectedOption = options.find(opt => opt.value === currentValue);
-		const displayText = selectedOption ? selectedOption.label : children;
-
 		const handleMainButtonClick = () => {
 			if (!disabled && onClick) {
 				onClick();
@@ -162,7 +158,7 @@ export const SplitButton = React.forwardRef<HTMLDivElement, SplitButtonProps>(
 					{...props}
 				>
 					{startIcon && <span className="vscode-split-button__start">{startIcon}</span>}
-					<span className="vscode-split-button__content">{displayText}</span>
+					<span className="vscode-split-button__content">{children}</span>
 				</button>
 				<div className="vscode-split-button__divider" />
 				<button
