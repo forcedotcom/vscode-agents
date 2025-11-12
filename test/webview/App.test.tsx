@@ -241,6 +241,21 @@ describe('App', () => {
       expect(messageHandlers.has('error')).toBe(true);
     });
 
+    it('should resolve immediately when waiting for session end with no active session', async () => {
+      render(<App />);
+
+      // Try to switch agents when no session is active
+      // This should not hang and should resolve immediately
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+
+      // Select an agent - should complete without waiting since no session is active
+      await userEvent.selectOptions(select, 'agent1');
+
+      await waitFor(() => {
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+      });
+    });
+
     it('should track session state with sessionStarted message', async () => {
       render(<App />);
 
