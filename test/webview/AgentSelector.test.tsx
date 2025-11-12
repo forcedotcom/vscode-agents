@@ -410,7 +410,7 @@ describe('AgentSelector', () => {
       (vscodeApi as any).endSession = jest.fn().mockResolvedValue(undefined);
     });
 
-    it('should handle mode change for script agents', async () => {
+    it('should render mode selector for script agents', async () => {
       const agents: AgentInfo[] = [
         { id: 'script1', name: 'ScriptAgent', type: 'script' }
       ];
@@ -421,30 +421,10 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
-        const agentSelects = screen.getAllByRole('combobox');
-        expect(agentSelects[0]).not.toBeDisabled();
+        const comboboxes = screen.getAllByRole('combobox');
+        // Should have both agent selector and mode selector
+        expect(comboboxes.length).toBeGreaterThan(1);
       });
-
-      // Mode selector is rendered for script agents
-      // This tests the handleModeSelect function
-    });
-
-    it('should restart session when mode changes during active session', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
-
-      render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionActive={true} />);
-
-      const availableAgentsHandler = messageHandlers.get('availableAgents');
-      availableAgentsHandler!({ agents });
-
-      await waitFor(() => {
-        const agentSelects = screen.getAllByRole('combobox');
-        expect(agentSelects.length).toBeGreaterThan(0);
-      });
-
-      // Mode change during active session should trigger restart
     });
   });
 

@@ -336,5 +336,47 @@ describe('createAiAuthoringBundle', () => {
     // Verify generateApiName was called with the name
     expect(generateApiName).toHaveBeenCalledWith('Test Agent');
   });
+
+  it('handles specs directory not found error', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    // Mock readDirectory to throw error (directory not found)
+    readDirectorySpy.mockRejectedValue(new Error('Directory not found'));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Should show error about no spec files
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No YAML spec files found')
+    );
+    // Should log the error
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('No specs directory found')
+    );
+  });
+
+  it('handles null agent script from createAgentScript', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+    showQuickPickSpy.mockResolvedValue('test.yaml');
+    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
+
+    // Mock createAgentScript to return null
+    createAgentScriptSpy.mockResolvedValue(null);
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Verify error was shown
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to create AI Authoring Bundle')
+    );
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to generate agent script')
+    );
+  });
+
 });
 
