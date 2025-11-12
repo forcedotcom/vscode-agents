@@ -92,8 +92,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // Notify webview
     if (this.webviewView) {
       this.webviewView.webview.postMessage({
-        command: 'setDebugMode',
-        data: newDebugMode
+        command: 'debugModeChanged',
+        data: {
+          enabled: newDebugMode,
+          message: newDebugMode ? 'Debug mode activated' : 'Debug mode deactivated'
+        }
       });
     }
 
