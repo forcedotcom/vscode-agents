@@ -22,7 +22,7 @@ export interface SplitButtonOption {
 	disabled?: boolean;
 }
 
-export interface SplitButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'size'> {
+export interface SplitButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'onSelect' | 'size'> {
 	/**
 	 * The appearance of the button
 	 */
