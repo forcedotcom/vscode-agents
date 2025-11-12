@@ -123,6 +123,16 @@
     "menus": {
       "view/title": [
         {
+          "command": "sf.agent.combined.view.debug",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sf.agent.combined.view.debugStop",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:debugMode",
+          "group": "navigation@1"
+        },
+        {
           "command": "sf.agent.combined.view.refresh",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:agentSelected",
           "group": "navigation@2"
@@ -314,6 +324,16 @@
         "command": "sf.agent.combined.view.refresh",
         "title": "Restart Agent",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "sf.agent.combined.view.debug",
+        "title": "Start Debug Mode",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "sf.agent.combined.view.debugStop",
+        "title": "Stop Debug Mode",
+        "icon": "$(debug)"
       },
       {
         "command": "salesforcedx-vscode-agents.previewAgent",
