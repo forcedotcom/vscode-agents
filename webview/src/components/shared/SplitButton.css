@@ -3,7 +3,7 @@
 
 .vscode-split-button {
 	position: relative;
-	display: inline-flex;
+	display: flex;
 	align-items: stretch;
 	border-radius: 2px;
 	overflow: hidden;
@@ -33,6 +33,7 @@
 	padding: 4px 11px;
 	border-top-left-radius: 2px;
 	border-bottom-left-radius: 2px;
+	flex: 1;
 }
 
 .vscode-split-button__trigger {
