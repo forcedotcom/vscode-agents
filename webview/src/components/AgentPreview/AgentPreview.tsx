@@ -19,6 +19,7 @@ interface AgentPreviewProps {
   onSessionTransitionSettled: () => void;
   pendingAgentId: string | null;
   selectedAgentId: string;
+  onHasSessionError?: (hasError: boolean) => void;
 }
 
 const AgentPreview: React.FC<AgentPreviewProps> = ({
@@ -29,13 +30,15 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   isSessionTransitioning,
   onSessionTransitionSettled,
   pendingAgentId,
-  selectedAgentId
+  selectedAgentId,
+  onHasSessionError
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Loading...');
   const [agentConnected, setAgentConnected] = useState(false);
+  const [hasSessionError, setHasSessionError] = useState(false);
   const sessionErrorTimestampRef = React.useRef<number>(0);
   const sessionActiveStateRef = React.useRef(false);
   const previousSelectedAgentRef = React.useRef<string>('');
@@ -50,6 +53,13 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     pendingAgentIdRef.current = pendingAgentId;
   }, [pendingAgentId]);
 
+  // Notify parent when session error state changes
+  useEffect(() => {
+    if (onHasSessionError) {
+      onHasSessionError(hasSessionError);
+    }
+  }, [hasSessionError, onHasSessionError]);
+
   useEffect(() => {
     const disposers: Array<() => void> = [];
 
@@ -58,6 +68,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setSessionActive(false);
       setAgentConnected(false);
       setIsLoading(false);
+      setHasSessionError(false); // Clear error state when switching agents
     });
     disposers.push(disposeClearMessages);
 
@@ -114,6 +125,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setSessionActive(true);
       setAgentConnected(true);
       setIsLoading(false);
+      setHasSessionError(false); // Clear error state when session successfully starts
       onSessionTransitionSettled();
     });
     disposers.push(disposeSessionStarted);
@@ -218,6 +230,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setAgentConnected(false);
       sessionActiveStateRef.current = false;
       sessionErrorTimestampRef.current = Date.now();
+      setHasSessionError(true); // Set error state when session fails
 
       setMessages(prev => {
         const filteredMessages = prev.filter(msg => !(msg.type === 'system' && msg.content === 'Starting session...'));

@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionStarting, setIsSessionStarting] = useState(false);
+  const [hasSessionError, setHasSessionError] = useState(false);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
   const desiredAgentIdRef = useRef<string>('');
@@ -218,7 +219,7 @@ const App: React.FC = () => {
           isSessionStarting={isSessionStarting}
         />
         <div className="app-menu-divider" />
-        {previewAgentId !== '' && (
+        {previewAgentId !== '' && !hasSessionError && (
           <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={true} />
         )}
       </div>
@@ -233,6 +234,7 @@ const App: React.FC = () => {
             onSessionTransitionSettled={handleSessionTransitionSettled}
             selectedAgentId={previewAgentId}
             pendingAgentId={pendingAgentId}
+            onHasSessionError={setHasSessionError}
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
