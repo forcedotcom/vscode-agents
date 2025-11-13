@@ -44,6 +44,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   const sessionErrorTimestampRef = React.useRef<number>(0);
   const sessionActiveStateRef = React.useRef(false);
   const hasSessionErrorRef = React.useRef(false);
+  const pendingDisclaimerRef = React.useRef<string | null>(null);
   const previousSelectedAgentRef = React.useRef<string>('');
   const selectedAgentIdRef = React.useRef(selectedAgentId);
   const pendingAgentIdRef = React.useRef(pendingAgentId);
@@ -80,6 +81,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       setAgentConnected(false);
       setIsLoading(false);
       setHasSessionError(false); // Clear error state when switching agents
+      pendingDisclaimerRef.current = null; // Clear pending disclaimer
     });
     disposers.push(disposeClearMessages);
 
@@ -130,7 +132,26 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
           content: data.content || "Hi! I'm ready to help. What can I do for you?",
           timestamp: new Date().toISOString()
         };
-        setMessages(prev => [...prev, welcomeMessage]);
+
+        // Show welcome message first, then disclaimer if queued
+        setMessages(prev => {
+          const newMessages = [...prev, welcomeMessage];
+
+          // Add queued disclaimer after welcome message
+          if (pendingDisclaimerRef.current) {
+            const disclaimerMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              type: 'system',
+              content: pendingDisclaimerRef.current,
+              systemType: 'debug',
+              timestamp: new Date().toISOString()
+            };
+            newMessages.push(disclaimerMessage);
+            pendingDisclaimerRef.current = null; // Clear after showing
+          }
+
+          return newMessages;
+        });
       }
 
       setSessionActive(true);
@@ -203,20 +224,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     disposers.push(disposeSimulationStarting);
 
     const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
-      // Don't show disclaimer if there's a session error
-      if (hasSessionErrorRef.current) {
-        return;
-      }
-
+      // Queue disclaimer to be shown after session starts successfully
       if (data && data.message) {
-        const disclaimerMessage: Message = {
-          id: Date.now().toString(),
-          type: 'system',
-          content: data.message,
-          systemType: 'debug',
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, disclaimerMessage]);
+        pendingDisclaimerRef.current = data.message;
       }
     });
     disposers.push(disposePreviewDisclaimer);
@@ -247,6 +257,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       sessionActiveStateRef.current = false;
       sessionErrorTimestampRef.current = Date.now();
       setHasSessionError(true); // Set error state when session fails
+      pendingDisclaimerRef.current = null; // Clear pending disclaimer on error
 
       setMessages(prev => {
         const filteredMessages = prev.filter(msg => !(msg.type === 'system' && msg.content === 'Starting session...'));
