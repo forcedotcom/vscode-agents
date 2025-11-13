@@ -20,6 +20,7 @@ interface AgentPreviewProps {
   pendingAgentId: string | null;
   selectedAgentId: string;
   onHasSessionError?: (hasError: boolean) => void;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 const AgentPreview: React.FC<AgentPreviewProps> = ({
@@ -31,7 +32,8 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   onSessionTransitionSettled,
   pendingAgentId,
   selectedAgentId,
-  onHasSessionError
+  onHasSessionError,
+  onLoadingChange
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
@@ -59,6 +61,13 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       onHasSessionError(hasSessionError);
     }
   }, [hasSessionError, onHasSessionError]);
+
+  // Notify parent when loading state changes
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(isLoading);
+    }
+  }, [isLoading, onLoadingChange]);
 
   useEffect(() => {
     const disposers: Array<() => void> = [];
