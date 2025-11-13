@@ -123,6 +123,11 @@
     "menus": {
       "view/title": [
         {
+          "command": "sf.agent.combined.view.refreshAgents",
+          "when": "view == sf.agent.combined.view",
+          "group": "navigation@0"
+        },
+        {
           "command": "sf.agent.combined.view.debug",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode && agentforceDX:isLiveMode",
           "group": "navigation@1"
@@ -324,6 +329,14 @@
         "command": "sf.agent.combined.view.refresh",
         "title": "Restart Agent",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "sf.agent.combined.view.refreshAgents",
+        "title": "Refresh Agent List",
+        "icon": {
+          "light": "resources/light/refresh-agents.svg",
+          "dark": "resources/dark/refresh-agents.svg"
+        }
       },
       {
         "command": "sf.agent.combined.view.debug",

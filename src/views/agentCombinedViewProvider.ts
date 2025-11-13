@@ -166,6 +166,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Refreshes the available agents list by posting a message to the webview
+   * This will trigger the webview to request agents again
+   */
+  public async refreshAvailableAgents(): Promise<void> {
+    if (this.webviewView) {
+      // Send a message to the webview to trigger getAvailableAgents
+      this.webviewView.webview.postMessage({
+        command: 'refreshAgents'
+      });
+    }
+  }
+
+  /**
    * Determines the agent source type based on the agent ID
    * @param agentId The agent identifier (either "local:<filepath>" for script agents or Bot ID for published agents)
    * @returns AgentSource.SCRIPT for local .agent files, AgentSource.PUBLISHED for org agents
