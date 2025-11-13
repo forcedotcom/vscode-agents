@@ -66,12 +66,18 @@ const App: React.FC = () => {
   };
 
   const handleGoToPreview = useCallback(() => {
+    // If session is not active and we have a desired agent, start the session
+    if (!isSessionActive && !isSessionStarting && desiredAgentId) {
+      forceRestartRef.current = true;
+      setRestartTrigger(prev => prev + 1);
+    }
+
     setActiveTab('preview');
     // Small delay to ensure tab is visible before focusing
     setTimeout(() => {
       agentPreviewRef.current?.focusInput();
     }, 100);
-  }, []);
+  }, [isSessionActive, isSessionStarting, desiredAgentId]);
 
   const handleClientAppRequired = useCallback((_data: any) => {
     setClientAppState('required');
