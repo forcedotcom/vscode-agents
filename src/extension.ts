@@ -281,6 +281,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async () => {
       await provider.refreshAvailableAgents();
+      vscode.window.showInformationMessage('Agentforce DX: Agent list refreshed');
     })
   );
 
