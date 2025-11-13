@@ -1,5 +1,5 @@
-import React from 'react';
-import ChatInput from './ChatInput.js';
+import { forwardRef } from 'react';
+import ChatInput, { ChatInputRef } from './ChatInput.js';
 import './FormContainer.css';
 
 interface Message {
@@ -17,17 +17,19 @@ interface FormContainerProps {
   messages?: Message[];
 }
 
-const FormContainer: React.FC<FormContainerProps> = ({
+const FormContainer = forwardRef<ChatInputRef, FormContainerProps>(({
   onSendMessage,
   sessionActive,
   isLoading: _isLoading, // Renamed to indicate it's intentionally unused
   messages = []
-}) => {
+}, ref) => {
   return (
     <div className="form-container">
-      <ChatInput onSendMessage={onSendMessage} disabled={!sessionActive} messages={messages} />
+      <ChatInput ref={ref} onSendMessage={onSendMessage} disabled={!sessionActive} messages={messages} />
     </div>
   );
-};
+});
+
+FormContainer.displayName = 'FormContainer';
 
 export default FormContainer;

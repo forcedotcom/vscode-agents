@@ -1,11 +1,20 @@
 import React from 'react';
 import './TracerPlaceholder.css';
 
-const TracerPlaceholder: React.FC = () => {
+interface TracerPlaceholderProps {
+  onGoToPreview?: () => void;
+}
+
+const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({ onGoToPreview }) => {
   return (
     <div className="tracer-placeholder">
       <div className="tracer-placeholder-icon"></div>
-      <p>Agent Tracer shows the execution flow of your agent's reasoning process. Send a message to the agent to see detailed trace data.</p>
+      <p>Agent Tracer displays the step-by-step actions an AI agent takes, so you can understand what it does in detail.</p>
+      {onGoToPreview && (
+        <button className="send-message-button" onClick={onGoToPreview}>
+          Send a message
+        </button>
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import AgentPreview from './components/AgentPreview/AgentPreview.js';
+import AgentPreview, { AgentPreviewRef } from './components/AgentPreview/AgentPreview.js';
 import AgentTracer from './components/AgentTracer/AgentTracer.js';
 import AgentSelector from './components/AgentPreview/AgentSelector.js';
 import TabNavigation from './components/shared/TabNavigation.js';
@@ -34,6 +34,7 @@ const App: React.FC = () => {
   const sessionActiveRef = useRef(false);
   const sessionEndResolversRef = useRef<Array<() => void>>([]);
   const sessionStartResolversRef = useRef<Array<(success: boolean) => void>>([]);
+  const agentPreviewRef = useRef<AgentPreviewRef>(null);
 
   useEffect(() => {
     displayedAgentIdRef.current = displayedAgentId;
@@ -63,6 +64,14 @@ const App: React.FC = () => {
   const handleTabChange = (tab: 'preview' | 'tracer') => {
     setActiveTab(tab);
   };
+
+  const handleGoToPreview = useCallback(() => {
+    setActiveTab('preview');
+    // Small delay to ensure tab is visible before focusing
+    setTimeout(() => {
+      agentPreviewRef.current?.focusInput();
+    }, 100);
+  }, []);
 
   const handleClientAppRequired = useCallback((_data: any) => {
     setClientAppState('required');
@@ -227,6 +236,7 @@ const App: React.FC = () => {
       <div className="app-content">
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview
+            ref={agentPreviewRef}
             clientAppState={clientAppState}
             availableClientApps={availableClientApps}
             onClientAppStateChange={setClientAppState}
@@ -240,7 +250,7 @@ const App: React.FC = () => {
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
-          <AgentTracer />
+          <AgentTracer onGoToPreview={handleGoToPreview} />
         </div>
       </div>
     </div>

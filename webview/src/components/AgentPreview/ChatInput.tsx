@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import './ChatInput.css';
 
 interface Message {
@@ -15,11 +15,22 @@ interface ChatInputProps {
   messages?: Message[];
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, messages = [] }) => {
+export interface ChatInputRef {
+  focus: () => void;
+}
+
+const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({ onSendMessage, disabled = false, messages = [] }, ref) => {
   const [message, setMessage] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [userMessageHistory, setUserMessageHistory] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Expose focus method to parent components
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      textareaRef.current?.focus();
+    }
+  }));
 
   // Update user message history when messages change
   useEffect(() => {
@@ -114,6 +125,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
       </button>
     </form>
   );
-};
+});
+
+ChatInput.displayName = 'ChatInput';
 
 export default ChatInput;

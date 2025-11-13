@@ -28,9 +28,25 @@ body.vscode-high-contrast .tracer-placeholder-icon {
 }
 
 .tracer-placeholder p {
-  margin: 0;
+  margin: 0 0 30px 0;
   color: var(--vscode-foreground);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.5;
+}
+
+.send-message-button {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: none;
+  font-weight: 500;
+}
+
+.send-message-button:hover {
+  background-color: var(--vscode-button-hoverBackground);
 }
