@@ -11,6 +11,7 @@ interface AgentSelectorProps {
   onAgentChange: (agentId: string) => void;
   isSessionActive?: boolean;
   isSessionStarting?: boolean;
+  onLiveModeChange?: (isLive: boolean) => void;
 }
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({
@@ -19,13 +20,21 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   selectedAgent,
   onAgentChange,
   isSessionActive = false,
-  isSessionStarting = false
+  isSessionStarting = false,
+  onLiveModeChange
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(false);
   // Store live mode preference per agent script
   const [agentModePreferences, setAgentModePreferences] = useState<Record<string, boolean>>({});
+
+  // Notify parent component when live mode changes
+  useEffect(() => {
+    if (onLiveModeChange) {
+      onLiveModeChange(isLiveMode);
+    }
+  }, [isLiveMode, onLiveModeChange]);
 
   useEffect(() => {
     const disposeAvailableAgents = vscodeApi.onMessage(
