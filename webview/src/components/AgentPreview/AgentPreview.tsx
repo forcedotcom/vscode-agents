@@ -224,9 +224,21 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     disposers.push(disposeSimulationStarting);
 
     const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
-      // Queue disclaimer to be shown after session starts successfully
       if (data && data.message) {
-        pendingDisclaimerRef.current = data.message;
+        // If session already started successfully, show disclaimer immediately
+        if (sessionActiveStateRef.current && !hasSessionErrorRef.current) {
+          const disclaimerMessage: Message = {
+            id: Date.now().toString(),
+            type: 'system',
+            content: data.message,
+            systemType: 'debug',
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, disclaimerMessage]);
+        } else {
+          // Otherwise queue it to be shown when session starts
+          pendingDisclaimerRef.current = data.message;
+        }
       }
     });
     disposers.push(disposePreviewDisclaimer);
