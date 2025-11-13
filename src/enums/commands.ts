@@ -4,6 +4,7 @@ export enum Commands {
   deactivateAgent = 'salesforcedx-vscode-agents.deactivateAgent',
   validateAgent = 'salesforcedx-vscode-agents.validateAgent',
   previewAgent = 'salesforcedx-vscode-agents.previewAgent',
+  publishAgent = 'salesforcedx-vscode-agents.publishAgent',
   createAiAuthoringBundle = 'salesforcedx-vscode-agents.createAiAuthoringBundle',
   goToTestResults = 'sf.agent.test.view.goToTestResults',
   runTest = 'sf.agent.test.view.runTest',

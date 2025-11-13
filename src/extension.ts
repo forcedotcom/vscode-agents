@@ -54,6 +54,7 @@ export async function activate(context: vscode.ExtensionContext) {
     disposables.push(commands.registerDeactivateAgentCommand());
     disposables.push(commands.registerValidateAgentCommand());
     disposables.push(commands.registerPreviewAgentCommand());
+    disposables.push(commands.registerPublishAgentCommand());
     disposables.push(commands.registerCreateAiAuthoringBundleCommand());
     context.subscriptions.push(await registerTestView());
     context.subscriptions.push(registerAgentCombinedView(context));
