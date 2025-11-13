@@ -53,10 +53,26 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Handle Enter key: submit on Enter, newline on Alt+Enter
-    if (e.key === 'Enter' && !e.altKey) {
-      e.preventDefault();
-      handleSubmit(e);
-      return;
+    if (e.key === 'Enter') {
+      if (e.altKey) {
+        // Alt+Enter: insert newline at cursor position
+        e.preventDefault();
+        const target = e.currentTarget;
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        const newMessage = message.substring(0, start) + '\n' + message.substring(end);
+        setMessage(newMessage);
+        // Set cursor position after the inserted newline
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = start + 1;
+        }, 0);
+        return;
+      } else {
+        // Regular Enter: submit message
+        e.preventDefault();
+        handleSubmit(e);
+        return;
+      }
     }
 
     if (e.key === 'ArrowUp') {
