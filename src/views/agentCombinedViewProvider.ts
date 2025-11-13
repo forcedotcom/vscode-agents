@@ -695,7 +695,35 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'getTraceData') {
           try {
-            // If no agent preview or session, return empty data instead of throwing error
+            // Check for mock payload URI setting first
+            const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+            const mockPayloadUri = config.get<string>('tracerMockPayloadUri');
+
+            if (mockPayloadUri && mockPayloadUri.trim() !== '') {
+              try {
+                // Parse the URI and load the file
+                const fileUri = vscode.Uri.file(mockPayloadUri);
+                const fileContent = await vscode.workspace.fs.readFile(fileUri);
+                const parsedMockData = JSON.parse(fileContent.toString());
+
+                // Send the mock data to the webview
+                webviewView.webview.postMessage({
+                  command: 'traceData',
+                  data: parsedMockData
+                });
+                return;
+              } catch (fileError) {
+                // If mock file can't be loaded, log error and fall through to normal flow
+                console.error('Error loading mock payload from URI:', fileError);
+                webviewView.webview.postMessage({
+                  command: 'error',
+                  data: { message: `Error loading mock payload: ${fileError instanceof Error ? fileError.message : 'Unknown error'}` }
+                });
+                return;
+              }
+            }
+
+            // Normal flow: If no agent preview or session, return empty data instead of throwing error
             if (!this.agentPreview || !this.sessionId) {
               webviewView.webview.postMessage({
                 command: 'traceData',
