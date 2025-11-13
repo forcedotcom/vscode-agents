@@ -242,7 +242,7 @@ describe('createAiAuthoringBundle', () => {
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
     showQuickPickSpy.mockResolvedValue('test.yaml');
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
-    
+
     // Mock createAgentScript to throw error
     createAgentScriptSpy.mockRejectedValue(new Error('API Error'));
 
@@ -254,6 +254,42 @@ describe('createAiAuthoringBundle', () => {
     expect(showErrorMessageSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create AI Authoring Bundle')
     );
+  });
+
+  it('displays error message without "Error:" prefix in output channel', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+    showQuickPickSpy.mockResolvedValue('test.yaml');
+    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
+
+    // Mock createAgentScript to throw error
+    createAgentScriptSpy.mockRejectedValue(new Error('API connection timeout'));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Verify error message is displayed without "Error:" prefix
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('API connection timeout');
+    expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(expect.stringContaining('Error: API connection timeout'));
+  });
+
+  it('displays "Something went wrong" for empty error message in output channel', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+    showQuickPickSpy.mockResolvedValue('test.yaml');
+    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
+
+    // Mock createAgentScript to throw error with empty message
+    const emptyError = new Error('');
+    createAgentScriptSpy.mockRejectedValue(emptyError);
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Verify fallback message is displayed
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Something went wrong');
   });
 
   it('validates bundle name is not empty', async () => {
