@@ -42,9 +42,16 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
   vscodeApi: mockVscodeApi
 }));
 
+// Track focusInput calls
+const mockFocusInput = jest.fn();
+
 // Mock the components to simplify testing
 jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
   return React.forwardRef(function MockAgentPreview({ selectedAgentId, pendingAgentId, isSessionTransitioning }: any, ref: any) {
+    React.useImperativeHandle(ref, () => ({
+      focusInput: mockFocusInput
+    }));
+
     return (
       <div data-testid="agent-preview" ref={ref}>
         <div data-testid="selected-agent">{selectedAgentId || 'none'}</div>
@@ -56,8 +63,18 @@ jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
 });
 
 jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
-  return function MockAgentTracer() {
-    return <div data-testid="agent-tracer">Tracer</div>;
+  return function MockAgentTracer({ onGoToPreview, isSessionActive, isLiveMode }: any) {
+    return (
+      <div data-testid="agent-tracer">
+        <div data-testid="tracer-session-active">{isSessionActive ? 'active' : 'inactive'}</div>
+        <div data-testid="tracer-live-mode">{isLiveMode ? 'live' : 'simulate'}</div>
+        {onGoToPreview && (
+          <button data-testid="tracer-go-to-preview" onClick={onGoToPreview}>
+            Go to Preview
+          </button>
+        )}
+      </div>
+    );
   };
 });
 
@@ -649,6 +666,123 @@ describe('App', () => {
       expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
 
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('Tracer Go To Preview', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+    });
+
+    it('should switch to preview tab when Go to Preview button is clicked', async () => {
+      render(<App />);
+
+      // Select an agent to show tracer
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer tab
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-tracer')).toBeInTheDocument();
+      });
+
+      // Click Go to Preview button in tracer
+      const goToPreviewButton = screen.getByTestId('tracer-go-to-preview');
+      fireEvent.click(goToPreviewButton);
+
+      // Should switch to preview tab
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+      });
+    });
+
+    it('should focus input when switching to preview from tracer', async () => {
+      render(<App />);
+
+      // Select an agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      // Click Go to Preview
+      const goToPreviewButton = screen.getByTestId('tracer-go-to-preview');
+      fireEvent.click(goToPreviewButton);
+
+      // Fast-forward the setTimeout delay
+      jest.advanceTimersByTime(100);
+
+      await waitFor(() => {
+        expect(mockFocusInput).toHaveBeenCalled();
+      });
+    });
+
+    it('should start session when clicking Go to Preview with no active session', async () => {
+      render(<App />);
+
+      // Select an agent but don't start session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      // Click Go to Preview (should start session)
+      const goToPreviewButton = screen.getByTestId('tracer-go-to-preview');
+      fireEvent.click(goToPreviewButton);
+
+      // Should trigger session start
+      await waitFor(() => {
+        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent1');
+      }, { timeout: 3000 });
+    });
+
+    it('should not restart session when clicking Go to Preview with active session', async () => {
+      render(<App />);
+
+      // Select an agent and start session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      jest.clearAllMocks();
+
+      // Switch to tracer
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      // Click Go to Preview (should NOT restart session)
+      const goToPreviewButton = screen.getByTestId('tracer-go-to-preview');
+      fireEvent.click(goToPreviewButton);
+
+      // Should NOT trigger session start
+      await waitFor(() => {
+        expect(mockVscodeApi.startSession).not.toHaveBeenCalled();
+      });
+
+      // Should still focus input
+      jest.advanceTimersByTime(100);
+      expect(mockFocusInput).toHaveBeenCalled();
     });
   });
 });
