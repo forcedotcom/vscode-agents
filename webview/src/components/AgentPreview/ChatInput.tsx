@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './ChatInput.css';
 
 interface Message {
@@ -19,6 +19,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
   const [message, setMessage] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [userMessageHistory, setUserMessageHistory] = useState<string[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Update user message history when messages change
   useEffect(() => {
@@ -30,6 +31,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
     setHistoryIndex(-1); // Reset history index when messages update
   }, [messages]);
 
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set height to scrollHeight (content height)
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [message]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
@@ -39,7 +51,30 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle Enter key: submit on Enter, newline on Alt+Enter
+    if (e.key === 'Enter') {
+      if (e.altKey) {
+        // Alt+Enter: insert newline at cursor position
+        e.preventDefault();
+        const target = e.currentTarget;
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        const newMessage = message.substring(0, start) + '\n' + message.substring(end);
+        setMessage(newMessage);
+        // Set cursor position after the inserted newline
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = start + 1;
+        }, 0);
+        return;
+      } else {
+        // Regular Enter: submit message
+        e.preventDefault();
+        handleSubmit(e);
+        return;
+      }
+    }
+
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (userMessageHistory.length > 0) {
@@ -64,14 +99,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
 
   return (
     <form className="chat-input" onSubmit={handleSubmit}>
-      <input
-        type="text"
+      <textarea
+        ref={textareaRef}
         value={message}
         onChange={e => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={disabled ? 'Select to an agent to get started…' : 'Write something to start testing…'}
         className="chat-input-field"
         disabled={disabled}
+        rows={1}
       />
       <button type="submit" className="chat-input-button" disabled={disabled || !message.trim()}>
         <span className="send-icon"></span>
