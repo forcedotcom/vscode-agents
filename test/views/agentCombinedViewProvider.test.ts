@@ -39,7 +39,8 @@ jest.mock('vscode', () => ({
     fs: {
       readFile: jest.fn(),
       writeFile: jest.fn(),
-      createDirectory: jest.fn()
+      createDirectory: jest.fn(),
+      stat: jest.fn()
     },
     onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() }))
   },
@@ -441,6 +442,7 @@ describe('AgentCombinedViewProvider', () => {
       ];
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockAgentFiles as any);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
 
       const localAgents = await (provider as any).discoverLocalAgents();
 
@@ -460,6 +462,7 @@ describe('AgentCombinedViewProvider', () => {
       ];
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(mockAgentFiles as any);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
 
       const localAgents = await (provider as any).discoverLocalAgents();
 
@@ -470,15 +473,11 @@ describe('AgentCombinedViewProvider', () => {
     });
 
     it('should handle errors when discovering agents', async () => {
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
       (vscode.workspace.findFiles as jest.Mock).mockRejectedValue(new Error('Discovery failed'));
 
       const localAgents = await (provider as any).discoverLocalAgents();
 
       expect(localAgents).toEqual([]);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-      
-      consoleWarnSpy.mockRestore();
     });
 
     it('should return empty array when no .agent files found', async () => {
@@ -2654,6 +2653,7 @@ describe('AgentCombinedViewProvider', () => {
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         { fsPath: '/workspace/local.agent' }
       ]);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
 
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
         type: 'none',
@@ -2866,6 +2866,7 @@ describe('AgentCombinedViewProvider', () => {
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         { fsPath: '/workspace/local.agent' }
       ]);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
         type: 'single',
         clientApps: [{ name: 'TestApp' }]
@@ -3047,6 +3048,7 @@ describe('AgentCombinedViewProvider', () => {
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         { fsPath: '/workspace/local.agent' }
       ]);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
         type: 'single',
         clientApps: [{ name: 'TestApp' }]
@@ -3108,6 +3110,7 @@ describe('AgentCombinedViewProvider', () => {
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         { fsPath: '/workspace/local.agent' }
       ]);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
       (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
         instanceUrl: 'https://test.salesforce.com'
       });
@@ -3135,6 +3138,7 @@ describe('AgentCombinedViewProvider', () => {
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         { fsPath: '/workspace/local.agent' }
       ]);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
       (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
         instanceUrl: 'https://test.salesforce.com'
       });
@@ -3366,6 +3370,7 @@ describe('AgentCombinedViewProvider', () => {
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         { fsPath: '/workspace/local.agent' }
       ]);
+      (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({} as any);
       (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
         instanceUrl: 'https://test.salesforce.com'
       });

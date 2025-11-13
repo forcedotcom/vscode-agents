@@ -547,5 +547,91 @@ describe('AgentSelector', () => {
       // Should call endSession to restart with new mode
       expect(vscodeApi.endSession).toHaveBeenCalled();
     });
+
+    it('should restart session with new mode after endSession completes', async () => {
+      const agents: AgentInfo[] = [
+        { id: 'script1', name: 'ScriptAgent', type: 'script' }
+      ];
+
+      render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionActive={true} />);
+
+      const availableAgentsHandler = messageHandlers.get('availableAgents');
+      availableAgentsHandler!({ agents });
+
+      await waitFor(() => {
+        const comboboxes = screen.getAllByRole('combobox');
+        expect(comboboxes.length).toBe(2);
+      });
+
+      const comboboxes = screen.getAllByRole('combobox');
+      const modeSelector = comboboxes[1];
+
+      // Mock endSession to resolve
+      vscodeApi.endSession = jest.fn().mockResolvedValue(undefined);
+      vscodeApi.startSession = jest.fn();
+
+      // Change mode during active session
+      await userEvent.selectOptions(modeSelector, 'live');
+
+      // Wait for async operations to complete
+      await waitFor(() => {
+        expect(vscodeApi.endSession).toHaveBeenCalled();
+      });
+
+      // Wait for timeout and startSession call
+      await waitFor(() => {
+        expect(vscodeApi.startSession).toHaveBeenCalledWith('script1', { isLiveMode: true });
+      }, { timeout: 200 });
+    });
+
+    it('should not render start button when no agent is selected', async () => {
+      const agents: AgentInfo[] = [
+        { id: 'script1', name: 'ScriptAgent', type: 'script' }
+      ];
+
+      const onAgentChange = jest.fn();
+      render(<AgentSelector selectedAgent="" onAgentChange={onAgentChange} isSessionActive={false} />);
+
+      const availableAgentsHandler = messageHandlers.get('availableAgents');
+      availableAgentsHandler!({ agents });
+
+      await waitFor(() => {
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
+      });
+
+      // Start button should not be rendered when no agent is selected
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('should handle refreshAgents message', async () => {
+      const agents: AgentInfo[] = [
+        { id: 'script1', name: 'ScriptAgent', type: 'script' }
+      ];
+
+      const onAgentChange = jest.fn();
+      render(<AgentSelector selectedAgent="script1" onAgentChange={onAgentChange} isSessionActive={false} />);
+
+      const availableAgentsHandler = messageHandlers.get('availableAgents');
+      availableAgentsHandler!({ agents });
+
+      await waitFor(() => {
+        const comboboxes = screen.getAllByRole('combobox');
+        expect(comboboxes.length).toBeGreaterThan(0);
+      });
+
+      // Trigger refreshAgents message
+      const refreshAgentsHandler = messageHandlers.get('refreshAgents');
+      expect(refreshAgentsHandler).toBeDefined();
+
+      vscodeApi.clearMessages = jest.fn();
+      vscodeApi.getAvailableAgents = jest.fn();
+
+      refreshAgentsHandler!();
+
+      // Should clear selection and messages
+      expect(onAgentChange).toHaveBeenCalledWith('');
+      expect(vscodeApi.clearMessages).toHaveBeenCalled();
+      expect(vscodeApi.getAvailableAgents).toHaveBeenCalled();
+    });
   });
 });
