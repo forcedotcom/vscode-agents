@@ -24,6 +24,19 @@
   height: 10px;
 }
 
+.agent-selector__start-button .vscode-button__start svg.stop-icon,
+.agent-selector__start-button .vscode-split-button__start svg.stop-icon {
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+}
+
+.agent-selector__start-button .vscode-button__start svg.loading-spinner,
+.agent-selector__start-button .vscode-split-button__start svg.loading-spinner {
+  width: 16px;
+  height: 16px;
+}
+
 .agent-selector__main {
   display: flex;
   align-items: center;
