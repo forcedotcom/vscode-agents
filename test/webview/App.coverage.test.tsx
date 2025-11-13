@@ -43,13 +43,13 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
 
 // Mock components
 jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
-  return function MockAgentPreview({ selectedAgentId }: any) {
+  return React.forwardRef(function MockAgentPreview({ selectedAgentId }: any, ref: any) {
     return (
-      <div data-testid="agent-preview">
+      <div data-testid="agent-preview" ref={ref}>
         <div data-testid="selected-agent">{selectedAgentId || 'none'}</div>
       </div>
     );
-  };
+  });
 });
 
 jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {

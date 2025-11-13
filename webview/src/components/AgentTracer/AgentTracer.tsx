@@ -7,12 +7,16 @@ import { StepTopic } from './StepTopic.js';
 import { StepActionSelection } from './StepActionSelection.js';
 import { StepAction } from './StepAction.js';
 import { StepAgentResponse } from './StepAgentResponse.js';
+import TracerPlaceholder from './TracerPlaceholder.js';
 
 import { vscodeApi } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
 
 interface AgentTracerProps {
   isVisible?: boolean;
+  onGoToPreview?: () => void;
+  isSessionActive?: boolean;
+  isLiveMode?: boolean;
 }
 
 // PlanSuccessResponse format from AgentSimulate.trace()
@@ -25,7 +29,7 @@ interface PlanSuccessResponse {
   plan: any[];
 }
 
-const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true }) => {
+const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true, onGoToPreview, isSessionActive = false, isLiveMode = false }) => {
   const [traceData, setTraceData] = useState<PlanSuccessResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -289,7 +293,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true }) => {
         ) : traceData === null ? (
           <div className="tracer-empty">Loading trace data...</div>
         ) : traceData && traceData.plan && traceData.plan.length === 0 ? (
-          <div className="tracer-empty">No trace data available yet. Send a message to the agent to generate trace data.</div>
+          <TracerPlaceholder onGoToPreview={onGoToPreview} isSessionActive={isSessionActive} isLiveMode={isLiveMode} />
         ) : (
           <div className="tracer-empty">Unable to load trace data. Check the console for errors.</div>
         )}

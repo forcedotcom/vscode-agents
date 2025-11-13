@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import ChatContainer from './ChatContainer.js';
 import FormContainer from './FormContainer.js';
 import PlaceholderContent from './PlaceholderContent.js';
 import { vscodeApi, Message } from '../../services/vscodeApi.js';
+import { ChatInputRef } from './ChatInput.js';
 import './AgentPreview.css';
 
 interface ClientApp {
@@ -23,7 +24,11 @@ interface AgentPreviewProps {
   onLoadingChange?: (isLoading: boolean) => void;
 }
 
-const AgentPreview: React.FC<AgentPreviewProps> = ({
+export interface AgentPreviewRef {
+  focusInput: () => void;
+}
+
+const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
   clientAppState,
   availableClientApps,
   onClientAppStateChange,
@@ -34,7 +39,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   selectedAgentId,
   onHasSessionError,
   onLoadingChange
-}) => {
+}, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +53,14 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   const previousSelectedAgentRef = React.useRef<string>('');
   const selectedAgentIdRef = React.useRef(selectedAgentId);
   const pendingAgentIdRef = React.useRef(pendingAgentId);
+  const chatInputRef = useRef<ChatInputRef>(null);
+
+  // Expose focus method to parent components
+  useImperativeHandle(ref, () => ({
+    focusInput: () => {
+      chatInputRef.current?.focus();
+    }
+  }));
 
   useEffect(() => {
     selectedAgentIdRef.current = selectedAgentId;
@@ -475,6 +488,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         {renderAgentSelection()}
         <PlaceholderContent />
         <FormContainer
+          ref={chatInputRef}
           onSendMessage={handleSendMessage}
           sessionActive={false}
           isLoading={isLoading}
@@ -489,6 +503,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       {renderAgentSelection()}
       <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
       <FormContainer
+        ref={chatInputRef}
         onSendMessage={handleSendMessage}
         sessionActive={agentConnected}
         isLoading={isLoading}
@@ -496,6 +511,8 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       />
     </div>
   );
-};
+});
+
+AgentPreview.displayName = 'AgentPreview';
 
 export default AgentPreview;
