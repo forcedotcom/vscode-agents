@@ -39,7 +39,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle Enter key: submit on Enter, newline on Alt+Enter
+    if (e.key === 'Enter' && !e.altKey) {
+      e.preventDefault();
+      handleSubmit(e);
+      return;
+    }
+
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (userMessageHistory.length > 0) {
@@ -64,14 +71,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false, 
 
   return (
     <form className="chat-input" onSubmit={handleSubmit}>
-      <input
-        type="text"
+      <textarea
         value={message}
         onChange={e => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={disabled ? 'Select to an agent to get started…' : 'Write something to start testing…'}
         className="chat-input-field"
         disabled={disabled}
+        rows={1}
       />
       <button type="submit" className="chat-input-button" disabled={disabled || !message.trim()}>
         <span className="send-icon"></span>
