@@ -328,12 +328,12 @@
       {
         "command": "sf.agent.combined.view.refresh",
         "title": "Restart Agent",
-        "icon": "$(refresh)"
+        "icon": "$(debug-rerun)"
       },
       {
         "command": "sf.agent.combined.view.refreshAgents",
         "title": "Refresh Agent List",
-        "icon": "$(sync)"
+        "icon": "$(refresh)"
       },
       {
         "command": "sf.agent.combined.view.debug",
