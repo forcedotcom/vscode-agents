@@ -124,7 +124,7 @@
       "view/title": [
         {
           "command": "sf.agent.combined.view.refreshAgents",
-          "when": "view == sf.agent.combined.view",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting",
           "group": "navigation@0"
         },
         {
