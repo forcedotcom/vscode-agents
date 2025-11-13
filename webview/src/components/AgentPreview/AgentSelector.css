@@ -1,0 +1,85 @@
+.agent-selector {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  padding: 0 16px;
+  background-color: var(--vscode-sideBar-background);
+  flex-shrink: 0;
+}
+
+.agent-selector::after {
+  content: '';
+  position: absolute;
+  right: 26px;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  background-image: url('../../assets/chevron-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.8;
+}
+
+body.vscode-dark .agent-selector::after,
+body.vscode-high-contrast .agent-selector::after {
+  background-image: url('../../assets/chevron-dark.svg');
+}
+
+.agent-select {
+  width: 100%;
+  min-width: 200px;
+  padding: 6px 28px 6px 8px;
+  background: var(--vscode-dropdown-background);
+  border: 1px solid var(--vscode-dropdown-border);
+  border-radius: 3px;
+  color: var(--vscode-dropdown-foreground);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agent-select.has-selection {
+  color: transparent;
+}
+
+.agent-select:hover {
+  background: var(--vscode-dropdown-listBackground);
+}
+
+.agent-select:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.agent-select-display {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 64px);
+}
+
+.agent-name {
+  color: var(--vscode-dropdown-foreground);
+  font-size: 13px;
+}
+
+.agent-type {
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  opacity: 0.8;
+}

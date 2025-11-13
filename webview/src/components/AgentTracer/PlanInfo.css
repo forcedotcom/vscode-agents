@@ -1,0 +1,90 @@
+.plan-info {
+  border-radius: 8px;
+  border: 1px solid var(--vscode-input-border);
+  margin: 16px 0;
+  overflow: hidden;
+  background-color: var(--vscode-input-background);
+}
+
+.plan-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: none;
+  border: none;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  height: 35px;
+  transition: background-color 0.2s;
+}
+
+.plan-info-header:hover {
+  background-color: var(--vscode-sideBarSectionHeader-background);
+}
+
+.plan-icon {
+  width: 12px;
+  height: 12px;
+  transform: rotate(-90deg);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.plan-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.plan-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.plan-id {
+  color: var(--vscode-foreground);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.plan-info-content {
+  padding: 0 16px 16px 16px;
+  background-color: var(--vscode-sideBar-background);
+  border-top: 1px solid var(--vscode-input-border);
+}
+
+.plan-info-content .tracer-steps {
+  position: relative;
+}
+
+.plan-info-content .tracer-steps::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--vscode-input-border) 0px,
+    var(--vscode-input-border) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  z-index: 1;
+}
+
+.plan-info-content .tracer-steps > * {
+  position: relative;
+  z-index: 2;
+  background-color: var(--vscode-sideBar-background);
+  min-width: 0;
+}
