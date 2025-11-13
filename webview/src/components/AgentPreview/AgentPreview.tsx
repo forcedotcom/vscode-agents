@@ -43,6 +43,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
   const [hasSessionError, setHasSessionError] = useState(false);
   const sessionErrorTimestampRef = React.useRef<number>(0);
   const sessionActiveStateRef = React.useRef(false);
+  const hasSessionErrorRef = React.useRef(false);
   const previousSelectedAgentRef = React.useRef<string>('');
   const selectedAgentIdRef = React.useRef(selectedAgentId);
   const pendingAgentIdRef = React.useRef(pendingAgentId);
@@ -55,8 +56,9 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     pendingAgentIdRef.current = pendingAgentId;
   }, [pendingAgentId]);
 
-  // Notify parent when session error state changes
+  // Notify parent when session error state changes and keep ref in sync
   useEffect(() => {
+    hasSessionErrorRef.current = hasSessionError;
     if (onHasSessionError) {
       onHasSessionError(hasSessionError);
     }
@@ -201,6 +203,11 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
     disposers.push(disposeSimulationStarting);
 
     const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
+      // Don't show disclaimer if there's a session error
+      if (hasSessionErrorRef.current) {
+        return;
+      }
+
       if (data && data.message) {
         const disclaimerMessage: Message = {
           id: Date.now().toString(),
