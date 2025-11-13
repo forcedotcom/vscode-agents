@@ -65,6 +65,10 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
       setIsLoading(true);
+      // Clear the current selection and messages
+      onAgentChange('');
+      vscodeApi.clearMessages();
+      // Fetch the latest agents
       vscodeApi.getAvailableAgents();
     });
 

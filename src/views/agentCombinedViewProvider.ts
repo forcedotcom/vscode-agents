@@ -167,10 +167,15 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Refreshes the available agents list by posting a message to the webview
-   * This will trigger the webview to request agents again
+   * This will trigger the webview to request agents again and clear the current selection
    */
   public async refreshAvailableAgents(): Promise<void> {
     if (this.webviewView) {
+      // Clear the current agent selection
+      this.currentAgentId = undefined;
+      this.currentAgentName = undefined;
+      await this.setAgentSelected(false);
+
       // Send a message to the webview to trigger getAvailableAgents
       this.webviewView.webview.postMessage({
         command: 'refreshAgents'
