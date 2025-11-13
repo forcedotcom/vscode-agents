@@ -93,6 +93,21 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
           content: msg.content || '',
           timestamp: msg.timestamp || new Date().toISOString()
         }));
+
+        // Always add disclaimer at the top of saved conversation history
+        const disclaimerText = pendingDisclaimerRef.current ||
+          'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).';
+
+        const disclaimerMessage: Message = {
+          id: `disclaimer-${Date.now()}`,
+          type: 'system',
+          content: disclaimerText,
+          systemType: 'debug',
+          timestamp: new Date().toISOString()
+        };
+        historyMessages.unshift(disclaimerMessage); // Add at the beginning
+        pendingDisclaimerRef.current = null; // Clear after showing
+
         setMessages(historyMessages);
       } else {
         setMessages([]);
@@ -126,21 +141,13 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       sessionActiveStateRef.current = true;
 
       if (data) {
-        const welcomeMessage: Message = {
-          id: Date.now().toString(),
-          type: 'agent',
-          content: data.content || "Hi! I'm ready to help. What can I do for you?",
-          timestamp: new Date().toISOString()
-        };
-
-        // Show welcome message first, then disclaimer if queued
         setMessages(prev => {
-          const newMessages = [...prev, welcomeMessage];
+          const newMessages = [...prev];
 
-          // Add queued disclaimer after welcome message
+          // Show disclaimer first (if queued)
           if (pendingDisclaimerRef.current) {
             const disclaimerMessage: Message = {
-              id: (Date.now() + 1).toString(),
+              id: Date.now().toString(),
               type: 'system',
               content: pendingDisclaimerRef.current,
               systemType: 'debug',
@@ -149,6 +156,15 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
             newMessages.push(disclaimerMessage);
             pendingDisclaimerRef.current = null; // Clear after showing
           }
+
+          // Then add welcome message
+          const welcomeMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'agent',
+            content: data.content || "Hi! I'm ready to help. What can I do for you?",
+            timestamp: new Date().toISOString()
+          };
+          newMessages.push(welcomeMessage);
 
           return newMessages;
         });
@@ -225,20 +241,8 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
 
     const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
       if (data && data.message) {
-        // If session already started successfully, show disclaimer immediately
-        if (sessionActiveStateRef.current && !hasSessionErrorRef.current) {
-          const disclaimerMessage: Message = {
-            id: Date.now().toString(),
-            type: 'system',
-            content: data.message,
-            systemType: 'debug',
-            timestamp: new Date().toISOString()
-          };
-          setMessages(prev => [...prev, disclaimerMessage]);
-        } else {
-          // Otherwise queue it to be shown when session starts
-          pendingDisclaimerRef.current = data.message;
-        }
+        // Always queue the disclaimer - it will be shown after welcome message
+        pendingDisclaimerRef.current = data.message;
       }
     });
     disposers.push(disposePreviewDisclaimer);
