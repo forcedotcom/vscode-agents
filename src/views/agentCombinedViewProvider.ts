@@ -170,6 +170,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * This will trigger the webview to request agents again and clear the current selection
    */
   public async refreshAvailableAgents(): Promise<void> {
+    const channelService = CoreExtensionService.getChannelService();
+    channelService.appendLine('[Agentforce DX] Refreshing available agents...');
+
     if (this.webviewView) {
       // Clear the current agent selection
       this.currentAgentId = undefined;
@@ -180,6 +183,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.webviewView.webview.postMessage({
         command: 'refreshAgents'
       });
+
+      channelService.appendLine('[Agentforce DX] Refresh command sent to webview');
+    } else {
+      channelService.appendLine('[Agentforce DX] Warning: No webview available to refresh');
     }
   }
 
@@ -266,25 +273,39 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Discover local .agent files in the workspace
+   * This method scans the workspace for all .agent files and returns them
    */
   private async discoverLocalAgents(): Promise<Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }>> {
     const localAgents: Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }> = [];
 
     try {
       // Find all .agent files in the workspace
-      const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**');
+      // Pass undefined for maxResults to get all files (not just the default limit)
+      const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**', undefined);
+
+      const channelService = CoreExtensionService.getChannelService();
+      channelService.appendLine(`[Agentforce DX] Found ${agentFiles.length} .agent files in workspace`);
 
       for (const agentFile of agentFiles) {
-        const fileName = path.basename(agentFile.fsPath, '.agent');
-        localAgents.push({
-          name: fileName,
-          id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
-          type: 'script',
-          filePath: agentFile.fsPath
-        });
+        // Verify the file still exists (in case it was deleted between scan and processing)
+        try {
+          await vscode.workspace.fs.stat(agentFile);
+          const fileName = path.basename(agentFile.fsPath, '.agent');
+          localAgents.push({
+            name: fileName,
+            id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
+            type: 'script',
+            filePath: agentFile.fsPath
+          });
+          channelService.appendLine(`[Agentforce DX]   - ${fileName} (${agentFile.fsPath})`);
+        } catch (statErr) {
+          // File was deleted or is inaccessible, skip it
+          channelService.appendLine(`[Agentforce DX] Skipping inaccessible agent file: ${agentFile.fsPath}`);
+        }
       }
     } catch (err) {
-      console.warn('Error discovering local .agent files:', err);
+      const channelService = CoreExtensionService.getChannelService();
+      channelService.appendLine(`[Agentforce DX] Error discovering local .agent files: ${err}`);
     }
 
     // Sort local agents alphabetically by name
