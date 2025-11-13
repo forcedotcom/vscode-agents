@@ -45,8 +45,34 @@ body.vscode-high-contrast .tracer-placeholder-icon {
   transition: background-color 0.2s;
   border: none;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .send-message-button:hover {
   background-color: var(--vscode-button-hoverBackground);
+}
+
+.button-play-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+}
+
+.button-send-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background-image: url('../../assets/send-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+body.vscode-dark .button-send-icon,
+body.vscode-high-contrast .button-send-icon {
+  background-image: url('../../assets/send-dark.svg');
 }
