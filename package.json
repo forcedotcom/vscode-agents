@@ -128,6 +128,11 @@
           "group": "navigation@0"
         },
         {
+          "command": "sf.agent.combined.view.refresh",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:agentSelected",
+          "group": "navigation@0"
+        },
+        {
           "command": "sf.agent.combined.view.debug",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode && agentforceDX:isLiveMode",
           "group": "navigation@1"
@@ -136,11 +141,6 @@
           "command": "sf.agent.combined.view.debugStop",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:debugMode && agentforceDX:isLiveMode",
           "group": "navigation@1"
-        },
-        {
-          "command": "sf.agent.combined.view.refresh",
-          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:agentSelected",
-          "group": "navigation@2"
         },
         {
           "command": "sf.agent.test.view.runAll",
