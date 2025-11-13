@@ -54,25 +54,8 @@ body.vscode-high-contrast .tracer-placeholder-icon {
   background-color: var(--vscode-button-hoverBackground);
 }
 
-.button-play-icon {
+.button-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 10px;
-  height: 10px;
-}
-
-.button-send-icon {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-  background-image: url('../../assets/send-light.svg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-body.vscode-dark .button-send-icon,
-body.vscode-high-contrast .button-send-icon {
-  background-image: url('../../assets/send-dark.svg');
 }
