@@ -165,7 +165,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
       const errorMessage: Message = {
         id: Date.now().toString(),
         type: 'system',
-        content: `Compilation Error: ${data?.message || 'Failed to compile agent'}`,
+        content: data?.message || 'Failed to compile agent',
         systemType: 'error',
         timestamp: new Date().toISOString()
       };
@@ -225,7 +225,7 @@ const AgentPreview: React.FC<AgentPreviewProps> = ({
         const errorMessage: Message = {
           id: Date.now().toString(),
           type: 'system',
-          content: `Error: ${data.message}`,
+          content: data.message || 'Something went wrong',
           systemType: 'error',
           timestamp: new Date().toISOString()
         };

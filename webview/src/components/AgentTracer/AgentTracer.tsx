@@ -86,7 +86,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true }) => {
   if (error) {
     return (
       <div className="agent-tracer">
-        <div className="tracer-error">Error: {error}</div>
+        <div className="tracer-error">{error || 'Something went wrong'}</div>
       </div>
     );
   }

@@ -230,13 +230,41 @@ describe('validateAgent', () => {
       compileAgentScriptSpy.mockRejectedValue(new Error('Connection failed'));
 
       const mockUri = vscode.Uri.file('/test/agent.agent');
-      
+
       registerValidateAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
       expect(diagnosticCollectionMock.clear).toHaveBeenCalled();
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
       expect(errorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Agent validation failed'));
+    });
+
+    it('displays error message without "Error:" prefix', async () => {
+      // Mock unexpected error
+      compileAgentScriptSpy.mockRejectedValue(new Error('Connection failed'));
+
+      const mockUri = vscode.Uri.file('/test/agent.agent');
+
+      registerValidateAgentCommand();
+      await commandSpy.mock.calls[0][1](mockUri);
+
+      // Verify error message is displayed without "Error:" prefix
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Connection failed');
+      expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(expect.stringContaining('Error: Connection failed'));
+    });
+
+    it('displays "Something went wrong" for empty error message', async () => {
+      // Mock error with empty message
+      const emptyError = new Error('');
+      compileAgentScriptSpy.mockRejectedValue(emptyError);
+
+      const mockUri = vscode.Uri.file('/test/agent.agent');
+
+      registerValidateAgentCommand();
+      await commandSpy.mock.calls[0][1](mockUri);
+
+      // Verify fallback message is displayed
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Something went wrong');
     });
 
     it('converts API line numbers to VS Code format', () => {
