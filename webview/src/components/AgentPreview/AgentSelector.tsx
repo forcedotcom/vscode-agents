@@ -63,6 +63,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       onClientAppSelection?.(data);
     });
 
+    const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
+      setIsLoading(true);
+      vscodeApi.getAvailableAgents();
+    });
+
     // Request available agents (this will trigger the client app checking)
     vscodeApi.getAvailableAgents();
 
@@ -70,6 +75,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       disposeAvailableAgents();
       disposeClientAppRequired();
       disposeSelectClientApp();
+      disposeRefreshAgents();
     };
   }, [onClientAppRequired, onClientAppSelection, onAgentChange]);
 
