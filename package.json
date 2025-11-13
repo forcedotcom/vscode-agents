@@ -333,10 +333,7 @@
       {
         "command": "sf.agent.combined.view.refreshAgents",
         "title": "Refresh Agent List",
-        "icon": {
-          "light": "resources/light/refresh-agents.svg",
-          "dark": "resources/dark/refresh-agents.svg"
-        }
+        "icon": "$(sync)"
       },
       {
         "command": "sf.agent.combined.view.debug",
