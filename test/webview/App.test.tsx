@@ -44,15 +44,15 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
 
 // Mock the components to simplify testing
 jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
-  return function MockAgentPreview({ selectedAgentId, pendingAgentId, isSessionTransitioning }: any) {
+  return React.forwardRef(function MockAgentPreview({ selectedAgentId, pendingAgentId, isSessionTransitioning }: any, ref: any) {
     return (
-      <div data-testid="agent-preview">
+      <div data-testid="agent-preview" ref={ref}>
         <div data-testid="selected-agent">{selectedAgentId || 'none'}</div>
         <div data-testid="pending-agent">{pendingAgentId || 'none'}</div>
         <div data-testid="is-transitioning">{isSessionTransitioning ? 'true' : 'false'}</div>
       </div>
     );
-  };
+  });
 });
 
 jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
