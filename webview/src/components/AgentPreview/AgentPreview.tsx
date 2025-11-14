@@ -392,6 +392,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
     sessionActiveStateRef.current = false;
     setSessionActive(false);
     setAgentConnected(false);
+    setShowPlaceholder(false); // Reset placeholder when agent changes
 
     if (selectedAgentId === '') {
       setIsLoading(false);
@@ -453,11 +454,12 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
       if (sessionActive || agentConnected) {
         vscodeApi.endSession();
       }
-      // Reset to placeholder state
+      // Reset to default welcome state
       setSessionActive(false);
       setIsLoading(false);
       setAgentConnected(false);
       setMessages([]);
+      setShowPlaceholder(false);
     }
   }, [selectedAgentId, sessionActive, agentConnected]);
 
