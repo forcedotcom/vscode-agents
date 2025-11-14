@@ -30,6 +30,45 @@ export interface AgentPreviewRef {
   focusInput: () => void;
 }
 
+export const DEFAULT_HISTORY_DISCLAIMER =
+  'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).';
+
+export const normalizeHistoryMessage = (msg: any): Message => ({
+  id: msg?.id || `${msg?.timestamp ?? 'history'}-${Date.now()}`,
+  type: msg?.type as 'user' | 'agent',
+  content: msg?.content || '',
+  timestamp: msg?.timestamp || new Date().toISOString()
+});
+
+export const pruneStartingSessionMessages = (messages: Message[]): Message[] =>
+  messages.filter(message => !(message.type === 'system' && message.content === 'Starting session...'));
+
+export const createSystemMessage = (
+  message?: string,
+  systemType: Message['systemType'] = 'debug'
+): Message | null => {
+  if (!message) {
+    return null;
+  }
+
+  return {
+    id: Date.now().toString(),
+    type: 'system',
+    content: message,
+    systemType,
+    timestamp: new Date().toISOString()
+  };
+};
+
+export const shouldShowTransitionLoader = (
+  pendingAgentId?: string | null,
+  selectedAgentId?: string
+): boolean => {
+  return !pendingAgentId || pendingAgentId === selectedAgentId || selectedAgentId === '';
+};
+
+export const hasAgentSelection = (selectedAgentId?: string): boolean => Boolean(selectedAgentId);
+
 const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
   clientAppState,
   availableClientApps,
@@ -105,16 +144,10 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
 
     const disposeConversationHistory = vscodeApi.onMessage('conversationHistory', data => {
       if (data && Array.isArray(data.messages) && data.messages.length > 0) {
-        const historyMessages: Message[] = data.messages.map((msg: any) => ({
-          id: msg.id || `${msg.timestamp}-${Date.now()}`,
-          type: msg.type as 'user' | 'agent',
-          content: msg.content || '',
-          timestamp: msg.timestamp || new Date().toISOString()
-        }));
+        const historyMessages: Message[] = data.messages.map(normalizeHistoryMessage);
 
         // Always add disclaimer at the top of saved conversation history
-        const disclaimerText = pendingDisclaimerRef.current ||
-          'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).';
+        const disclaimerText = pendingDisclaimerRef.current || DEFAULT_HISTORY_DISCLAIMER;
 
         const disclaimerMessage: Message = {
           id: `disclaimer-${Date.now()}`,
@@ -259,10 +292,12 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
     disposers.push(disposeSimulationStarting);
 
     const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
-      if (data && data.message) {
-        // Always queue the disclaimer - it will be shown after welcome message
-        pendingDisclaimerRef.current = data.message;
+      const disclaimer = data?.message;
+      if (!disclaimer) {
+        return;
       }
+      // Always queue the disclaimer - it will be shown after welcome message
+      pendingDisclaimerRef.current = disclaimer;
     });
     disposers.push(disposePreviewDisclaimer);
 
@@ -295,17 +330,9 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
       pendingDisclaimerRef.current = null; // Clear pending disclaimer on error
 
       setMessages(prev => {
-        const filteredMessages = prev.filter(msg => !(msg.type === 'system' && msg.content === 'Starting session...'));
-
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          type: 'system',
-          content: data.message || 'Something went wrong',
-          systemType: 'error',
-          timestamp: new Date().toISOString()
-        };
-
-        return [...filteredMessages, errorMessage];
+        const filteredMessages = pruneStartingSessionMessages(prev);
+        const errorMessage = createSystemMessage(data?.message || 'Something went wrong', 'error');
+        return errorMessage ? [...filteredMessages, errorMessage] : filteredMessages;
       });
 
       setIsLoading(false);
@@ -323,56 +350,32 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
     disposers.push(disposeSessionEnded);
 
     const disposeDebugModeChanged = vscodeApi.onMessage('debugModeChanged', data => {
-      if (data && data.message) {
-        const debugMessage: Message = {
-          id: Date.now().toString(),
-          type: 'system',
-          content: data.message,
-          systemType: 'debug',
-          timestamp: new Date().toISOString()
-        };
+      const debugMessage = createSystemMessage(data?.message, 'debug');
+      if (debugMessage) {
         setMessages(prev => [...prev, debugMessage]);
       }
     });
     disposers.push(disposeDebugModeChanged);
 
     const disposeDebugLogProcessed = vscodeApi.onMessage('debugLogProcessed', data => {
-      if (data && data.message) {
-        const logMessage: Message = {
-          id: Date.now().toString(),
-          type: 'system',
-          content: data.message,
-          systemType: 'debug',
-          timestamp: new Date().toISOString()
-        };
+      const logMessage = createSystemMessage(data?.message, 'debug');
+      if (logMessage) {
         setMessages(prev => [...prev, logMessage]);
       }
     });
     disposers.push(disposeDebugLogProcessed);
 
     const disposeDebugLogError = vscodeApi.onMessage('debugLogError', data => {
-      if (data && data.message) {
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          type: 'system',
-          content: data.message,
-          systemType: 'error',
-          timestamp: new Date().toISOString()
-        };
+      const errorMessage = createSystemMessage(data?.message, 'error');
+      if (errorMessage) {
         setMessages(prev => [...prev, errorMessage]);
       }
     });
     disposers.push(disposeDebugLogError);
 
     const disposeDebugLogInfo = vscodeApi.onMessage('debugLogInfo', data => {
-      if (data && data.message) {
-        const infoMessage: Message = {
-          id: Date.now().toString(),
-          type: 'system',
-          content: data.message,
-          systemType: 'debug',
-          timestamp: new Date().toISOString()
-        };
+      const infoMessage = createSystemMessage(data?.message, 'debug');
+      if (infoMessage) {
         setMessages(prev => [...prev, infoMessage]);
       }
     });
@@ -410,12 +413,12 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
 
   useEffect(() => {
     if (isSessionTransitioning) {
-      if (!pendingAgentId || pendingAgentId === selectedAgentId || selectedAgentId === '') {
+      if (shouldShowTransitionLoader(pendingAgentId, selectedAgentId)) {
         setIsLoading(true);
         setLoadingMessage('Connecting to agent...');
         setAgentConnected(false);
       }
-    } else if (!pendingAgentId || pendingAgentId === selectedAgentId || selectedAgentId === '') {
+    } else if (shouldShowTransitionLoader(pendingAgentId, selectedAgentId)) {
       setIsLoading(false);
     }
   }, [isSessionTransitioning, pendingAgentId, selectedAgentId]);
@@ -490,11 +493,12 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
   };
 
   const handleStartSession = () => {
-    if (selectedAgentId) {
-      setShowPlaceholder(false);
-      setIsLoading(true);
-      vscodeApi.startSession(selectedAgentId);
+    if (!hasAgentSelection(selectedAgentId)) {
+      return;
     }
+    setShowPlaceholder(false);
+    setIsLoading(true);
+    vscodeApi.startSession(selectedAgentId);
   };
 
   // Show placeholder when no agent is selected or in special client app states

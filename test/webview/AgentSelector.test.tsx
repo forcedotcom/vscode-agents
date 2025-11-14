@@ -17,7 +17,7 @@ import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AgentSelector from '../../webview/src/components/AgentPreview/AgentSelector';
+import AgentSelector, { handleStartClickImpl } from '../../webview/src/components/AgentPreview/AgentSelector';
 import { AgentInfo } from '../../webview/src/services/vscodeApi';
 
 // Mock vscodeApi
@@ -426,6 +426,37 @@ describe('AgentSelector', () => {
         expect(comboboxes.length).toBeGreaterThan(1);
       });
     });
+
+    it('should call onLiveModeChange when the user toggles mode', async () => {
+      const agents: AgentInfo[] = [
+        { id: 'script1', name: 'ScriptAgent', type: 'script' }
+      ];
+
+      const onLiveModeChange = jest.fn();
+      render(
+        <AgentSelector
+          selectedAgent="script1"
+          onAgentChange={jest.fn()}
+          isSessionActive={false}
+          onLiveModeChange={onLiveModeChange}
+        />
+      );
+
+      const availableAgentsHandler = messageHandlers.get('availableAgents');
+      availableAgentsHandler!({ agents });
+
+      await waitFor(() => {
+        const comboboxes = screen.getAllByRole('combobox');
+        expect(comboboxes.length).toBe(2);
+      });
+
+      const comboboxes = screen.getAllByRole('combobox');
+      const modeSelector = comboboxes[1];
+
+      await userEvent.selectOptions(modeSelector, 'live');
+
+      expect(onLiveModeChange).toHaveBeenCalledWith(true);
+    });
   });
 
   describe('Start/Stop Button', () => {
@@ -632,6 +663,53 @@ describe('AgentSelector', () => {
       expect(onAgentChange).toHaveBeenCalledWith('');
       expect(vscodeApi.clearMessages).toHaveBeenCalled();
       expect(vscodeApi.getAvailableAgents).toHaveBeenCalled();
+    });
+  });
+
+  describe('handleStartClickImpl helper', () => {
+    it('returns early when no agent is selected', () => {
+      const params = {
+        selectedAgent: '',
+        isSessionActive: false,
+        isLiveMode: false,
+        endSession: jest.fn(),
+        startSession: jest.fn()
+      };
+
+      handleStartClickImpl(params);
+
+      expect(params.endSession).not.toHaveBeenCalled();
+      expect(params.startSession).not.toHaveBeenCalled();
+    });
+
+    it('ends the current session when active', () => {
+      const params = {
+        selectedAgent: 'agent1',
+        isSessionActive: true,
+        isLiveMode: true,
+        endSession: jest.fn(),
+        startSession: jest.fn()
+      };
+
+      handleStartClickImpl(params);
+
+      expect(params.endSession).toHaveBeenCalled();
+      expect(params.startSession).not.toHaveBeenCalled();
+    });
+
+    it('starts a new session when idle', () => {
+      const params = {
+        selectedAgent: 'agent1',
+        isSessionActive: false,
+        isLiveMode: false,
+        endSession: jest.fn(),
+        startSession: jest.fn()
+      };
+
+      handleStartClickImpl(params);
+
+      expect(params.startSession).toHaveBeenCalledWith('agent1', { isLiveMode: false });
+      expect(params.endSession).not.toHaveBeenCalled();
     });
   });
 });

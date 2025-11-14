@@ -61,9 +61,9 @@ jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
 });
 
 jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
-  return function MockAgentSelector({ onClientAppRequired, onClientAppSelection }: any) {
+  return function MockAgentSelector({ onClientAppRequired, onClientAppSelection, onLiveModeChange }: any) {
     // Expose callbacks for testing
-    (window as any).testCallbacks = { onClientAppRequired, onClientAppSelection };
+    (window as any).testCallbacks = { onClientAppRequired, onClientAppSelection, onLiveModeChange };
     return <div data-testid="agent-selector">Selector</div>;
   };
 });
@@ -115,6 +115,28 @@ describe('App Coverage Tests', () => {
       handler(data);
     }
   };
+
+  describe('Coverage: Live mode handler', () => {
+    it('should persist live mode changes from AgentSelector', async () => {
+      render(<App />);
+
+      await waitFor(() => {
+        expect((window as any).testCallbacks?.onLiveModeChange).toBeDefined();
+      });
+
+      act(() => {
+        (window as any).testCallbacks.onLiveModeChange(true);
+      });
+
+      expect(mockVscodeApi.setLiveMode).toHaveBeenCalledWith(true);
+
+      act(() => {
+        (window as any).testCallbacks.onLiveModeChange(false);
+      });
+
+      expect(mockVscodeApi.setLiveMode).toHaveBeenCalledWith(false);
+    });
+  });
 
   describe('Coverage: Session Promise Resolvers', () => {
     it('should hit line 94: resolver(true) on sessionStarted with pending resolver', async () => {

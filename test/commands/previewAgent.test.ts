@@ -2,7 +2,7 @@ import type * as vscodeTypes from 'vscode';
 const vscode = require('vscode') as typeof import('vscode');
 import { Commands } from '../../src/enums/commands';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
-import { SfError } from '@salesforce/core';
+import { AgentCombinedViewProvider } from '../../src/views/agentCombinedViewProvider';
 
 const previewAgentModule = require('../../src/commands/previewAgent') as typeof import('../../src/commands/previewAgent');
 const { registerPreviewAgentCommand } = previewAgentModule;
@@ -10,6 +10,7 @@ const { registerPreviewAgentCommand } = previewAgentModule;
 describe('previewAgent', () => {
   let commandSpy: jest.SpyInstance;
   let errorMessageSpy: jest.SpyInstance;
+  let executeCommandSpy: jest.SpyInstance;
 
   const fakeTelemetryInstance: any = {
     sendException: jest.fn(),
@@ -22,6 +23,12 @@ describe('previewAgent', () => {
     appendLine: jest.fn()
   };
 
+  const registerAndGetHandler = () => {
+    registerPreviewAgentCommand();
+    expect(commandSpy).toHaveBeenCalledWith(Commands.previewAgent, expect.any(Function));
+    return commandSpy.mock.calls[0][1] as (uri?: vscodeTypes.Uri) => Promise<void>;
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -31,10 +38,17 @@ describe('previewAgent', () => {
 
     // Mock vscode APIs
     commandSpy = jest.spyOn(vscode.commands, 'registerCommand');
+    executeCommandSpy = jest.spyOn(vscode.commands, 'executeCommand').mockResolvedValue(undefined);
     errorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
+
+    Object.defineProperty(vscode.window, 'activeTextEditor', {
+      configurable: true,
+      get: jest.fn(() => undefined)
+    });
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
@@ -44,25 +58,78 @@ describe('previewAgent', () => {
       expect(commandSpy).toHaveBeenCalledWith(Commands.previewAgent, expect.any(Function));
     });
 
-    it('displays error message without "Error:" prefix when preview fails', async () => {
-      // Note: This test focuses on error message formatting
-      // The actual command implementation would need proper mocking setup
-      // to test the full execution path
+    it('shows an error when no file is selected', async () => {
+      const handler = registerAndGetHandler();
 
-      const testError = new Error('Failed to load agent file');
+      await handler();
 
-      // Verify the error would be formatted correctly
-      const formattedError = testError.message || 'Something went wrong';
-      expect(formattedError).toBe('Failed to load agent file');
-      expect(formattedError).not.toContain('Error:');
+      expect(errorMessageSpy).toHaveBeenCalledWith('No .agent file selected.');
+      expect(fakeChannelService.appendLine).not.toHaveBeenCalled();
     });
 
-    it('displays "Something went wrong" for empty error message', async () => {
-      const emptyError = new Error('');
+    it('shows an error when the preview provider is missing', async () => {
+      jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(undefined as any);
+      const handler = registerAndGetHandler();
 
-      // Verify fallback message would be used
-      const formattedError = emptyError.message || 'Something went wrong';
-      expect(formattedError).toBe('Something went wrong');
+      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
+      await handler(mockUri);
+
+      expect(errorMessageSpy).toHaveBeenCalledWith('Failed to get Agent Preview provider.');
+    });
+
+    it('preselects the agent and posts a message when provider is ready', async () => {
+      jest.useFakeTimers();
+      const showMock = jest.fn();
+      const postMessageMock = jest.fn();
+      const providerMock = {
+        setPreselectedAgentId: jest.fn(),
+        webviewView: {
+          show: showMock,
+          webview: {
+            postMessage: postMessageMock
+          }
+        }
+      };
+
+      jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
+      const handler = registerAndGetHandler();
+
+      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
+      await handler(mockUri);
+
+      expect(providerMock.setPreselectedAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
+      expect(executeCommandSpy).toHaveBeenNthCalledWith(1, 'workbench.view.extension.agentforce-dx');
+      expect(executeCommandSpy).toHaveBeenNthCalledWith(2, 'setContext', 'sf:project_opened', true);
+      expect(showMock).toHaveBeenCalledWith(false);
+
+      jest.advanceTimersByTime(500);
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId: 'local:/tmp/preview.agent' }
+      });
+    });
+
+    it('logs errors to the channel service when preview fails', async () => {
+      const providerMock = {
+        setPreselectedAgentId: jest.fn(),
+        webviewView: undefined
+      };
+
+      jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
+
+      executeCommandSpy
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('unable to open view'));
+
+      const handler = registerAndGetHandler();
+      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
+
+      await handler(mockUri);
+
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Error previewing .agent file!');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Error Details:');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('unable to open view'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Stack Trace:');
     });
   });
 });

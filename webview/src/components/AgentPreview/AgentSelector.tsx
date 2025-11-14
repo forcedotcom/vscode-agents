@@ -15,6 +15,28 @@ interface AgentSelectorProps {
   initialLiveMode?: boolean;
 }
 
+export interface StartClickParams {
+  selectedAgent: string;
+  isSessionActive: boolean;
+  isLiveMode: boolean;
+  endSession: () => unknown;
+  startSession: (agentId: string, options: { isLiveMode: boolean }) => unknown;
+}
+
+export const handleStartClickImpl = ({ selectedAgent, isSessionActive, isLiveMode, endSession, startSession }: StartClickParams) => {
+  if (!selectedAgent) {
+    return;
+  }
+
+  if (isSessionActive) {
+    endSession();
+  } else {
+    startSession(selectedAgent, {
+      isLiveMode
+    });
+  }
+};
+
 const AgentSelector: React.FC<AgentSelectorProps> = ({
   onClientAppRequired,
   onClientAppSelection,
@@ -154,21 +176,14 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   };
 
-  const handleStartClick = () => {
-    if (!selectedAgent) {
-      return;
-    }
-
-    if (isSessionActive) {
-      // Stop the active session
-      vscodeApi.endSession();
-    } else {
-      // Start session with the selected agent and current mode settings
-      vscodeApi.startSession(selectedAgent, {
-        isLiveMode
-      });
-    }
-  };
+  const handleStartClick = () =>
+    handleStartClickImpl({
+      selectedAgent,
+      isSessionActive,
+      isLiveMode,
+      endSession: () => vscodeApi.endSession(),
+      startSession: (agentId, options) => vscodeApi.startSession(agentId, options)
+    });
 
   return (
     <div className="agent-selector">

@@ -19,7 +19,9 @@ export interface ChatInputRef {
   focus: () => void;
 }
 
-const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({ onSendMessage, disabled = false, messages = [] }, ref) => {
+const DEFAULT_MESSAGES: Message[] = [];
+
+const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({ onSendMessage, disabled = false, messages = DEFAULT_MESSAGES }, ref) => {
   const [message, setMessage] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [userMessageHistory, setUserMessageHistory] = useState<string[]>([]);

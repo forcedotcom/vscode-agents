@@ -369,6 +369,23 @@ describe('AgentPreview - Coverage Tests', () => {
       expect(vscodeApi.selectClientApp).toHaveBeenCalledWith('App 1');
     });
 
+    it('should ignore empty client app selection', async () => {
+      const user = userEvent.setup();
+      renderComponent({
+        clientAppState: 'selecting',
+        availableClientApps: [
+          { name: 'App 1', clientId: 'app1' }
+        ]
+      });
+
+      const select = screen.getByRole('combobox');
+      await user.selectOptions(select, 'App 1');
+      (vscodeApi.selectClientApp as jest.Mock).mockClear();
+
+      await user.selectOptions(select, '');
+      expect(vscodeApi.selectClientApp).not.toHaveBeenCalled();
+    });
+
     it('should render PlaceholderContent when clientAppState is selecting', () => {
       renderComponent({
         clientAppState: 'selecting',
@@ -376,6 +393,20 @@ describe('AgentPreview - Coverage Tests', () => {
       });
 
       expect(screen.getByText(/Agentforce DX lets you build/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('session transition loader', () => {
+    it('should skip loader when pending agent differs from selection', async () => {
+      renderComponent({
+        selectedAgentId: 'agent-one',
+        pendingAgentId: 'agent-two',
+        isSessionTransitioning: true
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Connecting to agent...')).not.toBeInTheDocument();
+      });
     });
   });
 

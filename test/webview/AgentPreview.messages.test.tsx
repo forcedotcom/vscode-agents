@@ -110,6 +110,16 @@ describe('AgentPreview - Message Handlers', () => {
       await waitFor(() => expect(screen.getByText('Debug enabled')).toBeInTheDocument());
     });
 
+    it('should ignore debugModeChanged when message is missing', async () => {
+      renderComponent();
+      handlers.get('debugModeChanged')?.({ message: 'Debug enabled' });
+      await waitFor(() => expect(screen.getAllByText('Debug enabled')).toHaveLength(1));
+
+      handlers.get('debugModeChanged')?.({});
+
+      await waitFor(() => expect(screen.getAllByText('Debug enabled')).toHaveLength(1));
+    });
+
     it('should handle debugLogProcessed', async () => {
       renderComponent();
       handlers.get('debugLogProcessed')?.({ message: 'Log processed' });
@@ -217,9 +227,18 @@ describe('AgentPreview - Message Handlers', () => {
     it('should queue disclaimer for session start', async () => {
       renderComponent();
       handlers.get('previewDisclaimer')?.({ message: 'Custom disclaimer' });
-      handlers.get('sessionStarted')?.({ content: 'Hi' });
+      handlers.get('sessionStarted')?.({});
       await waitFor(() => {
         expect(screen.getByText('Custom disclaimer')).toBeInTheDocument();
+      });
+    });
+
+    it('should ignore previewDisclaimer without message', async () => {
+      renderComponent();
+      handlers.get('previewDisclaimer')?.({});
+      handlers.get('sessionStarted')?.({});
+      await waitFor(() => {
+        expect(screen.getByText(/I'm ready to help/)).toBeInTheDocument();
       });
     });
   });
@@ -257,6 +276,54 @@ describe('AgentPreview - Message Handlers', () => {
       handlers.get('noHistoryFound')?.({ agentId: 'test-agent' });
       await waitFor(() => {
         expect(screen.getByText(/Agent Preview lets you test/)).toBeInTheDocument();
+      });
+    });
+
+    it('should ignore noHistoryFound without agent id', async () => {
+      renderComponent();
+      handlers.get('noHistoryFound')?.({});
+      await waitFor(() => {
+        expect(screen.queryByText(/Agent Preview lets you test/)).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Conversation History', () => {
+    it('fills missing id and timestamp when mapping history messages', async () => {
+      renderComponent();
+      handlers.get('conversationHistory')?.({
+        messages: [
+          { type: 'user', content: 'History fallback' }
+        ]
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('History fallback')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Session Started defaults', () => {
+    it('uses default welcome when content missing', async () => {
+      renderComponent();
+      handlers.get('sessionStarted')?.({});
+      await waitFor(() => {
+        expect(screen.getByText(/I'm ready to help/)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Error handling', () => {
+    it('removes transient starting session messages', async () => {
+      renderComponent();
+      handlers.get('compilationError')?.({ message: 'Starting session...' });
+      await waitFor(() => expect(screen.getByText('Starting session...')).toBeInTheDocument());
+
+      handlers.get('error')?.({ message: 'Something failed' });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Starting session...')).not.toBeInTheDocument();
+        expect(screen.getByText('Something failed')).toBeInTheDocument();
       });
     });
   });
