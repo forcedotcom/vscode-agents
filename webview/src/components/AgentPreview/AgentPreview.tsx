@@ -503,13 +503,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
       <div className="agent-preview">
         {renderAgentSelection()}
         <PlaceholderContent />
-        <FormContainer
-          ref={chatInputRef}
-          onSendMessage={handleSendMessage}
-          sessionActive={false}
-          isLoading={isLoading}
-          messages={messages}
-        />
       </div>
     );
   }

@@ -6,7 +6,7 @@
   text-align: center;
   color: var(--vscode-descriptionForeground);
   height: 100%;
-  padding: 40px 40px 20px 40px;
+  padding: 40px;
   max-width: 500px;
   margin: 0 auto;
 }
