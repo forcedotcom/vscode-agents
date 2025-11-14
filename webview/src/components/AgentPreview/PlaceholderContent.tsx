@@ -13,7 +13,7 @@ const PlaceholderContent: React.FC = () => {
       <div className="placeholder-icon"></div>
       <p>Agentforce DX lets you build and test agents in your IDE, so you can iterate quickly before deployment.</p>
       <button className="select-agent-button" onClick={handleSelectAgent}>
-        Select an Agent to Get Started
+        Select an Agent
       </button>
     </div>
   );
