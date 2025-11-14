@@ -87,11 +87,12 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
-  padding: 4px 0 4px 8px;
+  padding: 4px 8px;
   border-radius: 3px;
   transition: all 0.2s;
   opacity: 0.8;
   line-height: 1;
+  margin-right: -8px;
 }
 
 .tab-navigation-close:hover {
