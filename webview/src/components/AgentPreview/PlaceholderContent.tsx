@@ -11,7 +11,7 @@ const PlaceholderContent: React.FC = () => {
   return (
     <div className="placeholder-content">
       <div className="placeholder-icon"></div>
-      <p>Agent Preview lets you see what an agent can do before deploying it. Simulate conversations from your IDE.</p>
+      <p>Agentforce DX lets you build and test agents in your IDE, so you can iterate quickly before deployment.</p>
       <button className="select-agent-button" onClick={handleSelectAgent}>
         Select an Agent to Get Started
       </button>
