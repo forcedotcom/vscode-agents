@@ -43,6 +43,13 @@ body.vscode-high-contrast .tracer-placeholder-icon {
   min-width: auto;
 }
 
+/* Icon sizing to match top button */
+.tracer-placeholder .vscode-button__start svg,
+.tracer-placeholder .vscode-split-button__start svg {
+  width: 10px;
+  height: 10px;
+}
+
 .send-message-button {
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);

@@ -43,6 +43,13 @@ body.vscode-high-contrast .agent-preview-placeholder-icon {
   min-width: auto;
 }
 
+/* Icon sizing to match top button */
+.agent-preview-placeholder .vscode-button__start svg,
+.agent-preview-placeholder .vscode-split-button__start svg {
+  width: 10px;
+  height: 10px;
+}
+
 .start-session-button {
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
