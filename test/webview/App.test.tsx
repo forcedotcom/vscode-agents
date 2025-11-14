@@ -197,13 +197,13 @@ describe('App', () => {
       });
     });
 
-    it('should show tabs only after session is active', async () => {
+    it('should show tabs after loading completes', async () => {
       render(<App />);
 
       // Select an agent
       triggerMessage('selectAgent', { agentId: 'agent1' });
 
-      // Session starting - tabs should not show
+      // Session starting - tabs should not show during loading
       triggerMessage('sessionStarting', {});
       expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
 
@@ -798,7 +798,7 @@ describe('App', () => {
       });
     });
 
-    it('should hide tabs when session ends', async () => {
+    it('should keep tabs visible when session ends', async () => {
       render(<App />);
 
       // Select an agent and start session - tabs should show
@@ -809,11 +809,11 @@ describe('App', () => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
 
-      // End the session - tabs should be hidden
+      // End the session - tabs should remain visible
       triggerMessage('sessionEnded', {});
 
       await waitFor(() => {
-        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
     });
 
