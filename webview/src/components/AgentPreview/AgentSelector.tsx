@@ -13,6 +13,7 @@ interface AgentSelectorProps {
   isSessionStarting?: boolean;
   onLiveModeChange?: (isLive: boolean) => void;
   initialLiveMode?: boolean;
+  onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
 }
 
 export interface StartClickParams {
@@ -45,7 +46,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   isSessionActive = false,
   isSessionStarting = false,
   onLiveModeChange,
-  initialLiveMode = false
+  initialLiveMode = false,
+  onSelectedAgentInfoChange
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,6 +161,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       : selectedAgentInfo?.type === 'published'
       ? 'Published'
       : null;
+
+  // Notify parent of selected agent info changes
+  useEffect(() => {
+    if (onSelectedAgentInfoChange) {
+      onSelectedAgentInfoChange(selectedAgentInfo || null);
+    }
+  }, [selectedAgentInfo, onSelectedAgentInfoChange]);
 
   const handleModeSelect = async (value: string) => {
     const isLive = value === 'live';

@@ -3,7 +3,7 @@ import ChatContainer from './ChatContainer.js';
 import FormContainer from './FormContainer.js';
 import PlaceholderContent from './PlaceholderContent.js';
 import AgentPreviewPlaceholder from './AgentPreviewPlaceholder.js';
-import { vscodeApi, Message } from '../../services/vscodeApi.js';
+import { vscodeApi, Message, AgentInfo } from '../../services/vscodeApi.js';
 import { ChatInputRef } from './ChatInput.js';
 import './AgentPreview.css';
 
@@ -24,6 +24,8 @@ interface AgentPreviewProps {
   onHasSessionError?: (hasError: boolean) => void;
   onLoadingChange?: (isLoading: boolean) => void;
   isLiveMode?: boolean;
+  selectedAgentInfo?: AgentInfo | null;
+  onLiveModeChange?: (isLive: boolean) => void;
 }
 
 export interface AgentPreviewRef {
@@ -80,7 +82,9 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
   selectedAgentId,
   onHasSessionError,
   onLoadingChange,
-  isLiveMode = false
+  isLiveMode = false,
+  selectedAgentInfo = null,
+  onLiveModeChange
 }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
@@ -515,7 +519,12 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
   if (showPlaceholder && !isLoading && messages.length === 0) {
     return (
       <div className="agent-preview">
-        <AgentPreviewPlaceholder onStartSession={handleStartSession} isLiveMode={isLiveMode} />
+        <AgentPreviewPlaceholder
+          onStartSession={handleStartSession}
+          isLiveMode={isLiveMode}
+          selectedAgentInfo={selectedAgentInfo}
+          onModeChange={onLiveModeChange}
+        />
         <FormContainer
           ref={chatInputRef}
           onSendMessage={handleSendMessage}

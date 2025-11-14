@@ -1,14 +1,21 @@
 import React from 'react';
+import { AgentInfo } from '../../services/vscodeApi.js';
+import { SplitButton } from '../shared/SplitButton.js';
+import { Button } from '../shared/Button.js';
 import './AgentPreviewPlaceholder.css';
 
 interface AgentPreviewPlaceholderProps {
   onStartSession?: () => void;
   isLiveMode?: boolean;
+  selectedAgentInfo?: AgentInfo | null;
+  onModeChange?: (isLive: boolean) => void;
 }
 
 const AgentPreviewPlaceholder: React.FC<AgentPreviewPlaceholderProps> = ({
   onStartSession,
-  isLiveMode = false
+  isLiveMode = false,
+  selectedAgentInfo = null,
+  onModeChange
 }) => {
   // Determine button text based on mode
   const getButtonText = () => {
@@ -25,18 +32,47 @@ const AgentPreviewPlaceholder: React.FC<AgentPreviewPlaceholderProps> = ({
     </svg>
   );
 
+  const handleModeSelect = (value: string) => {
+    const isLive = value === 'live';
+    if (onModeChange) {
+      onModeChange(isLive);
+    }
+  };
+
+  const isPublishedAgent = selectedAgentInfo?.type === 'published';
+
   return (
     <div className="agent-preview-placeholder">
       <div className="agent-preview-placeholder-icon"></div>
       <p>
         Agent Preview lets you test an agent by having a conversation, so you can see how it responds to user messages.
       </p>
-      {onStartSession && (
-        <button className="start-session-button" onClick={onStartSession}>
-          <span className="button-icon">{playIcon}</span>
-          <span>{getButtonText()}</span>
-        </button>
-      )}
+      {onStartSession &&
+        (isPublishedAgent ? (
+          <Button
+            appearance="primary"
+            size="small"
+            onClick={onStartSession}
+            startIcon={playIcon}
+          >
+            Start Live Test
+          </Button>
+        ) : (
+          <SplitButton
+            appearance="primary"
+            size="small"
+            onClick={onStartSession}
+            onSelect={handleModeSelect}
+            value={isLiveMode ? 'live' : 'simulate'}
+            options={[
+              { label: 'Simulation', value: 'simulate' },
+              { label: 'Live Test', value: 'live' }
+            ]}
+            startIcon={playIcon}
+          >
+            {getButtonText()}
+          </SplitButton>
+        ))}
     </div>
   );
 };

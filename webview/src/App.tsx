@@ -3,7 +3,7 @@ import AgentPreview, { AgentPreviewRef } from './components/AgentPreview/AgentPr
 import AgentTracer from './components/AgentTracer/AgentTracer.js';
 import AgentSelector from './components/AgentPreview/AgentSelector.js';
 import TabNavigation from './components/shared/TabNavigation.js';
-import { vscodeApi } from './services/vscodeApi.js';
+import { vscodeApi, AgentInfo } from './services/vscodeApi.js';
 import './App.css';
 
 interface ClientApp {
@@ -27,6 +27,7 @@ const App: React.FC = () => {
   const [isSessionStarting, setIsSessionStarting] = useState(false);
   const [hasSessionError, setHasSessionError] = useState(false);
   const [isLiveMode, setIsLiveMode] = useState(false);
+  const [selectedAgentInfo, setSelectedAgentInfo] = useState<AgentInfo | null>(null);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
   const desiredAgentIdRef = useRef<string>('');
@@ -259,6 +260,7 @@ const App: React.FC = () => {
           isSessionStarting={isSessionStarting}
           onLiveModeChange={handleLiveModeChange}
           initialLiveMode={isLiveMode}
+          onSelectedAgentInfoChange={setSelectedAgentInfo}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
@@ -279,6 +281,8 @@ const App: React.FC = () => {
             pendingAgentId={pendingAgentId}
             onHasSessionError={setHasSessionError}
             isLiveMode={isLiveMode}
+            selectedAgentInfo={selectedAgentInfo}
+            onLiveModeChange={handleLiveModeChange}
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>

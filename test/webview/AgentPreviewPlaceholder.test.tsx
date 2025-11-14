@@ -31,7 +31,7 @@ describe('AgentPreviewPlaceholder', () => {
       const mockStartSession = jest.fn();
       render(<AgentPreviewPlaceholder onStartSession={mockStartSession} />);
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      expect(screen.getAllByRole('button').length).toBeGreaterThan(0);
     });
 
     it('should not render start session button when onStartSession is not provided', () => {
@@ -39,38 +39,81 @@ describe('AgentPreviewPlaceholder', () => {
 
       expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
+
+    it('should render regular button for published agents', () => {
+      const mockStartSession = jest.fn();
+      const publishedAgent = { id: '1', name: 'Test Agent', type: 'published' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} selectedAgentInfo={publishedAgent} />);
+
+      expect(screen.getByText('Start Live Test')).toBeInTheDocument();
+      // Published agents should have only one button
+      expect(screen.getAllByRole('button')).toHaveLength(1);
+    });
+
+    it('should render split button for script agents', () => {
+      const mockStartSession = jest.fn();
+      const scriptAgent = { id: '1', name: 'Test Agent', type: 'script' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} selectedAgentInfo={scriptAgent} />);
+
+      // Split button has 2 buttons (main + dropdown)
+      expect(screen.getAllByRole('button').length).toBeGreaterThan(1);
+    });
   });
 
   describe('Button Text', () => {
-    it('should show "Start Simulation" button when not in live mode', () => {
+    it('should show "Start Simulation" button when not in live mode for script agents', () => {
       const mockStartSession = jest.fn();
-      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={false} />);
+      const scriptAgent = { id: '1', name: 'Test Agent', type: 'script' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={false} selectedAgentInfo={scriptAgent} />);
 
       expect(screen.getByText('Start Simulation')).toBeInTheDocument();
     });
 
-    it('should show "Start Live Test" button when in live mode', () => {
+    it('should show "Start Live Test" button when in live mode for script agents', () => {
       const mockStartSession = jest.fn();
-      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={true} />);
+      const scriptAgent = { id: '1', name: 'Test Agent', type: 'script' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={true} selectedAgentInfo={scriptAgent} />);
 
       expect(screen.getByText('Start Live Test')).toBeInTheDocument();
     });
 
-    it('should default to simulation mode when isLiveMode is not provided', () => {
+    it('should default to simulation mode when isLiveMode is not provided for script agents', () => {
       const mockStartSession = jest.fn();
-      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} />);
+      const scriptAgent = { id: '1', name: 'Test Agent', type: 'script' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} selectedAgentInfo={scriptAgent} />);
 
       expect(screen.getByText('Start Simulation')).toBeInTheDocument();
+    });
+
+    it('should always show "Start Live Test" for published agents', () => {
+      const mockStartSession = jest.fn();
+      const publishedAgent = { id: '1', name: 'Test Agent', type: 'published' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={false} selectedAgentInfo={publishedAgent} />);
+
+      expect(screen.getByText('Start Live Test')).toBeInTheDocument();
     });
   });
 
   describe('Interaction', () => {
-    it('should call onStartSession when button is clicked', async () => {
+    it('should call onStartSession when button is clicked for script agents', async () => {
       const user = userEvent.setup();
       const mockStartSession = jest.fn();
-      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} />);
+      const scriptAgent = { id: '1', name: 'Test Agent', type: 'script' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} selectedAgentInfo={scriptAgent} />);
 
-      const button = screen.getByRole('button');
+      const button = screen.getByText('Start Simulation');
+      await user.click(button);
+
+      expect(mockStartSession).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onStartSession when button is clicked for published agents', async () => {
+      const user = userEvent.setup();
+      const mockStartSession = jest.fn();
+      const publishedAgent = { id: '1', name: 'Test Agent', type: 'published' as const };
+      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} selectedAgentInfo={publishedAgent} />);
+
+      const button = screen.getByText('Start Live Test');
       await user.click(button);
 
       expect(mockStartSession).toHaveBeenCalledTimes(1);
