@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
+import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
 
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
@@ -96,6 +97,36 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
 
   const hasTraceData = traceData !== null && traceData.plan && traceData.plan.length > 0;
 
+  // Convert plan steps to timeline items
+  const getTimelineItems = (): TimelineItemProps[] => {
+    if (!traceData || !traceData.plan) return [];
+
+    return traceData.plan.map((step: any, index: number) => {
+      // Determine status based on step properties
+      let status: 'success' | 'error' | 'pending' | 'incomplete' = 'incomplete';
+
+      if (step.status === 'completed' || step.completed === true) {
+        status = 'success';
+      } else if (step.status === 'error' || step.error === true) {
+        status = 'error';
+      } else if (step.status === 'pending' || step.inProgress === true) {
+        status = 'pending';
+      }
+
+      // Get label from step
+      const label = step.name || step.label || step.description || `Step ${index + 1}`;
+
+      // Get description if available
+      const description = step.details || step.description || undefined;
+
+      return {
+        status,
+        label,
+        description
+      };
+    });
+  };
+
   return (
     <div className="agent-tracer">
       <div className="tracer-content">
@@ -110,12 +141,33 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                   <td className="tracer-info-table__value">{traceData.sessionId}</td>
                 </tr>
                 <tr>
-                  <td className="tracer-info-table__label">Date</td>
-                  <td className="tracer-info-table__value">{new Date().toLocaleString()}</td>
+                  <td className="tracer-info-table__label">Plan ID</td>
+                  <td className="tracer-info-table__value">{traceData.planId}</td>
                 </tr>
+                {traceData.intent && (
+                  <tr>
+                    <td className="tracer-info-table__label">Intent</td>
+                    <td className="tracer-info-table__value">{traceData.intent}</td>
+                  </tr>
+                )}
+                {traceData.topic && (
+                  <tr>
+                    <td className="tracer-info-table__label">Topic</td>
+                    <td className="tracer-info-table__value">{traceData.topic}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
-            <pre className="tracer-json-dump">{JSON.stringify(traceData, null, 2)}</pre>
+
+            <div className="tracer-plan-timeline">
+              <h3 className="tracer-plan-title">Plan Steps</h3>
+              <Timeline items={getTimelineItems()} />
+            </div>
+
+            <details className="tracer-json-details">
+              <summary className="tracer-json-summary">View Raw JSON</summary>
+              <pre className="tracer-json-dump">{JSON.stringify(traceData, null, 2)}</pre>
+            </details>
           </div>
         ) : traceData === null ? (
           <div className="tracer-empty">Loading trace data...</div>
