@@ -26,7 +26,6 @@ const App: React.FC = () => {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionStarting, setIsSessionStarting] = useState(false);
   const [hasSessionError, setHasSessionError] = useState(false);
-  const [isAgentLoading, setIsAgentLoading] = useState(false);
   const [isLiveMode, setIsLiveMode] = useState(false);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
@@ -254,7 +253,6 @@ const App: React.FC = () => {
             selectedAgentId={previewAgentId}
             pendingAgentId={pendingAgentId}
             onHasSessionError={setHasSessionError}
-            onLoadingChange={setIsAgentLoading}
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
