@@ -63,13 +63,11 @@ const App: React.FC = () => {
 
     const disposeSetLiveMode = vscodeApi.onMessage('setLiveMode', (data: { isLiveMode: boolean }) => {
       if (data && typeof data.isLiveMode === 'boolean') {
-        console.log('[App] Received setLiveMode:', data.isLiveMode);
         setIsLiveMode(data.isLiveMode);
       }
     });
 
     // Request initial live mode state from extension
-    console.log('[App] Requesting initial live mode');
     vscodeApi.getInitialLiveMode();
 
     return () => {
@@ -84,7 +82,6 @@ const App: React.FC = () => {
   };
 
   const handleLiveModeChange = useCallback((isLive: boolean) => {
-    console.log('[App] Live mode changed to:', isLive);
     setIsLiveMode(isLive);
     // Notify the provider to persist the selection
     vscodeApi.setLiveMode(isLive);

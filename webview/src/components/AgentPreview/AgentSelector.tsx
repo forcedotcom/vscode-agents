@@ -34,7 +34,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
   // Sync with parent's live mode when it changes
   useEffect(() => {
-    console.log('[AgentSelector] Syncing with parent live mode:', initialLiveMode);
     isSyncingRef.current = true;
     setIsLiveMode(initialLiveMode);
     // Reset flag after state update
@@ -46,10 +45,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   // Notify parent component when live mode changes (but not during sync from parent)
   useEffect(() => {
     if (onLiveModeChange && !isSyncingRef.current) {
-      console.log('[AgentSelector] Notifying parent of mode change:', isLiveMode);
       onLiveModeChange(isLiveMode);
-    } else if (isSyncingRef.current) {
-      console.log('[AgentSelector] Skipping parent notification during sync');
     }
   }, [isLiveMode, onLiveModeChange]);
 
@@ -118,10 +114,9 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
       if (selectedAgent?.type === 'published') {
         // Auto-enable live mode for published agents
-        console.log('[AgentSelector] Auto-enabling live mode for published agent');
         setIsLiveMode(true);
       }
-      // For script agents, keep the current global live mode preference (don't override it)
+      // For script agents, keep the current global live mode preference
 
       vscodeApi.clearMessages();
       vscodeApi.loadAgentHistory(agentId);
@@ -147,7 +142,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     const isLive = value === 'live';
     const modeChanged = isLive !== isLiveMode;
 
-    console.log('[AgentSelector] User selected mode:', value);
     setIsLiveMode(isLive);
 
     // If session is active and mode changed, restart with new mode

@@ -38,7 +38,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     AgentCombinedViewProvider.instance = this;
     // Load the last selected mode from storage
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
-    console.log('[AgentCombinedViewProvider] Loaded live mode from storage:', this.isLiveMode);
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -81,7 +80,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:isLiveMode', isLive);
     // Persist the mode selection for next session
     await this.context.globalState.update(AgentCombinedViewProvider.LIVE_MODE_KEY, isLive);
-    console.log('[AgentCombinedViewProvider] Saved live mode to storage:', isLive);
   }
 
   /**
@@ -864,7 +862,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'getInitialLiveMode') {
           // Send current live mode state to webview
-          console.log('[AgentCombinedViewProvider] Sending live mode to webview:', this.isLiveMode);
           webviewView.webview.postMessage({
             command: 'setLiveMode',
             data: { isLiveMode: this.isLiveMode }

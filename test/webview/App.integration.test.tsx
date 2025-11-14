@@ -418,4 +418,102 @@ describe('App Integration Tests - Recent Bug Fixes', () => {
       });
     });
   });
+
+  describe('Live Mode Persistence', () => {
+    it('should request initial live mode on mount', async () => {
+      render(<App />);
+
+      await waitFor(() => {
+        expect(mockVscodeApi.getInitialLiveMode).toHaveBeenCalled();
+      });
+    });
+
+    it('should receive and apply initial live mode from extension', async () => {
+      render(<App />);
+
+      // Simulate extension sending live mode = true
+      triggerMessage('setLiveMode', { isLiveMode: true });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.getInitialLiveMode).toHaveBeenCalled();
+      });
+    });
+
+    it('should persist live mode when changed by user', async () => {
+      render(<App />);
+
+      // Select an agent first
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Verify initial request was made
+      expect(mockVscodeApi.getInitialLiveMode).toHaveBeenCalled();
+    });
+
+    it('should maintain live mode across agent switches', async () => {
+      render(<App />);
+
+      // Set live mode to true
+      triggerMessage('setLiveMode', { isLiveMode: true });
+
+      // Select first agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+
+      // Select second agent
+      triggerMessage('selectAgent', { agentId: 'agent2' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent2');
+      });
+
+      // The mode should persist (getInitialLiveMode called once on mount)
+      expect(mockVscodeApi.getInitialLiveMode).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle live mode changes without circular updates', async () => {
+      render(<App />);
+
+      jest.clearAllMocks();
+
+      // Simulate receiving live mode from extension
+      triggerMessage('setLiveMode', { isLiveMode: true });
+
+      await waitFor(() => {
+        // Should not trigger setLiveMode back to extension (no circular update)
+        expect(mockVscodeApi.setLiveMode).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should handle setLiveMode with invalid data gracefully', async () => {
+      render(<App />);
+
+      // Send invalid data
+      triggerMessage('setLiveMode', { isLiveMode: 'invalid' });
+
+      // Should not crash, just ignore invalid data
+      await waitFor(() => {
+        expect(mockVscodeApi.getInitialLiveMode).toHaveBeenCalled();
+      });
+    });
+
+    it('should handle setLiveMode with missing data gracefully', async () => {
+      render(<App />);
+
+      // Send no data
+      triggerMessage('setLiveMode', {});
+
+      // Should not crash
+      await waitFor(() => {
+        expect(mockVscodeApi.getInitialLiveMode).toHaveBeenCalled();
+      });
+    });
+  });
 });

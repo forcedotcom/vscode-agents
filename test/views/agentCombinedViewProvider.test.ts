@@ -4050,5 +4050,74 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockContext.globalState.update).not.toHaveBeenCalled();
       expect((provider as any).isLiveMode).toBe(initialMode);
     });
+
+    it('should respond to getInitialLiveMode request', async () => {
+      (provider as any).isLiveMode = true;
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      let messageHandler: (message: any) => Promise<void>;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      // Webview requests initial live mode
+      await messageHandler!({ command: 'getInitialLiveMode' });
+
+      // Should send current mode to webview
+      expect(testWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'setLiveMode',
+        data: { isLiveMode: true }
+      });
+    });
+
+    it('should maintain global live mode across agent switches', async () => {
+      // Set live mode to true
+      (provider as any).isLiveMode = true;
+      await mockContext.globalState.update('agentforceDX.lastLiveMode', true);
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      let messageHandler: (message: any) => Promise<void>;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      // Request initial mode
+      await messageHandler!({ command: 'getInitialLiveMode' });
+
+      // Should return true
+      expect(testWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'setLiveMode',
+        data: { isLiveMode: true }
+      });
+
+      // Mode should persist (not reset when switching agents)
+      expect((provider as any).isLiveMode).toBe(true);
+    });
   });
 });
