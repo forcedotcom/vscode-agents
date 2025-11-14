@@ -83,21 +83,20 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   gap: 5px;
   background: none;
   border: none;
-  color: var(--vscode-descriptionForeground);
+  color: var(--vscode-tab-activeForeground);
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 3px;
   transition: all 0.2s;
-  opacity: 0.8;
+  font-weight: 500;
   line-height: 1;
   margin-right: -8px;
 }
 
 .tab-navigation-close:hover {
   background-color: var(--vscode-toolbar-hoverBackground);
-  opacity: 1;
 }
 
 .tab-navigation-close svg {
