@@ -225,7 +225,7 @@ const App: React.FC = () => {
         if (shouldForceRestart && hasTargetAgent) {
           // Play/refresh button clicked - start session immediately
           const waitForStart = waitForSessionStart();
-          vscodeApi.startSession(nextAgentId);
+          vscodeApi.startSession(nextAgentId, { isLiveMode });
           const startSucceeded = await waitForStart;
 
           if (startSucceeded) {
@@ -242,7 +242,7 @@ const App: React.FC = () => {
         console.error('Error managing agent session:', err);
         handleSessionTransitionSettled();
       });
-  }, [desiredAgentId, restartTrigger, waitForSessionEnd, waitForSessionStart, handleSessionTransitionSettled]);
+  }, [desiredAgentId, restartTrigger, waitForSessionEnd, waitForSessionStart, handleSessionTransitionSettled, isLiveMode]);
 
   const previewAgentId = desiredAgentId !== '' ? desiredAgentId : displayedAgentId;
   const pendingAgentId = desiredAgentId !== displayedAgentId ? desiredAgentId : null;

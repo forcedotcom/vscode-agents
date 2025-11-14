@@ -360,7 +360,7 @@ describe('App', () => {
       triggerMessage('sessionEnded', {});
 
       await waitFor(() => {
-        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent2');
+        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent2', { isLiveMode: false });
       }, { timeout: 3000 });
     });
   });
@@ -872,9 +872,47 @@ describe('App', () => {
       const goToPreviewButton = screen.getByTestId('tracer-go-to-preview');
       fireEvent.click(goToPreviewButton);
 
-      // Should trigger session start
+      // Should trigger session start with the current live mode setting (default false)
       await waitFor(() => {
-        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent1');
+        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent1', { isLiveMode: false });
+      });
+
+      // Should switch to preview tab
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+      });
+    });
+
+    it('should start session with live mode when clicking Go to Preview with live mode enabled', async () => {
+      render(<App />);
+
+      // Select an agent and set live mode to true
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('setLiveMode', { isLiveMode: true });
+
+      // End any session to ensure we're in a state with agent selected but no active session
+      triggerMessage('sessionEnded', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-tracer')).toBeInTheDocument();
+      });
+
+      jest.clearAllMocks();
+
+      // Click Go to Preview when no session is active but live mode is enabled
+      const goToPreviewButton = screen.getByTestId('tracer-go-to-preview');
+      fireEvent.click(goToPreviewButton);
+
+      // Should trigger session start with live mode = true
+      await waitFor(() => {
+        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent1', { isLiveMode: true });
       });
 
       // Should switch to preview tab
