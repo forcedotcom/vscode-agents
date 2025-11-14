@@ -31,16 +31,27 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   // Store live mode preference per agent script
   const [agentModePreferences, setAgentModePreferences] = useState<Record<string, boolean>>({});
 
+  // Track if we're syncing from parent to prevent circular updates
+  const isSyncingRef = React.useRef(false);
+
   // Sync with parent's live mode when it changes
   useEffect(() => {
     console.log('[AgentSelector] Syncing with parent live mode:', initialLiveMode);
+    isSyncingRef.current = true;
     setIsLiveMode(initialLiveMode);
+    // Reset flag after state update
+    setTimeout(() => {
+      isSyncingRef.current = false;
+    }, 0);
   }, [initialLiveMode]);
 
-  // Notify parent component when live mode changes
+  // Notify parent component when live mode changes (but not during sync from parent)
   useEffect(() => {
-    if (onLiveModeChange) {
+    if (onLiveModeChange && !isSyncingRef.current) {
+      console.log('[AgentSelector] Notifying parent of mode change:', isLiveMode);
       onLiveModeChange(isLiveMode);
+    } else if (isSyncingRef.current) {
+      console.log('[AgentSelector] Skipping parent notification during sync');
     }
   }, [isLiveMode, onLiveModeChange]);
 
