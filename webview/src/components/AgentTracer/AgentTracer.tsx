@@ -239,8 +239,11 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div
             className="tracer-step-data-panel__resize-handle"
             onMouseDown={handleResizeStart}
-          >
-            <div className="tracer-step-data-panel__resize-indicator" />
+          />
+          <div className="tracer-step-data-panel__tabs">
+            <div className="tracer-step-data-panel__tab tracer-step-data-panel__tab--active">
+              JSON
+            </div>
           </div>
           <div className="tracer-step-data-panel__content">
             <CodeBlock
