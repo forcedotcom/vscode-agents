@@ -102,16 +102,8 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     if (!traceData || !traceData.plan) return [];
 
     return traceData.plan.map((step: any, index: number) => {
-      // Determine status based on step properties
-      let status: 'success' | 'error' | 'pending' | 'incomplete' = 'incomplete';
-
-      if (step.status === 'completed' || step.completed === true) {
-        status = 'success';
-      } else if (step.status === 'error' || step.error === true) {
-        status = 'error';
-      } else if (step.status === 'pending' || step.inProgress === true) {
-        status = 'pending';
-      }
+      // All steps are shown as success (checked state)
+      const status: 'success' | 'error' | 'pending' | 'incomplete' = 'success';
 
       // Step number as the label (at the top)
       const label = `Step ${index + 1}`;
