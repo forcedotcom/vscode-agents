@@ -37,6 +37,8 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+  const [panelHeight, setPanelHeight] = useState<number>(300);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
 
   const requestTraceData = useCallback(() => {
     setLoading(true);
@@ -149,6 +151,35 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     return null;
   };
 
+  // Handle panel resize
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newHeight = window.innerHeight - e.clientY;
+      if (newHeight >= 100 && newHeight <= window.innerHeight * 0.8) {
+        setPanelHeight(newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   return (
     <div className="agent-tracer">
       <div className="tracer-content">
@@ -201,7 +232,16 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       </div>
 
       {selectedStepIndex !== null && getSelectedStepData() && (
-        <div className="tracer-step-data-panel">
+        <div
+          className="tracer-step-data-panel"
+          style={{ height: `${panelHeight}px` }}
+        >
+          <div
+            className="tracer-step-data-panel__resize-handle"
+            onMouseDown={handleResizeStart}
+          >
+            <div className="tracer-step-data-panel__resize-indicator" />
+          </div>
           <div className="tracer-step-data-panel__content">
             <CodeBlock
               code={getSelectedStepData()!}
