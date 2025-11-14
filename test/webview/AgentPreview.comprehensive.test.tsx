@@ -866,7 +866,7 @@ describe('AgentPreview - Comprehensive Coverage', () => {
       });
     });
 
-    it('should handle pendingAgentId change during selection', async () => {
+    it('should handle pendingAgentId change with session transitioning', async () => {
       const { rerender } = render(
         <AgentPreview
           selectedAgentId="test-agent"
@@ -881,7 +881,7 @@ describe('AgentPreview - Comprehensive Coverage', () => {
         />
       );
 
-      // Change pendingAgentId to match selectedAgentId
+      // Change pendingAgentId and set transitioning to true
       rerender(
         <AgentPreview
           selectedAgentId="test-agent"
@@ -890,7 +890,7 @@ describe('AgentPreview - Comprehensive Coverage', () => {
           availableClientApps={[]}
           onClientAppStateChange={jest.fn()}
           onAvailableClientAppsChange={jest.fn()}
-          isSessionTransitioning={false}
+          isSessionTransitioning={true}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
         />
