@@ -278,6 +278,7 @@ const App: React.FC = () => {
             selectedAgentId={previewAgentId}
             pendingAgentId={pendingAgentId}
             onHasSessionError={setHasSessionError}
+            isLiveMode={isLiveMode}
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>

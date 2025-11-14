@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } f
 import ChatContainer from './ChatContainer.js';
 import FormContainer from './FormContainer.js';
 import PlaceholderContent from './PlaceholderContent.js';
+import AgentPreviewPlaceholder from './AgentPreviewPlaceholder.js';
 import { vscodeApi, Message } from '../../services/vscodeApi.js';
 import { ChatInputRef } from './ChatInput.js';
 import './AgentPreview.css';
@@ -22,6 +23,7 @@ interface AgentPreviewProps {
   selectedAgentId: string;
   onHasSessionError?: (hasError: boolean) => void;
   onLoadingChange?: (isLoading: boolean) => void;
+  isLiveMode?: boolean;
 }
 
 export interface AgentPreviewRef {
@@ -38,7 +40,8 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
   pendingAgentId,
   selectedAgentId,
   onHasSessionError,
-  onLoadingChange
+  onLoadingChange,
+  isLiveMode = false
 }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionActive, setSessionActive] = useState(false);
@@ -46,6 +49,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
   const [loadingMessage, setLoadingMessage] = useState('Loading...');
   const [agentConnected, setAgentConnected] = useState(false);
   const [hasSessionError, setHasSessionError] = useState(false);
+  const [showPlaceholder, setShowPlaceholder] = useState(false);
   const sessionErrorTimestampRef = React.useRef<number>(0);
   const sessionActiveStateRef = React.useRef(false);
   const hasSessionErrorRef = React.useRef(false);
@@ -94,6 +98,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
       setAgentConnected(false);
       setIsLoading(false);
       setHasSessionError(false); // Clear error state when switching agents
+      setShowPlaceholder(false); // Clear placeholder when switching agents
       pendingDisclaimerRef.current = null; // Clear pending disclaimer
     });
     disposers.push(disposeClearMessages);
@@ -135,10 +140,10 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
     disposers.push(disposeConversationHistory);
 
     const disposeNoHistoryFound = vscodeApi.onMessage('noHistoryFound', data => {
-      // No history found - auto-start the session
+      // No history found - show placeholder instead of auto-starting
       if (data && data.agentId) {
-        setIsLoading(true);
-        vscodeApi.startSession(data.agentId);
+        setShowPlaceholder(true);
+        setIsLoading(false);
       }
     });
     disposers.push(disposeNoHistoryFound);
@@ -187,6 +192,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
       setAgentConnected(true);
       setIsLoading(false);
       setHasSessionError(false); // Clear error state when session successfully starts
+      setShowPlaceholder(false); // Clear placeholder when session starts
       onSessionTransitionSettled();
     });
     disposers.push(disposeSessionStarted);
@@ -481,12 +487,36 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
     );
   };
 
+  const handleStartSession = () => {
+    if (selectedAgentId) {
+      setShowPlaceholder(false);
+      setIsLoading(true);
+      vscodeApi.startSession(selectedAgentId);
+    }
+  };
+
   // Show placeholder when no agent is selected or in special client app states
   if (selectedAgentId === '' || clientAppState === 'selecting') {
     return (
       <div className="agent-preview">
         {renderAgentSelection()}
         <PlaceholderContent />
+        <FormContainer
+          ref={chatInputRef}
+          onSendMessage={handleSendMessage}
+          sessionActive={false}
+          isLoading={isLoading}
+          messages={messages}
+        />
+      </div>
+    );
+  }
+
+  // Show agent preview placeholder when agent is selected but has no history
+  if (showPlaceholder && !isLoading && messages.length === 0) {
+    return (
+      <div className="agent-preview">
+        <AgentPreviewPlaceholder onStartSession={handleStartSession} isLiveMode={isLiveMode} />
         <FormContainer
           ref={chatInputRef}
           onSendMessage={handleSendMessage}
