@@ -33,6 +33,7 @@ body.vscode-high-contrast .agent-preview-placeholder-icon {
   font-size: 14px;
   font-weight: 500;
   line-height: 1.5;
+  text-wrap: balance;
 }
 
 .start-session-button {
