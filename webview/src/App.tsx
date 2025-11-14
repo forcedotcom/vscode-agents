@@ -52,6 +52,9 @@ const App: React.FC = () => {
         // Don't force restart - let history flow decide whether to show saved conversation or placeholder
         setDesiredAgentId(data.agentId);
         vscodeApi.setSelectedAgentId(data.agentId);
+        // Trigger history loading to show saved conversation or placeholder
+        vscodeApi.clearMessages();
+        vscodeApi.loadAgentHistory(data.agentId);
       }
     });
 
