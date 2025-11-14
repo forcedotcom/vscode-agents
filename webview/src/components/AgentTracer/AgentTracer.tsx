@@ -113,11 +113,18 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
         status = 'pending';
       }
 
-      // Get label from step
-      const label = step.name || step.label || step.description || `Step ${index + 1}`;
+      // Get the step type and create label
+      const stepType = step.type || step.stepType || '';
+      const stepName = step.name || step.label || step.description || `Step ${index + 1}`;
 
-      // Get description if available
-      const description = step.details || step.description || undefined;
+      // Combine type and name for the label
+      const label = stepType ? `${stepType}: ${stepName}` : stepName;
+
+      // Get description if available (but exclude it if it's the same as stepName)
+      let description = step.details || step.description || undefined;
+      if (description === stepName) {
+        description = undefined;
+      }
 
       return {
         status,
