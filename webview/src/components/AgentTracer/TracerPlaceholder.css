@@ -36,6 +36,13 @@ body.vscode-high-contrast .tracer-placeholder-icon {
   text-wrap: balance;
 }
 
+/* Button wrapper to prevent full-width expansion */
+.tracer-placeholder .vscode-button,
+.tracer-placeholder .vscode-split-button {
+  width: auto;
+  min-width: auto;
+}
+
 .send-message-button {
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);

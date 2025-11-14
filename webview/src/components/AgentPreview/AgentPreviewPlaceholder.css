@@ -36,6 +36,13 @@ body.vscode-high-contrast .agent-preview-placeholder-icon {
   text-wrap: balance;
 }
 
+/* Button wrapper to prevent full-width expansion */
+.agent-preview-placeholder .vscode-button,
+.agent-preview-placeholder .vscode-split-button {
+  width: auto;
+  min-width: auto;
+}
+
 .start-session-button {
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
