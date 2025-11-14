@@ -182,14 +182,48 @@ describe('App', () => {
       expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
     });
 
+    it('should not show tabs during session starting', async () => {
+      render(<App />);
+
+      // Select an agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Trigger session starting (loading/compilation)
+      triggerMessage('sessionStarting', {});
+
+      // Tabs should not be visible during loading
+      await waitFor(() => {
+        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show tabs only after session is active', async () => {
+      render(<App />);
+
+      // Select an agent
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      // Session starting - tabs should not show
+      triggerMessage('sessionStarting', {});
+      expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+
+      // Session started - tabs should now show
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+    });
+
   });
 
   describe('Tab Navigation', () => {
     it('should switch to tracer tab when tracer is clicked', async () => {
       render(<App />);
 
-      // Select an agent to show tracer tab
+      // Select an agent and start session to show tracer tab
       triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
@@ -207,8 +241,9 @@ describe('App', () => {
     it('should switch back to preview tab', async () => {
       render(<App />);
 
-      // Select agent to show tracer
+      // Select agent and start session to show tracer
       triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
@@ -673,8 +708,9 @@ describe('App', () => {
     it('should switch to preview tab when refreshAgents message is received', async () => {
       render(<App />);
 
-      // Select an agent to show tracer
+      // Select an agent and start session to show tracer
       triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
@@ -711,8 +747,9 @@ describe('App', () => {
     it('should switch to preview tab when Go to Preview button is clicked', async () => {
       render(<App />);
 
-      // Select an agent to show tracer
+      // Select an agent and start session to show tracer
       triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
@@ -738,8 +775,9 @@ describe('App', () => {
     it('should focus input when switching to preview from tracer', async () => {
       render(<App />);
 
-      // Select an agent
+      // Select an agent and start session
       triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
@@ -760,27 +798,23 @@ describe('App', () => {
       });
     });
 
-    it('should start session when clicking Go to Preview with no active session', async () => {
+    it('should hide tabs when session ends', async () => {
       render(<App />);
 
-      // Select an agent but don't start session
+      // Select an agent and start session - tabs should show
       triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
 
-      // Switch to tracer
-      fireEvent.click(screen.getByTestId('tracer-tab'));
+      // End the session - tabs should be hidden
+      triggerMessage('sessionEnded', {});
 
-      // Click Go to Preview (should start session)
-      const goToPreviewButton = screen.getByTestId('tracer-go-to-preview');
-      fireEvent.click(goToPreviewButton);
-
-      // Should trigger session start
       await waitFor(() => {
-        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent1');
-      }, { timeout: 3000 });
+        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+      });
     });
 
     it('should not restart session when clicking Go to Preview with active session', async () => {

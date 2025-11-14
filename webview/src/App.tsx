@@ -242,7 +242,7 @@ const App: React.FC = () => {
           onLiveModeChange={setIsLiveMode}
         />
         <div className="app-menu-divider" />
-        {previewAgentId !== '' && !hasSessionError && (
+        {previewAgentId !== '' && !hasSessionError && isSessionActive && (
           <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={true} />
         )}
       </div>
