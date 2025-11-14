@@ -32,9 +32,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private latestPlanId?: string;
   private isLiveMode = false;
 
+  private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
 
   constructor(private readonly context: vscode.ExtensionContext) {
     AgentCombinedViewProvider.instance = this;
+    // Load the last selected mode from storage
+    this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -75,6 +78,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async setLiveMode(isLive: boolean): Promise<void> {
     this.isLiveMode = isLive;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:isLiveMode', isLive);
+    // Persist the mode selection for next session
+    await this.context.globalState.update(AgentCombinedViewProvider.LIVE_MODE_KEY, isLive);
   }
 
   /**
@@ -849,6 +854,18 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentId = undefined;
             await this.setAgentSelected(false);
           }
+        } else if (message.command === 'setLiveMode') {
+          // Update and persist the live mode selection
+          const isLiveMode = message.data?.isLiveMode;
+          if (typeof isLiveMode === 'boolean') {
+            await this.setLiveMode(isLiveMode);
+          }
+        } else if (message.command === 'getInitialLiveMode') {
+          // Send current live mode state to webview
+          webviewView.webview.postMessage({
+            command: 'setLiveMode',
+            data: { isLiveMode: this.isLiveMode }
+          });
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);

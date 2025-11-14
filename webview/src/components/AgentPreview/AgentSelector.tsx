@@ -12,6 +12,7 @@ interface AgentSelectorProps {
   isSessionActive?: boolean;
   isSessionStarting?: boolean;
   onLiveModeChange?: (isLive: boolean) => void;
+  initialLiveMode?: boolean;
 }
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({
@@ -21,17 +22,29 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   onAgentChange,
   isSessionActive = false,
   isSessionStarting = false,
-  onLiveModeChange
+  onLiveModeChange,
+  initialLiveMode = false
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLiveMode, setIsLiveMode] = useState(false);
-  // Store live mode preference per agent script
-  const [agentModePreferences, setAgentModePreferences] = useState<Record<string, boolean>>({});
+  const [isLiveMode, setIsLiveMode] = useState(initialLiveMode);
 
-  // Notify parent component when live mode changes
+  // Track if we're syncing from parent to prevent circular updates
+  const isSyncingRef = React.useRef(false);
+
+  // Sync with parent's live mode when it changes
   useEffect(() => {
-    if (onLiveModeChange) {
+    isSyncingRef.current = true;
+    setIsLiveMode(initialLiveMode);
+    // Reset flag after state update
+    setTimeout(() => {
+      isSyncingRef.current = false;
+    }, 0);
+  }, [initialLiveMode]);
+
+  // Notify parent component when live mode changes (but not during sync from parent)
+  useEffect(() => {
+    if (onLiveModeChange && !isSyncingRef.current) {
       onLiveModeChange(isLiveMode);
     }
   }, [isLiveMode, onLiveModeChange]);
@@ -102,10 +115,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       if (selectedAgent?.type === 'published') {
         // Auto-enable live mode for published agents
         setIsLiveMode(true);
-      } else if (selectedAgent?.type === 'script') {
-        // Restore saved preference for agent scripts, default to simulate (false)
-        setIsLiveMode(agentModePreferences[agentId] ?? false);
       }
+      // For script agents, keep the current global live mode preference
 
       vscodeApi.clearMessages();
       vscodeApi.loadAgentHistory(agentId);
@@ -132,14 +143,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     const modeChanged = isLive !== isLiveMode;
 
     setIsLiveMode(isLive);
-
-    // Save preference for agent scripts
-    if (selectedAgent && selectedAgentInfo?.type === 'script') {
-      setAgentModePreferences(prev => ({
-        ...prev,
-        [selectedAgent]: isLive
-      }));
-    }
 
     // If session is active and mode changed, restart with new mode
     if (modeChanged && isSessionActive && selectedAgent) {
