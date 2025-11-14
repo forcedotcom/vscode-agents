@@ -2243,6 +2243,11 @@ describe('AgentCombinedViewProvider', () => {
 
       provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
       jest.clearAllMocks();
+
+      // Re-mock getConfiguration after clearAllMocks
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn(() => '')
+      });
     });
 
     it('should return empty data when no agent preview or session', async () => {
