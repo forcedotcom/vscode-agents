@@ -103,10 +103,18 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-loading">Loading trace data...</div>
         ) : hasTraceData && traceData ? (
           <div className="tracer-simple">
-            <div className="tracer-header">
-              <div>Session ID: {traceData.sessionId}</div>
-              <div>Date: {new Date().toLocaleString()}</div>
-            </div>
+            <table className="tracer-info-table">
+              <tbody>
+                <tr>
+                  <td className="tracer-info-table__label">Session ID</td>
+                  <td className="tracer-info-table__value">{traceData.sessionId}</td>
+                </tr>
+                <tr>
+                  <td className="tracer-info-table__label">Date</td>
+                  <td className="tracer-info-table__value">{new Date().toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
             <pre className="tracer-json-dump">{JSON.stringify(traceData, null, 2)}</pre>
           </div>
         ) : traceData === null ? (

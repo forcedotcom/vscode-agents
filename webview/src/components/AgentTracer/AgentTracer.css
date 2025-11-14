@@ -35,12 +35,36 @@
   padding: 16px 0;
 }
 
-.tracer-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.tracer-info-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 13px;
+  background-color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+}
+
+.tracer-info-table tbody tr {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.tracer-info-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.tracer-info-table__label {
+  font-weight: 600;
   color: var(--vscode-foreground);
+  padding: 8px 12px;
+  text-align: left;
+  width: 120px;
+  background-color: var(--vscode-sideBar-background);
+}
+
+.tracer-info-table__value {
+  color: var(--vscode-foreground);
+  padding: 8px 12px;
+  font-family: var(--vscode-editor-font-family);
+  word-break: break-all;
 }
 
 .tracer-json-dump {
