@@ -12,6 +12,7 @@ interface AgentSelectorProps {
   isSessionActive?: boolean;
   isSessionStarting?: boolean;
   onLiveModeChange?: (isLive: boolean) => void;
+  initialLiveMode?: boolean;
 }
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({
@@ -21,13 +22,19 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   onAgentChange,
   isSessionActive = false,
   isSessionStarting = false,
-  onLiveModeChange
+  onLiveModeChange,
+  initialLiveMode = false
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLiveMode, setIsLiveMode] = useState(false);
+  const [isLiveMode, setIsLiveMode] = useState(initialLiveMode);
   // Store live mode preference per agent script
   const [agentModePreferences, setAgentModePreferences] = useState<Record<string, boolean>>({});
+
+  // Sync with parent's live mode when it changes
+  useEffect(() => {
+    setIsLiveMode(initialLiveMode);
+  }, [initialLiveMode]);
 
   // Notify parent component when live mode changes
   useEffect(() => {

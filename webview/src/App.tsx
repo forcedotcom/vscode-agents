@@ -258,6 +258,7 @@ const App: React.FC = () => {
           isSessionActive={isSessionActive}
           isSessionStarting={isSessionStarting}
           onLiveModeChange={handleLiveModeChange}
+          initialLiveMode={isLiveMode}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
