@@ -21,14 +21,14 @@ describe('package.json', () => {
     describe('view/title menus', () => {
       const viewTitleMenus = packageJson.contributes.menus['view/title'];
 
-      it('should have restart agent command visible only when session is active', () => {
+      it('should have restart agent command visible only when session is active and not starting', () => {
         const restartCommand = viewTitleMenus.find(
           (menu: any) => menu.command === 'sf.agent.combined.view.refresh'
         );
 
         expect(restartCommand).toBeDefined();
         expect(restartCommand?.when).toContain('agentforceDX:sessionActive');
-        expect(restartCommand?.when).not.toContain('agentforceDX:sessionStarting');
+        expect(restartCommand?.when).toContain('!agentforceDX:sessionStarting');
       });
 
       it('should have refresh agents command visible only when session is not active or starting', () => {
