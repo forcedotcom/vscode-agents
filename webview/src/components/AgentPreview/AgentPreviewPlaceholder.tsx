@@ -29,7 +29,7 @@ const AgentPreviewPlaceholder: React.FC<AgentPreviewPlaceholderProps> = ({
     <div className="agent-preview-placeholder">
       <div className="agent-preview-placeholder-icon"></div>
       <p>
-        Agent Preview lets you test an agent in a simulated or live environment, so you can see how it responds to user messages.
+        Agent Preview lets you test an agent by having a conversation, so you can see how it responds to user messages.
       </p>
       {onStartSession && (
         <button className="start-session-button" onClick={onStartSession}>
