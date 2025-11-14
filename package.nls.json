@@ -1,7 +1,7 @@
 {
   "salesforcedx-vscode-agents.openAgentInOrg": "SFDX: Open an Agent in the Default Org",
-  "salesforcedx-vscode-agents.activateAgent": "SFDX: Activate Agent",
-  "salesforcedx-vscode-agents.deactivateAgent": "SFDX: Deactivate Agent",
+  "salesforcedx-vscode-agents.activateAgent": "AFDX: Activate Agent",
+  "salesforcedx-vscode-agents.deactivateAgent": "AFDX: Deactivate Agent",
   "agent_test_view_name": "Agent Tests",
   "run_all_tests_title": "Run All Test Definitions",
   "run_test_title": "Run Test Definition",
