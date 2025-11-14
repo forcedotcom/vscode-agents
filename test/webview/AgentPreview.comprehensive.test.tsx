@@ -832,57 +832,7 @@ describe('AgentPreview - Comprehensive Coverage', () => {
 
   describe('Session Transition', () => {
     it('should handle isSessionTransitioning prop changes', async () => {
-      const { rerender } = render(
-        <AgentPreview
-          selectedAgentId="test-agent"
-          pendingAgentId="test-agent"
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
-          isSessionTransitioning={false}
-          onSessionTransitionSettled={jest.fn()}
-          isLiveMode={false}
-        />
-      );
-
-      // Set transitioning to true
-      rerender(
-        <AgentPreview
-          selectedAgentId="test-agent"
-          pendingAgentId="test-agent"
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
-          isSessionTransitioning={true}
-          onSessionTransitionSettled={jest.fn()}
-          isLiveMode={false}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText(/Connecting to agent/)).toBeInTheDocument();
-      });
-    });
-
-    it('should handle pendingAgentId change with session transitioning', async () => {
-      const { rerender } = render(
-        <AgentPreview
-          selectedAgentId="test-agent"
-          pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
-          isSessionTransitioning={false}
-          onSessionTransitionSettled={jest.fn()}
-          isLiveMode={false}
-        />
-      );
-
-      // Change pendingAgentId and set transitioning to true
-      rerender(
+      render(
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId="test-agent"

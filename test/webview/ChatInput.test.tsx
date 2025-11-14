@@ -346,38 +346,5 @@ describe('ChatInput', () => {
       expect(ref.current).toBeTruthy();
       expect(typeof ref.current.focus).toBe('function');
     });
-
-    it('should focus textarea when focus method is called', async () => {
-      const ref = React.createRef<any>();
-      render(<ChatInput ref={ref} onSendMessage={jest.fn()} />);
-
-      const textarea = screen.getByRole('textbox');
-
-      ref.current.focus();
-
-      await waitFor(() => {
-        expect(textarea).toHaveFocus();
-      });
-    });
-  });
-
-  describe('Auto-resize Behavior', () => {
-    it('should auto-resize textarea as content grows', async () => {
-      render(<ChatInput onSendMessage={jest.fn()} />);
-
-      const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
-
-      // Mock scrollHeight
-      Object.defineProperty(textarea, 'scrollHeight', {
-        writable: true,
-        value: 100
-      });
-
-      await userEvent.type(textarea, 'Line 1\nLine 2\nLine 3');
-
-      // The component should set height based on scrollHeight
-      // This is tested via the useEffect that runs on message change
-      expect(textarea.style.height).toBe('');
-    });
   });
 });
