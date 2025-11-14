@@ -238,6 +238,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <TabNavigation
             activeTab={0}
             onTabChange={() => {}}
+            onClose={() => setSelectedStepIndex(null)}
             tabs={[
               {
                 id: 'json',

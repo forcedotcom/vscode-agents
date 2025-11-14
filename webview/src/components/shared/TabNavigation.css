@@ -1,6 +1,7 @@
 .tab-navigation {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   background-color: var(--vscode-sideBar-background);
   padding: 0 18px;
   height: 35px;
@@ -74,4 +75,29 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-comment {
 body.vscode-dark .tab-icon-tree,
 body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   background-image: url('../../assets/tree-dark.svg');
+}
+
+.tab-navigation-close {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 3px;
+  transition: all 0.2s;
+  opacity: 0.8;
+}
+
+.tab-navigation-close:hover {
+  background-color: var(--vscode-toolbar-hoverBackground);
+  opacity: 1;
+}
+
+.tab-navigation-close svg {
+  flex-shrink: 0;
 }

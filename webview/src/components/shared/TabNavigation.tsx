@@ -12,9 +12,10 @@ interface TabNavigationProps {
   onTabChange: (tab: any) => void;
   showTracerTab?: boolean;
   tabs?: Tab[];
+  onClose?: () => void;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, showTracerTab = false, tabs }) => {
+const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, showTracerTab = false, tabs, onClose }) => {
   const tabRefs = React.useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const [indicatorStyle, setIndicatorStyle] = React.useState({ width: 0, left: 0 });
 
@@ -96,6 +97,14 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
           />
         )}
       </div>
+      {onClose && (
+        <button className="tab-navigation-close" onClick={onClose}>
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4.53333 5.44L0 0.906667L0.906667 0L5.44 4.53333L9.97333 0L10.88 0.906667L6.34667 5.44L10.88 9.97333L9.97333 10.88L5.44 6.34667L0.906667 10.88L0 9.97333L4.53333 5.44Z" fill="currentColor"/>
+          </svg>
+          close
+        </button>
+      )}
     </nav>
   );
 };
