@@ -40,6 +40,7 @@
   border-collapse: collapse;
   font-size: 12px;
   background: transparent;
+  padding-left: 12px;
 }
 
 .tracer-info-table tbody tr {
@@ -76,10 +77,12 @@
 
 .tracer-plan-timeline {
   margin-top: 12px;
+  padding-left: 12px;
 }
 
 .tracer-json-details {
   margin-top: 20px;
+  margin-left: 12px;
   border: 1px solid var(--vscode-panel-border);
   border-radius: 4px;
   overflow: hidden;
