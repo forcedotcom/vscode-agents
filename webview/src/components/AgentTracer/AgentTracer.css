@@ -53,7 +53,7 @@
 }
 
 .tracer-info-table__label {
-  color: var(--vscode-foreground);
+  color: var(--vscode-tab-activeForeground);
   padding: 8px 0;
   text-align: left;
   width: 80px;
