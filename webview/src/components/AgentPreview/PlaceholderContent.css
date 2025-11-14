@@ -45,7 +45,7 @@ body.vscode-high-contrast .placeholder-icon {
   cursor: pointer;
   transition: background-color 0.2s;
   border: none;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .select-agent-button:hover {
