@@ -53,12 +53,13 @@
 
 .tracer-info-table__label {
   color: var(--vscode-foreground);
-  padding: 8px 12px;
+  padding: 8px 0;
   text-align: left;
   width: 120px;
   background: transparent;
   border: none;
   font-weight: bold;
+  font-size: 11px;
   vertical-align: top;
 }
 
