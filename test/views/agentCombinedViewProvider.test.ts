@@ -3928,12 +3928,30 @@ describe('AgentCombinedViewProvider', () => {
       expect((provider as any).isLiveMode).toBe(false);
     });
 
-    it('should send initial live mode to webview on resolve', () => {
+    it('should send live mode when webview requests initial state', async () => {
       jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
 
-      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+      let messageHandler: (message: any) => Promise<void>;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
 
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      // Webview requests initial live mode
+      await messageHandler!({ command: 'getInitialLiveMode' });
+
+      expect(testWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'setLiveMode',
         data: { isLiveMode: false }
       });

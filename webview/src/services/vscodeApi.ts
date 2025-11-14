@@ -150,6 +150,11 @@ class VSCodeApiService {
   setLiveMode(isLiveMode: boolean) {
     this.postMessage('setLiveMode', { isLiveMode });
   }
+
+  // Request initial live mode state
+  getInitialLiveMode() {
+    this.postMessage('getInitialLiveMode');
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

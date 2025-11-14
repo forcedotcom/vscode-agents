@@ -860,6 +860,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           if (typeof isLiveMode === 'boolean') {
             await this.setLiveMode(isLiveMode);
           }
+        } else if (message.command === 'getInitialLiveMode') {
+          // Send current live mode state to webview
+          webviewView.webview.postMessage({
+            command: 'setLiveMode',
+            data: { isLiveMode: this.isLiveMode }
+          });
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
@@ -904,12 +910,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     });
 
     webviewView.webview.html = this.getHtmlForWebview();
-
-    // Send initial live mode setting to webview
-    webviewView.webview.postMessage({
-      command: 'setLiveMode',
-      data: { isLiveMode: this.isLiveMode }
-    });
   }
 
   private getHtmlForWebview(): string {

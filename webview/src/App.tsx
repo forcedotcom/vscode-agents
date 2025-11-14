@@ -67,6 +67,9 @@ const App: React.FC = () => {
       }
     });
 
+    // Request initial live mode state from extension
+    vscodeApi.getInitialLiveMode();
+
     return () => {
       disposeSelectAgent();
       disposeRefreshAgents();
