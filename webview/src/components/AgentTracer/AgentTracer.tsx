@@ -129,11 +129,14 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       // Step number as the description (underneath)
       const description = `Step ${index + 1}`;
 
+      // Only add onClick if the step has data
+      const hasData = step && step.data;
+
       return {
         status,
         label,
         description,
-        onClick: () => setSelectedStepIndex(index)
+        onClick: hasData ? () => setSelectedStepIndex(index) : undefined
       };
     });
   };

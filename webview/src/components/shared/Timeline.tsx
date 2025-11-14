@@ -106,7 +106,8 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
 	const itemClass = [
 		'vscode-timeline-item',
 		`vscode-timeline-item--${status}`,
-		isLast && 'vscode-timeline-item--last'
+		isLast && 'vscode-timeline-item--last',
+		onClick && 'vscode-timeline-item--clickable'
 	].filter(Boolean).join(' ');
 
 	const handleClick = () => {

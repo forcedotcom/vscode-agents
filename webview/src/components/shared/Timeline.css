@@ -142,3 +142,8 @@
 .vscode-timeline-item--last .vscode-timeline-item__content {
 	padding-bottom: 0;
 }
+
+/* Clickable items - highlight on hover with same color as icon */
+.vscode-timeline-item--clickable:hover .vscode-timeline-item__label {
+	color: var(--vscode-button-background);
+}
