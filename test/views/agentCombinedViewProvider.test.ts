@@ -1236,6 +1236,35 @@ describe('AgentCombinedViewProvider', () => {
       expect(consoleWarnSpy).toHaveBeenCalledWith('Error ending previous session:', expect.any(Error));
     });
 
+    it('should clear messages when starting a new session', async () => {
+      // Mock dependencies
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com',
+        tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
+      });
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockResolvedValue([]);
+
+      // Start a session
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      // Verify clearMessages was sent before sessionStarting
+      const calls = mockWebviewView.webview.postMessage.mock.calls;
+      const clearMessagesCall = calls.find((call: any) => call[0]?.command === 'clearMessages');
+      const sessionStartingCall = calls.find((call: any) => call[0]?.command === 'sessionStarting');
+
+      expect(clearMessagesCall).toBeDefined();
+      expect(sessionStartingCall).toBeDefined();
+
+      // Ensure clearMessages comes before sessionStarting
+      const clearMessagesIndex = calls.indexOf(clearMessagesCall);
+      const sessionStartingIndex = calls.indexOf(sessionStartingCall);
+      expect(clearMessagesIndex).toBeLessThan(sessionStartingIndex);
+    });
+
     it('should start session with script agent and set up lifecycle listeners', async () => {
       const mockLifecycle = {
         on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
