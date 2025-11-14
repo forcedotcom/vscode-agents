@@ -171,7 +171,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             </table>
 
             <div className="tracer-plan-timeline">
-              <h3 className="tracer-plan-title">Plan Steps</h3>
               <Timeline items={getTimelineItems()} />
             </div>
 
