@@ -552,7 +552,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         } else if (message.command === 'loadAgentHistory') {
           // Load conversation history for the selected agent
           // If history exists: Show it and wait for user to manually start session
-          // If no history: Send noHistoryFound signal so webview can auto-start session
+          // If no history: Send noHistoryFound signal so webview can show placeholder
           const agentId = message.data?.agentId;
           if (agentId && typeof agentId === 'string') {
             // First, clear any existing messages in the panel
@@ -579,14 +579,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 // History exists - send it to webview (user will manually start session)
                 await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
               } else {
-                // No history - signal webview to auto-start session
+                // No history - signal webview to show placeholder
                 webviewView.webview.postMessage({
                   command: 'noHistoryFound',
                   data: { agentId }
                 });
               }
             } catch (err) {
-              // Error loading history - treat as no history, auto-start session
+              // Error loading history - treat as no history, show placeholder
               console.error('Error checking history:', err);
               webviewView.webview.postMessage({
                 command: 'noHistoryFound',

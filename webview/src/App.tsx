@@ -49,10 +49,8 @@ const App: React.FC = () => {
     const disposeSelectAgent = vscodeApi.onMessage('selectAgent', (data: SelectAgentMessage) => {
       if (data && data.agentId) {
         // Update the selected agent in the dropdown
-        forceRestartRef.current = true;
+        // Don't force restart - let history flow decide whether to show saved conversation or placeholder
         setDesiredAgentId(data.agentId);
-        // Increment restart trigger to force useEffect to run even if agent ID is the same
-        setRestartTrigger(prev => prev + 1);
         vscodeApi.setSelectedAgentId(data.agentId);
       }
     });
