@@ -39,8 +39,8 @@ body.vscode-high-contrast .agent-preview-placeholder-icon {
 .start-session-button {
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
-  border-radius: 4px;
-  padding: 8px 16px;
+  border-radius: 2px;
+  padding: 6px 12px;
   font-family: var(--vscode-font-family);
   font-size: 13px;
   cursor: pointer;
