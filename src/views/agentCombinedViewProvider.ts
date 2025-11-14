@@ -317,6 +317,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       try {
         if (message.command === 'startSession') {
           await this.setSessionStarting(true);
+
+          // Clear any previous error messages before starting a new session
+          webviewView.webview.postMessage({
+            command: 'clearMessages'
+          });
+
           webviewView.webview.postMessage({
             command: 'sessionStarting',
             data: { message: 'Starting session...' }
