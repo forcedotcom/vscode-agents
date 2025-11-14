@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
 import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
+import { CodeBlock } from '../shared/CodeBlock.js';
 
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
@@ -35,6 +36,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [traceData, setTraceData] = useState<PlanSuccessResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
 
   const requestTraceData = useCallback(() => {
     setLoading(true);
@@ -127,9 +129,24 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       return {
         status,
         label,
-        description
+        description,
+        onClick: () => setSelectedStepIndex(index)
       };
     });
+  };
+
+  // Get selected step data
+  const getSelectedStepData = (): string | null => {
+    if (selectedStepIndex === null || !traceData || !traceData.plan) {
+      return null;
+    }
+
+    const step = traceData.plan[selectedStepIndex];
+    if (step && step.data) {
+      return JSON.stringify(step.data, null, 2);
+    }
+
+    return null;
   };
 
   return (
@@ -167,6 +184,16 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             <div className="tracer-plan-timeline">
               <Timeline items={getTimelineItems()} />
             </div>
+
+            {selectedStepIndex !== null && getSelectedStepData() && (
+              <div className="tracer-step-data-panel">
+                <CodeBlock
+                  code={getSelectedStepData()!}
+                  language="json"
+                  showCopy={true}
+                />
+              </div>
+            )}
           </div>
         ) : traceData === null ? (
           <div className="tracer-empty">Loading trace data...</div>

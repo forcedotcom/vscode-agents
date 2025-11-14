@@ -78,5 +78,11 @@
 .tracer-plan-timeline {
   margin-top: 12px;
   padding-left: 2px;
+  padding-bottom: 16px;
+}
+
+.tracer-step-data-panel {
+  margin-top: 16px;
+  padding-left: 2px;
   padding-bottom: 40px;
 }

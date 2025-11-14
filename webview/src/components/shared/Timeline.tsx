@@ -23,6 +23,10 @@ export interface TimelineItemProps {
 	 * Optional URL to make the label a clickable link
 	 */
 	href?: string;
+	/**
+	 * Optional click handler for the timeline item
+	 */
+	onClick?: () => void;
 }
 
 export interface TimelineProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -73,6 +77,7 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
 	label,
 	description,
 	href,
+	onClick,
 	isLast
 }) => {
 	const getIconContent = () => {
@@ -104,8 +109,14 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
 		isLast && 'vscode-timeline-item--last'
 	].filter(Boolean).join(' ');
 
+	const handleClick = () => {
+		if (onClick) {
+			onClick();
+		}
+	};
+
 	return (
-		<div className={itemClass}>
+		<div className={itemClass} onClick={handleClick} style={onClick ? { cursor: 'pointer' } : undefined}>
 			<div className="vscode-timeline-item__indicator">
 				<div className="vscode-timeline-item__icon">
 					{getIconContent()}
