@@ -27,3 +27,31 @@
   color: var(--vscode-descriptionForeground);
   font-style: italic;
 }
+
+.tracer-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.tracer-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--vscode-foreground);
+}
+
+.tracer-json-dump {
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  padding: 12px;
+  border-radius: 4px;
+  overflow: auto;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
