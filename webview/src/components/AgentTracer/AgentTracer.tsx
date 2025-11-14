@@ -167,11 +167,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             <div className="tracer-plan-timeline">
               <Timeline items={getTimelineItems()} />
             </div>
-
-            <details className="tracer-json-details">
-              <summary className="tracer-json-summary">View Raw JSON</summary>
-              <pre className="tracer-json-dump">{JSON.stringify(traceData, null, 2)}</pre>
-            </details>
           </div>
         ) : traceData === null ? (
           <div className="tracer-empty">Loading trace data...</div>
