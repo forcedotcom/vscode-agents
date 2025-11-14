@@ -253,7 +253,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-step-data-panel__content">
             <CodeBlock
               code={getSelectedStepData()!}
-              showCopy={true}
+              showCopy={false}
             />
           </div>
         </div>

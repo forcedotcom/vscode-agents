@@ -94,7 +94,7 @@
   background-color: var(--vscode-sideBar-background);
   border-top: 1px solid var(--vscode-panel-border);
   z-index: 10;
-  overflow-y: visible;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }

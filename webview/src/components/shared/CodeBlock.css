@@ -88,8 +88,8 @@
 
 .vscode-code-block__content {
 	margin: 0;
-	padding: 36px 12px 12px 12px;
-	overflow: visible;
+	padding: 12px 12px 12px 17px;
+	overflow: auto;
 	background-color: transparent;
 	color: var(--vscode-editor-foreground);
 	font-family: var(--vscode-editor-font-family, 'Menlo', 'Monaco', 'Courier New', monospace);
@@ -101,7 +101,7 @@
 }
 
 .vscode-code-block--no-header .vscode-code-block__content {
-	padding: 12px;
+	padding: 12px 12px 12px 17px;
 }
 
 /* When there's a language label with border, increase top padding for spacing */
