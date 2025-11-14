@@ -9,6 +9,7 @@
   padding: 40px;
   max-width: 500px;
   margin: 0 auto;
+  transform: translateY(-30px);
 }
 
 .placeholder-icon {
