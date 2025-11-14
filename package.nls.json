@@ -7,11 +7,10 @@
   "run_test_title": "Run Test Definition",
   "agentforce_dx": "Agentforce DX",
   "agent_chat": "Chat with Agent",
-  "agent_combined": "Agentforce DX",
   "clear_chat": "Clear chat with Agent",
-  "show_chat_trace": "SFDX: Show Chat Trace",
+  "show_chat_trace": "AFDX: Show Chat Trace",
   "refresh_test_title": "Refresh Test Definitions",
-  "open_chat_with_agent": "SFDX: Open Chat with Agent",
-  "go_to_test_results": "SFDX: View Test Results",
+  "open_chat_with_agent": "AFDX: Open Chat with Agent",
+  "go_to_test_results": "AFDX: View Test Results",
   "collapse_tests_title": "Collapse All Test Cases"
 }

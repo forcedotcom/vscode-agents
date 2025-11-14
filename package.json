@@ -106,7 +106,7 @@
       "agentforce-dx": [
         {
           "id": "sf.agent.combined.view",
-          "name": "%agent_combined%",
+          "name": "%agentforce_dx%",
           "type": "webview",
           "when": "sf:project_opened"
         }
@@ -338,7 +338,7 @@
       },
       {
         "command": "sf.agent.selectAndRun",
-        "title": "Agentforce DX: Select an Agent to Run"
+        "title": "AFDX: Select an Agent to Run"
       },
       {
         "command": "sf.agent.combined.view.stop",
