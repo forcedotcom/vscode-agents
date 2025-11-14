@@ -41,6 +41,7 @@ body.vscode-high-contrast .agent-preview-placeholder-icon {
   color: var(--vscode-button-foreground);
   border-radius: 4px;
   padding: 8px 16px;
+  font-family: var(--vscode-font-family);
   font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s;
