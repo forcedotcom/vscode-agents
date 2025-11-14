@@ -49,29 +49,3 @@ body.vscode-high-contrast .tracer-placeholder-icon {
   width: 10px;
   height: 10px;
 }
-
-.send-message-button {
-  background-color: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border-radius: 2px;
-  padding: 6px 12px;
-  font-family: var(--vscode-font-family);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  border: none;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.send-message-button:hover {
-  background-color: var(--vscode-button-hoverBackground);
-}
-
-.button-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}

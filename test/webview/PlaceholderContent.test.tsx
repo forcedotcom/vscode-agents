@@ -62,7 +62,7 @@ describe('PlaceholderContent', () => {
       const icon = placeholderContent?.querySelector('.placeholder-icon');
       expect(icon).toBeInTheDocument();
 
-      const button = placeholderContent?.querySelector('.select-agent-button');
+      const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
     });
   });
