@@ -105,22 +105,24 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       // All steps are shown as success (checked state)
       const status: 'success' | 'error' | 'pending' | 'incomplete' = 'success';
 
-      // Step number as the label (at the top)
-      const label = `Step ${index + 1}`;
-
-      // Type as the description (underneath)
+      // Type as the label (at the top)
       const stepType = step.type || step.stepType || '';
       const stepName = step.name || step.label || step.description || '';
 
-      // Combine type and name for description
-      let description: string | undefined;
+      // Combine type and name for label
+      let label: string;
       if (stepType && stepName) {
-        description = `${stepType}: ${stepName}`;
+        label = `${stepType}: ${stepName}`;
       } else if (stepType) {
-        description = stepType;
+        label = stepType;
       } else if (stepName) {
-        description = stepName;
+        label = stepName;
+      } else {
+        label = `Step ${index + 1}`;
       }
+
+      // Step number as the description (underneath)
+      const description = `Step ${index + 1}`;
 
       return {
         status,
