@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './ChatMessage.css';
 import userIconDark from '../../assets/user-dark.svg';
 import userIconLight from '../../assets/user-light.svg';
@@ -11,7 +11,23 @@ interface ChatMessageProps {
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ type, content }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const [isDark, setIsDark] = useState(
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const newIsDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+      setIsDark(newIsDark);
+    });
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const iconSrc = type === 'user'
     ? (isDark ? userIconDark : userIconLight)
