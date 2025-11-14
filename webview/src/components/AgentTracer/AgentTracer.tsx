@@ -9,7 +9,7 @@ import { StepAction } from './StepAction.js';
 import { StepAgentResponse } from './StepAgentResponse.js';
 import TracerPlaceholder from './TracerPlaceholder.js';
 
-import { vscodeApi } from '../../services/vscodeApi.js';
+import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
 
 interface AgentTracerProps {
@@ -17,6 +17,8 @@ interface AgentTracerProps {
   onGoToPreview?: () => void;
   isSessionActive?: boolean;
   isLiveMode?: boolean;
+  selectedAgentInfo?: AgentInfo | null;
+  onLiveModeChange?: (isLive: boolean) => void;
 }
 
 // PlanSuccessResponse format from AgentSimulate.trace()
@@ -29,7 +31,14 @@ interface PlanSuccessResponse {
   plan: any[];
 }
 
-const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true, onGoToPreview, isSessionActive = false, isLiveMode = false }) => {
+const AgentTracer: React.FC<AgentTracerProps> = ({
+  isVisible = true,
+  onGoToPreview,
+  isSessionActive = false,
+  isLiveMode = false,
+  selectedAgentInfo = null,
+  onLiveModeChange
+}) => {
   const [traceData, setTraceData] = useState<PlanSuccessResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,7 +302,13 @@ const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true, onGoToPrevi
         ) : traceData === null ? (
           <div className="tracer-empty">Loading trace data...</div>
         ) : traceData && traceData.plan && traceData.plan.length === 0 ? (
-          <TracerPlaceholder onGoToPreview={onGoToPreview} isSessionActive={isSessionActive} isLiveMode={isLiveMode} />
+          <TracerPlaceholder
+            onGoToPreview={onGoToPreview}
+            isSessionActive={isSessionActive}
+            isLiveMode={isLiveMode}
+            selectedAgentInfo={selectedAgentInfo}
+            onModeChange={onLiveModeChange}
+          />
         ) : (
           <div className="tracer-empty">Unable to load trace data. Check the console for errors.</div>
         )}

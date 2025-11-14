@@ -286,7 +286,13 @@ const App: React.FC = () => {
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
-          <AgentTracer onGoToPreview={handleGoToPreview} isSessionActive={isSessionActive} isLiveMode={isLiveMode} />
+          <AgentTracer
+            onGoToPreview={handleGoToPreview}
+            isSessionActive={isSessionActive}
+            isLiveMode={isLiveMode}
+            selectedAgentInfo={selectedAgentInfo}
+            onLiveModeChange={handleLiveModeChange}
+          />
         </div>
       </div>
     </div>

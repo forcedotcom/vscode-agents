@@ -1,16 +1,23 @@
 import React from 'react';
+import { AgentInfo } from '../../services/vscodeApi.js';
+import { SplitButton } from '../shared/SplitButton.js';
+import { Button } from '../shared/Button.js';
 import './TracerPlaceholder.css';
 
 interface TracerPlaceholderProps {
   onGoToPreview?: () => void;
   isSessionActive?: boolean;
   isLiveMode?: boolean;
+  selectedAgentInfo?: AgentInfo | null;
+  onModeChange?: (isLive: boolean) => void;
 }
 
 const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
   onGoToPreview,
   isSessionActive = false,
-  isLiveMode = false
+  isLiveMode = false,
+  selectedAgentInfo = null,
+  onModeChange
 }) => {
   // Determine button text based on session state and mode
   const getButtonText = () => {
@@ -40,22 +47,56 @@ const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
     </svg>
   );
 
+  const handleModeSelect = (value: string) => {
+    const isLive = value === 'live';
+    if (onModeChange) {
+      onModeChange(isLive);
+    }
+  };
+
+  const isPublishedAgent = selectedAgentInfo?.type === 'published';
+
   return (
     <div className="tracer-placeholder">
       <div className="tracer-placeholder-icon"></div>
       <p>
         Agent Tracer displays the step-by-step actions an Agent takes, so you can understand what it does in detail.
       </p>
-      {onGoToPreview && (
-        <button className="send-message-button" onClick={onGoToPreview}>
-          {isSessionActive ? (
-            <span className="button-icon">{sendIcon}</span>
-          ) : (
-            <span className="button-icon">{playIcon}</span>
-          )}
-          <span>{getButtonText()}</span>
-        </button>
-      )}
+      {onGoToPreview &&
+        (isSessionActive ? (
+          <Button
+            appearance="primary"
+            size="small"
+            onClick={onGoToPreview}
+            startIcon={sendIcon}
+          >
+            Send a Message
+          </Button>
+        ) : isPublishedAgent ? (
+          <Button
+            appearance="primary"
+            size="small"
+            onClick={onGoToPreview}
+            startIcon={playIcon}
+          >
+            Start Live Test
+          </Button>
+        ) : (
+          <SplitButton
+            appearance="primary"
+            size="small"
+            onClick={onGoToPreview}
+            onSelect={handleModeSelect}
+            value={isLiveMode ? 'live' : 'simulate'}
+            options={[
+              { label: 'Simulation', value: 'simulate' },
+              { label: 'Live Test', value: 'live' }
+            ]}
+            startIcon={playIcon}
+          >
+            {getButtonText()}
+          </SplitButton>
+        ))}
     </div>
   );
 };
