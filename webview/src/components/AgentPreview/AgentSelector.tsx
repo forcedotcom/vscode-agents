@@ -33,6 +33,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
   // Sync with parent's live mode when it changes
   useEffect(() => {
+    console.log('[AgentSelector] Syncing with parent live mode:', initialLiveMode);
     setIsLiveMode(initialLiveMode);
   }, [initialLiveMode]);
 
