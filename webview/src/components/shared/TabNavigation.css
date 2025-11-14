@@ -80,19 +80,17 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
 .tab-navigation-close {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--vscode-tab-activeForeground);
-  font-size: 12px;
-  font-family: inherit;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px;
   border-radius: 3px;
   transition: all 0.2s;
-  font-weight: 500;
-  line-height: 1;
-  margin-right: -8px;
+  margin-right: -4px;
+  width: 20px;
+  height: 20px;
 }
 
 .tab-navigation-close:hover {
