@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
 import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
+import TabNavigation from '../shared/TabNavigation.js';
 
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
@@ -240,11 +241,21 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             className="tracer-step-data-panel__resize-handle"
             onMouseDown={handleResizeStart}
           />
-          <div className="tracer-step-data-panel__tabs">
-            <div className="tracer-step-data-panel__tab tracer-step-data-panel__tab--active">
-              JSON
-            </div>
-          </div>
+          <TabNavigation
+            activeTab={0}
+            onTabChange={() => {}}
+            tabs={[
+              {
+                id: 'json',
+                label: 'JSON',
+                icon: (
+                  <svg width="14" height="11" viewBox="0 0 14 11" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.68 2.61333L2.98667 1.86667L0 4.90667V5.6L2.98667 8.58667L3.68 7.89333L1.06667 5.22667L3.68 2.61333ZM10.72 1.86667L13.7067 4.90667V5.6L10.72 8.58667L9.97333 7.89333L12.64 5.22667L9.97333 2.61333L10.72 1.86667ZM3.89333 10.0267L8.90667 0L9.81333 0.48L4.8 10.4533L3.89333 10.0267Z" fill="currentColor"/>
+                  </svg>
+                )
+              }
+            ]}
+          />
           <div className="tracer-step-data-panel__content">
             <CodeBlock
               code={getSelectedStepData()!}

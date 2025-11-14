@@ -111,43 +111,8 @@
   background-color: var(--vscode-list-hoverBackground);
 }
 
-.tracer-step-data-panel__tabs {
-  display: flex;
-  align-items: center;
-  background-color: var(--vscode-sideBar-background);
-  padding: 0 18px;
-  height: 35px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  flex-shrink: 0;
-}
-
-.tracer-step-data-panel__tab {
-  display: flex;
-  align-items: center;
-  padding: 8px 0;
-  background: none;
-  border: none;
-  color: var(--vscode-tab-activeForeground);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  font-weight: 500;
-}
-
-.tracer-step-data-panel__tab--active {
-  color: var(--vscode-tab-activeForeground);
-}
-
-.tracer-step-data-panel__tab--active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background-color: var(--vscode-panelTitle-activeBorder);
+.tracer-step-data-panel .tab-navigation {
+  margin-top: 0;
 }
 
 .tracer-step-data-panel__content {
