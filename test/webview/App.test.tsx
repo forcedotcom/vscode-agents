@@ -669,6 +669,34 @@ describe('App', () => {
     });
   });
 
+  describe('Refresh Agents', () => {
+    it('should switch to preview tab when refreshAgents message is received', async () => {
+      render(<App />);
+
+      // Select an agent to show tracer
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer tab
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-tracer')).toBeInTheDocument();
+      });
+
+      // Trigger refreshAgents message
+      triggerMessage('refreshAgents', {});
+
+      // Should switch back to preview tab
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+      });
+    });
+  });
+
   describe('Tracer Go To Preview', () => {
     beforeEach(() => {
       jest.clearAllMocks();

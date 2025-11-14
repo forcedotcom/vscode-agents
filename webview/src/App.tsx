@@ -56,8 +56,14 @@ const App: React.FC = () => {
       }
     });
 
+    const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
+      // Switch back to preview tab when refreshing agents
+      setActiveTab('preview');
+    });
+
     return () => {
       disposeSelectAgent();
+      disposeRefreshAgents();
     };
   }, []);
 
