@@ -103,4 +103,5 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   flex-shrink: 0;
   display: block;
   margin-top: -1px;
+  opacity: 0.8;
 }
