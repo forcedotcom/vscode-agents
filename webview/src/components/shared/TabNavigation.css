@@ -64,11 +64,11 @@
 }
 
 body.vscode-dark .tab-icon-comment,
-body.vscode-high-contrast .tab-icon-comment {
+body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-comment {
   background-image: url('../../assets/comment-dark.svg');
 }
 
 body.vscode-dark .tab-icon-tree,
-body.vscode-high-contrast .tab-icon-tree {
+body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   background-image: url('../../assets/tree-dark.svg');
 }
