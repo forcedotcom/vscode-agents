@@ -11,13 +11,17 @@ interface ChatMessageProps {
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ type, content }) => {
-  const [isDark, setIsDark] = useState(
-    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
-  );
+  const [isDark, setIsDark] = useState(() => {
+    const classList = document.body.classList;
+    return classList.contains('vscode-dark') ||
+           (classList.contains('vscode-high-contrast') && !classList.contains('vscode-high-contrast-light'));
+  });
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
-      const newIsDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+      const classList = document.body.classList;
+      const newIsDark = classList.contains('vscode-dark') ||
+                        (classList.contains('vscode-high-contrast') && !classList.contains('vscode-high-contrast-light'));
       setIsDark(newIsDark);
     });
 
