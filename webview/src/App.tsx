@@ -125,6 +125,8 @@ const App: React.FC = () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(true);
+      // Switch to preview tab when starting a new session
+      setActiveTab('preview');
     });
 
     const disposeSessionError = vscodeApi.onMessage('error', () => {

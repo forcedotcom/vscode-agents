@@ -817,6 +817,33 @@ describe('App', () => {
       });
     });
 
+    it('should switch to preview tab when starting a new session from tracer', async () => {
+      render(<App />);
+
+      // Select an agent and start session
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer tab
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-tracer')).toBeInTheDocument();
+      });
+
+      // Start a new session (e.g., restart)
+      triggerMessage('sessionStarting', {});
+
+      // Should switch back to preview tab
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+      });
+    });
+
     it('should not restart session when clicking Go to Preview with active session', async () => {
       render(<App />);
 
