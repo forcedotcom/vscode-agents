@@ -28,7 +28,7 @@ body.vscode-high-contrast .placeholder-icon {
 }
 
 .placeholder-content p {
-  margin-bottom: 30px;
+  margin: 0 0 30px 0;
   color: var(--vscode-foreground);
   font-size: 14px;
   font-weight: 500;
