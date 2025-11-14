@@ -83,7 +83,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
 
     const statusMessage = newDebugMode ? 'Debug mode activated' : 'Debug mode deactivated';
-    vscode.window.showInformationMessage(`Agentforce DX: ${statusMessage}`);
+    vscode.window.showInformationMessage(`AFDX: ${statusMessage}`);
   }
 
   /**
@@ -130,7 +130,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
       // Show notification
       if (agentName) {
-        vscode.window.showInformationMessage(`Agentforce DX: Session ended with ${agentName}`);
+        vscode.window.showInformationMessage(`AFDX: Session ended with ${agentName}`);
       }
 
       if (this.webviewView) {
@@ -392,7 +392,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setSessionActive(true);
 
           // Show notification
-          vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
+          vscode.window.showInformationMessage(`AFDX: Session started with ${this.currentAgentName}`);
 
           // History loading is now exclusively handled by loadAgentHistory flow
           // Don't load history here to avoid duplicate messages
