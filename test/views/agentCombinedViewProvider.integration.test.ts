@@ -122,7 +122,14 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
 
     mockContext = {
       extensionUri: vscode.Uri.file('/mock/path'),
-      subscriptions: []
+      extensionPath: '/mock/path',
+      subscriptions: [],
+      globalState: {
+        get: jest.fn().mockReturnValue(false),
+        update: jest.fn().mockResolvedValue(undefined),
+        keys: jest.fn().mockReturnValue([]),
+        setKeysForSync: jest.fn()
+      }
     } as any;
 
     provider = new (AgentCombinedViewProvider as any)(mockContext);

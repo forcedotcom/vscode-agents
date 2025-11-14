@@ -145,6 +145,11 @@ class VSCodeApiService {
   loadAgentHistory(agentId: string) {
     this.postMessage('loadAgentHistory', { agentId });
   }
+
+  // Set live mode preference
+  setLiveMode(isLiveMode: boolean) {
+    this.postMessage('setLiveMode', { isLiveMode });
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

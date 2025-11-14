@@ -123,7 +123,13 @@ describe('AgentCombinedViewProvider', () => {
     mockContext = {
       extensionUri: { fsPath: '/extension/path' },
       extensionPath: '/extension/path',
-      subscriptions: []
+      subscriptions: [],
+      globalState: {
+        get: jest.fn().mockReturnValue(false),
+        update: jest.fn().mockResolvedValue(undefined),
+        keys: jest.fn().mockReturnValue([]),
+        setKeysForSync: jest.fn()
+      }
     } as any;
 
     mockWebviewView = {
@@ -3897,6 +3903,134 @@ describe('AgentCombinedViewProvider', () => {
       await Promise.resolve();
 
       expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith('workbench.action.debug.continue');
+    });
+  });
+
+  describe('Live Mode Persistence', () => {
+    it('should load saved live mode from globalState on initialization', () => {
+      const mockContextWithLiveMode = {
+        ...mockContext,
+        globalState: {
+          get: jest.fn().mockReturnValue(true),
+          update: jest.fn().mockResolvedValue(undefined),
+          keys: jest.fn().mockReturnValue([]),
+          setKeysForSync: jest.fn()
+        }
+      } as any;
+
+      const newProvider = new AgentCombinedViewProvider(mockContextWithLiveMode);
+
+      expect(mockContextWithLiveMode.globalState.get).toHaveBeenCalledWith('agentforceDX.lastLiveMode', false);
+      expect((newProvider as any).isLiveMode).toBe(true);
+    });
+
+    it('should default to simulation mode when no saved preference exists', () => {
+      expect((provider as any).isLiveMode).toBe(false);
+    });
+
+    it('should send initial live mode to webview on resolve', () => {
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'setLiveMode',
+        data: { isLiveMode: false }
+      });
+    });
+
+    it('should persist live mode when changed from webview', async () => {
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      let messageHandler: (message: any) => Promise<void>;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      // Send setLiveMode message from webview
+      await messageHandler!({ command: 'setLiveMode', data: { isLiveMode: true } });
+
+      // Should update globalState
+      expect(mockContext.globalState.update).toHaveBeenCalledWith('agentforceDX.lastLiveMode', true);
+
+      // Should update internal state
+      expect((provider as any).isLiveMode).toBe(true);
+
+      // Should update context
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:isLiveMode', true);
+    });
+
+    it('should handle switching from live mode to simulation mode', async () => {
+      // Set initial state to live mode
+      (provider as any).isLiveMode = true;
+
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      let messageHandler: (message: any) => Promise<void>;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      // Switch to simulation mode
+      await messageHandler!({ command: 'setLiveMode', data: { isLiveMode: false } });
+
+      expect(mockContext.globalState.update).toHaveBeenCalledWith('agentforceDX.lastLiveMode', false);
+      expect((provider as any).isLiveMode).toBe(false);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:isLiveMode', false);
+    });
+
+    it('should ignore invalid setLiveMode messages', async () => {
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      let messageHandler: (message: any) => Promise<void>;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn((handler) => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      const initialMode = (provider as any).isLiveMode;
+
+      // Send invalid message
+      await messageHandler!({ command: 'setLiveMode', data: { isLiveMode: 'invalid' } });
+
+      // Should not update
+      expect(mockContext.globalState.update).not.toHaveBeenCalled();
+      expect((provider as any).isLiveMode).toBe(initialMode);
     });
   });
 });

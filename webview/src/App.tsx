@@ -61,15 +61,28 @@ const App: React.FC = () => {
       setActiveTab('preview');
     });
 
+    const disposeSetLiveMode = vscodeApi.onMessage('setLiveMode', (data: { isLiveMode: boolean }) => {
+      if (data && typeof data.isLiveMode === 'boolean') {
+        setIsLiveMode(data.isLiveMode);
+      }
+    });
+
     return () => {
       disposeSelectAgent();
       disposeRefreshAgents();
+      disposeSetLiveMode();
     };
   }, []);
 
   const handleTabChange = (tab: 'preview' | 'tracer') => {
     setActiveTab(tab);
   };
+
+  const handleLiveModeChange = useCallback((isLive: boolean) => {
+    setIsLiveMode(isLive);
+    // Notify the provider to persist the selection
+    vscodeApi.setLiveMode(isLive);
+  }, []);
 
   const handleGoToPreview = useCallback(() => {
     // If session is not active and we have a desired agent, start the session
@@ -241,7 +254,7 @@ const App: React.FC = () => {
           onAgentChange={handleAgentChange}
           isSessionActive={isSessionActive}
           isSessionStarting={isSessionStarting}
-          onLiveModeChange={setIsLiveMode}
+          onLiveModeChange={handleLiveModeChange}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
