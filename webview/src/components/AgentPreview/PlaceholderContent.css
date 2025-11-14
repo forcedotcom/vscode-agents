@@ -14,8 +14,8 @@
 .placeholder-icon {
   margin-bottom: 30px;
   opacity: 0.2;
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   background-image: url('../../assets/agent-light.svg');
   background-size: contain;
   background-repeat: no-repeat;
