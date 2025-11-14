@@ -184,16 +184,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             <div className="tracer-plan-timeline">
               <Timeline items={getTimelineItems()} />
             </div>
-
-            {selectedStepIndex !== null && getSelectedStepData() && (
-              <div className="tracer-step-data-panel">
-                <CodeBlock
-                  code={getSelectedStepData()!}
-                  language="json"
-                  showCopy={true}
-                />
-              </div>
-            )}
           </div>
         ) : traceData === null ? (
           <div className="tracer-empty">Loading trace data...</div>
@@ -209,6 +199,18 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-empty">Unable to load trace data. Check the console for errors.</div>
         )}
       </div>
+
+      {selectedStepIndex !== null && getSelectedStepData() && (
+        <div className="tracer-step-data-panel">
+          <div className="tracer-step-data-panel__content">
+            <CodeBlock
+              code={getSelectedStepData()!}
+              language="json"
+              showCopy={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
