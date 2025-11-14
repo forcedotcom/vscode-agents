@@ -100,4 +100,5 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
 
 .tab-navigation-close svg {
   flex-shrink: 0;
+  display: block;
 }
