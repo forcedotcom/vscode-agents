@@ -31,28 +31,29 @@
 	justify-content: center;
 	border-radius: 50%;
 	background-color: var(--vscode-button-background);
+	border: 2px solid var(--vscode-button-background);
 	position: relative;
 	z-index: 1;
 }
 
 .vscode-timeline-item__dot {
-	width: 5px;
-	height: 5px;
+	width: 6px;
+	height: 6px;
 	border-radius: 50%;
-	background-color: var(--vscode-descriptionForeground);
+	background-color: var(--vscode-button-foreground);
 }
 
 .vscode-timeline-item__line {
 	width: 2px;
 	flex: 1;
-	background-color: var(--vscode-descriptionForeground);
+	background-color: var(--vscode-button-background);
 	min-height: 24px;
 }
 
 .vscode-timeline-item__content {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: 0px;
 	padding-bottom: 16px;
 	flex: 1;
 }
@@ -86,8 +87,8 @@
 .vscode-timeline-item__description {
 	font-size: calc(var(--vscode-font-size) - 1px);
 	line-height: 1.4;
-	color: var(--vscode-descriptionForeground);
-	opacity: 0.7;
+	color: var(--vscode-foreground);
+	opacity: 0.9;
 }
 
 /* Status-specific styles */
@@ -96,27 +97,28 @@
 .vscode-timeline-item--success .vscode-timeline-item__icon {
 	color: var(--vscode-button-foreground);
 	background-color: var(--vscode-button-background);
+	border-color: var(--vscode-button-background);
 }
 
 .vscode-timeline-item--success .vscode-timeline-item__line {
 	background-color: var(--vscode-button-background);
 }
 
-/* All other states use muted colors */
-
 /* Error state - failed with cross - uses same color as success */
 .vscode-timeline-item--error .vscode-timeline-item__icon {
 	color: var(--vscode-button-foreground);
 	background-color: var(--vscode-button-background);
+	border-color: var(--vscode-button-background);
 }
 
 .vscode-timeline-item--error .vscode-timeline-item__line {
-	background-color: var(--vscode-button-secondaryBackground);
+	background-color: var(--vscode-button-background);
 }
 
-/* Pending state - dot with button color, but muted line since not progressed */
+/* Pending state - dot with button color, active state */
 .vscode-timeline-item--pending .vscode-timeline-item__icon {
 	background-color: var(--vscode-button-background);
+	border-color: var(--vscode-button-background);
 }
 
 .vscode-timeline-item--pending .vscode-timeline-item__dot {
@@ -124,12 +126,13 @@
 }
 
 .vscode-timeline-item--pending .vscode-timeline-item__line {
-	background-color: var(--vscode-button-secondaryBackground);
+	background-color: var(--vscode-button-background);
 }
 
-/* Incomplete state - muted dot and line */
+/* Incomplete state - muted appearance with lighter colors */
 .vscode-timeline-item--incomplete .vscode-timeline-item__icon {
-	background-color: var(--vscode-button-secondaryBackground);
+	background-color: transparent;
+	border-color: var(--vscode-descriptionForeground);
 }
 
 .vscode-timeline-item--incomplete .vscode-timeline-item__dot {
@@ -137,7 +140,8 @@
 }
 
 .vscode-timeline-item--incomplete .vscode-timeline-item__line {
-	background-color: var(--vscode-button-secondaryBackground);
+	background-color: var(--vscode-descriptionForeground);
+	opacity: 0.4;
 }
 
 /* Remove padding from last item */
