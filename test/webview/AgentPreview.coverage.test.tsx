@@ -123,6 +123,7 @@ describe('AgentPreview - Coverage Tests', () => {
     });
 
     it('should call onHasSessionError when session starts successfully', async () => {
+      jest.useFakeTimers();
       const onHasSessionError = jest.fn();
       renderComponent({ onHasSessionError });
 
@@ -132,11 +133,16 @@ describe('AgentPreview - Coverage Tests', () => {
         expect(onHasSessionError).toHaveBeenCalledWith(true);
       });
 
+      // Wait 600ms to avoid race condition
+      jest.advanceTimersByTime(600);
+
       // Then clear it with successful session start
       handlers.get('sessionStarted')?.({ content: 'Hello' });
       await waitFor(() => {
         expect(onHasSessionError).toHaveBeenCalledWith(false);
       });
+
+      jest.useRealTimers();
     });
   });
 
@@ -174,6 +180,9 @@ describe('AgentPreview - Coverage Tests', () => {
 
   describe('sessionStarted race condition handling', () => {
     it('should ignore sessionStarted that arrives soon after error', async () => {
+      // Suppress expected console warning for this test
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
       renderComponent();
 
       // Trigger error first
@@ -189,9 +198,19 @@ describe('AgentPreview - Coverage Tests', () => {
       await waitFor(() => {
         expect(screen.queryByText('Hello')).not.toBeInTheDocument();
       });
+
+      // Verify warning was logged
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Ignoring sessionStarted that arrived too soon after error (race condition)'
+      );
+
+      consoleWarnSpy.mockRestore();
     });
 
     it('should accept sessionStarted after enough time has passed', async () => {
+      // Suppress expected console warning for race condition test
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
       jest.useFakeTimers();
       renderComponent();
 
@@ -212,6 +231,7 @@ describe('AgentPreview - Coverage Tests', () => {
       });
 
       jest.useRealTimers();
+      consoleWarnSpy.mockRestore();
     });
   });
 
