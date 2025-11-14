@@ -54,7 +54,7 @@
 
 .tracer-info-table__label {
   color: var(--vscode-foreground);
-  padding: 8px 0;
+  padding: 8px 0 8px 10px;
   text-align: left;
   width: 80px;
   background: transparent;
