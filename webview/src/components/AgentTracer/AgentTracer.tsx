@@ -198,12 +198,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                   <td className="tracer-info-table__label">Plan ID</td>
                   <td className="tracer-info-table__value">{traceData.planId}</td>
                 </tr>
-                {traceData.intent && (
-                  <tr>
-                    <td className="tracer-info-table__label">Intent</td>
-                    <td className="tracer-info-table__value">{traceData.intent}</td>
-                  </tr>
-                )}
                 {traceData.topic && (
                   <tr>
                     <td className="tracer-info-table__label">Topic</td>

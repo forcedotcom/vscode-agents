@@ -94,7 +94,7 @@
   background-color: var(--vscode-sideBar-background);
   border-top: 1px solid var(--vscode-panel-border);
   z-index: 10;
-  overflow-y: auto;
+  overflow-y: visible;
   display: flex;
   flex-direction: column;
 }
@@ -116,7 +116,9 @@
 }
 
 .tracer-step-data-panel__content {
-  padding: 12px 18px;
-  overflow-y: auto;
+  padding: 0;
+  overflow: hidden;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }

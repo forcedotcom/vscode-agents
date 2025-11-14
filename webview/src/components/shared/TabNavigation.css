@@ -16,7 +16,7 @@
 .tab {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 8px 0;
   background: none;
   border: none;
@@ -46,13 +46,16 @@
 }
 
 .tab-icon {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
   opacity: 0.8;
+  flex-shrink: 0;
 }
 
 .tab-icon-comment {

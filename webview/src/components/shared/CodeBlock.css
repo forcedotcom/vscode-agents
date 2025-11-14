@@ -4,13 +4,14 @@
 .vscode-code-block {
 	display: flex;
 	flex-direction: column;
-	background-color: var(--vscode-editor-background);
-	border: 1px solid var(--vscode-input-border, var(--vscode-panel-border, transparent));
-	border-radius: 3px;
+	background-color: transparent;
+	border: none;
+	border-radius: 0;
 	overflow: hidden;
 	font-family: var(--vscode-font-family);
 	font-size: var(--vscode-font-size);
 	position: relative;
+	height: 100%;
 }
 
 .vscode-code-block__header {
@@ -88,14 +89,15 @@
 .vscode-code-block__content {
 	margin: 0;
 	padding: 36px 12px 12px 12px;
-	overflow-x: auto;
+	overflow: visible;
 	background-color: transparent;
 	color: var(--vscode-editor-foreground);
 	font-family: var(--vscode-editor-font-family, 'Menlo', 'Monaco', 'Courier New', monospace);
-	font-size: 12px;
+	font-size: 11px;
 	line-height: 1.5;
 	tab-size: 4;
 	-moz-tab-size: 4;
+	flex: 1;
 }
 
 .vscode-code-block--no-header .vscode-code-block__content {
