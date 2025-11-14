@@ -143,7 +143,12 @@
 	padding-bottom: 0;
 }
 
-/* Clickable items - highlight on hover with same color as icon */
-.vscode-timeline-item--clickable:hover .vscode-timeline-item__label {
+/* Clickable items - always highlight with same color as icon */
+.vscode-timeline-item--clickable .vscode-timeline-item__label {
 	color: var(--vscode-button-background);
+}
+
+/* Clickable items - subtle hover effect */
+.vscode-timeline-item--clickable:hover .vscode-timeline-item__label {
+	text-decoration: underline;
 }
