@@ -16,6 +16,17 @@ interface SelectAgentMessage {
   forceRestart?: boolean;
 }
 
+declare global {
+  interface Window {
+    __agentforceDXAppTestHooks?: {
+      waitForSessionEnd: () => Promise<void>;
+      setSessionActiveFlag: (active: boolean) => void;
+      getPendingStartResolvers: () => number;
+      getDisplayedAgentId: () => string;
+    };
+  }
+}
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'preview' | 'tracer'>('preview');
   const [displayedAgentId, setDisplayedAgentIdState] = useState('');
@@ -195,6 +206,22 @@ const App: React.FC = () => {
   const handleSessionTransitionSettled = useCallback(() => {
     setIsSessionTransitioning(false);
   }, []);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test' && typeof window !== 'undefined') {
+      window.__agentforceDXAppTestHooks = {
+        waitForSessionEnd,
+        setSessionActiveFlag: (active: boolean) => {
+          sessionActiveRef.current = active;
+        },
+        getPendingStartResolvers: () => sessionStartResolversRef.current.length,
+        getDisplayedAgentId: () => displayedAgentIdRef.current
+      };
+      return () => {
+        delete window.__agentforceDXAppTestHooks;
+      };
+    }
+  }, [waitForSessionEnd]);
 
   useEffect(() => {
     sessionChangeQueueRef.current = sessionChangeQueueRef.current

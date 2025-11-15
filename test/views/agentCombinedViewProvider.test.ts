@@ -28,6 +28,7 @@ jest.mock('vscode', () => ({
   window: {
     showInformationMessage: jest.fn(),
     showErrorMessage: jest.fn(),
+    showQuickPick: jest.fn(),
     activeTextEditor: null
   },
   workspace: {
@@ -492,6 +493,107 @@ describe('AgentCombinedViewProvider', () => {
       const localAgents = await (provider as any).discoverLocalAgents();
 
       expect(localAgents).toEqual([]);
+    });
+  });
+
+  describe('resolveClientAppConnection', () => {
+    it('should return handled when no client apps exist and no handler is provided', async () => {
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({ type: 'none' });
+
+      const result = await (provider as any).resolveClientAppConnection();
+
+      expect(result).toEqual({ status: 'handled' });
+      expect(createConnectionWithClientApp).not.toHaveBeenCalled();
+    });
+
+    it('should return handled when multiple client apps exist but no handler provided', async () => {
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'multiple',
+        clientApps: [{ name: 'AppA' }, { name: 'AppB' }]
+      });
+
+      const result = await (provider as any).resolveClientAppConnection();
+
+      expect(result).toEqual({ status: 'handled' });
+      expect(createConnectionWithClientApp).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAgentsForCommandPalette', () => {
+    const localAgents = [
+      { name: 'LocalOne', id: 'local:/tmp/one.agent', type: 'script', filePath: '/tmp/one.agent' }
+    ];
+
+    let discoverSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      discoverSpy = jest.spyOn(provider as any, 'discoverLocalAgents').mockResolvedValue(localAgents);
+      (vscode.window.showQuickPick as jest.Mock).mockReset();
+      (vscode.window.showInformationMessage as jest.Mock).mockReset();
+    });
+
+    afterEach(() => {
+      discoverSpy.mockRestore();
+    });
+
+    it('should return only local agents when no client apps are configured', async () => {
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({ type: 'none' });
+
+      const agents = await provider.getAgentsForCommandPalette();
+
+      expect(agents).toEqual(localAgents);
+      expect(vscode.window.showQuickPick).not.toHaveBeenCalled();
+    });
+
+    it('should show information message and return locals when client app selection is cancelled', async () => {
+      const clientApps = [{ name: 'AppOne', clientId: '123' }];
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'multiple',
+        clientApps
+      });
+      (vscode.window.showQuickPick as jest.Mock).mockResolvedValue(undefined);
+
+      const agents = await provider.getAgentsForCommandPalette();
+
+      expect(agents).toEqual(localAgents);
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Client app selection cancelled. Showing Agent Script files only.'
+      );
+      expect(createConnectionWithClientApp).not.toHaveBeenCalled();
+    });
+
+    it('should return local and remote agents when client app is selected', async () => {
+      const clientApps = [{ name: 'AppOne', clientId: '123' }];
+      (getAvailableClientApps as jest.Mock).mockResolvedValue({
+        type: 'multiple',
+        clientApps
+      });
+      (vscode.window.showQuickPick as jest.Mock).mockResolvedValue({
+        label: 'AppOne',
+        description: '123',
+        app: clientApps[0]
+      });
+      (createConnectionWithClientApp as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
+
+      const remoteRecords = [
+        {
+          Id: '0X123',
+          MasterLabel: 'Remote One',
+          BotVersions: { records: [{ Status: 'Active' }] }
+        }
+      ];
+      const { Agent } = require('@salesforce/agents');
+      Agent.listRemote = jest.fn().mockResolvedValue(remoteRecords);
+
+      const agents = await provider.getAgentsForCommandPalette();
+
+      expect(createConnectionWithClientApp).toHaveBeenCalledWith('AppOne');
+      expect(Agent.listRemote).toHaveBeenCalled();
+      expect(agents).toEqual([
+        ...localAgents,
+        { name: 'Remote One', id: '0X123', type: 'published' }
+      ]);
+      expect((provider as any).selectedClientApp).toBe('AppOne');
     });
   });
 
@@ -2403,6 +2505,37 @@ describe('AgentCombinedViewProvider', () => {
         command: 'error',
         data: { message: 'string error' }
       });
+    });
+
+    it('should load mock trace payload from configuration when provided', async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn(() => '/tmp/mock-trace.json')
+      });
+      const mockPayload = { plan: [{ step: 'test' }] };
+      (vscode.workspace.fs.readFile as jest.Mock).mockResolvedValue(Buffer.from(JSON.stringify(mockPayload)));
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: mockPayload
+      });
+    });
+
+    it('should surface error when mock trace payload cannot be read', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn(() => '/tmp/mock-trace.json')
+      });
+      (vscode.workspace.fs.readFile as jest.Mock).mockRejectedValue(new Error('ENOENT'));
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: expect.stringContaining('ENOENT') }
+      });
+      consoleErrorSpy.mockRestore();
     });
   });
 

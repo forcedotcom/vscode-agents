@@ -131,5 +131,62 @@ describe('previewAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('unable to open view'));
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Stack Trace:');
     });
+
+    it('falls back to active editor when URI is not provided', async () => {
+      jest.useFakeTimers();
+      const showMock = jest.fn();
+      const postMessageMock = jest.fn();
+      const providerMock = {
+        setPreselectedAgentId: jest.fn(),
+        webviewView: {
+          show: showMock,
+          webview: {
+            postMessage: postMessageMock
+          }
+        }
+      };
+
+      jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
+      Object.defineProperty(vscode.window, 'activeTextEditor', {
+        configurable: true,
+        get: () => ({
+          document: { fileName: '/tmp/from-editor.agent' }
+        })
+      });
+
+      const handler = registerAndGetHandler();
+      await handler();
+
+      expect(providerMock.setPreselectedAgentId).toHaveBeenCalledWith('local:/tmp/from-editor.agent');
+      jest.advanceTimersByTime(500);
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId: 'local:/tmp/from-editor.agent' }
+      });
+
+      // Reset editor mock back to undefined to avoid side effects
+      Object.defineProperty(vscode.window, 'activeTextEditor', {
+        configurable: true,
+        get: () => undefined
+      });
+    });
+
+    it('handles provider without an attached webview gracefully', async () => {
+      jest.useFakeTimers();
+      const providerMock = {
+        setPreselectedAgentId: jest.fn(),
+        webviewView: undefined
+      };
+
+      jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
+      const handler = registerAndGetHandler();
+      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
+
+      await handler(mockUri);
+      jest.runOnlyPendingTimers();
+
+      expect(providerMock.setPreselectedAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
+      expect(errorMessageSpy).not.toHaveBeenCalled();
+    });
   });
 });
