@@ -13,6 +13,7 @@ interface ClientApp {
 
 interface SelectAgentMessage {
   agentId: string;
+  forceRestart?: boolean;
 }
 
 const App: React.FC = () => {
@@ -49,11 +50,18 @@ const App: React.FC = () => {
     const disposeSelectAgent = vscodeApi.onMessage('selectAgent', (data: SelectAgentMessage) => {
       if (data && data.agentId) {
         // Update the selected agent in the dropdown
-        forceRestartRef.current = true;
         setDesiredAgentId(data.agentId);
-        // Increment restart trigger to force useEffect to run even if agent ID is the same
-        setRestartTrigger(prev => prev + 1);
         vscodeApi.setSelectedAgentId(data.agentId);
+
+        if (data.forceRestart) {
+          // Restart Agent button clicked - force immediate restart
+          forceRestartRef.current = true;
+          setRestartTrigger(prev => prev + 1);
+        } else {
+          // Palette selection - let history flow decide whether to show saved conversation or placeholder
+          vscodeApi.clearMessages();
+          vscodeApi.loadAgentHistory(data.agentId);
+        }
       }
     });
 
