@@ -350,7 +350,7 @@ describe('App', () => {
 
       // Switch to a different agent (force restart)
       jest.clearAllMocks();
-      triggerMessage('selectAgent', { agentId: 'agent2' });
+      triggerMessage('selectAgent', { agentId: 'agent2', forceRestart: true });
 
       await waitFor(() => {
         expect(mockVscodeApi.endSession).toHaveBeenCalled();
@@ -389,7 +389,7 @@ describe('App', () => {
       });
 
       // Force restart with same agent
-      triggerMessage('selectAgent', { agentId: 'agent1' });
+      triggerMessage('selectAgent', { agentId: 'agent1', forceRestart: true });
 
       await waitFor(() => {
         const transitioning = screen.getByTestId('is-transitioning');

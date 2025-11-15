@@ -559,7 +559,7 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'selectAgent',
-        data: { agentId }
+        data: { agentId, forceRestart: true }
       });
     });
 

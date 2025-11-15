@@ -125,7 +125,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     if (this.webviewView) {
       this.webviewView.webview.postMessage({
         command: 'selectAgent',
-        data: { agentId }
+        data: { agentId, forceRestart: true }
       });
     }
   }
