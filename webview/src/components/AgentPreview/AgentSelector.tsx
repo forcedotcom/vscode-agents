@@ -38,6 +38,14 @@ export const handleStartClickImpl = ({ selectedAgent, isSessionActive, isLiveMod
   }
 };
 
+export interface StopClickParams {
+  endSession: () => unknown;
+}
+
+export const handleStopClickImpl = ({ endSession }: StopClickParams) => {
+  endSession();
+};
+
 const AgentSelector: React.FC<AgentSelectorProps> = ({
   onClientAppRequired,
   onClientAppSelection,
@@ -194,6 +202,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       startSession: (agentId, options) => vscodeApi.startSession(agentId, options)
     });
 
+  const handleStopClick = () =>
+    handleStopClickImpl({
+      endSession: () => vscodeApi.endSession()
+    });
+
   return (
     <div className="agent-selector">
       <div className="agent-selector__main">
@@ -237,25 +250,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           <Button
             appearance="primary"
             size="small"
-            onClick={handleStartClick}
+            onClick={isSessionStarting ? handleStopClick : handleStartClick}
             className="agent-selector__start-button"
-            disabled={isLoading || isSessionStarting}
+            disabled={isLoading}
             startIcon={
-              isSessionStarting ? (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="loading-spinner"
-                >
-                  <path
-                    d="M13.92 6.98667C13.7422 6.06222 13.3689 5.22667 12.8 4.48C12.2667 3.69778 11.5733 3.09333 10.72 2.66667C9.86667 2.24 8.96 2.02667 8 2.02667C7.04 2.02667 6.13333 2.24 5.28 2.66667C4.42667 3.09333 3.71556 3.69778 3.14667 4.48C2.61333 5.22667 2.25778 6.06222 2.08 6.98667H1.06667C1.24444 5.84889 1.65333 4.83556 2.29333 3.94667C2.96889 3.02222 3.80444 2.31111 4.8 1.81333C5.79556 1.28 6.86222 1.01333 8 1.01333C9.13778 1.01333 10.2044 1.28 11.2 1.81333C12.1956 2.31111 13.0133 3.02222 13.6533 3.94667C14.3289 4.83556 14.7556 5.84889 14.9333 6.98667H13.92Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              ) : isSessionActive ? (
+              isSessionStarting || isSessionActive ? (
                 <svg className="stop-icon" width="4" height="4" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M8.24 0L9 0.76V8.28L8.24 9H0.72L0 8.28V0.76L0.72 0H8.24ZM8.04 0.96H0.92V8.08H8.04V0.96Z"
@@ -272,13 +271,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               )
             }
           >
-            {isSessionStarting ? 'Starting Live Test...' : isSessionActive ? 'Stop Live Test' : 'Start Live Test'}
+            {isSessionStarting ? 'Stop' : isSessionActive ? 'Stop Live Test' : 'Start Live Test'}
           </Button>
         ) : (
           <SplitButton
             appearance="primary"
             size="small"
-            onClick={handleStartClick}
+            onClick={isSessionStarting ? handleStopClick : handleStartClick}
             onSelect={handleModeSelect}
             value={isLiveMode ? 'live' : 'simulate'}
             options={[
@@ -286,23 +285,9 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               { label: 'Live Test', value: 'live' }
             ]}
             className="agent-selector__start-button"
-            disabled={isLoading || isSessionStarting}
+            disabled={isLoading}
             startIcon={
-              isSessionStarting ? (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="loading-spinner"
-                >
-                  <path
-                    d="M13.92 6.98667C13.7422 6.06222 13.3689 5.22667 12.8 4.48C12.2667 3.69778 11.5733 3.09333 10.72 2.66667C9.86667 2.24 8.96 2.02667 8 2.02667C7.04 2.02667 6.13333 2.24 5.28 2.66667C4.42667 3.09333 3.71556 3.69778 3.14667 4.48C2.61333 5.22667 2.25778 6.06222 2.08 6.98667H1.06667C1.24444 5.84889 1.65333 4.83556 2.29333 3.94667C2.96889 3.02222 3.80444 2.31111 4.8 1.81333C5.79556 1.28 6.86222 1.01333 8 1.01333C9.13778 1.01333 10.2044 1.28 11.2 1.81333C12.1956 2.31111 13.0133 3.02222 13.6533 3.94667C14.3289 4.83556 14.7556 5.84889 14.9333 6.98667H13.92Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              ) : isSessionActive ? (
+              isSessionStarting || isSessionActive ? (
                 <svg className="stop-icon" width="4" height="4" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M8.24 0L9 0.76V8.28L8.24 9H0.72L0 8.28V0.76L0.72 0H8.24ZM8.04 0.96H0.92V8.08H8.04V0.96Z"
@@ -320,9 +305,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             }
           >
             {isSessionStarting
-              ? isLiveMode
-                ? 'Starting Live Test...'
-                : 'Starting Simulation...'
+              ? 'Stop'
               : isSessionActive
               ? isLiveMode
                 ? 'Stop Live Test'
