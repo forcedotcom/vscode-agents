@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import * as vscode from 'vscode';
+import * as path from 'path';
 import * as commands from './commands';
 import { Commands } from './enums/commands';
 import { CoreExtensionService } from './services/coreExtensionService';
@@ -158,69 +159,34 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
   // Shared function for selecting and running an agent
   const selectAndRunAgent = async () => {
-    const { Agent } = await import('@salesforce/agents');
     const channelService = CoreExtensionService.getChannelService();
 
     try {
-      // Check if there's already an agent selected in the dropdown
-      const currentAgentId = provider.getCurrentAgentId();
-      if (currentAgentId) {
-        // Restart the currently selected agent without showing the palette
-        await vscode.commands.executeCommand('sf.agent.combined.view.focus');
-        provider.selectAndStartAgent(currentAgentId);
-        return;
-      }
+      const availableAgents = await provider.getAgentsForCommandPalette();
+      const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
+      const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
 
-      // Discover local .agent files
-      const localAgents: Array<{ label: string; description: string; id: string }> = [];
-      try {
-        const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**');
-        for (const agentFile of agentFiles) {
-          const fileName = agentFile.fsPath.split('/').pop()?.replace('.agent', '') || 'Unknown';
-          const fileNameWithExt = agentFile.fsPath.split('/').pop() || 'Unknown';
-          localAgents.push({
-            label: fileName,
-            description: fileNameWithExt,
-            id: `local:${agentFile.fsPath}`
-          });
-        }
-      } catch (err) {
-        console.warn('Error discovering local .agent files:', err);
-      }
-
-      // Sort local agents alphabetically
-      localAgents.sort((a, b) => a.label.localeCompare(b.label));
-
-      // Get remote agents from org
-      const conn = await CoreExtensionService.getDefaultConnection();
-      const remoteAgents = await Agent.listRemote(conn as any);
-
-      // Filter to only agents with active BotVersions
-      const activeRemoteAgents = remoteAgents
-        ? remoteAgents
-            .filter(bot => {
-              return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-            })
-            .map(bot => ({
-              label: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-              description: bot.DeveloperName,
-              id: bot.Id
-            }))
-            .filter(agent => agent.id)
-            .sort((a, b) => a.label.localeCompare(b.label)) // Sort remote agents alphabetically
-        : [];
-
-      // Combine local and remote agents with group separators
       const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> = [];
 
-      if (localAgents.length > 0) {
+      if (scriptAgents.length > 0) {
         allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
-        allAgents.push(...localAgents);
+        allAgents.push(
+          ...scriptAgents.map(agent => ({
+            label: agent.name,
+            description: agent.filePath ? path.basename(agent.filePath) : undefined,
+            id: agent.id
+          }))
+        );
       }
 
-      if (activeRemoteAgents.length > 0) {
+      if (publishedAgents.length > 0) {
         allAgents.push({ label: 'Published', kind: vscode.QuickPickItemKind.Separator });
-        allAgents.push(...activeRemoteAgents);
+        allAgents.push(
+          ...publishedAgents.map(agent => ({
+            label: agent.name,
+            id: agent.id
+          }))
+        );
       }
 
       if (allAgents.length === 0) {
@@ -234,11 +200,27 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
       });
 
       if (selectedAgent && selectedAgent.id) {
+        // Store the preference so the dropdown adopts the selection if the webview refreshes
+        provider.setPreselectedAgentId(selectedAgent.id);
+
         // Reveal the Agentforce DX panel
         await vscode.commands.executeCommand('sf.agent.combined.view.focus');
 
-        // Select and start the agent in the webview
-        provider.selectAndStartAgent(selectedAgent.id);
+        const postSelectionMessage = () => {
+          if (provider.webviewView?.webview) {
+            provider.webviewView.webview.postMessage({
+              command: 'selectAgent',
+              data: { agentId: selectedAgent.id }
+            });
+          }
+        };
+
+        // If the webview already exists, update it immediately; otherwise try shortly after focus
+        if (provider.webviewView?.webview) {
+          postSelectionMessage();
+        } else {
+          setTimeout(postSelectionMessage, 300);
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

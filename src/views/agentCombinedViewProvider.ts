@@ -5,14 +5,30 @@ import { AgentPreview, Agent, AgentPreviewBase, readTranscriptEntries, AgentSour
 import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
+import type { ClientAppResult, ClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
 import { Lifecycle } from '@salesforce/core';
+import type { Connection } from '@salesforce/core';
 
 interface AgentMessage {
   type: string;
   message?: string;
   data?: unknown;
   body?: string;
+}
+
+interface AvailableAgent {
+  name: string;
+  id: string;
+  type: 'published' | 'script';
+  filePath?: string;
+}
+
+type ClientAppConnectionResult = { status: 'ready'; conn: Connection } | { status: 'handled' };
+
+interface ClientAppConnectionHandlers {
+  onNone?: (result: ClientAppResult) => Promise<ClientAppConnectionResult>;
+  onMultiple?: (result: ClientAppResult) => Promise<ClientAppConnectionResult>;
 }
 
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
@@ -273,8 +289,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Discover local .agent files in the workspace
    * This method scans the workspace for all .agent files and returns them
    */
-  private async discoverLocalAgents(): Promise<Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }>> {
-    const localAgents: Array<{ name: string; id: string; type: 'published' | 'script'; filePath: string }> = [];
+  private async discoverLocalAgents(): Promise<AvailableAgent[]> {
+    const localAgents: AvailableAgent[] = [];
 
     try {
       // Find all .agent files in the workspace
@@ -301,9 +317,108 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
 
     // Sort local agents alphabetically by name
-    localAgents.sort((a, b) => a.name.localeCompare(b.name));
+      localAgents.sort((a, b) => a.name.localeCompare(b.name));
 
     return localAgents;
+  }
+
+  /**
+   * Returns published agents that have active versions
+   */
+  private async getActiveRemoteAgents(conn: Connection): Promise<AvailableAgent[]> {
+    const remoteAgents = await Agent.listRemote(conn as any);
+    return remoteAgents
+      ? remoteAgents
+          .filter(bot => {
+            return bot.BotVersions?.records?.some(version => version.Status === 'Active');
+          })
+          .map(bot => ({
+            name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
+            id: bot.Id,
+            type: 'published' as const
+          }))
+          .filter(agent => agent.id)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : [];
+  }
+
+  /**
+   * Attempts to resolve a connection using a selected client app
+   */
+  private async resolveClientAppConnection(handlers?: ClientAppConnectionHandlers): Promise<ClientAppConnectionResult> {
+    if (this.selectedClientApp) {
+      const conn = await createConnectionWithClientApp(this.selectedClientApp);
+      return { status: 'ready', conn };
+    }
+
+    const clientAppResult = await getAvailableClientApps();
+
+    if (clientAppResult.type === 'none') {
+      if (handlers?.onNone) {
+        return handlers.onNone(clientAppResult);
+      }
+      return { status: 'handled' };
+    }
+
+    if (clientAppResult.type === 'multiple') {
+      if (handlers?.onMultiple) {
+        return handlers.onMultiple(clientAppResult);
+      }
+      return { status: 'handled' };
+    }
+
+    if (clientAppResult.type === 'single') {
+      this.selectedClientApp = clientAppResult.clientApps[0].name;
+      const conn = await createConnectionWithClientApp(this.selectedClientApp);
+      return { status: 'ready', conn };
+    }
+
+    const conn = await CoreExtensionService.getDefaultConnection();
+    return { status: 'ready', conn };
+  }
+
+  /**
+   * Builds the agent list used by the command palette quick pick
+   */
+  public async getAgentsForCommandPalette(): Promise<AvailableAgent[]> {
+    const localAgents = await this.discoverLocalAgents();
+
+    const connectionResult = await this.resolveClientAppConnection({
+      onNone: async () => {
+        // Mirror the dropdown behavior: silently fall back to local agents only.
+        return { status: 'handled' };
+      },
+      onMultiple: async result => {
+        type ClientAppPick = { label: string; description: string; app: ClientApp };
+        const picks: ClientAppPick[] = result.clientApps.map(app => ({
+          label: app.name,
+          description: app.clientId,
+          app
+        }));
+
+        const selection = await vscode.window.showQuickPick(picks, {
+          placeHolder: 'Select a client app to access published agents'
+        });
+
+        if (!selection) {
+          vscode.window.showInformationMessage(
+            'Agentforce DX: Client app selection cancelled. Showing Agent Script files only.'
+          );
+          return { status: 'handled' };
+        }
+
+        this.selectedClientApp = selection.app.name;
+        const conn = await createConnectionWithClientApp(this.selectedClientApp);
+        return { status: 'ready', conn };
+      }
+    });
+
+    if (connectionResult.status !== 'ready') {
+      return localAgents;
+    }
+
+    const remoteAgents = await this.getActiveRemoteAgents(connectionResult.conn);
+    return [...localAgents, ...remoteAgents];
   }
 
   public resolveWebviewView(
@@ -595,95 +710,61 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           }
         } else if (message.command === 'getAvailableAgents') {
-          // Always get local .agent files first (they don't require client app)
-          const localAgents = await this.discoverLocalAgents();
-
-          // First check client app requirements before getting remote agents
           try {
-            // If a client app has already been selected, use it directly and skip prompting
-            let conn;
-            if (this.selectedClientApp) {
-              conn = await createConnectionWithClientApp(this.selectedClientApp);
-            } else {
-              const clientAppResult = await getAvailableClientApps();
+            const localAgents = await this.discoverLocalAgents();
 
-              // Handle the three cases
-              if (clientAppResult.type === 'none') {
-                // Case 1: No client app available - still return local agents
-                webviewView.webview.postMessage({
-                  command: 'availableAgents',
-                  data: {
-                    agents: localAgents,
-                    selectedAgentId: this.preselectedAgentId
-                  }
-                });
-                webviewView.webview.postMessage({
-                  command: 'clientAppRequired',
-                  data: {
-                    message:
-                      'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
-                    username: clientAppResult.username,
-                    error: clientAppResult.error
-                  }
-                });
-                // Clear preselected ID after sending
-                if (this.preselectedAgentId) {
-                  this.preselectedAgentId = undefined;
+            const connectionResult = await this.resolveClientAppConnection({
+            onNone: async result => {
+              webviewView.webview.postMessage({
+                command: 'availableAgents',
+                data: {
+                  agents: localAgents,
+                  selectedAgentId: this.preselectedAgentId
                 }
-                return;
-              } else if (clientAppResult.type === 'multiple') {
-                // Case 3: Multiple client apps - still return local agents
-                webviewView.webview.postMessage({
-                  command: 'availableAgents',
-                  data: {
-                    agents: localAgents,
-                    selectedAgentId: this.preselectedAgentId
-                  }
-                });
-                webviewView.webview.postMessage({
-                  command: 'selectClientApp',
-                  data: {
-                    clientApps: clientAppResult.clientApps,
-                    username: clientAppResult.username
-                  }
-                });
-                // Clear preselected ID after sending
-                if (this.preselectedAgentId) {
-                  this.preselectedAgentId = undefined;
+              });
+              webviewView.webview.postMessage({
+                command: 'clientAppRequired',
+                data: {
+                  message:
+                    'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
+                  username: result.username,
+                  error: result.error
                 }
-                return;
-              } else if (clientAppResult.type === 'single') {
-                // Case 2: Single client app - use automatically
-                this.selectedClientApp = clientAppResult.clientApps[0].name;
-                conn = await createConnectionWithClientApp(this.selectedClientApp);
-              } else {
-                conn = await CoreExtensionService.getDefaultConnection();
+              });
+              if (this.preselectedAgentId) {
+                this.preselectedAgentId = undefined;
               }
+              return { status: 'handled' };
+            },
+            onMultiple: async result => {
+              webviewView.webview.postMessage({
+                command: 'availableAgents',
+                data: {
+                  agents: localAgents,
+                  selectedAgentId: this.preselectedAgentId
+                }
+              });
+              webviewView.webview.postMessage({
+                command: 'selectClientApp',
+                data: {
+                  clientApps: result.clientApps,
+                  username: result.username
+                }
+              });
+              if (this.preselectedAgentId) {
+                this.preselectedAgentId = undefined;
+              }
+              return { status: 'handled' };
+            }
+          });
+
+            if (connectionResult.status !== 'ready') {
+              return;
             }
 
-            // Get remote agents from org
-            const remoteAgents = await Agent.listRemote(conn as any);
+            const remoteAgents = await this.getActiveRemoteAgents(connectionResult.conn);
+            const allAgents = [...localAgents, ...remoteAgents];
 
-            // Filter to only agents with active BotVersions and map to the expected format
-            const activeRemoteAgents = remoteAgents
-              ? remoteAgents
-                  .filter(bot => {
-                    // Check if the bot has any active BotVersions
-                    return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-                  })
-                  .map(bot => ({
-                    name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                    id: bot.Id, // Use the Bot ID from org
-                    type: 'published' as const
-                  }))
-                  .filter(agent => agent.id) // Only include agents with valid IDs
-                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
-              : [];
-
-            // Combine local and remote agents
-            const allAgents = [...localAgents, ...activeRemoteAgents];
-
-            // Send the available agents with preselected agent if we have one
             webviewView.webview.postMessage({
               command: 'availableAgents',
               data: {
@@ -692,13 +773,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               }
             });
 
-            // Clear the preselected agent ID after sending it
             if (this.preselectedAgentId) {
               this.preselectedAgentId = undefined;
             }
           } catch (err) {
             console.error('Error getting available agents from org:', err);
-            // Return empty list if there's an error
             webviewView.webview.postMessage({
               command: 'availableAgents',
               data: []
@@ -772,37 +851,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             this.selectedClientApp = clientAppName;
 
-            // Now that we have a client app selected, create the connection
-            // and then refresh the available agents
             if (!this.selectedClientApp) {
               throw new Error('Client app not set');
             }
-            const conn = await createConnectionWithClientApp(this.selectedClientApp);
 
-            // Get local .agent files
+            const conn = await createConnectionWithClientApp(clientAppName);
             const localAgents = await this.discoverLocalAgents();
-
-            // Get remote agents from org
-            const remoteAgents = await Agent.listRemote(conn as any);
-
-            // Filter to only agents with active BotVersions and map to the expected format
-            const activeRemoteAgents = remoteAgents
-              ? remoteAgents
-                  .filter(bot => {
-                    // Check if the bot has any active BotVersions
-                    return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-                  })
-                  .map(bot => ({
-                    name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-                    id: bot.Id, // Use the Bot ID from org
-                    type: 'published' as const
-                  }))
-                  .filter(agent => agent.id) // Only include agents with valid IDs
-                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort remote agents alphabetically
-              : [];
-
-            // Combine local and remote agents
-            const allAgents = [...localAgents, ...activeRemoteAgents];
+            const remoteAgents = await this.getActiveRemoteAgents(conn);
+            const allAgents = [...localAgents, ...remoteAgents];
 
             // Notify the UI that client app is ready so it can clear selection UI
             webviewView.webview.postMessage({ command: 'clientAppReady' });
