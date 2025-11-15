@@ -69,6 +69,7 @@ const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
             size="small"
             onClick={onGoToPreview}
             startIcon={sendIcon}
+            className="tracer-send-icon"
           >
             Send a Message
           </Button>

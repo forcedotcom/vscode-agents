@@ -49,3 +49,9 @@ body.vscode-high-contrast .tracer-placeholder-icon {
   width: 10px;
   height: 10px;
 }
+
+/* Larger send icon specifically */
+.tracer-placeholder .tracer-send-icon .vscode-button__start svg {
+  width: 16px;
+  height: 16px;
+}
