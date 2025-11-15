@@ -19,7 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "nga",
+    "@salesforce/agents": "0.18.3-nga.4 ",
     "@salesforce/core": "^8.23.2",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",
@@ -196,6 +196,11 @@
           "group": "agent@1"
         },
         {
+          "command": "salesforcedx-vscode-agents.publishAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
+        {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
           "group": "agent@2"
@@ -219,6 +224,11 @@
         },
         {
           "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/",
+          "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.publishAgent",
           "when": "resourceFilename =~ /.*\\.agent$/",
           "group": "agent@1"
         },
@@ -250,6 +260,10 @@
         },
         {
           "command": "salesforcedx-vscode-agents.previewAgent",
+          "when": "resourceFilename =~ /.*\\.agent$/"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.publishAgent",
           "when": "resourceFilename =~ /.*\\.agent$/"
         },
         {
@@ -353,6 +367,10 @@
       {
         "command": "salesforcedx-vscode-agents.previewAgent",
         "title": "AFDX: Preview This Agent"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.publishAgent",
+        "title": "AFDX: Publish This Agent"
       },
       {
         "command": "sf.agent.test.view.goToTestResults",
