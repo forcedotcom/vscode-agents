@@ -531,6 +531,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
           sessionActive={false}
           isLoading={isLoading}
           messages={messages}
+          isLiveMode={isLiveMode}
         />
       </div>
     );
@@ -546,6 +547,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
         sessionActive={agentConnected}
         isLoading={isLoading}
         messages={messages}
+        isLiveMode={isLiveMode}
       />
     </div>
   );

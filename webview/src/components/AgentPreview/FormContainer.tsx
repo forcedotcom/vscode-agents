@@ -19,17 +19,19 @@ interface FormContainerProps {
   sessionActive: boolean; // Now represents agent connection status
   isLoading: boolean;
   messages?: Message[];
+  isLiveMode?: boolean;
 }
 
 const FormContainer = forwardRef<ChatInputRef, FormContainerProps>(({
   onSendMessage,
   sessionActive,
   isLoading: _isLoading, // Renamed to indicate it's intentionally unused
-  messages = []
+  messages = [],
+  isLiveMode = false
 }, ref) => {
   return (
     <div className="form-container">
-      <ChatInput ref={ref} onSendMessage={onSendMessage} disabled={!sessionActive} messages={messages} />
+      <ChatInput ref={ref} onSendMessage={onSendMessage} disabled={!sessionActive} messages={messages} isLiveMode={isLiveMode} />
     </div>
   );
 });

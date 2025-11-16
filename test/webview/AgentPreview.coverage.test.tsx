@@ -306,7 +306,7 @@ describe('AgentPreview - Coverage Tests', () => {
       renderComponent();
 
       // The textarea should be disabled when agent is not connected
-      const textarea = screen.getByPlaceholderText(/Select to an agent to get started/i);
+      const textarea = screen.getByPlaceholderText(/Start the simulation to chat/i);
       expect(textarea).toBeDisabled();
 
       // Message should not be sent since agent is not connected
