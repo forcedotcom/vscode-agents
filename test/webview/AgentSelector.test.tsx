@@ -506,6 +506,35 @@ describe('AgentSelector', () => {
       expect(vscodeApi.startSession).toHaveBeenCalledWith('script1', expect.objectContaining({ isLiveMode: false }));
     });
 
+    it('should stop script agent when session is starting', async () => {
+      const agents: AgentInfo[] = [
+        { id: 'script1', name: 'ScriptAgent', type: 'script' }
+      ];
+
+      render(
+        <AgentSelector
+          selectedAgent="script1"
+          onAgentChange={jest.fn()}
+          isSessionActive={false}
+          isSessionStarting={true}
+          initialLiveMode={false}
+        />
+      );
+
+      const availableAgentsHandler = messageHandlers.get('availableAgents');
+      availableAgentsHandler!({ agents });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stop Simulation/i)).toBeInTheDocument();
+      });
+
+      const stopButton = screen.getByText(/Stop Simulation/i);
+      await userEvent.click(stopButton);
+
+      expect(vscodeApi.endSession).toHaveBeenCalled();
+      expect(vscodeApi.startSession).not.toHaveBeenCalled();
+    });
+
     it('should stop session when stop button clicked', async () => {
       const agents: AgentInfo[] = [
         { id: 'pub1', name: 'PublishedAgent', type: 'published' }
@@ -524,6 +553,29 @@ describe('AgentSelector', () => {
       await userEvent.click(stopButton);
 
       expect(vscodeApi.endSession).toHaveBeenCalled();
+    });
+
+    it('should stop session when starting', async () => {
+      const agents: AgentInfo[] = [
+        { id: 'pub1', name: 'PublishedAgent', type: 'published' }
+      ];
+
+      render(
+        <AgentSelector selectedAgent="pub1" onAgentChange={jest.fn()} isSessionActive={false} isSessionStarting={true} />
+      );
+
+      const availableAgentsHandler = messageHandlers.get('availableAgents');
+      availableAgentsHandler!({ agents });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stop Live Test/i)).toBeInTheDocument();
+      });
+
+      const stopButton = screen.getByText(/Stop Live Test/i);
+      await userEvent.click(stopButton);
+
+      expect(vscodeApi.endSession).toHaveBeenCalled();
+      expect(vscodeApi.startSession).not.toHaveBeenCalled();
     });
 
     it('should change mode from simulate to live for script agent', async () => {
@@ -671,6 +723,7 @@ describe('AgentSelector', () => {
       const params = {
         selectedAgent: '',
         isSessionActive: false,
+        isSessionStarting: false,
         isLiveMode: false,
         endSession: jest.fn(),
         startSession: jest.fn()
@@ -686,6 +739,23 @@ describe('AgentSelector', () => {
       const params = {
         selectedAgent: 'agent1',
         isSessionActive: true,
+        isSessionStarting: false,
+        isLiveMode: true,
+        endSession: jest.fn(),
+        startSession: jest.fn()
+      };
+
+      handleStartClickImpl(params);
+
+      expect(params.endSession).toHaveBeenCalled();
+      expect(params.startSession).not.toHaveBeenCalled();
+    });
+
+    it('ends the current session when starting', () => {
+      const params = {
+        selectedAgent: 'agent1',
+        isSessionActive: false,
+        isSessionStarting: true,
         isLiveMode: true,
         endSession: jest.fn(),
         startSession: jest.fn()
@@ -701,6 +771,7 @@ describe('AgentSelector', () => {
       const params = {
         selectedAgent: 'agent1',
         isSessionActive: false,
+        isSessionStarting: false,
         isLiveMode: false,
         endSession: jest.fn(),
         startSession: jest.fn()
