@@ -138,6 +138,11 @@
           "group": "navigation@0"
         },
         {
+          "command": "sf.agent.combined.view.stop",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionStarting",
+          "group": "navigation@0"
+        },
+        {
           "command": "sf.agent.combined.view.debug",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode && agentforceDX:isLiveMode",
           "group": "navigation@1"
