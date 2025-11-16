@@ -349,7 +349,18 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
       expect((provider as any).currentAgentId).toBeUndefined();
       expect((provider as any).currentAgentName).toBeUndefined();
 
-      // Verify message was sent
+      // Verify placeholder was shown and list refresh triggered
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId: '' }
+      });
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clearMessages'
+      });
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'noHistoryFound',
+        data: { agentId: 'refresh-placeholder' }
+      });
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'refreshAgents'
       });

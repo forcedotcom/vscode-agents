@@ -31,6 +31,13 @@ interface ClientAppConnectionHandlers {
   onMultiple?: (result: ClientAppResult) => Promise<ClientAppConnectionResult>;
 }
 
+class SessionStartCancelledError extends Error {
+  constructor() {
+    super('Agent session start was cancelled');
+    this.name = 'SessionStartCancelledError';
+  }
+}
+
 export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sf.agent.combined.view';
   public webviewView?: vscode.WebviewView;
@@ -47,6 +54,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private preselectedAgentId?: string;
   private latestPlanId?: string;
   private isLiveMode = false;
+  private sessionStartOperationId = 0;
+  private pendingStartAgentId?: string;
+  private pendingStartAgentSource?: AgentSource;
 
   private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
 
@@ -71,6 +81,34 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async setSessionStarting(starting: boolean): Promise<void> {
     this.sessionStarting = starting;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', starting);
+  }
+
+  private beginSessionStart(): number {
+    return ++this.sessionStartOperationId;
+  }
+
+  private createSessionStartGuards(startId: number): {
+    ensureActive: () => void;
+    isActive: () => boolean;
+  } {
+    return {
+      ensureActive: () => this.ensureSessionStartNotCancelled(startId),
+      isActive: () => this.isSessionStartActive(startId)
+    };
+  }
+
+  private isSessionStartActive(startId: number): boolean {
+    return this.sessionStartOperationId === startId;
+  }
+
+  private ensureSessionStartNotCancelled(startId: number): void {
+    if (this.sessionStartOperationId !== startId) {
+      throw new SessionStartCancelledError();
+    }
+  }
+
+  private cancelPendingSessionStart(): void {
+    this.sessionStartOperationId += 1;
   }
 
   /**
@@ -150,6 +188,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Ends the current agent session
    */
   public async endSession(): Promise<void> {
+    this.cancelPendingSessionStart();
+    const sessionWasStarting = this.sessionStarting;
+
     if (this.agentPreview && this.sessionId) {
       const agentName = this.currentAgentName;
       // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
@@ -165,6 +206,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.latestPlanId = undefined;
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
+      await this.setSessionStarting(false);
       await this.setDebugMode(false);
       await this.setLiveMode(false);
 
@@ -179,7 +221,25 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           data: {}
         });
       }
+    } else if (sessionWasStarting) {
+      await this.setSessionActive(false);
+      await this.setSessionStarting(false);
+
+      if (this.webviewView) {
+        this.webviewView.webview.postMessage({
+          command: 'sessionEnded',
+          data: {}
+        });
+      }
+
     }
+
+    if (sessionWasStarting) {
+      await this.restoreViewAfterCancelledStart();
+    }
+
+    this.pendingStartAgentId = undefined;
+    this.pendingStartAgentSource = undefined;
   }
 
   public setPreselectedAgentId(agentId: string) {
@@ -196,6 +256,24 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.currentAgentId = undefined;
       this.currentAgentName = undefined;
       await this.setAgentSelected(false);
+      await this.setSessionActive(false);
+      await this.setSessionStarting(false);
+      await this.setDebugMode(false);
+      this.pendingStartAgentId = undefined;
+      this.pendingStartAgentSource = undefined;
+
+      // Reset the webview state to the default placeholder
+      this.webviewView.webview.postMessage({
+        command: 'selectAgent',
+        data: { agentId: '' }
+      });
+      this.webviewView.webview.postMessage({
+        command: 'clearMessages'
+      });
+      this.webviewView.webview.postMessage({
+        command: 'noHistoryFound',
+        data: { agentId: 'refresh-placeholder' }
+      });
 
       // Send a message to the webview to trigger getAvailableAgents
       this.webviewView.webview.postMessage({
@@ -239,7 +317,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Load conversation history for an agent and send it to the webview
    * Uses readTranscriptEntries from @salesforce/agents library
    */
-  private async loadAndSendConversationHistory(agentId: string, agentSource: AgentSource, webviewView: vscode.WebviewView): Promise<void> {
+  private async loadAndSendConversationHistory(
+    agentId: string,
+    agentSource: AgentSource,
+    webviewView: vscode.WebviewView
+  ): Promise<boolean> {
     try {
       let agentName: string;
 
@@ -274,6 +356,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             command: 'conversationHistory',
             data: { messages: historyMessages }
           });
+          return true;
         }
       }
     } catch (err) {
@@ -282,6 +365,49 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       if (err instanceof Error) {
         console.error('Error stack:', err.stack);
       }
+    }
+
+    return false;
+  }
+
+  private async restoreViewAfterCancelledStart(): Promise<void> {
+    if (!this.webviewView) {
+      return;
+    }
+
+    const agentId = this.pendingStartAgentId ?? this.currentAgentId;
+    if (!agentId) {
+      return;
+    }
+
+    const agentSource = this.pendingStartAgentSource ?? this.getAgentSource(agentId);
+    await this.showHistoryOrPlaceholder(agentId, agentSource, this.webviewView);
+  }
+
+  private async showHistoryOrPlaceholder(
+    agentId: string,
+    agentSource: AgentSource,
+    webviewView: vscode.WebviewView
+  ): Promise<void> {
+    webviewView.webview.postMessage({
+      command: 'clearMessages'
+    });
+
+    try {
+      const hasHistory = await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
+
+      if (!hasHistory) {
+        webviewView.webview.postMessage({
+          command: 'noHistoryFound',
+          data: { agentId }
+        });
+      }
+    } catch (err) {
+      console.error('Error loading history:', err);
+      webviewView.webview.postMessage({
+        command: 'noHistoryFound',
+        data: { agentId }
+      });
     }
   }
 
@@ -436,17 +562,22 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async message => {
       try {
         if (message.command === 'startSession') {
-          await this.setSessionStarting(true);
+          const sessionStartId = this.beginSessionStart();
+          const { ensureActive, isActive } = this.createSessionStartGuards(sessionStartId);
 
-          // Clear any previous error messages before starting a new session
-          webviewView.webview.postMessage({
-            command: 'clearMessages'
-          });
+          try {
+            await this.setSessionStarting(true);
+            ensureActive();
 
-          webviewView.webview.postMessage({
-            command: 'sessionStarting',
-            data: { message: 'Starting session...' }
-          });
+            // Clear any previous error messages before starting a new session
+            webviewView.webview.postMessage({
+              command: 'clearMessages'
+            });
+
+            webviewView.webview.postMessage({
+              command: 'sessionStarting',
+              data: { message: 'Starting session...' }
+            });
 
           // End existing session if one exists
           if (this.agentPreview && this.sessionId) {
@@ -457,6 +588,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               } else {
                 await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
               }
+              ensureActive();
             } catch (err) {
               console.warn('Error ending previous session:', err);
             }
@@ -469,6 +601,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const conn = this.selectedClientApp
             ? await createConnectionWithClientApp(this.selectedClientApp)
             : await CoreExtensionService.getDefaultConnection();
+          ensureActive();
 
           // Extract agentId from the message data and pass it as botId
           const agentId = this.preselectedAgentId || message.data?.agentId;
@@ -479,6 +612,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Determine agent source type using the library's AgentSource enum
           const agentSource = this.getAgentSource(agentId);
+          this.pendingStartAgentId = agentId;
+          this.pendingStartAgentSource = agentSource;
 
           if (agentSource === AgentSource.SCRIPT) {
             // Handle script agent (.agent file)
@@ -491,6 +626,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // Determine mode before setting up listeners
             const isLiveMode = message.data?.isLiveMode ?? false;
             await this.setLiveMode(isLiveMode);
+            ensureActive();
 
             // Set up lifecycle event listeners for compilation progress
             // Remove all existing listeners for these events to prevent duplicates
@@ -500,6 +636,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Listen for compilation events
             lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
+              if (!isActive()) {
+                return;
+              }
               if (data.error) {
                 webviewView.webview.postMessage({
                   command: 'compilationError',
@@ -515,6 +654,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Listen for simulation starting event
             lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
+              if (!isActive()) {
+                return;
+              }
               const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
               webviewView.webview.postMessage({
                 command: 'simulationStarting',
@@ -522,6 +664,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               });
 
               // Show disclaimer for agent preview (script agents only)
+              if (!isActive()) {
+                return;
+              }
               webviewView.webview.postMessage({
                 command: 'previewDisclaimer',
                 data: {
@@ -550,12 +695,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Published agents are always in live mode
             await this.setLiveMode(true);
+            ensureActive();
 
             // Type cast needed due to local dependency setup with separate @salesforce/core instances
             this.agentPreview = new AgentPreview(conn as any, agentId);
 
             // Get agent name for notifications
             const remoteAgents = await Agent.listRemote(conn as any);
+            ensureActive();
             const agent = remoteAgents?.find(bot => bot.Id === agentId);
             this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
             this.currentAgentId = agentId;
@@ -566,11 +713,18 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           }
 
+          if (!this.agentPreview) {
+            throw new Error('Failed to initialize agent preview.');
+          }
+
           // Start the session - this will trigger compilation for local agents
           const session = await this.agentPreview.start();
+          ensureActive();
           this.sessionId = session.sessionId;
           await this.setSessionActive(true);
+          ensureActive();
           await this.setSessionStarting(false);
+          ensureActive();
 
           // Show notification
           vscode.window.showInformationMessage(`Agentforce DX: Session started with ${this.currentAgentName}`);
@@ -580,18 +734,26 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
-          webviewView.webview.postMessage({
-            command: 'sessionStarted',
-            data: agentMessage
-              ? {
-                  content:
-                    (agentMessage as { message?: string}).message ||
-                    (agentMessage as { data?:string  }).data ||
-                    (agentMessage as {  body?: string }).body ||
-                    "Hi! I'm ready to help. What can I do for you?"
-                }
-              : { content: "Hi! I'm ready to help. What can I do for you?" }
-          });
+            webviewView.webview.postMessage({
+              command: 'sessionStarted',
+              data: agentMessage
+                ? {
+                    content:
+                      (agentMessage as { message?: string }).message ||
+                      (agentMessage as { data?: string }).data ||
+                      (agentMessage as { body?: string }).body ||
+                      "Hi! I'm ready to help. What can I do for you?"
+                  }
+                : { content: "Hi! I'm ready to help. What can I do for you?" }
+            });
+            this.pendingStartAgentId = undefined;
+            this.pendingStartAgentSource = undefined;
+          } catch (err) {
+            if (err instanceof SessionStartCancelledError || !isActive()) {
+              return;
+            }
+            throw err;
+          }
         } else if (message.command === 'setApexDebugging') {
           await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
@@ -670,44 +832,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // If no history: Send noHistoryFound signal so webview can show placeholder
           const agentId = message.data?.agentId;
           if (agentId && typeof agentId === 'string') {
-            // First, clear any existing messages in the panel
-            webviewView.webview.postMessage({
-              command: 'clearMessages'
-            });
-
             const agentSource = this.getAgentSource(agentId);
-
-            // Check if history exists
-            try {
-              let agentName: string;
-              if (agentSource === AgentSource.SCRIPT) {
-                const filePath = this.getLocalAgentFilePath(agentId);
-                agentName = path.basename(filePath);
-              } else {
-                agentName = agentId;
-              }
-
-              const transcriptEntries = await readTranscriptEntries(agentName);
-              const hasHistory = transcriptEntries && transcriptEntries.length > 0;
-
-              if (hasHistory) {
-                // History exists - send it to webview (user will manually start session)
-                await this.loadAndSendConversationHistory(agentId, agentSource, webviewView);
-              } else {
-                // No history - signal webview to show placeholder
-                webviewView.webview.postMessage({
-                  command: 'noHistoryFound',
-                  data: { agentId }
-                });
-              }
-            } catch (err) {
-              // Error loading history - treat as no history, show placeholder
-              console.error('Error checking history:', err);
-              webviewView.webview.postMessage({
-                command: 'noHistoryFound',
-                data: { agentId }
-              });
-            }
+            await this.showHistoryOrPlaceholder(agentId, agentSource, webviewView);
           }
         } else if (message.command === 'getAvailableAgents') {
           try {
@@ -926,6 +1052,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        this.pendingStartAgentId = undefined;
+        this.pendingStartAgentSource = undefined;
 
         // Clean up session state if connection failed
         // This ensures UI doesn't show as "connected" when the session actually failed

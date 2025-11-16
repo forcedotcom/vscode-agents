@@ -139,7 +139,7 @@
         },
         {
           "command": "sf.agent.combined.view.stop",
-          "when": "view == sf.agent.combined.view && agentforceDX:sessionStarting",
+          "when": "view == sf.agent.combined.view && (agentforceDX:sessionStarting || agentforceDX:sessionActive)",
           "group": "navigation@0"
         },
         {
