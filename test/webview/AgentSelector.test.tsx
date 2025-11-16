@@ -606,7 +606,7 @@ describe('AgentSelector', () => {
       });
     });
 
-    it('should call endSession when mode changed during active session', async () => {
+    it('should hide mode selector when session is active', async () => {
       const agents: AgentInfo[] = [
         { id: 'script1', name: 'ScriptAgent', type: 'script' }
       ];
@@ -618,53 +618,24 @@ describe('AgentSelector', () => {
 
       await waitFor(() => {
         const comboboxes = screen.getAllByRole('combobox');
-        expect(comboboxes.length).toBe(2);
+        expect(comboboxes.length).toBe(1);
       });
-
-      const comboboxes = screen.getAllByRole('combobox');
-      const modeSelector = comboboxes[1];
-
-      // Change mode during active session
-      await userEvent.selectOptions(modeSelector, 'live');
-
-      // Should call endSession to restart with new mode
-      expect(vscodeApi.endSession).toHaveBeenCalled();
     });
 
-    it('should restart session with new mode after endSession completes', async () => {
+    it('should hide mode selector when session is starting', async () => {
       const agents: AgentInfo[] = [
         { id: 'script1', name: 'ScriptAgent', type: 'script' }
       ];
 
-      render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionActive={true} />);
+      render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionStarting={true} />);
 
       const availableAgentsHandler = messageHandlers.get('availableAgents');
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
         const comboboxes = screen.getAllByRole('combobox');
-        expect(comboboxes.length).toBe(2);
+        expect(comboboxes.length).toBe(1);
       });
-
-      const comboboxes = screen.getAllByRole('combobox');
-      const modeSelector = comboboxes[1];
-
-      // Mock endSession to resolve
-      vscodeApi.endSession = jest.fn().mockResolvedValue(undefined);
-      vscodeApi.startSession = jest.fn();
-
-      // Change mode during active session
-      await userEvent.selectOptions(modeSelector, 'live');
-
-      // Wait for async operations to complete
-      await waitFor(() => {
-        expect(vscodeApi.endSession).toHaveBeenCalled();
-      });
-
-      // Wait for timeout and startSession call
-      await waitFor(() => {
-        expect(vscodeApi.startSession).toHaveBeenCalledWith('script1', { isLiveMode: true });
-      }, { timeout: 200 });
     });
 
     it('should not render start button when no agent is selected', async () => {

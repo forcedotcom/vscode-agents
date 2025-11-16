@@ -270,6 +270,17 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           >
             {shouldShowStop ? 'Stop Live Test' : 'Start Live Test'}
           </Button>
+        ) : shouldShowStop ? (
+          <Button
+            appearance="primary"
+            size="small"
+            onClick={handleStartClick}
+            className="agent-selector__start-button"
+            disabled={isLoading}
+            startIcon={stopIcon}
+          >
+            {isLiveMode ? 'Stop Live Test' : 'Stop Simulation'}
+          </Button>
         ) : (
           <SplitButton
             appearance="primary"
