@@ -1232,6 +1232,16 @@ describe('AgentCombinedViewProvider', () => {
         'agentforceDX:agentSelected',
         true
       );
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:canResetAgentView',
+        false
+      );
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:sessionError',
+        false
+      );
     });
 
     it('should ignore executeCommand messages without commandId', async () => {

@@ -1148,14 +1148,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'setSelectedAgentId') {
           // Update the currently selected agent ID from the dropdown
-          const agentId = message.data?.agentId;
-          if (agentId && typeof agentId === 'string' && agentId !== '') {
-            this.currentAgentId = agentId;
-            await this.setAgentSelected(true);
-          } else {
-            this.currentAgentId = undefined;
-            await this.setAgentSelected(false);
-          }
+        const agentId = message.data?.agentId;
+        if (agentId && typeof agentId === 'string' && agentId !== '') {
+          this.currentAgentId = agentId;
+          await this.setAgentSelected(true);
+          await this.setResetAgentViewAvailable(false);
+          await this.setSessionErrorState(false);
+        } else {
+          this.currentAgentId = undefined;
+          await this.setAgentSelected(false);
+        }
         } else if (message.command === 'setLiveMode') {
           // Update and persist the live mode selection
           const isLiveMode = message.data?.isLiveMode;
