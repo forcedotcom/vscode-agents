@@ -105,7 +105,7 @@ export const registerValidateAgentCommand = () => {
           // Show error details in output
           channelService.appendLine('❌ Agent validation failed!');
           channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-          channelService.appendLine(`Error: ${error.message}`);
+          channelService.appendLine(error.message || 'Something went wrong');
 
           // Update progress to show error
           progress.report({ message: 'Failed' });

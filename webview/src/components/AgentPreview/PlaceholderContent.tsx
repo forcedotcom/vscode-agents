@@ -1,20 +1,25 @@
 import React from 'react';
 import { vscodeApi } from '../../services/vscodeApi.js';
+import { Button } from '../shared/Button.js';
 import './PlaceholderContent.css';
 
 const PlaceholderContent: React.FC = () => {
   const handleSelectAgent = () => {
-    // Trigger the same command as the play-circle icon
-    vscodeApi.executeCommand('sf.agent.combined.view.run');
+    // Open the agent picker to select and start an agent
+    vscodeApi.executeCommand('sf.agent.selectAndRun');
   };
 
   return (
     <div className="placeholder-content">
       <div className="placeholder-icon"></div>
-      <p>Agent Preview lets you see what an agent can do before deploying it. Simulate conversations from your IDE.</p>
-      <button className="select-agent-button" onClick={handleSelectAgent}>
-        Select an Agent to Get Started
-      </button>
+      <p>Agentforce DX lets you build and test agents in your IDE, so you can iterate quickly before deployment.</p>
+      <Button
+        appearance="primary"
+        size="small"
+        onClick={handleSelectAgent}
+      >
+        Select Agent
+      </Button>
     </div>
   );
 };

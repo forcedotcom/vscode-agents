@@ -34,7 +34,10 @@ const mockVscodeApi = {
   onClientAppReady: jest.fn(),
   executeCommand: jest.fn(),
   setSelectedAgentId: jest.fn(),
-  loadAgentHistory: jest.fn()
+  loadAgentHistory: jest.fn(),
+  setLiveMode: jest.fn(),
+  getInitialLiveMode: jest.fn(),
+  sendConversationExport: jest.fn()
 };
 
 jest.mock('../../webview/src/services/vscodeApi', () => ({
@@ -43,13 +46,17 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
 
 // Mock components
 jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
-  return function MockAgentPreview({ selectedAgentId }: any) {
+  return React.forwardRef(function MockAgentPreview(
+    { selectedAgentId, isSessionTransitioning }: any,
+    ref: any
+  ) {
     return (
-      <div data-testid="agent-preview">
+      <div data-testid="agent-preview" ref={ref}>
         <div data-testid="selected-agent">{selectedAgentId || 'none'}</div>
+        <div data-testid="transition-flag">{isSessionTransitioning ? 'transitioning' : 'idle'}</div>
       </div>
     );
-  };
+  });
 });
 
 jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
@@ -59,9 +66,9 @@ jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
 });
 
 jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
-  return function MockAgentSelector({ onClientAppRequired, onClientAppSelection }: any) {
+  return function MockAgentSelector({ onClientAppRequired, onClientAppSelection, onLiveModeChange }: any) {
     // Expose callbacks for testing
-    (window as any).testCallbacks = { onClientAppRequired, onClientAppSelection };
+    (window as any).testCallbacks = { onClientAppRequired, onClientAppSelection, onLiveModeChange };
     return <div data-testid="agent-selector">Selector</div>;
   };
 });
@@ -113,6 +120,28 @@ describe('App Coverage Tests', () => {
       handler(data);
     }
   };
+
+  describe('Coverage: Live mode handler', () => {
+    it('should persist live mode changes from AgentSelector', async () => {
+      render(<App />);
+
+      await waitFor(() => {
+        expect((window as any).testCallbacks?.onLiveModeChange).toBeDefined();
+      });
+
+      act(() => {
+        (window as any).testCallbacks.onLiveModeChange(true);
+      });
+
+      expect(mockVscodeApi.setLiveMode).toHaveBeenCalledWith(true);
+
+      act(() => {
+        (window as any).testCallbacks.onLiveModeChange(false);
+      });
+
+      expect(mockVscodeApi.setLiveMode).toHaveBeenCalledWith(false);
+    });
+  });
 
   describe('Coverage: Session Promise Resolvers', () => {
     it('should hit line 94: resolver(true) on sessionStarted with pending resolver', async () => {
@@ -300,5 +329,97 @@ describe('App Coverage Tests', () => {
       expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
     });
 
+  });
+
+  describe('Coverage: Force restart session flows', () => {
+    it('resolves pending start promise when force restart succeeds', async () => {
+      render(<App />);
+
+      act(() => {
+        triggerMessage('selectAgent', { agentId: 'agent1', forceRestart: true });
+      });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent1', { isLiveMode: false });
+      });
+
+      act(() => {
+        triggerMessage('sessionStarted', {});
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+    });
+
+    it('rejects pending start promise when force restart errors before start completes', async () => {
+      render(<App />);
+
+      await waitFor(() => {
+        expect((window as any).__agentforceDXAppTestHooks).toBeDefined();
+      });
+
+      act(() => {
+        triggerMessage('selectAgent', { agentId: 'agent1', forceRestart: true });
+      });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.startSession).toHaveBeenCalledTimes(1);
+      });
+
+      await waitFor(() => {
+        expect((window as any).__agentforceDXAppTestHooks.getPendingStartResolvers()).toBeGreaterThan(0);
+      });
+
+      act(() => {
+        triggerMessage('error', { message: 'Force restart failed' });
+      });
+
+      await waitFor(() => {
+        expect((window as any).__agentforceDXAppTestHooks.getPendingStartResolvers()).toBe(0);
+      });
+
+      expect((window as any).__agentforceDXAppTestHooks.getDisplayedAgentId()).toBe('');
+    });
+  });
+
+  describe('Coverage: waitForSessionEnd helpers', () => {
+    it('immediately resolves when session is already inactive', async () => {
+      render(<App />);
+
+      await waitFor(() => {
+        expect((window as any).__agentforceDXAppTestHooks).toBeDefined();
+      });
+
+      const hooks = (window as any).__agentforceDXAppTestHooks;
+      hooks.setSessionActiveFlag(false);
+      await expect(hooks.waitForSessionEnd()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('Coverage: session queue catch handling', () => {
+    it('logs and resets transition state when session management throws', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      mockVscodeApi.startSession.mockImplementation(() => {
+        throw new Error('start failure');
+      });
+
+      render(<App />);
+
+      act(() => {
+        triggerMessage('selectAgent', { agentId: 'agent1', forceRestart: true });
+      });
+
+      await waitFor(() => {
+        expect(mockVscodeApi.startSession).toHaveBeenCalledTimes(1);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('transition-flag').textContent).toBe('idle');
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error managing agent session:', expect.any(Error));
+      consoleErrorSpy.mockRestore();
+    });
   });
 });

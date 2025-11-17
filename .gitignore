@@ -3,6 +3,7 @@
 .cursor
 .idea/
 .sfdx/
+.gitattributes
 *.vsix
 **/node_modules/
 /coverage

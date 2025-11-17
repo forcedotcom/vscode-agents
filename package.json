@@ -61,7 +61,6 @@
     "compile": "npm run build",
     "compile:clean": "tsc --build --clean",
     "reinstall": "git checkout -- package-lock.json && git clean -xfd && npm install",
-    "watch": "tsc --build --watch",
     "prettier": "prettier --write .",
     "prettier-check": "prettier --check .",
     "lint": "eslint . --ext .ts",
@@ -92,6 +91,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show generated data in test results output"
+        },
+        "salesforce.agentforceDX.tracerPayload": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "URI or file path to mock JSON payload for tracer. When set, this file will be loaded instead of fetching real trace data from the server."
         }
       }
     },
@@ -124,23 +128,33 @@
     "menus": {
       "view/title": [
         {
-          "command": "sf.agent.combined.view.run",
-          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && agentforceDX:agentSelected",
-          "group": "navigation@2"
+          "command": "sf.agent.combined.view.exportConversation",
+          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
+          "group": "navigation@-1"
+        },
+        {
+          "command": "sf.agent.combined.view.refreshAgents",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && !agentforceDX:canResetAgentView",
+          "group": "navigation@0"
+        },
+        {
+          "command": "sf.agent.combined.view.resetAgentView",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && agentforceDX:canResetAgentView",
+          "group": "navigation@0"
         },
         {
           "command": "sf.agent.combined.view.refresh",
-          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive",
-          "group": "navigation@2"
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected",
+          "group": "navigation@0"
         },
         {
           "command": "sf.agent.combined.view.debug",
-          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:debugMode && agentforceDX:isLiveMode",
           "group": "navigation@1"
         },
         {
           "command": "sf.agent.combined.view.debugStop",
-          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:debugMode",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && agentforceDX:debugMode && agentforceDX:isLiveMode",
           "group": "navigation@1"
         },
         {
@@ -332,33 +346,60 @@
     ],
     "commands": [
       {
-        "command": "sf.agent.combined.view.run",
-        "title": "Run Agent",
-        "icon": "$(play-circle)"
+        "command": "sf.agent.focusView",
+        "title": "AFDX: Focus on Agentforce DX View"
+      },
+      {
+        "command": "sf.agent.focusTestView",
+        "title": "AFDX: Focus on Agent Tests View"
+      },
+      {
+        "command": "sf.agent.startAgent",
+        "title": "AFDX: Start Agent",
+        "enablement": "!agentforceDX:sessionActive && !agentforceDX:sessionStarting"
       },
       {
         "command": "sf.agent.selectAndRun",
-        "title": "Agentforce DX: Select an Agent to Run"
+        "title": "AFDX: Select Agent"
       },
       {
         "command": "sf.agent.combined.view.stop",
-        "title": "Stop Agent",
-        "icon": "$(stop-circle)"
+        "title": "AFDX: Stop Agent",
+        "icon": "$(stop-circle)",
+        "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
         "command": "sf.agent.combined.view.refresh",
-        "title": "Restart Agent",
+        "title": "AFDX: Restart Agent",
+        "icon": "$(debug-rerun)",
+        "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
+      },
+      {
+        "command": "sf.agent.combined.view.exportConversation",
+        "title": "AFDX: Download Conversation",
+        "icon": "$(arrow-circle-down)"
+      },
+      {
+        "command": "sf.agent.combined.view.refreshAgents",
+        "title": "AFDX: Refresh Agent List",
         "icon": "$(refresh)"
       },
       {
+        "command": "sf.agent.combined.view.resetAgentView",
+        "title": "AFDX: Reset Agent View",
+        "icon": "$(clear-all)"
+      },
+      {
         "command": "sf.agent.combined.view.debug",
-        "title": "Start Debug Mode",
-        "icon": "$(bug)"
+        "title": "AFDX: Start Debug Mode",
+        "icon": "$(bug)",
+        "enablement": "(agentforceDX:sessionActive || agentforceDX:sessionStarting) && !agentforceDX:debugMode"
       },
       {
         "command": "sf.agent.combined.view.debugStop",
-        "title": "Stop Debug Mode",
-        "icon": "$(debug)"
+        "title": "AFDX: Stop Debug Mode",
+        "icon": "$(debug)",
+        "enablement": "agentforceDX:debugMode"
       },
       {
         "command": "salesforcedx-vscode-agents.previewAgent",
@@ -424,7 +465,7 @@
       {
         "command": "sf.agent.test.view.toggleGeneratedData.on",
         "title": "Hide Generated Data Output",
-        "category": "Agent Tests",
+        "category": "AFDX",
         "icon": {
           "light": "resources/light/check-on.svg",
           "dark": "resources/dark/check-on.svg"
@@ -433,7 +474,7 @@
       {
         "command": "sf.agent.test.view.toggleGeneratedData.off",
         "title": "Show Generated Data Output",
-        "category": "Agent Tests",
+        "category": "AFDX",
         "icon": {
           "light": "resources/light/check-off.svg",
           "dark": "resources/dark/check-off.svg"
