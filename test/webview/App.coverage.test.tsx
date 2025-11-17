@@ -36,7 +36,8 @@ const mockVscodeApi = {
   setSelectedAgentId: jest.fn(),
   loadAgentHistory: jest.fn(),
   setLiveMode: jest.fn(),
-  getInitialLiveMode: jest.fn()
+  getInitialLiveMode: jest.fn(),
+  sendConversationExport: jest.fn()
 };
 
 jest.mock('../../webview/src/services/vscodeApi', () => ({

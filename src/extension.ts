@@ -323,6 +323,17 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.exportConversation', async () => {
+      try {
+        await provider.exportConversation();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Agentforce DX: Unable to export conversation: ${errorMessage}`);
+      }
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refresh', async () => {
       // Get the current agent ID before ending the session
       const currentAgentId = provider.getCurrentAgentId();

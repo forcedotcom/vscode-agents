@@ -28,7 +28,9 @@ jest.mock('vscode', () => ({
   window: {
     showInformationMessage: jest.fn(),
     showErrorMessage: jest.fn(),
+    showWarningMessage: jest.fn(),
     showQuickPick: jest.fn(),
+    showSaveDialog: jest.fn(),
     activeTextEditor: null
   },
   workspace: {
@@ -994,7 +996,63 @@ describe('AgentCombinedViewProvider', () => {
         'agentforceDX:canResetAgentView',
         false
       );
+      expect(executeCommandMock).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:sessionError',
+        false
+      );
       showHistorySpy.mockRestore();
+    });
+  });
+
+  describe('postErrorMessage', () => {
+    it('should set session error context before notifying webview', async () => {
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+
+      await (provider as any).postErrorMessage(mockWebviewView, 'Sample error');
+
+      expect(executeCommandMock).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:sessionError',
+        true
+      );
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'Sample error' }
+      });
+    });
+  });
+
+  describe('exportConversation', () => {
+    it('should throw when webview view is missing', async () => {
+      provider.webviewView = undefined;
+      (provider as any).currentAgentId = '0X123';
+
+      await expect(provider.exportConversation()).rejects.toThrow('Agent view is not ready.');
+    });
+
+    it('should throw when no agent is selected', async () => {
+      (provider as any).currentAgentId = undefined;
+
+      await expect(provider.exportConversation()).rejects.toThrow('No agent selected to export.');
+    });
+
+    it('should post export request to the webview', async () => {
+      (provider as any).currentAgentId = '0X1234567890123';
+      (provider as any).currentAgentName = 'Exportable Agent';
+      const postMessageMock = mockWebviewView.webview.postMessage as jest.Mock;
+      postMessageMock.mockClear();
+
+      await provider.exportConversation();
+
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'requestConversationExport',
+        data: {
+          agentId: '0X1234567890123',
+          agentName: 'Exportable Agent'
+        }
+      });
     });
   });
 
@@ -2642,6 +2700,66 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(loadHistorySpy).not.toHaveBeenCalled();
       loadHistorySpy.mockRestore();
+    });
+    it('should save conversation export when markdown is provided', async () => {
+      const saveDialogMock = vscode.window.showSaveDialog as jest.Mock;
+      const writeFileMock = vscode.workspace.fs.writeFile as jest.Mock;
+      const targetUri = { fsPath: '/tmp/convo.md', path: '/tmp/convo.md' };
+      saveDialogMock.mockResolvedValue(targetUri);
+      writeFileMock.mockResolvedValue(undefined);
+      (vscode.window.showInformationMessage as jest.Mock).mockClear();
+
+      await messageHandler({
+        command: 'conversationExportReady',
+        data: { content: '# Test Conversation', fileName: 'agent-convo.md' }
+      });
+
+      expect(saveDialogMock).toHaveBeenCalled();
+      expect(writeFileMock).toHaveBeenCalledWith(targetUri, expect.any(Uint8Array));
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        expect.stringContaining('Agentforce DX: Conversation saved')
+      );
+    });
+
+    it('should warn when export content is empty', async () => {
+      await messageHandler({
+        command: 'conversationExportReady',
+        data: { content: '', fileName: 'agent' }
+      });
+
+      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Conversation could not be exported.'
+      );
+    });
+
+    it('should do nothing when user cancels the save dialog', async () => {
+      const saveDialogMock = vscode.window.showSaveDialog as jest.Mock;
+      const writeFileMock = vscode.workspace.fs.writeFile as jest.Mock;
+      saveDialogMock.mockResolvedValue(undefined);
+
+      await messageHandler({
+        command: 'conversationExportReady',
+        data: { content: '# Test Conversation', fileName: 'agent-convo.md' }
+      });
+
+      expect(writeFileMock).not.toHaveBeenCalled();
+    });
+
+    it('should surface errors from failed export writes', async () => {
+      const saveDialogMock = vscode.window.showSaveDialog as jest.Mock;
+      const writeFileMock = vscode.workspace.fs.writeFile as jest.Mock;
+      const targetUri = { fsPath: '/tmp/convo.md', path: '/tmp/convo.md' };
+      saveDialogMock.mockResolvedValue(targetUri);
+      writeFileMock.mockRejectedValue(new Error('disk full'));
+
+      await messageHandler({
+        command: 'conversationExportReady',
+        data: { content: '# Test Conversation', fileName: 'agent-convo.md' }
+      });
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Failed to save conversation: disk full'
+      );
     });
   });
 

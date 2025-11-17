@@ -128,6 +128,11 @@
     "menus": {
       "view/title": [
         {
+          "command": "sf.agent.combined.view.exportConversation",
+          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError",
+          "group": "navigation@-1"
+        },
+        {
           "command": "sf.agent.combined.view.refreshAgents",
           "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && !agentforceDX:canResetAgentView",
           "group": "navigation@0"
@@ -368,6 +373,11 @@
         "title": "AFDX: Restart Agent",
         "icon": "$(debug-rerun)",
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
+      },
+      {
+        "command": "sf.agent.combined.view.exportConversation",
+        "title": "AFDX: Download Conversation",
+        "icon": "$(arrow-circle-down)"
       },
       {
         "command": "sf.agent.combined.view.refreshAgents",

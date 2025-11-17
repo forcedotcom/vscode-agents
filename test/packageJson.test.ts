@@ -43,6 +43,17 @@ describe('package.json', () => {
         expect(refreshAgentsCommand?.when).toContain('agentforceDX:agentSelected');
       });
 
+      it('should have export conversation command visible when agent is selected', () => {
+        const exportCommand = viewTitleMenus.find(
+          (menu: any) => menu.command === 'sf.agent.combined.view.exportConversation'
+        );
+
+        expect(exportCommand).toBeDefined();
+        expect(exportCommand?.when).toContain('agentforceDX:agentSelected');
+        expect(exportCommand?.when).toContain('!agentforceDX:sessionStarting');
+        expect(exportCommand?.when).toContain('!agentforceDX:sessionError');
+      });
+
       it('should show reset agent view command only when reset is available', () => {
         const resetCommand = viewTitleMenus.find(
           (menu: any) => menu.command === 'sf.agent.combined.view.resetAgentView'
@@ -102,6 +113,16 @@ describe('package.json', () => {
         expect(refreshCommand).toBeDefined();
         expect(refreshCommand?.title).toBe('AFDX: Refresh Agent List');
         expect(refreshCommand?.icon).toBe('$(refresh)');
+      });
+
+      it('should define the export conversation command', () => {
+        const exportCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversation'
+        );
+
+        expect(exportCommand).toBeDefined();
+        expect(exportCommand?.title).toBe('AFDX: Download Conversation');
+        expect(exportCommand?.icon).toBe('$(arrow-circle-down)');
       });
 
       it('should define the reset agent view command', () => {

@@ -22,7 +22,8 @@ import PlaceholderContent from '../../webview/src/components/AgentPreview/Placeh
 // Mock vscodeApi
 jest.mock('../../webview/src/services/vscodeApi', () => ({
   vscodeApi: {
-    executeCommand: jest.fn()
+    executeCommand: jest.fn(),
+    sendConversationExport: jest.fn()
   }
 }));
 

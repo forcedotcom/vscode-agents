@@ -155,6 +155,10 @@ class VSCodeApiService {
   getInitialLiveMode() {
     this.postMessage('getInitialLiveMode');
   }
+
+  sendConversationExport(content: string, fileName: string) {
+    this.postMessage('conversationExportReady', { content, fileName });
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

@@ -11,7 +11,8 @@ const mockVscodeApi = {
   clearMessages: jest.fn(),
   selectClientApp: jest.fn(),
   onClientAppReady: jest.fn(),
-  executeCommand: jest.fn()
+  executeCommand: jest.fn(),
+  sendConversationExport: jest.fn()
 };
 
 jest.mock('../../webview/src/services/vscodeApi', () => ({

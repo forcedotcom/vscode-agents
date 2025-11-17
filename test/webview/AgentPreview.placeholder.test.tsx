@@ -28,7 +28,8 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
     sendChatMessage: jest.fn(),
     clearMessages: jest.fn(),
     selectClientApp: jest.fn(),
-    onClientAppReady: jest.fn()
+    onClientAppReady: jest.fn(),
+    sendConversationExport: jest.fn()
   }
 }));
 

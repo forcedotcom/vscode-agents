@@ -66,6 +66,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // Load the last selected mode from storage
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
     void this.setResetAgentViewAvailable(false);
+    void this.setSessionErrorState(false);
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -120,6 +121,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:agentSelected', selected);
     if (!selected) {
       await this.setResetAgentViewAvailable(false);
+      await this.setSessionErrorState(false);
     }
   }
 
@@ -143,6 +145,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private async setResetAgentViewAvailable(available: boolean): Promise<void> {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:canResetAgentView', available);
+  }
+
+  private async setSessionErrorState(hasError: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionError', hasError);
   }
 
   /**
@@ -295,10 +301,59 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private async postErrorMessage(webviewView: vscode.WebviewView, message: string): Promise<void> {
     await this.setResetAgentViewAvailable(true);
+    await this.setSessionErrorState(true);
     await webviewView.webview.postMessage({
       command: 'error',
       data: { message }
     });
+  }
+
+  private sanitizeFileName(name: string): string {
+    return name.replace(/[^a-z0-9-_]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  private async saveConversationExport(content: string, suggestedFileName?: string): Promise<void> {
+    if (!content || content.trim() === '') {
+      vscode.window.showWarningMessage('Agentforce DX: No conversation data available to export.');
+      return;
+    }
+
+    const fallbackBase = this.sanitizeFileName(this.currentAgentName || 'agent') || 'agent';
+    const timestamp = new Date().toISOString().replace(/[:]/g, '-');
+    const suggestedBase =
+      suggestedFileName && suggestedFileName.trim() !== ''
+        ? this.sanitizeFileName(suggestedFileName.replace(/\.md$/i, ''))
+        : undefined;
+    const defaultNameBase =
+      suggestedBase && suggestedBase.length > 0
+        ? suggestedBase
+        : `${fallbackBase}-conversation-${timestamp}`;
+    const defaultName = defaultNameBase.endsWith('.md') ? defaultNameBase : `${defaultNameBase}.md`;
+
+    const defaultFolder = vscode.workspace.workspaceFolders?.[0]?.uri ?? this.context.globalStorageUri;
+    const defaultUri = defaultFolder ? vscode.Uri.joinPath(defaultFolder, defaultName) : undefined;
+
+    const targetUri = await vscode.window.showSaveDialog({
+      defaultUri,
+      filters: {
+        Markdown: ['md'],
+        Text: ['txt']
+      },
+      saveLabel: 'Save Conversation'
+    });
+
+    if (!targetUri) {
+      return;
+    }
+
+    const encoder = new TextEncoder();
+    try {
+      await vscode.workspace.fs.writeFile(targetUri, encoder.encode(content));
+      vscode.window.showInformationMessage(`Agentforce DX: Conversation saved to ${targetUri.fsPath}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Agentforce DX: Failed to save conversation: ${errorMessage}`);
+    }
   }
 
   /**
@@ -581,6 +636,28 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const agentSource = this.getAgentSource(this.currentAgentId);
     await this.showHistoryOrPlaceholder(this.currentAgentId, agentSource, this.webviewView);
     await this.setResetAgentViewAvailable(false);
+    await this.setSessionErrorState(false);
+  }
+
+  /**
+   * Requests the webview to gather the current conversation data for export.
+   */
+  public async exportConversation(): Promise<void> {
+    if (!this.webviewView) {
+      throw new Error('Agent view is not ready.');
+    }
+
+    if (!this.currentAgentId) {
+      throw new Error('No agent selected to export.');
+    }
+
+    this.webviewView.webview.postMessage({
+      command: 'requestConversationExport',
+      data: {
+        agentId: this.currentAgentId,
+        agentName: this.currentAgentName ?? this.currentAgentId
+      }
+    });
   }
 
   public resolveWebviewView(
@@ -1091,6 +1168,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             command: 'setLiveMode',
             data: { isLiveMode: this.isLiveMode }
           });
+        } else if (message.command === 'conversationExportReady') {
+          const markdown = message.data?.content;
+          const fileName = message.data?.fileName;
+          if (typeof markdown === 'string' && markdown.trim() !== '') {
+            await this.saveConversationExport(markdown, fileName);
+          } else {
+            vscode.window.showWarningMessage('Agentforce DX: Conversation could not be exported.');
+          }
         }
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);

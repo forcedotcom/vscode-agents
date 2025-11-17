@@ -27,7 +27,8 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
     onMessage: jest.fn(),
     getAvailableAgents: jest.fn(),
     clearMessages: jest.fn(),
-    loadAgentHistory: jest.fn()
+    loadAgentHistory: jest.fn(),
+    sendConversationExport: jest.fn()
   }
 }));
 
