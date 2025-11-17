@@ -337,31 +337,31 @@
     "commands": [
       {
         "command": "sf.agent.selectAndRun",
-        "title": "Agentforce DX: Select an Agent to Run"
+        "title": "AFDX: Select Agent to Preview"
       },
       {
         "command": "sf.agent.combined.view.stop",
-        "title": "Stop Agent",
+        "title": "AFDX: Stop Agent",
         "icon": "$(stop-circle)"
       },
       {
         "command": "sf.agent.combined.view.refresh",
-        "title": "Restart Agent",
+        "title": "AFDX: Restart Agent",
         "icon": "$(debug-rerun)"
       },
       {
         "command": "sf.agent.combined.view.refreshAgents",
-        "title": "Refresh Agent List",
+        "title": "AFDX: Refresh Agent List",
         "icon": "$(refresh)"
       },
       {
         "command": "sf.agent.combined.view.debug",
-        "title": "Start Debug Mode",
+        "title": "AFDX: Start Debug Mode",
         "icon": "$(bug)"
       },
       {
         "command": "sf.agent.combined.view.debugStop",
-        "title": "Stop Debug Mode",
+        "title": "AFDX: Stop Debug Mode",
         "icon": "$(debug)"
       },
       {
@@ -428,7 +428,7 @@
       {
         "command": "sf.agent.test.view.toggleGeneratedData.on",
         "title": "Hide Generated Data Output",
-        "category": "Agent Tests",
+        "category": "AFDX",
         "icon": {
           "light": "resources/light/check-on.svg",
           "dark": "resources/dark/check-on.svg"
@@ -437,7 +437,7 @@
       {
         "command": "sf.agent.test.view.toggleGeneratedData.off",
         "title": "Show Generated Data Output",
-        "category": "Agent Tests",
+        "category": "AFDX",
         "icon": {
           "light": "resources/light/check-off.svg",
           "dark": "resources/dark/check-off.svg"
