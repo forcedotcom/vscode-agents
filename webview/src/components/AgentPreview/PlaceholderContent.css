@@ -6,17 +6,17 @@
   text-align: center;
   color: var(--vscode-descriptionForeground);
   height: 100%;
-  padding: 40px;
+  padding: 20px 40px 40px 40px;
   max-width: 500px;
   margin: 0 auto;
 }
 
 .placeholder-icon {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   opacity: 0.2;
-  width: 50px;
-  height: 50px;
-  background-image: url('../../assets/comment-light.svg');
+  width: 70px;
+  height: 70px;
+  background-image: url('../../assets/agent-light.svg');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -24,29 +24,20 @@
 
 body.vscode-dark .placeholder-icon,
 body.vscode-high-contrast .placeholder-icon {
-  background-image: url('../../assets/comment-dark.svg');
+  background-image: url('../../assets/agent-dark.svg');
 }
 
 .placeholder-content p {
-  margin-bottom: 30px;
+  margin: 0 0 30px 0;
   color: var(--vscode-foreground);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.5;
+  text-wrap: balance;
 }
 
-.select-agent-button {
-  background-color: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border-radius: 4px;
-  padding: 8px 16px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  border: none;
-  font-weight: 500;
-}
-
-.select-agent-button:hover {
-  background-color: var(--vscode-button-hoverBackground);
+/* Button wrapper to prevent full-width expansion */
+.placeholder-content .vscode-button {
+  width: auto;
+  min-width: auto;
 }

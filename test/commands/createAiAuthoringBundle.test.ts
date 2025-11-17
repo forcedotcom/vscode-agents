@@ -242,7 +242,7 @@ describe('createAiAuthoringBundle', () => {
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
     showQuickPickSpy.mockResolvedValue('test.yaml');
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
-    
+
     // Mock createAgentScript to throw error
     createAgentScriptSpy.mockRejectedValue(new Error('API Error'));
 
@@ -254,6 +254,42 @@ describe('createAiAuthoringBundle', () => {
     expect(showErrorMessageSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create AI Authoring Bundle')
     );
+  });
+
+  it('displays error message without "Error:" prefix in output channel', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+    showQuickPickSpy.mockResolvedValue('test.yaml');
+    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
+
+    // Mock createAgentScript to throw error
+    createAgentScriptSpy.mockRejectedValue(new Error('API connection timeout'));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Verify error message is displayed without "Error:" prefix
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('API connection timeout');
+    expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(expect.stringContaining('Error: API connection timeout'));
+  });
+
+  it('displays "Something went wrong" for empty error message in output channel', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+    showQuickPickSpy.mockResolvedValue('test.yaml');
+    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
+
+    // Mock createAgentScript to throw error with empty message
+    const emptyError = new Error('');
+    createAgentScriptSpy.mockRejectedValue(emptyError);
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Verify fallback message is displayed
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Something went wrong');
   });
 
   it('validates bundle name is not empty', async () => {
@@ -336,5 +372,47 @@ describe('createAiAuthoringBundle', () => {
     // Verify generateApiName was called with the name
     expect(generateApiName).toHaveBeenCalledWith('Test Agent');
   });
+
+  it('handles specs directory not found error', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    // Mock readDirectory to throw error (directory not found)
+    readDirectorySpy.mockRejectedValue(new Error('Directory not found'));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Should show error about no spec files
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No YAML spec files found')
+    );
+    // Should log the error
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('No specs directory found')
+    );
+  });
+
+  it('handles null agent script from createAgentScript', async () => {
+    showInputBoxSpy.mockResolvedValue('Test Agent');
+    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+    showQuickPickSpy.mockResolvedValue('test.yaml');
+    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
+
+    // Mock createAgentScript to return null
+    createAgentScriptSpy.mockResolvedValue(null);
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Verify error was shown
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to create AI Authoring Bundle')
+    );
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to generate agent script')
+    );
+  });
+
 });
 

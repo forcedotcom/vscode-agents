@@ -162,7 +162,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             channelService.showChannelOutput();
             channelService.appendLine('❌ Failed to create AI Authoring Bundle');
             channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-            channelService.appendLine(`Error: ${errorMessage}`);
+            channelService.appendLine(errorMessage || 'Something went wrong');
             throw error;
           }
         }

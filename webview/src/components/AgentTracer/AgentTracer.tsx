@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SessionInfo } from './SessionInfo.js';
-import { PlanInfo } from './PlanInfo.js';
-import { StepUserMessage } from './StepUserMessage.js';
-import { StepTopicSelection } from './StepTopicSelection.js';
-import { StepTopic } from './StepTopic.js';
-import { StepActionSelection } from './StepActionSelection.js';
-import { StepAction } from './StepAction.js';
-import { StepAgentResponse } from './StepAgentResponse.js';
+import TracerPlaceholder from './TracerPlaceholder.js';
+import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
+import { CodeBlock } from '../shared/CodeBlock.js';
+import TabNavigation from '../shared/TabNavigation.js';
 
-import { vscodeApi } from '../../services/vscodeApi.js';
+import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
 
 interface AgentTracerProps {
   isVisible?: boolean;
+  onGoToPreview?: () => void;
+  isSessionActive?: boolean;
+  isLiveMode?: boolean;
+  selectedAgentInfo?: AgentInfo | null;
+  onLiveModeChange?: (isLive: boolean) => void;
 }
 
 // PlanSuccessResponse format from AgentSimulate.trace()
@@ -25,12 +26,20 @@ interface PlanSuccessResponse {
   plan: any[];
 }
 
-const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true }) => {
+const AgentTracer: React.FC<AgentTracerProps> = ({
+  isVisible = true,
+  onGoToPreview,
+  isSessionActive = false,
+  isLiveMode = false,
+  selectedAgentInfo = null,
+  onLiveModeChange
+}) => {
   const [traceData, setTraceData] = useState<PlanSuccessResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['session']));
+  const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+  const [panelHeight, setPanelHeight] = useState<number>(300);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
 
   const requestTraceData = useCallback(() => {
     setLoading(true);
@@ -86,40 +95,94 @@ const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true }) => {
   if (error) {
     return (
       <div className="agent-tracer">
-        <div className="tracer-error">Error: {error}</div>
+        <div className="tracer-error">{error || 'Something went wrong'}</div>
       </div>
     );
   }
 
   const hasTraceData = traceData !== null && traceData.plan && traceData.plan.length > 0;
 
-  const toggleExpansion = () => {
-    const newState = !isExpanded;
-    setIsExpanded(newState);
-    if (newState) {
-      // Expand all sections
-      const allSections = new Set(['session']);
-      if (hasTraceData) {
-        allSections.add('plan-0');
-      }
-      setExpandedSections(allSections);
-    } else {
-      // Collapse all sections
-      setExpandedSections(new Set());
-    }
-  };
+  // Convert plan steps to timeline items
+  const getTimelineItems = (): TimelineItemProps[] => {
+    if (!traceData || !traceData.plan) return [];
 
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
-      const next = new Set(prev);
-      if (next.has(sectionId)) {
-        next.delete(sectionId);
+    return traceData.plan.map((step: any, index: number) => {
+      // All steps are shown as success (checked state)
+      const status: 'success' | 'error' | 'pending' | 'incomplete' = 'success';
+
+      // Type as the label (at the top)
+      const stepType = step.type || step.stepType || '';
+      const stepName = step.name || step.label || step.description || '';
+
+      // Combine type and name for label
+      let label: string;
+      if (stepType && stepName) {
+        label = `${stepType}: ${stepName}`;
+      } else if (stepType) {
+        label = stepType;
+      } else if (stepName) {
+        label = stepName;
       } else {
-        next.add(sectionId);
+        label = `Step ${index + 1}`;
       }
-      return next;
+
+      // Step number as the description (underneath)
+      const description = `Step ${index + 1}`;
+
+      // Only add onClick if the step has data
+      const hasData = step && step.data;
+
+      return {
+        status,
+        label,
+        description,
+        onClick: hasData ? () => setSelectedStepIndex(index) : undefined
+      };
     });
   };
+
+  // Get selected step data
+  const getSelectedStepData = (): string | null => {
+    if (selectedStepIndex === null || !traceData || !traceData.plan) {
+      return null;
+    }
+
+    const step = traceData.plan[selectedStepIndex];
+    if (step && step.data) {
+      return JSON.stringify(step.data, null, 2);
+    }
+
+    return null;
+  };
+
+  // Handle panel resize
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newHeight = window.innerHeight - e.clientY;
+      if (newHeight >= 100 && newHeight <= window.innerHeight * 0.8) {
+        setPanelHeight(newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   return (
     <div className="agent-tracer">
@@ -127,173 +190,78 @@ const AgentTracer: React.FC<AgentTracerProps> = ({ isVisible = true }) => {
         {loading ? (
           <div className="tracer-loading">Loading trace data...</div>
         ) : hasTraceData && traceData ? (
-          <>
-            <SessionInfo
-              date={new Date().toLocaleString()}
-              sessionId={traceData.sessionId}
-              isExpanded={expandedSections.has('session')}
-              onToggle={() => toggleSection('session')}
-              onToggleAll={toggleExpansion}
-              isAllExpanded={isExpanded}
-            />
-            <PlanInfo
-              key={traceData.planId}
-              title={traceData.plan.find(step => step.type === 'UserInputStep')?.message || 'Untitled Plan'}
-              planId={traceData.planId}
-              isExpanded={expandedSections.has('plan-0')}
-              onToggle={() => toggleSection('plan-0')}
-            >
-              <div className="tracer-steps">
-                {Array.isArray(traceData.plan) ? (
-                  traceData.plan.map((step, index): React.ReactNode => {
-                      // Extract timing from various possible fields
-                      let timing = '0.00 sec';
-                      if (step instanceof Object) {
-                        const stepAny = step as any;
-                        if (stepAny.executionLatency !== undefined) {
-                          timing = `${(stepAny.executionLatency / 1000).toFixed(2)} sec`;
-                        } else if (stepAny.execution_latency !== undefined) {
-                          timing = `${(stepAny.execution_latency / 1000).toFixed(2)} sec`;
-                        } else if (stepAny.data?.execution_latency !== undefined) {
-                          timing = `${(stepAny.data.execution_latency / 1000).toFixed(2)} sec`;
-                        }
-                      }
+          <div className="tracer-simple">
+            <table className="tracer-info-table">
+              <tbody>
+                <tr>
+                  <td className="tracer-info-table__label">Session ID</td>
+                  <td className="tracer-info-table__value">{traceData.sessionId}</td>
+                </tr>
+                <tr>
+                  <td className="tracer-info-table__label">Plan ID</td>
+                  <td className="tracer-info-table__value">{traceData.planId}</td>
+                </tr>
+                {traceData.topic && (
+                  <tr>
+                    <td className="tracer-info-table__label">Topic</td>
+                    <td className="tracer-info-table__value">{traceData.topic}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-                      // Type assertion for custom step types not in @salesforce/agents
-                      const stepWithType = step as typeof step & {
-                        type: string;
-                        actionName?: string;
-                        description?: string;
-                        timing?: string;
-                        inputCode?: string;
-                        outputCode?: string;
-                      };
-
-                      switch (stepWithType.type) {
-                        case 'UserInputStep':
-                          return <StepUserMessage key={index} message={(step as any).message} timing={timing} />;
-                        case 'LLMExecutionStep':
-                          return (
-                            <StepTopicSelection
-                              key={index}
-                              timing={timing}
-                              promptUsed={<p>{(step as any).promptContent}</p>}
-                              availableTopics={<p>{(step as any).promptResponse}</p>}
-                              availableTopicsCount={1}
-                            />
-                          );
-                        case 'UpdateTopicStep':
-                          return (
-                            <StepTopic
-                              key={index}
-                              topicName={(step as any).topic}
-                              description={(step as any).description}
-                              timing={timing}
-                              instructions={<p>{(step as any).instructions.join('\n')}</p>}
-                              instructionsCount={(step as any).instructions.length}
-                              availableTopics={<p>{(step as any).availableFunctions.join(', ')}</p>}
-                              availableTopicsCount={(step as any).availableFunctions.length}
-                            />
-                          );
-                        case 'EventStep':
-                          return (
-                            <StepActionSelection
-                              key={index}
-                              timing={timing}
-                              promptUsed={
-                                <p>{`${(step as any).eventName}: ${(step as any).payload.oldTopic} → ${(step as any).payload.newTopic}`}</p>
-                              }
-                            />
-                          );
-                        case 'ReasoningStep': {
-                          const reasoningStep = step as any;
-                          return (
-                            <StepAction
-                              key={index}
-                              actionName="Reasoning"
-                              description={reasoningStep.reason}
-                              timing={timing}
-                              inputCode={reasoningStep.inputCode || "{}"}
-                              outputCode={reasoningStep.outputCode || "{}"}
-                            />
-                          );
-                        }
-                        case 'PlannerResponseStep':
-                          return <StepAgentResponse key={index} response={(step as any).message} />;
-                        case 'LLMStep': {
-                          const llmStep = step as any;
-                          return (
-                            <StepAction
-                              key={index}
-                              actionName="LLM Execution"
-                              description={`Prompt: ${llmStep.data?.prompt_name || 'Unknown'}`}
-                              timing={timing}
-                              inputCode={llmStep.data?.prompt_content ? JSON.stringify(llmStep.data.prompt_content, null, 2) : "{}"}
-                              outputCode={llmStep.data?.prompt_response ? JSON.stringify(llmStep.data.prompt_response, null, 2) : "{}"}
-                            />
-                          );
-                        }
-                        case 'FunctionStep': {
-                          const functionStep = step as any;
-                          return (
-                            <StepAction
-                              key={index}
-                              actionName={functionStep.function?.name || 'Function Call'}
-                              description={`Function execution`}
-                              timing={timing}
-                              inputCode={functionStep.function?.input ? JSON.stringify(functionStep.function.input, null, 2) : "{}"}
-                              outputCode={functionStep.function?.output ? JSON.stringify(functionStep.function.output, null, 2) : "{}"}
-                            />
-                          );
-                        }
-                        case 'BeforeReasoningStep':
-                        case 'VariableUpdateStep':
-                        case 'EnabledToolsStep': {
-                          // These are internal steps that don't need detailed display
-                          const stepName = stepWithType.type.replace(/([A-Z])/g, ' $1').trim();
-                          return (
-                            <div key={index} className="tracer-step-internal">
-                              <strong>{stepName}</strong>
-                              {stepWithType.data && (
-                                <pre>{JSON.stringify((step as any).data, null, 2)}</pre>
-                              )}
-                            </div>
-                          );
-                        }
-                        default: {
-                          const unknownStep = step as { type: string };
-                          // Handle ActionStep as default case
-                          if (unknownStep.type === 'ActionStep') {
-                            const actionStep = step as any;
-                            return (
-                              <StepAction
-                                key={index}
-                                actionName={actionStep.actionName || 'Unknown Action'}
-                                description={actionStep.description || ''}
-                                timing={actionStep.timing || timing}
-                                inputCode={actionStep.inputCode}
-                                outputCode={actionStep.outputCode}
-                              />
-                            );
-                          }
-                          return null;
-                        }
-                      }
-                    })
-                  ) : (
-                    <div className="tracer-empty">No steps available</div>
-                  )}
-              </div>
-            </PlanInfo>
-          </>
+            <div className="tracer-plan-timeline">
+              <Timeline items={getTimelineItems()} />
+            </div>
+          </div>
         ) : traceData === null ? (
           <div className="tracer-empty">Loading trace data...</div>
         ) : traceData && traceData.plan && traceData.plan.length === 0 ? (
-          <div className="tracer-empty">No trace data available yet. Send a message to the agent to generate trace data.</div>
+          <TracerPlaceholder
+            onGoToPreview={onGoToPreview}
+            isSessionActive={isSessionActive}
+            isLiveMode={isLiveMode}
+            selectedAgentInfo={selectedAgentInfo}
+            onModeChange={onLiveModeChange}
+          />
         ) : (
           <div className="tracer-empty">Unable to load trace data. Check the console for errors.</div>
         )}
       </div>
+
+      {selectedStepIndex !== null && getSelectedStepData() && (
+        <div
+          className="tracer-step-data-panel"
+          style={{ height: `${panelHeight}px` }}
+        >
+          <div
+            className="tracer-step-data-panel__resize-handle"
+            onMouseDown={handleResizeStart}
+          />
+          <TabNavigation
+            activeTab={0}
+            onTabChange={() => {}}
+            onClose={() => setSelectedStepIndex(null)}
+            tabs={[
+              {
+                id: 'json',
+                label: 'JSON',
+                icon: (
+                  <svg width="14" height="11" viewBox="0 0 14 11" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.68 2.61333L2.98667 1.86667L0 4.90667V5.6L2.98667 8.58667L3.68 7.89333L1.06667 5.22667L3.68 2.61333ZM10.72 1.86667L13.7067 4.90667V5.6L10.72 8.58667L9.97333 7.89333L12.64 5.22667L9.97333 2.61333L10.72 1.86667ZM3.89333 10.0267L8.90667 0L9.81333 0.48L4.8 10.4533L3.89333 10.0267Z" fill="currentColor"/>
+                  </svg>
+                )
+              }
+            ]}
+          />
+          <div className="tracer-step-data-panel__content">
+            <CodeBlock
+              code={getSelectedStepData()!}
+              showCopy={false}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

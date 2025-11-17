@@ -1,0 +1,141 @@
+/* Copyright (c) Microsoft Corporation. */
+/* Licensed under the MIT License. */
+
+.vscode-toggle {
+  display: inline-flex;
+  align-items: center;
+  outline: none;
+  margin: 4px 0;
+  user-select: none;
+  font-size: var(--vscode-font-size);
+  line-height: normal;
+  cursor: pointer;
+}
+
+.vscode-toggle__control {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.vscode-toggle__input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.vscode-toggle__track {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background: var(--vscode-button-secondaryBackground);
+  border-radius: 10px;
+  transition: background-color 0.1s ease;
+  box-sizing: border-box;
+}
+
+.vscode-toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  background: var(--vscode-button-secondaryForeground);
+  border-radius: 50%;
+  transition: transform 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.vscode-toggle__label {
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-foreground);
+  padding-inline-start: 10px;
+  margin-inline-end: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Checked state */
+.vscode-toggle--checked .vscode-toggle__track {
+  background: var(--vscode-button-background);
+}
+
+.vscode-toggle--checked .vscode-toggle__thumb {
+  transform: translateX(20px);
+  background: var(--vscode-button-foreground);
+}
+
+/* Hover state */
+.vscode-toggle:hover:not(.vscode-toggle--checked) .vscode-toggle__track {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.vscode-toggle--checked:hover .vscode-toggle__track {
+  background: var(--vscode-button-hoverBackground);
+}
+
+/* Focus state */
+.vscode-toggle:has(.vscode-toggle__input:focus-visible) .vscode-toggle__track {
+  outline: 1px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: 2px;
+}
+
+/* Two-sided toggle */
+.vscode-toggle--two-sided {
+  gap: 8px;
+}
+
+.vscode-toggle__side-label {
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  transition: color 0.1s ease;
+  font-weight: 500;
+}
+
+/* Right label is active when checked */
+.vscode-toggle--checked .vscode-toggle__side-label--right {
+  color: var(--vscode-button-background);
+}
+
+/* Small size variant */
+.vscode-toggle--small {
+  font-size: calc(var(--vscode-font-size) - 1px);
+}
+
+.vscode-toggle--small .vscode-toggle__track {
+  width: 32px;
+  height: 16px;
+  border-radius: 8px;
+}
+
+.vscode-toggle--small .vscode-toggle__thumb {
+  width: 10px;
+  height: 10px;
+  top: 3px;
+  left: 3px;
+}
+
+.vscode-toggle--small.vscode-toggle--checked .vscode-toggle__thumb {
+  transform: translateX(16px);
+}
+
+.vscode-toggle--small.vscode-toggle--two-sided {
+  gap: 6px;
+}
+
+/* Disabled state */
+.vscode-toggle--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vscode-toggle--disabled .vscode-toggle__label,
+.vscode-toggle--disabled .vscode-toggle__side-label,
+.vscode-toggle--disabled .vscode-toggle__input {
+  cursor: not-allowed;
+}

@@ -79,8 +79,8 @@ class VSCodeApiService {
   }
 
   // Agent session management
-  startSession(agentId: string) {
-    this.postMessage('startSession', { agentId });
+  startSession(agentId: string, options?: { isLiveMode?: boolean }) {
+    this.postMessage('startSession', { agentId, ...options });
   }
 
   endSession() {
@@ -144,6 +144,20 @@ class VSCodeApiService {
   // Load conversation history for an agent without starting a session
   loadAgentHistory(agentId: string) {
     this.postMessage('loadAgentHistory', { agentId });
+  }
+
+  // Set live mode preference
+  setLiveMode(isLiveMode: boolean) {
+    this.postMessage('setLiveMode', { isLiveMode });
+  }
+
+  // Request initial live mode state
+  getInitialLiveMode() {
+    this.postMessage('getInitialLiveMode');
+  }
+
+  sendConversationExport(content: string, fileName: string) {
+    this.postMessage('conversationExportReady', { content, fileName });
   }
 }
 

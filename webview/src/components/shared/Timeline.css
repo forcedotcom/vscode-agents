@@ -1,0 +1,149 @@
+/* Copyright (c) Microsoft Corporation. */
+/* Licensed under the MIT License. */
+
+.vscode-timeline {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	font-family: var(--vscode-font-family);
+	font-size: var(--vscode-font-size);
+	color: var(--vscode-foreground);
+}
+
+.vscode-timeline-item {
+	display: flex;
+	gap: 12px;
+	position: relative;
+}
+
+.vscode-timeline-item__indicator {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.vscode-timeline-item__icon {
+	width: 20px;
+	height: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	background-color: var(--vscode-button-background);
+	position: relative;
+	z-index: 1;
+}
+
+.vscode-timeline-item__dot {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background-color: var(--vscode-descriptionForeground);
+}
+
+.vscode-timeline-item__line {
+	width: 2px;
+	flex: 1;
+	background-color: var(--vscode-descriptionForeground);
+	min-height: 24px;
+}
+
+.vscode-timeline-item__content {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding-bottom: 16px;
+	flex: 1;
+}
+
+.vscode-timeline-item__link {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	text-decoration: none;
+	color: inherit;
+}
+
+.vscode-timeline-item__link:hover .vscode-timeline-item__label {
+	color: var(--vscode-textLink-activeForeground);
+	text-decoration: underline;
+}
+
+.vscode-timeline-item__link .vscode-timeline-item__label {
+	color: var(--vscode-textLink-foreground);
+}
+
+.vscode-timeline-item__label {
+	font-weight: 600;
+	line-height: 16px;
+	color: var(--vscode-foreground);
+	font-size: calc(var(--vscode-font-size) - 1px);
+}
+
+.vscode-timeline-item__description {
+	font-size: calc(var(--vscode-font-size) - 2px);
+	line-height: 1.4;
+	color: var(--vscode-descriptionForeground);
+	opacity: 0.7;
+}
+
+/* Status-specific styles */
+
+/* Success state - completed with checkmark - uses button color */
+.vscode-timeline-item--success .vscode-timeline-item__icon {
+	color: var(--vscode-button-foreground);
+	background-color: var(--vscode-button-background);
+}
+
+.vscode-timeline-item--success .vscode-timeline-item__line {
+	background-color: var(--vscode-button-background);
+}
+
+/* All other states use muted colors */
+
+/* Error state - failed with cross - uses same color as success */
+.vscode-timeline-item--error .vscode-timeline-item__icon {
+	color: var(--vscode-button-foreground);
+	background-color: var(--vscode-button-background);
+}
+
+.vscode-timeline-item--error .vscode-timeline-item__line {
+	background-color: var(--vscode-button-secondaryBackground);
+}
+
+/* Pending state - dot with button color, but muted line since not progressed */
+.vscode-timeline-item--pending .vscode-timeline-item__icon {
+	background-color: var(--vscode-button-background);
+}
+
+.vscode-timeline-item--pending .vscode-timeline-item__dot {
+	background-color: var(--vscode-button-foreground);
+}
+
+.vscode-timeline-item--pending .vscode-timeline-item__line {
+	background-color: var(--vscode-button-secondaryBackground);
+}
+
+/* Incomplete state - greyed out */
+.vscode-timeline-item--incomplete .vscode-timeline-item__icon {
+	background-color: var(--vscode-button-secondaryBackground);
+}
+
+.vscode-timeline-item--incomplete .vscode-timeline-item__dot {
+	background-color: var(--vscode-button-secondaryForeground);
+}
+
+.vscode-timeline-item--incomplete .vscode-timeline-item__line {
+	background-color: var(--vscode-button-secondaryBackground);
+}
+
+/* Last item - no padding bottom on content since there's no line */
+.vscode-timeline-item--last .vscode-timeline-item__content {
+	padding-bottom: 0;
+}
+
+/* Clickable items - add underline on hover */
+.vscode-timeline-item--clickable:hover .vscode-timeline-item__label {
+	text-decoration: underline;
+}

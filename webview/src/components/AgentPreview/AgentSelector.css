@@ -1,17 +1,53 @@
 .agent-selector {
   display: flex;
-  align-items: center;
-  position: relative;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
   padding: 0 16px;
   background-color: var(--vscode-sideBar-background);
   flex-shrink: 0;
 }
 
-.agent-selector::after {
+/* Full width start button */
+.agent-selector__start-button {
+  width: 100%;
+}
+
+.agent-selector__start-button .vscode-button__start,
+.agent-selector__start-button .vscode-split-button__start {
+  margin-inline-end: 6px;
+}
+
+.agent-selector__start-button .vscode-button__start svg,
+.agent-selector__start-button .vscode-split-button__start svg {
+  width: 10px;
+  height: 10px;
+}
+
+.agent-selector__start-button .vscode-button__start svg.stop-icon,
+.agent-selector__start-button .vscode-split-button__start svg.stop-icon {
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+}
+
+.agent-selector__start-button .vscode-button__start svg.loading-spinner,
+.agent-selector__start-button .vscode-split-button__start svg.loading-spinner {
+  width: 16px;
+  height: 16px;
+}
+
+.agent-selector__main {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.agent-selector__main::after {
   content: '';
   position: absolute;
-  right: 26px;
+  right: 10px;
   width: 10px;
   height: 10px;
   pointer-events: none;
@@ -22,9 +58,13 @@
   opacity: 0.8;
 }
 
-body.vscode-dark .agent-selector::after,
-body.vscode-high-contrast .agent-selector::after {
+body.vscode-dark .agent-selector__main::after,
+body.vscode-high-contrast .agent-selector__main::after {
   background-image: url('../../assets/chevron-dark.svg');
+}
+
+.agent-selector__main:has(.agent-select:disabled)::after {
+  opacity: 0.3;
 }
 
 .agent-select {
@@ -58,9 +98,19 @@ body.vscode-high-contrast .agent-selector::after {
   outline-offset: -1px;
 }
 
+.agent-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: var(--vscode-dropdown-background);
+}
+
+.agent-select:disabled:hover {
+  background: var(--vscode-dropdown-background);
+}
+
 .agent-select-display {
   position: absolute;
-  left: 24px;
+  left: 9px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
@@ -70,7 +120,11 @@ body.vscode-high-contrast .agent-selector::after {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: calc(100% - 64px);
+  max-width: calc(100% - 48px);
+}
+
+.agent-selector__main:has(.agent-select:disabled) .agent-select-display {
+  opacity: 0.5;
 }
 
 .agent-name {
@@ -82,4 +136,18 @@ body.vscode-high-contrast .agent-selector::after {
   color: var(--vscode-descriptionForeground);
   font-size: 13px;
   opacity: 0.8;
+}
+
+/* Loading spinner animation */
+@keyframes spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  animation: spinner-rotate 1s linear infinite;
 }

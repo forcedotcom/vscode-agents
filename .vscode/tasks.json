@@ -14,13 +14,10 @@
     },
     {
       "type": "npm",
-      "script": "watch",
-      "label": "watch",
-      "problemMatcher": ["$tsc-watch"],
-      "isBackground": true,
-      "presentation": {
-        "reveal": "never"
-      }
+      "script": "build",
+      "label": "build-all",
+      "problemMatcher": ["$tsc"],
+      "group": "build"
     }
   ]
 }

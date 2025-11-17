@@ -13,6 +13,11 @@
   font-size: 13px;
   outline: none;
   font-family: inherit;
+  resize: none;
+  min-height: 40px;
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.4;
 }
 
 .chat-input-field::placeholder {
@@ -36,8 +41,7 @@
 .chat-input-button {
   position: absolute;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 0;
   width: 40px;
   height: 40px;
   background: none;
@@ -67,7 +71,7 @@
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: 0.8;
+  opacity: 1;
 }
 
 body.vscode-dark .send-icon,
