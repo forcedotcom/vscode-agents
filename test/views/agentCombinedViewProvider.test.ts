@@ -2849,7 +2849,6 @@ describe('AgentCombinedViewProvider', () => {
       (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
         get: jest.fn(() => '')
       });
-      (provider as any).hasSentChatMessageInSession = false;
     });
 
     it('should return empty data when no agent preview or session', async () => {
@@ -2972,29 +2971,12 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
 
-    it('should defer mock trace payload until a message is sent', async () => {
-      const readFileMock = vscode.workspace.fs.readFile as jest.Mock;
-      readFileMock.mockClear();
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: jest.fn(() => '/tmp/mock-trace.json')
-      });
-
-      await messageHandler({ command: 'getTraceData' });
-
-      expect(readFileMock).not.toHaveBeenCalled();
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'traceData',
-        data: { plan: [], planId: '', sessionId: '' }
-      });
-    });
-
-    it('should load mock trace payload from configuration after first message', async () => {
+    it('should load mock trace payload from configuration when setting is provided', async () => {
       (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
         get: jest.fn(() => '/tmp/mock-trace.json')
       });
       const mockPayload = { plan: [{ step: 'test' }] };
       (vscode.workspace.fs.readFile as jest.Mock).mockResolvedValue(Buffer.from(JSON.stringify(mockPayload)));
-      (provider as any).hasSentChatMessageInSession = true;
 
       await messageHandler({ command: 'getTraceData' });
 
@@ -3010,7 +2992,6 @@ describe('AgentCombinedViewProvider', () => {
         get: jest.fn(() => '/tmp/mock-trace.json')
       });
       (vscode.workspace.fs.readFile as jest.Mock).mockRejectedValue(new Error('ENOENT'));
-      (provider as any).hasSentChatMessageInSession = true;
       const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
       executeCommandMock.mockClear();
 
