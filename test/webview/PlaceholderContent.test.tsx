@@ -43,7 +43,7 @@ describe('PlaceholderContent', () => {
     it('should render select agent button', () => {
       render(<PlaceholderContent />);
 
-      expect(screen.getByText('Select an Agent')).toBeInTheDocument();
+      expect(screen.getByText('Select Agent')).toBeInTheDocument();
     });
 
     it('should render placeholder icon', () => {
@@ -72,7 +72,7 @@ describe('PlaceholderContent', () => {
       const user = userEvent.setup();
       render(<PlaceholderContent />);
 
-      const button = screen.getByText('Select an Agent');
+      const button = screen.getByText('Select Agent');
       await user.click(button);
 
       expect(vscodeApi.executeCommand).toHaveBeenCalledWith('sf.agent.selectAndRun');
@@ -82,7 +82,7 @@ describe('PlaceholderContent', () => {
       const user = userEvent.setup();
       render(<PlaceholderContent />);
 
-      const button = screen.getByText('Select an Agent');
+      const button = screen.getByText('Select Agent');
       await user.click(button);
 
       expect(vscodeApi.executeCommand).toHaveBeenCalledTimes(1);
@@ -92,7 +92,7 @@ describe('PlaceholderContent', () => {
       const user = userEvent.setup();
       render(<PlaceholderContent />);
 
-      const button = screen.getByText('Select an Agent');
+      const button = screen.getByText('Select Agent');
 
       await user.click(button);
       expect(vscodeApi.executeCommand).toHaveBeenCalledTimes(1);
@@ -109,7 +109,7 @@ describe('PlaceholderContent', () => {
     it('should render button as accessible element', () => {
       render(<PlaceholderContent />);
 
-      const button = screen.getByRole('button', { name: /Select an Agent/i });
+      const button = screen.getByRole('button', { name: /Select Agent/i });
       expect(button).toBeInTheDocument();
     });
   });

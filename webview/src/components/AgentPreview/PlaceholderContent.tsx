@@ -18,7 +18,7 @@ const PlaceholderContent: React.FC = () => {
         size="small"
         onClick={handleSelectAgent}
       >
-        Select an Agent
+        Select Agent
       </Button>
     </div>
   );
