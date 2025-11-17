@@ -123,6 +123,13 @@ const registerTestView = async (): Promise<vscode.Disposable> => {
     })
   );
 
+  // Register focus test view alias command
+  testViewItems.push(
+    vscode.commands.registerCommand('sf.agent.focusTestView', async () => {
+      await vscode.commands.executeCommand('sf.agent.test.view.focus');
+    })
+  );
+
   return vscode.Disposable.from(...testViewItems);
 };
 
@@ -232,6 +239,82 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
   // Register toolbar commands
   disposables.push(vscode.commands.registerCommand('sf.agent.selectAndRun', selectAndRunAgent));
+
+  // Register start agent alias command
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.startAgent', async () => {
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (currentAgentId) {
+        // If agent is already selected, start it
+        provider.selectAndStartAgent(currentAgentId);
+      } else {
+        // If no agent selected, show picker and then start the selected agent
+        const channelService = CoreExtensionService.getChannelService();
+
+        try {
+          const availableAgents = await provider.getAgentsForCommandPalette();
+          const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
+          const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
+
+          const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> = [];
+
+          if (scriptAgents.length > 0) {
+            allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
+            allAgents.push(
+              ...scriptAgents.map(agent => ({
+                label: agent.name,
+                description: agent.filePath ? path.basename(agent.filePath) : undefined,
+                id: agent.id
+              }))
+            );
+          }
+
+          if (publishedAgents.length > 0) {
+            allAgents.push({ label: 'Published', kind: vscode.QuickPickItemKind.Separator });
+            allAgents.push(
+              ...publishedAgents.map(agent => ({
+                label: agent.name,
+                id: agent.id
+              }))
+            );
+          }
+
+          if (allAgents.length === 0) {
+            vscode.window.showErrorMessage('No agents found.');
+            channelService.appendLine('No agents found.');
+            return;
+          }
+
+          const selectedAgent = await vscode.window.showQuickPick(allAgents, {
+            placeHolder: 'Select an agent to start'
+          });
+
+          if (selectedAgent && selectedAgent.id) {
+            // Store the preference so the dropdown adopts the selection if the webview refreshes
+            provider.setPreselectedAgentId(selectedAgent.id);
+
+            // Reveal the Agentforce DX panel
+            await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+
+            // Start the selected agent
+            provider.selectAndStartAgent(selectedAgent.id);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(`Failed to list agents: ${errorMessage}`);
+          channelService.appendLine(`Failed to list agents: ${errorMessage}`);
+        }
+      }
+    })
+  );
+
+  // Register focus view alias command
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.focusView', async () => {
+      await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+    })
+  );
 
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.stop', async () => {

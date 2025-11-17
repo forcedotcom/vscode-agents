@@ -230,7 +230,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           disabled={isLoading || isSessionActive || isSessionStarting}
         >
           <option value="">
-            {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select an agent...'}
+            {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select agent...'}
           </option>
           {scriptAgents.length > 0 && (
             <optgroup label="Agent Script">

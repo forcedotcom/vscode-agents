@@ -78,7 +78,7 @@ describe('package.json', () => {
         );
 
         expect(restartCommand).toBeDefined();
-        expect(restartCommand?.title).toBe('Restart Agent');
+        expect(restartCommand?.title).toBe('AFDX: Restart Agent');
         expect(restartCommand?.icon).toBe('$(debug-rerun)');
       });
 
@@ -88,7 +88,77 @@ describe('package.json', () => {
         );
 
         expect(refreshCommand).toBeDefined();
-        expect(refreshCommand?.title).toBe('Refresh Agent List');
+        expect(refreshCommand?.title).toBe('AFDX: Refresh Agent List');
+      });
+
+      it('should have focus view alias commands defined', () => {
+        const focusViewCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.focusView'
+        );
+        const focusTestViewCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.focusTestView'
+        );
+
+        expect(focusViewCommand).toBeDefined();
+        expect(focusViewCommand?.title).toBe('AFDX: Focus on Agentforce DX View');
+
+        expect(focusTestViewCommand).toBeDefined();
+        expect(focusTestViewCommand?.title).toBe('AFDX: Focus on Agent Tests View');
+      });
+
+      it('should have start agent command defined with proper enablement', () => {
+        const startAgentCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.startAgent'
+        );
+
+        expect(startAgentCommand).toBeDefined();
+        expect(startAgentCommand?.title).toBe('AFDX: Start Agent');
+        expect(startAgentCommand?.enablement).toContain('!agentforceDX:sessionActive');
+        expect(startAgentCommand?.enablement).toContain('!agentforceDX:sessionStarting');
+      });
+
+      it('should have select agent command defined', () => {
+        const selectAgentCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.selectAndRun'
+        );
+
+        expect(selectAgentCommand).toBeDefined();
+        expect(selectAgentCommand?.title).toBe('AFDX: Select Agent');
+      });
+
+      it('should have debug commands with proper enablement', () => {
+        const startDebugCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.combined.view.debug'
+        );
+        const stopDebugCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.combined.view.debugStop'
+        );
+
+        expect(startDebugCommand).toBeDefined();
+        expect(startDebugCommand?.title).toBe('AFDX: Start Debug Mode');
+        expect(startDebugCommand?.enablement).toContain('!agentforceDX:debugMode');
+
+        expect(stopDebugCommand).toBeDefined();
+        expect(stopDebugCommand?.title).toBe('AFDX: Stop Debug Mode');
+        expect(stopDebugCommand?.enablement).toBe('agentforceDX:debugMode');
+      });
+
+      it('should ensure start and restart commands are mutually exclusive', () => {
+        const startCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.startAgent'
+        );
+        const restartCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.combined.view.refresh'
+        );
+
+        expect(startCommand).toBeDefined();
+        expect(restartCommand).toBeDefined();
+
+        // Start should only be enabled when session is NOT active
+        expect(startCommand?.enablement).toContain('!agentforceDX:sessionActive');
+
+        // Restart should only be enabled when session IS active
+        expect(restartCommand?.enablement).toContain('agentforceDX:sessionActive');
       });
     });
   });

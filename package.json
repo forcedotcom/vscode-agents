@@ -336,18 +336,33 @@
     ],
     "commands": [
       {
+        "command": "sf.agent.focusView",
+        "title": "AFDX: Focus on Agentforce DX View"
+      },
+      {
+        "command": "sf.agent.focusTestView",
+        "title": "AFDX: Focus on Agent Tests View"
+      },
+      {
+        "command": "sf.agent.startAgent",
+        "title": "AFDX: Start Agent",
+        "enablement": "!agentforceDX:sessionActive && !agentforceDX:sessionStarting"
+      },
+      {
         "command": "sf.agent.selectAndRun",
-        "title": "AFDX: Select Agent to Preview"
+        "title": "AFDX: Select Agent"
       },
       {
         "command": "sf.agent.combined.view.stop",
         "title": "AFDX: Stop Agent",
-        "icon": "$(stop-circle)"
+        "icon": "$(stop-circle)",
+        "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
         "command": "sf.agent.combined.view.refresh",
         "title": "AFDX: Restart Agent",
-        "icon": "$(debug-rerun)"
+        "icon": "$(debug-rerun)",
+        "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
         "command": "sf.agent.combined.view.refreshAgents",
@@ -357,12 +372,14 @@
       {
         "command": "sf.agent.combined.view.debug",
         "title": "AFDX: Start Debug Mode",
-        "icon": "$(bug)"
+        "icon": "$(bug)",
+        "enablement": "(agentforceDX:sessionActive || agentforceDX:sessionStarting) && !agentforceDX:debugMode"
       },
       {
         "command": "sf.agent.combined.view.debugStop",
         "title": "AFDX: Stop Debug Mode",
-        "icon": "$(debug)"
+        "icon": "$(debug)",
+        "enablement": "agentforceDX:debugMode"
       },
       {
         "command": "salesforcedx-vscode-agents.previewAgent",
