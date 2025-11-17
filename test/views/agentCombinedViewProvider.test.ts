@@ -748,7 +748,7 @@ describe('AgentCombinedViewProvider', () => {
         }
       });
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Debug mode activated'
+        'AFDX: Debug mode activated'
       );
     });
 
@@ -770,7 +770,7 @@ describe('AgentCombinedViewProvider', () => {
         }
       });
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Debug mode deactivated'
+        'AFDX: Debug mode deactivated'
       );
     });
 
@@ -816,7 +816,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockAgentSimulate.end).toHaveBeenCalled();
       expect((provider as any).agentPreview).toBeUndefined();
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Session ended with TestAgent'
+        'AFDX: Session ended with TestAgent'
       );
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'sessionEnded',
@@ -844,7 +844,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockAgentPreview.end).toHaveBeenCalledWith('test-session', 'UserRequest');
       expect((provider as any).agentPreview).toBeUndefined();
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Session ended with TestAgent'
+        'AFDX: Session ended with TestAgent'
       );
     });
 
@@ -917,7 +917,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockAgentSimulate.end).toHaveBeenCalled();
       expect((provider as any).agentPreview).toBeUndefined();
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Session ended with TestAgent'
+        'AFDX: Session ended with TestAgent'
       );
       // Should not throw when trying to postMessage to null webviewView
     });
@@ -2112,7 +2112,7 @@ describe('AgentCombinedViewProvider', () => {
       // Verify session was started
       expect(mockAgentPreview.start).toHaveBeenCalled();
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Session started with Test Agent'
+        'AFDX: Session started with Test Agent'
       );
     });
 

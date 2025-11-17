@@ -110,7 +110,7 @@
       "agentforce-dx": [
         {
           "id": "sf.agent.combined.view",
-          "name": "%agent_combined%",
+          "name": "%agentforce_dx%",
           "type": "webview",
           "when": "sf:project_opened"
         }
@@ -211,11 +211,6 @@
           "group": "agent@1"
         },
         {
-          "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
-          "group": "agent@2"
-        },
-        {
           "command": "salesforcedx-vscode-agents.activateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@1"
@@ -224,6 +219,11 @@
           "command": "salesforcedx-vscode-agents.deactivateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
+          "group": "agent@2"
         }
       ],
       "explorer/context": [
@@ -243,11 +243,6 @@
           "group": "agent@1"
         },
         {
-          "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
-          "group": "agent@2"
-        },
-        {
           "command": "salesforcedx-vscode-agents.activateAgent",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
           "group": "agent@1"
@@ -261,6 +256,11 @@
           "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
           "when": "explorerResourceIsFolder && resourcePath =~ /aiAuthoringBundles/",
           "group": "agent@1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAgentInOrg",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
+          "group": "agent@2"
         }
       ],
       "commandPalette": [
