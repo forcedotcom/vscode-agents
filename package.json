@@ -129,7 +129,12 @@
       "view/title": [
         {
           "command": "sf.agent.combined.view.refreshAgents",
-          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && !agentforceDX:canResetAgentView",
+          "group": "navigation@0"
+        },
+        {
+          "command": "sf.agent.combined.view.resetAgentView",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && agentforceDX:canResetAgentView",
           "group": "navigation@0"
         },
         {
@@ -368,6 +373,11 @@
         "command": "sf.agent.combined.view.refreshAgents",
         "title": "AFDX: Refresh Agent List",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "sf.agent.combined.view.resetAgentView",
+        "title": "AFDX: Reset Agent View",
+        "icon": "$(clear-all)"
       },
       {
         "command": "sf.agent.combined.view.debug",

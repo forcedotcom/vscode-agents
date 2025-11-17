@@ -39,6 +39,18 @@ describe('package.json', () => {
         expect(refreshAgentsCommand).toBeDefined();
         expect(refreshAgentsCommand?.when).toContain('!agentforceDX:sessionActive');
         expect(refreshAgentsCommand?.when).toContain('!agentforceDX:sessionStarting');
+        expect(refreshAgentsCommand?.when).toContain('!agentforceDX:canResetAgentView');
+        expect(refreshAgentsCommand?.when).toContain('agentforceDX:agentSelected');
+      });
+
+      it('should show reset agent view command only when reset is available', () => {
+        const resetCommand = viewTitleMenus.find(
+          (menu: any) => menu.command === 'sf.agent.combined.view.resetAgentView'
+        );
+
+        expect(resetCommand).toBeDefined();
+        expect(resetCommand?.when).toContain('agentforceDX:canResetAgentView');
+        expect(resetCommand?.when).toContain('agentforceDX:agentSelected');
       });
 
       it('should ensure restart and refresh agent commands are mutually exclusive', () => {
@@ -89,6 +101,17 @@ describe('package.json', () => {
 
         expect(refreshCommand).toBeDefined();
         expect(refreshCommand?.title).toBe('AFDX: Refresh Agent List');
+        expect(refreshCommand?.icon).toBe('$(refresh)');
+      });
+
+      it('should define the reset agent view command', () => {
+        const resetCommand = commands.find(
+          (cmd: any) => cmd.command === 'sf.agent.combined.view.resetAgentView'
+        );
+
+        expect(resetCommand).toBeDefined();
+        expect(resetCommand?.title).toBe('AFDX: Reset Agent View');
+        expect(resetCommand?.icon).toBe('$(clear-all)');
       });
 
       it('should have focus view alias commands defined', () => {

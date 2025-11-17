@@ -960,6 +960,43 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
+  describe('resetCurrentAgentView', () => {
+    it('should throw when webview is not ready', async () => {
+      provider.webviewView = undefined;
+      (provider as any).currentAgentId = '0X1234567890123';
+
+      await expect(provider.resetCurrentAgentView()).rejects.toThrow('Agent view is not ready to reset.');
+    });
+
+    it('should throw when no agent is selected', async () => {
+      (provider as any).currentAgentId = undefined;
+
+      await expect(provider.resetCurrentAgentView()).rejects.toThrow('No agent selected to reset.');
+    });
+
+    it('should request history or placeholder for the current agent', async () => {
+      (provider as any).currentAgentId = 'local:/workspace/example.agent';
+      const showHistorySpy = jest
+        .spyOn(provider as any, 'showHistoryOrPlaceholder')
+        .mockResolvedValue(undefined);
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+
+      await provider.resetCurrentAgentView();
+
+      expect(showHistorySpy).toHaveBeenCalledWith(
+        'local:/workspace/example.agent',
+        AgentSource.SCRIPT,
+        mockWebviewView
+      );
+      expect(executeCommandMock).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:canResetAgentView',
+        false
+      );
+      showHistorySpy.mockRestore();
+    });
+  });
 
   describe('setPreselectedAgentId', () => {
     it('should set preselected agent ID', () => {
@@ -2796,6 +2833,8 @@ describe('AgentCombinedViewProvider', () => {
       });
       (vscode.workspace.fs.readFile as jest.Mock).mockRejectedValue(new Error('ENOENT'));
       (provider as any).hasSentChatMessageInSession = true;
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
 
       await messageHandler({ command: 'getTraceData' });
 
@@ -2803,6 +2842,11 @@ describe('AgentCombinedViewProvider', () => {
         command: 'error',
         data: { message: expect.stringContaining('ENOENT') }
       });
+      expect(executeCommandMock).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:canResetAgentView',
+        true
+      );
       consoleErrorSpy.mockRestore();
     });
   });

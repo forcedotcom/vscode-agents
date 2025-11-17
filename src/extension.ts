@@ -352,6 +352,25 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.resetAgentView', async () => {
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('Agentforce DX: Select an agent to reset.');
+        return;
+      }
+
+      try {
+        await provider.resetCurrentAgentView();
+        vscode.window.showInformationMessage('Agentforce DX: Agent preview reset');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Agentforce DX: Unable to reset agent view: ${errorMessage}`);
+      }
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.debug', async () => {
       await provider.toggleDebugMode();
     })

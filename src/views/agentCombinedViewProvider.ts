@@ -65,6 +65,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     AgentCombinedViewProvider.instance = this;
     // Load the last selected mode from storage
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
+    void this.setResetAgentViewAvailable(false);
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -117,6 +118,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   private async setAgentSelected(selected: boolean): Promise<void> {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:agentSelected', selected);
+    if (!selected) {
+      await this.setResetAgentViewAvailable(false);
+    }
   }
 
   /**
@@ -135,6 +139,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:isLiveMode', isLive);
     // Persist the mode selection for next session
     await this.context.globalState.update(AgentCombinedViewProvider.LIVE_MODE_KEY, isLive);
+  }
+
+  private async setResetAgentViewAvailable(available: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:canResetAgentView', available);
   }
 
   /**
@@ -261,6 +269,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
       await this.setDebugMode(false);
+      await this.setResetAgentViewAvailable(false);
       this.pendingStartAgentId = undefined;
       this.pendingStartAgentSource = undefined;
 
@@ -282,6 +291,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         command: 'refreshAgents'
       });
     }
+  }
+
+  private async postErrorMessage(webviewView: vscode.WebviewView, message: string): Promise<void> {
+    await this.setResetAgentViewAvailable(true);
+    await webviewView.webview.postMessage({
+      command: 'error',
+      data: { message }
+    });
   }
 
   /**
@@ -547,6 +564,23 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     const remoteAgents = await this.getActiveRemoteAgents(connectionResult.conn);
     return [...localAgents, ...remoteAgents];
+  }
+
+  /**
+   * Resets the current agent view back to the most recent history or placeholder
+   */
+  public async resetCurrentAgentView(): Promise<void> {
+    if (!this.webviewView) {
+      throw new Error('Agent view is not ready to reset.');
+    }
+
+    if (!this.currentAgentId) {
+      throw new Error('No agent selected to reset.');
+    }
+
+    const agentSource = this.getAgentSource(this.currentAgentId);
+    await this.showHistoryOrPlaceholder(this.currentAgentId, agentSource, this.webviewView);
+    await this.setResetAgentViewAvailable(false);
   }
 
   public resolveWebviewView(
@@ -943,10 +977,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               } catch (fileError) {
                 // If mock file can't be loaded, log error and fall through to normal flow
                 console.error('Error loading mock payload from URI:', fileError);
-                webviewView.webview.postMessage({
-                  command: 'error',
-                  data: { message: `Error loading mock payload: ${fileError instanceof Error ? fileError.message : 'Unknown error'}` }
-                });
+                await this.postErrorMessage(
+                  webviewView,
+                  `Error loading mock payload: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
+                );
                 return;
               }
             }
@@ -974,10 +1008,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            webviewView.webview.postMessage({
-              command: 'error',
-              data: { message: errorMessage }
-            });
+            await this.postErrorMessage(webviewView, errorMessage);
           }
         } else if (message.command === 'clientAppSelected') {
           // Handle client app selection (Case 3)
@@ -1016,10 +1047,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           } catch (err) {
             console.error('Error selecting client app:', err);
-            webviewView.webview.postMessage({
-              command: 'error',
-              data: { message: `Error selecting client app: ${err instanceof Error ? err.message : 'Unknown error'}` }
-            });
+            await this.postErrorMessage(
+              webviewView,
+              `Error selecting client app: ${err instanceof Error ? err.message : 'Unknown error'}`
+            );
           }
         } else if (message.command === 'getConfiguration') {
           // Get configuration values
@@ -1098,10 +1129,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           errorMessage = "You don't have permission to use this agent. Please check with your administrator.";
         }
 
-        webviewView.webview.postMessage({
-          command: 'error',
-          data: { message: errorMessage }
-        });
+        await this.postErrorMessage(webviewView, errorMessage);
       }
     });
 
