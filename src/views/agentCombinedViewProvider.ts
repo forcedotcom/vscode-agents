@@ -913,7 +913,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           try {
             // Check for mock payload URI setting first
             const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-            const mockPayloadUri = config.get<string>('tracerMockPayloadUri');
+            const mockPayloadUri = config.get<string>('tracerPayload');
 
             if (mockPayloadUri && mockPayloadUri.trim() !== '') {
               try {

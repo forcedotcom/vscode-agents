@@ -92,10 +92,10 @@
           "default": true,
           "description": "Show generated data in test results output"
         },
-        "salesforce.agentforceDX.tracerMockPayloadUri": {
+        "salesforce.agentforceDX.tracerPayload": {
           "type": "string",
           "default": "",
-          "description": "URI or file path to mock JSON payload for tracer. When set, this file will be loaded instead of fetching real trace data from the server."
+          "markdownDescription": "URI or file path to mock JSON payload for tracer. When set, this file will be loaded instead of fetching real trace data from the server."
         }
       }
     },
