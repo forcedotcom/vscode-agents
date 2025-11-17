@@ -110,7 +110,7 @@
       "agentforce-dx": [
         {
           "id": "sf.agent.combined.view",
-          "name": "%agent_combined%",
+          "name": "%agentforce_dx%",
           "type": "webview",
           "when": "sf:project_opened"
         }
