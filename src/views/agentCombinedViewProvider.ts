@@ -53,6 +53,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private currentAgentId?: string;
   private preselectedAgentId?: string;
   private latestPlanId?: string;
+  private hasSentChatMessageInSession = false;
   private isLiveMode = false;
   private sessionStartOperationId = 0;
   private pendingStartAgentId?: string;
@@ -204,6 +205,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
       this.latestPlanId = undefined;
+      this.hasSentChatMessageInSession = false;
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
@@ -596,6 +598,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Reset planId when starting a new session
           this.latestPlanId = undefined;
+          this.hasSentChatMessageInSession = false;
 
           // If a client app was previously selected, reuse it to avoid re-prompt loops
           const conn = this.selectedClientApp
@@ -780,6 +783,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // Get the latest agent response
           const lastMessage = response.messages?.at(-1);
           this.latestPlanId = lastMessage?.planId;
+          this.hasSentChatMessageInSession = true;
 
           webviewView.webview.postMessage({
             command: 'messageSent',
@@ -911,11 +915,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'getTraceData') {
           try {
+            const emptyTraceData = { plan: [], planId: '', sessionId: '' };
             // Check for mock payload URI setting first
             const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
             const mockPayloadUri = config.get<string>('tracerPayload');
 
             if (mockPayloadUri && mockPayloadUri.trim() !== '') {
+              if (!this.hasSentChatMessageInSession) {
+                webviewView.webview.postMessage({
+                  command: 'traceData',
+                  data: emptyTraceData
+                });
+                return;
+              }
               try {
                 // Parse the URI and load the file
                 const fileUri = vscode.Uri.file(mockPayloadUri);
@@ -943,7 +955,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             if (!this.agentPreview || !this.sessionId) {
               webviewView.webview.postMessage({
                 command: 'traceData',
-                data: { plan: [], planId: '', sessionId: '' }
+                data: emptyTraceData
               });
               return;
             }
@@ -953,7 +965,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               data = await this.agentPreview.trace(this.sessionId, this.latestPlanId);
             } else {
               // For AgentPreview, return empty plan structure
-              data = { plan: [], planId: '', sessionId: '' };
+              data = emptyTraceData;
             }
 
             webviewView.webview.postMessage({
