@@ -129,7 +129,7 @@
       "view/title": [
         {
           "command": "sf.agent.combined.view.exportConversation",
-          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError",
+          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
           "group": "navigation@-1"
         },
         {

@@ -43,7 +43,7 @@ describe('package.json', () => {
         expect(refreshAgentsCommand?.when).toContain('agentforceDX:agentSelected');
       });
 
-      it('should have export conversation command visible when agent is selected', () => {
+      it('should have export conversation command visible only when history is present', () => {
         const exportCommand = viewTitleMenus.find(
           (menu: any) => menu.command === 'sf.agent.combined.view.exportConversation'
         );
@@ -52,6 +52,7 @@ describe('package.json', () => {
         expect(exportCommand?.when).toContain('agentforceDX:agentSelected');
         expect(exportCommand?.when).toContain('!agentforceDX:sessionStarting');
         expect(exportCommand?.when).toContain('!agentforceDX:sessionError');
+        expect(exportCommand?.when).toContain('agentforceDX:hasConversationData');
       });
 
       it('should show reset agent view command only when reset is available', () => {

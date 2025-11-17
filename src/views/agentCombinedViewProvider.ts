@@ -58,6 +58,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private sessionStartOperationId = 0;
   private pendingStartAgentId?: string;
   private pendingStartAgentSource?: AgentSource;
+  private hasConversationData = false;
 
   private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
 
@@ -67,6 +68,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
     void this.setResetAgentViewAvailable(false);
     void this.setSessionErrorState(false);
+    void this.setConversationDataAvailable(false);
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -122,6 +124,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     if (!selected) {
       await this.setResetAgentViewAvailable(false);
       await this.setSessionErrorState(false);
+      await this.setConversationDataAvailable(false);
     }
   }
 
@@ -149,6 +152,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private async setSessionErrorState(hasError: boolean): Promise<void> {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionError', hasError);
+  }
+
+  private async setConversationDataAvailable(available: boolean): Promise<void> {
+    this.hasConversationData = available;
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:hasConversationData', available);
   }
 
   /**
@@ -430,6 +438,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             command: 'conversationHistory',
             data: { messages: historyMessages }
           });
+          await this.setConversationDataAvailable(true);
           return true;
         }
       }
@@ -441,6 +450,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       }
     }
 
+    await this.setConversationDataAvailable(false);
     return false;
   }
 
@@ -478,6 +488,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       }
     } catch (err) {
       console.error('Error loading history:', err);
+      await this.setConversationDataAvailable(false);
       webviewView.webview.postMessage({
         command: 'noHistoryFound',
         data: { agentId }
@@ -862,6 +873,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
             this.pendingStartAgentId = undefined;
             this.pendingStartAgentSource = undefined;
+            await this.setConversationDataAvailable(true);
           } catch (err) {
             if (err instanceof SessionStartCancelledError || !isActive()) {
               return;
@@ -1154,6 +1166,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setAgentSelected(true);
           await this.setResetAgentViewAvailable(false);
           await this.setSessionErrorState(false);
+          await this.setConversationDataAvailable(false);
         } else {
           this.currentAgentId = undefined;
           await this.setAgentSelected(false);

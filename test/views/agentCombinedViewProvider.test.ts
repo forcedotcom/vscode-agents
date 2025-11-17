@@ -293,6 +293,11 @@ describe('AgentCombinedViewProvider', () => {
           ]
         }
       });
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        true
+      );
     });
 
     it('should load history for published agent using Bot ID', async () => {
@@ -318,6 +323,11 @@ describe('AgentCombinedViewProvider', () => {
       expect(readTranscriptEntries).toHaveBeenCalledWith(botId);
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalled();
       expect(result).toBe(true);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        true
+      );
     });
 
     it('should filter out entries without text content', async () => {
@@ -351,6 +361,11 @@ describe('AgentCombinedViewProvider', () => {
       expect(postMessageCall.data.messages).toHaveLength(1);
       expect(postMessageCall.data.messages[0].content).toBe('Hello');
       expect(result).toBe(true);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        true
+      );
     });
 
     it('should not send message if no transcript entries found', async () => {
@@ -365,6 +380,11 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
       expect(result).toBe(false);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        false
+      );
     });
 
     it('should not send message if transcript entries is null', async () => {
@@ -379,6 +399,11 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
       expect(result).toBe(false);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        false
+      );
     });
 
     it('should handle errors gracefully', async () => {
@@ -395,6 +420,11 @@ describe('AgentCombinedViewProvider', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
       expect(result).toBe(false);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        false
+      );
 
       consoleErrorSpy.mockRestore();
     });
@@ -413,6 +443,11 @@ describe('AgentCombinedViewProvider', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith('Could not load conversation history:', 'string error');
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
       expect(result).toBe(false);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        false
+      );
 
       consoleErrorSpy.mockRestore();
     });
@@ -432,6 +467,11 @@ describe('AgentCombinedViewProvider', () => {
       // Should filter out entries with empty text
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
       expect(result).toBe(false);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        false
+      );
     });
 
     it('should avoid posting history when all entries are filtered out', async () => {
@@ -449,6 +489,11 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
       expect(result).toBe(false);
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        false
+      );
     });
   });
 
@@ -1240,6 +1285,11 @@ describe('AgentCombinedViewProvider', () => {
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
         'setContext',
         'agentforceDX:sessionError',
+        false
+      );
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
         false
       );
     });
@@ -3168,6 +3218,11 @@ describe('AgentCombinedViewProvider', () => {
         'setContext',
         'agentforceDX:agentSelected',
         true
+      );
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasConversationData',
+        false
       );
     });
 
