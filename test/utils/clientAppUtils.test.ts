@@ -21,6 +21,7 @@ import { getAvailableClientApps, createConnectionWithClientApp } from '../../src
 // Mock modules
 jest.mock('fs');
 jest.mock('os');
+jest.mock('path');
 
 // Mock @salesforce/core with proper mock functions
 const mockReload = jest.fn();
@@ -49,11 +50,14 @@ jest.mock('@salesforce/core', () => ({
 describe('clientAppUtils', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
   const mockOs = os as jest.Mocked<typeof os>;
+  const mockPath = path as jest.Mocked<typeof path>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockOs.homedir.mockReturnValue('/home/testuser');
     mockReload.mockResolvedValue(undefined);
+    // Mock path.join to always use forward slashes for consistent testing
+    mockPath.join.mockImplementation((...args: string[]) => args.join('/'));
   });
 
   describe('getAvailableClientApps', () => {
