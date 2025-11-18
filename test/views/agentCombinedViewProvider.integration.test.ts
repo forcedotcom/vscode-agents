@@ -365,6 +365,34 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
         command: 'refreshAgents'
       });
     });
+
+    it('should end an active session before refreshing the agent list', async () => {
+      const mockAgentPreview = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'test-session',
+          messages: [{ type: 'Inform', message: 'Hello' }]
+        }),
+        end: jest.fn().mockResolvedValue(undefined),
+        setApexDebugMode: jest.fn()
+      };
+
+      (AgentPreview as any).mockImplementation(() => mockAgentPreview);
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: '0X1234567890123' }
+      });
+
+      jest.clearAllMocks();
+
+      await provider.refreshAvailableAgents();
+
+      expect(mockAgentPreview.end).toHaveBeenCalledTimes(1);
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'sessionEnded',
+        data: {}
+      });
+    });
   });
 
   describe('Complete User Flows', () => {
@@ -426,6 +454,7 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
           sessionId: 'test-session',
           messages: [{ type: 'Inform', message: 'Hello' }]
         }),
+        end: jest.fn().mockResolvedValue(undefined),
         setApexDebugMode: jest.fn()
       };
 

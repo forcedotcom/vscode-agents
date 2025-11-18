@@ -1149,6 +1149,25 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
+  describe('refreshAvailableAgents', () => {
+    it('should clear pending preselected agent IDs so refresh does not immediately reselect', async () => {
+      provider.setPreselectedAgentId('0X123456789012345');
+      (provider as any).currentAgentId = '0X123456789012345';
+      const postMessageMock = mockWebviewView.webview.postMessage as jest.Mock;
+      postMessageMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId: '' }
+      });
+      endSessionSpy.mockRestore();
+    });
+  });
+
   describe('resolveWebviewView', () => {
     it('should set webview options with correct settings', () => {
       // Mock getHtmlForWebview to avoid file system operations

@@ -734,6 +734,30 @@ describe('App', () => {
         expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
       });
     });
+
+    it('should clear the selected agent when selectAgent is called with an empty id', async () => {
+      render(<App />);
+
+      // Select an agent first
+      triggerMessage('selectAgent', { agentId: 'agent1' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+      });
+
+      mockVscodeApi.clearMessages.mockClear();
+      mockVscodeApi.loadAgentHistory.mockClear();
+
+      // Provider clears the selection
+      triggerMessage('selectAgent', { agentId: '' });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-agent').textContent).toBe('none');
+      });
+
+      expect(mockVscodeApi.clearMessages).toHaveBeenCalledTimes(1);
+      expect(mockVscodeApi.loadAgentHistory).not.toHaveBeenCalled();
+    });
   });
 
   describe('Tracer Go To Preview', () => {

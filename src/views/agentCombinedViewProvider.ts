@@ -273,6 +273,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * This will trigger the webview to request agents again and clear the current selection
    */
   public async refreshAvailableAgents(): Promise<void> {
+    await this.endSession();
+    this.preselectedAgentId = undefined;
+
     if (this.webviewView) {
       // Clear the current agent selection
       this.currentAgentId = undefined;
