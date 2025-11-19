@@ -289,22 +289,25 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-simple">
             {traceHistory.length > 0 && (
               <div className="trace-history-selector">
-                <label htmlFor="trace-history-select">Trace history</label>
-                <select
-                  id="trace-history-select"
-                  value={
-                    selectedHistoryIndex !== null
-                      ? selectedHistoryIndex
-                      : Math.max(traceHistory.length - 1, 0)
-                  }
-                  onChange={handleHistoryChange}
-                >
-                  {traceHistory.map((entry, index) => (
-                    <option key={`${entry.planId}-${index}`} value={index}>
-                      {formatHistoryLabel(entry, index)}
-                    </option>
-                  ))}
-                </select>
+                <div className="trace-history-selector__input">
+                  <select
+                    id="trace-history-select"
+                    aria-label="Trace history"
+                    className="trace-history-selector__select"
+                    value={
+                      selectedHistoryIndex !== null
+                        ? selectedHistoryIndex
+                        : Math.max(traceHistory.length - 1, 0)
+                    }
+                    onChange={handleHistoryChange}
+                  >
+                    {traceHistory.map((entry, index) => (
+                      <option key={`${entry.planId}-${index}`} value={index}>
+                        {formatHistoryLabel(entry, index)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
             <table className="tracer-info-table">
