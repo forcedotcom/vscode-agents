@@ -352,14 +352,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             )}
             <table className="tracer-info-table">
               <tbody>
-                {selectedHistoryIndex !== null && traceHistory[selectedHistoryIndex]?.timestamp && (
-                  <tr>
-                    <td className="tracer-info-table__label">Start Date</td>
-                    <td className="tracer-info-table__value">
-                      {new Date(traceHistory[selectedHistoryIndex].timestamp).toLocaleString()}
-                    </td>
-                  </tr>
-                )}
                 <tr>
                   <td className="tracer-info-table__label">Session ID</td>
                   <td className="tracer-info-table__value">{traceData.sessionId}</td>
@@ -368,6 +360,14 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                   <td className="tracer-info-table__label">Plan ID</td>
                   <td className="tracer-info-table__value">{traceData.planId}</td>
                 </tr>
+                {selectedHistoryIndex !== null && traceHistory[selectedHistoryIndex]?.timestamp && (
+                  <tr>
+                    <td className="tracer-info-table__label">Timestamp</td>
+                    <td className="tracer-info-table__value">
+                      {new Date(traceHistory[selectedHistoryIndex].timestamp).toLocaleString()}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
