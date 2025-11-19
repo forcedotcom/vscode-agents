@@ -31,14 +31,6 @@ const ensureTraceExportDir = async (agentStorageKey: string): Promise<string> =>
 const sanitizeForFilename = (value: string): string =>
   value.replace(/[^a-z0-9-_]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'trace';
 
-const formatTimestampForFilename = (timestamp?: string): string => {
-  const date = timestamp ? new Date(timestamp) : new Date();
-  if (Number.isNaN(date.getTime())) {
-    return new Date().toISOString().replace(/[:.]/g, '-');
-  }
-  return date.toISOString().replace(/[:.]/g, '-');
-};
-
 const getTraceFilePath = async (agentStorageKey: string): Promise<string> => {
   const dir = await ensureAgentTraceDir(agentStorageKey);
   return path.join(dir, TRACE_FILE_NAME);
@@ -94,21 +86,15 @@ export const readTraceHistoryEntries = async <T>(
 };
 
 export const writeTraceEntryToFile = async <T>(entry: TraceHistoryEntry<T>): Promise<string> => {
-  const { storageKey, planId, sessionId, timestamp, trace } = entry;
+  const { storageKey, planId, sessionId, trace } = entry;
   if (!storageKey) {
     throw new Error('Trace entry is missing storage information.');
   }
 
   const exportDir = await ensureTraceExportDir(storageKey);
+  const safeSessionId = sanitizeForFilename(sessionId || 'session');
   const safePlanId = sanitizeForFilename(planId || 'trace');
-  const safeSessionId = sessionId ? sanitizeForFilename(sessionId) : null;
-  const safeTimestamp = formatTimestampForFilename(timestamp);
-  const parts = [safePlanId];
-  if (safeSessionId) {
-    parts.push(safeSessionId);
-  }
-  parts.push(safeTimestamp);
-  const fileName = `${parts.join('-')}.json`;
+  const fileName = `${safeSessionId}-${safePlanId}.json`;
   const filePath = path.join(exportDir, fileName);
 
   await fs.writeFile(filePath, JSON.stringify(trace ?? {}, null, 2), 'utf8');
