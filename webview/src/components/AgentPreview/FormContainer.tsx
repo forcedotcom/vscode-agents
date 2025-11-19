@@ -25,13 +25,13 @@ interface FormContainerProps {
 const FormContainer = forwardRef<ChatInputRef, FormContainerProps>(({
   onSendMessage,
   sessionActive,
-  isLoading: _isLoading, // Renamed to indicate it's intentionally unused
+  isLoading,
   messages = [],
   isLiveMode = false
 }, ref) => {
   return (
     <div className="form-container">
-      <ChatInput ref={ref} onSendMessage={onSendMessage} disabled={!sessionActive} messages={messages} isLiveMode={isLiveMode} />
+      <ChatInput ref={ref} onSendMessage={onSendMessage} disabled={!sessionActive || isLoading} messages={messages} isLiveMode={isLiveMode} />
     </div>
   );
 });
