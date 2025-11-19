@@ -102,7 +102,7 @@ describe('package.json', () => {
         );
 
         expect(restartCommand).toBeDefined();
-        expect(restartCommand?.title).toBe('AFDX: Restart Agent');
+        expect(restartCommand?.title).toBe('Restart Agent');
         expect(restartCommand?.icon).toBe('$(debug-rerun)');
       });
 
@@ -112,7 +112,7 @@ describe('package.json', () => {
         );
 
         expect(refreshCommand).toBeDefined();
-        expect(refreshCommand?.title).toBe('AFDX: Refresh Agent List');
+        expect(refreshCommand?.title).toBe('Refresh Agent List');
         expect(refreshCommand?.icon).toBe('$(refresh)');
       });
 
@@ -122,7 +122,7 @@ describe('package.json', () => {
         );
 
         expect(exportCommand).toBeDefined();
-        expect(exportCommand?.title).toBe('AFDX: Download Conversation');
+        expect(exportCommand?.title).toBe('Download Conversation');
         expect(exportCommand?.icon).toBe('$(arrow-circle-down)');
       });
 
@@ -132,7 +132,7 @@ describe('package.json', () => {
         );
 
         expect(resetCommand).toBeDefined();
-        expect(resetCommand?.title).toBe('AFDX: Reset Agent View');
+        expect(resetCommand?.title).toBe('Reset Agent View');
         expect(resetCommand?.icon).toBe('$(clear-all)');
       });
 
@@ -157,7 +157,7 @@ describe('package.json', () => {
         );
 
         expect(startAgentCommand).toBeDefined();
-        expect(startAgentCommand?.title).toBe('AFDX: Start Agent');
+        expect(startAgentCommand?.title).toBe('Start Agent');
         expect(startAgentCommand?.enablement).toContain('!agentforceDX:sessionActive');
         expect(startAgentCommand?.enablement).toContain('!agentforceDX:sessionStarting');
       });
@@ -168,7 +168,7 @@ describe('package.json', () => {
         );
 
         expect(selectAgentCommand).toBeDefined();
-        expect(selectAgentCommand?.title).toBe('AFDX: Select Agent');
+        expect(selectAgentCommand?.title).toBe('Select Agent');
       });
 
       it('should have debug commands with proper enablement', () => {
@@ -180,11 +180,11 @@ describe('package.json', () => {
         );
 
         expect(startDebugCommand).toBeDefined();
-        expect(startDebugCommand?.title).toBe('AFDX: Start Debug Mode');
+        expect(startDebugCommand?.title).toBe('Start Debug Mode');
         expect(startDebugCommand?.enablement).toContain('!agentforceDX:debugMode');
 
         expect(stopDebugCommand).toBeDefined();
-        expect(stopDebugCommand?.title).toBe('AFDX: Stop Debug Mode');
+        expect(stopDebugCommand?.title).toBe('Stop Debug Mode');
         expect(stopDebugCommand?.enablement).toBe('agentforceDX:debugMode');
       });
 

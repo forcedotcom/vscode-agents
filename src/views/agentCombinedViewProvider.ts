@@ -283,6 +283,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * This will trigger the webview to request agents again and clear the current selection
    */
   public async refreshAvailableAgents(): Promise<void> {
+    await this.endSession();
+    this.preselectedAgentId = undefined;
+
     if (this.webviewView) {
       // Clear the current agent selection
       this.currentAgentId = undefined;
@@ -318,10 +321,20 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async postErrorMessage(webviewView: vscode.WebviewView, message: string): Promise<void> {
     await this.setResetAgentViewAvailable(true);
     await this.setSessionErrorState(true);
+    // Strip any remaining HTML tags as a safety measure
+    const sanitizedMessage = this.stripHtmlTags(message);
     await webviewView.webview.postMessage({
       command: 'error',
-      data: { message }
+      data: { message: sanitizedMessage }
     });
+  }
+
+  private stripHtmlTags(text: string): string {
+    // Remove HTML tags from text and normalize whitespace
+    return text
+      .replace(/<[^>]*>/g, ' ') // Replace tags with space to preserve word boundaries
+      .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+      .trim();
   }
 
   private sanitizeFileName(name: string): string {

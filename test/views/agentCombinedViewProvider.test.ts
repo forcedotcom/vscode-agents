@@ -1084,6 +1084,39 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Sample error' }
       });
     });
+
+    it('should strip HTML tags from error messages', async () => {
+      const htmlError = '<div class="system-message error"><center><br><table bgcolor="white" cellpadding="0" cellspacing="0" width="758"><tbody><tr><td><span style="font-family: Verdana; font-size: medium; font-weight: bold;">This application is down for maintenance</span><br><br>Sorry for the inconvenience. We\'ll be back shortly.</td></tr></tbody></table></center></div>';
+
+      await (provider as any).postErrorMessage(mockWebviewView, htmlError);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'This application is down for maintenance Sorry for the inconvenience. We\'ll be back shortly.' }
+      });
+    });
+
+    it('should handle plain text errors without modification', async () => {
+      const plainError = 'This is a plain text error';
+
+      await (provider as any).postErrorMessage(mockWebviewView, plainError);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'This is a plain text error' }
+      });
+    });
+
+    it('should strip nested HTML tags and preserve text content', async () => {
+      const nestedHtmlError = '<div><span>Error:</span> <strong>Connection failed</strong></div>';
+
+      await (provider as any).postErrorMessage(mockWebviewView, nestedHtmlError);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'Error: Connection failed' }
+      });
+    });
   });
 
   describe('exportConversation', () => {
@@ -1130,6 +1163,25 @@ describe('AgentCombinedViewProvider', () => {
 
       provider.setPreselectedAgentId('0X222222222222222');
       expect((provider as any).preselectedAgentId).toBe('0X222222222222222');
+    });
+  });
+
+  describe('refreshAvailableAgents', () => {
+    it('should clear pending preselected agent IDs so refresh does not immediately reselect', async () => {
+      provider.setPreselectedAgentId('0X123456789012345');
+      (provider as any).currentAgentId = '0X123456789012345';
+      const postMessageMock = mockWebviewView.webview.postMessage as jest.Mock;
+      postMessageMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId: '' }
+      });
+      endSessionSpy.mockRestore();
     });
   });
 
