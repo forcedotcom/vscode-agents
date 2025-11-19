@@ -4882,6 +4882,16 @@ describe('AgentCombinedViewProvider', () => {
   });
 
   describe('openTraceJson command', () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
     it('writes the trace entry to disk and opens the document', async () => {
       const mockDocument = { uri: { fsPath: '/tmp/trace.json' } };
       (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
@@ -4987,6 +4997,7 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(writeTraceEntryToFile).toHaveBeenCalledWith(entry);
       expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Unable to open trace JSON: boom');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Unable to open trace JSON file:', expect.any(Error));
     });
   });
 });
