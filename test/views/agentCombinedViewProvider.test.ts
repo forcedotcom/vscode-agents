@@ -22,6 +22,12 @@ import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../../src/utils/clientAppUtils';
 import { Lifecycle } from '@salesforce/core';
 import * as path from 'path';
+import {
+  appendTraceHistoryEntry,
+  readTraceHistoryEntries,
+  clearTraceHistory,
+  writeTraceEntryToFile
+} from '../../src/utils/traceHistory';
 
 // Mock VS Code
 jest.mock('vscode', () => ({
@@ -31,6 +37,7 @@ jest.mock('vscode', () => ({
     showWarningMessage: jest.fn(),
     showQuickPick: jest.fn(),
     showSaveDialog: jest.fn(),
+    showTextDocument: jest.fn(),
     activeTextEditor: null
   },
   workspace: {
@@ -45,7 +52,8 @@ jest.mock('vscode', () => ({
       createDirectory: jest.fn(),
       stat: jest.fn()
     },
-    onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() }))
+    onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() })),
+    openTextDocument: jest.fn()
   },
   commands: {
     executeCommand: jest.fn(),
@@ -111,6 +119,13 @@ jest.mock('../../src/utils/clientAppUtils', () => ({
   createConnectionWithClientApp: jest.fn()
 }));
 
+jest.mock('../../src/utils/traceHistory', () => ({
+  appendTraceHistoryEntry: jest.fn(),
+  readTraceHistoryEntries: jest.fn().mockResolvedValue([]),
+  clearTraceHistory: jest.fn(),
+  writeTraceEntryToFile: jest.fn().mockResolvedValue('/tmp/trace.json')
+}));
+
 // Mock fs
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -150,6 +165,8 @@ describe('AgentCombinedViewProvider', () => {
 
     // Reset all mocks
     jest.clearAllMocks();
+    (readTraceHistoryEntries as jest.Mock).mockResolvedValue([]);
+    (writeTraceEntryToFile as jest.Mock).mockResolvedValue('/tmp/trace.json');
 });
 
   afterEach(() => {
@@ -731,7 +748,7 @@ describe('AgentCombinedViewProvider', () => {
 
   describe('toggleDebugMode', () => {
     it('should toggle debug mode from false to true', async () => {
-      (provider as any).apexDebugging = false;
+      (provider as any).isApexDebuggingEnabled = false;
 
       await provider.toggleDebugMode();
 
@@ -753,7 +770,7 @@ describe('AgentCombinedViewProvider', () => {
     });
 
     it('should toggle debug mode from true to false', async () => {
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await provider.toggleDebugMode();
 
@@ -779,7 +796,7 @@ describe('AgentCombinedViewProvider', () => {
         setApexDebugMode: jest.fn()
       };
       (provider as any).agentPreview = mockAgentPreview;
-      (provider as any).apexDebugging = false;
+      (provider as any).isApexDebuggingEnabled = false;
 
       await provider.toggleDebugMode();
 
@@ -788,7 +805,7 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should work when webview does not exist', async () => {
       provider.webviewView = undefined;
-      (provider as any).apexDebugging = false;
+      (provider as any).isApexDebuggingEnabled = false;
 
       await expect(provider.toggleDebugMode()).resolves.not.toThrow();
       expect(vscode.window.showInformationMessage).toHaveBeenCalled();
@@ -924,7 +941,7 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should notify webview when cancelling a session during startup', async () => {
       (provider as any).agentPreview = undefined;
-      (provider as any).sessionStarting = true;
+      (provider as any).isSessionStarting = true;
       (provider as any).pendingStartAgentId = 'local:/workspace/testAgent.agent';
       (provider as any).pendingStartAgentSource = AgentSource.SCRIPT;
       const loadHistorySpy = jest
@@ -964,7 +981,7 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should show placeholder when cancelling session start with no history', async () => {
       (provider as any).agentPreview = undefined;
-      (provider as any).sessionStarting = true;
+      (provider as any).isSessionStarting = true;
       (provider as any).pendingStartAgentId = '0X1234567890123';
       (provider as any).pendingStartAgentSource = AgentSource.PUBLISHED;
       const loadHistorySpy = jest
@@ -995,7 +1012,7 @@ describe('AgentCombinedViewProvider', () => {
       Object.setPrototypeOf(mockAgentSimulate, AgentSimulate.prototype);
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).sessionStarting = true;
+      (provider as any).isSessionStarting = true;
       const restoreSpy = jest
         .spyOn(provider as any, 'restoreViewAfterCancelledStart')
         .mockResolvedValue(undefined);
@@ -1067,6 +1084,39 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Sample error' }
       });
     });
+
+    it('should strip HTML tags from error messages', async () => {
+      const htmlError = '<div class="system-message error"><center><br><table bgcolor="white" cellpadding="0" cellspacing="0" width="758"><tbody><tr><td><span style="font-family: Verdana; font-size: medium; font-weight: bold;">This application is down for maintenance</span><br><br>Sorry for the inconvenience. We\'ll be back shortly.</td></tr></tbody></table></center></div>';
+
+      await (provider as any).postErrorMessage(mockWebviewView, htmlError);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'This application is down for maintenance Sorry for the inconvenience. We\'ll be back shortly.' }
+      });
+    });
+
+    it('should handle plain text errors without modification', async () => {
+      const plainError = 'This is a plain text error';
+
+      await (provider as any).postErrorMessage(mockWebviewView, plainError);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'This is a plain text error' }
+      });
+    });
+
+    it('should strip nested HTML tags and preserve text content', async () => {
+      const nestedHtmlError = '<div><span>Error:</span> <strong>Connection failed</strong></div>';
+
+      await (provider as any).postErrorMessage(mockWebviewView, nestedHtmlError);
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'Error: Connection failed' }
+      });
+    });
   });
 
   describe('exportConversation', () => {
@@ -1101,18 +1151,37 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('setPreselectedAgentId', () => {
-    it('should set preselected agent ID', () => {
-      provider.setPreselectedAgentId('0X123456789012345');
-      expect((provider as any).preselectedAgentId).toBe('0X123456789012345');
+  describe('setAgentId', () => {
+    it('should set agent ID', () => {
+      provider.setAgentId('0X123456789012345');
+      expect((provider as any).currentAgentId).toBe('0X123456789012345');
     });
 
-    it('should update preselected agent ID when called multiple times', () => {
-      provider.setPreselectedAgentId('0X111111111111111');
-      expect((provider as any).preselectedAgentId).toBe('0X111111111111111');
+    it('should update agent ID when called multiple times', () => {
+      provider.setAgentId('0X111111111111111');
+      expect((provider as any).currentAgentId).toBe('0X111111111111111');
 
-      provider.setPreselectedAgentId('0X222222222222222');
-      expect((provider as any).preselectedAgentId).toBe('0X222222222222222');
+      provider.setAgentId('0X222222222222222');
+      expect((provider as any).currentAgentId).toBe('0X222222222222222');
+    });
+  });
+
+  describe('refreshAvailableAgents', () => {
+    it('should clear pending preselected agent IDs so refresh does not immediately reselect', async () => {
+      provider.setAgentId('0X123456789012345');
+      (provider as any).currentAgentId = '0X123456789012345';
+      const postMessageMock = mockWebviewView.webview.postMessage as jest.Mock;
+      postMessageMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId: '' }
+      });
+      endSessionSpy.mockRestore();
     });
   });
 
@@ -1211,7 +1280,7 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).sessionId = 'existing-session';
       (provider as any).sessionActive = true;
       (provider as any).currentAgentName = 'TestAgent';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
 
       // Mock Agent.listRemote to throw an error during session start
       const { Agent } = require('@salesforce/agents');
@@ -1227,9 +1296,9 @@ describe('AgentCombinedViewProvider', () => {
 
       // Verify session state was rolled back after connection error
       expect((provider as any).agentPreview).toBeUndefined();
-      expect((provider as any).sessionActive).toBe(false);
+      expect((provider as any).isSessionActive).toBe(false);
       expect((provider as any).currentAgentName).toBeUndefined();
-      expect((provider as any).latestPlanId).toBeUndefined();
+      expect((provider as any).currentPlanId).toBeUndefined();
 
       // Verify error was sent to webview
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith(
@@ -1311,7 +1380,7 @@ describe('AgentCombinedViewProvider', () => {
       });
       (provider as any).agentPreview = { send: sendMock, setApexDebugMode: jest.fn() };
       (provider as any).sessionId = 'session-123';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       const saveSpy = jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue(new Error('write failed'));
 
@@ -1337,7 +1406,7 @@ describe('AgentCombinedViewProvider', () => {
       });
       (provider as any).agentPreview = { send: sendMock, setApexDebugMode: jest.fn() };
       (provider as any).sessionId = 'session-123';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({ command: 'sendChatMessage', data: { message: 'Hello' } });
 
@@ -1727,6 +1796,38 @@ describe('AgentCombinedViewProvider', () => {
       expect(clearMessagesIndex).toBeLessThan(sessionStartingIndex);
     });
 
+    it('should reset trace history when a script session starts', async () => {
+      const mockLifecycle = {
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
+      };
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as jest.Mock).mockImplementationOnce(() => mockAgentSimulate);
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/test.agent' }
+      });
+
+      expect(clearTraceHistory).toHaveBeenCalledWith('test.agent');
+      expect(readTraceHistoryEntries).toHaveBeenCalledWith('test.agent');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceHistory',
+        data: expect.objectContaining({ agentId: 'local:/workspace/test.agent', entries: [] })
+      });
+    });
+
     it('should start session with script agent and set up lifecycle listeners', async () => {
       const mockLifecycle = {
         on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
@@ -2020,7 +2121,7 @@ describe('AgentCombinedViewProvider', () => {
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
 
       // Enable debug mode
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({
         command: 'startSession',
@@ -2231,7 +2332,7 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       // Enable debug mode
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({
         command: 'startSession',
@@ -2317,7 +2418,7 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       // Set preselected agent ID (15 characters: 0X + 13 digits)
-      (provider as any).preselectedAgentId = '0X9999999999999';
+      (provider as any).currentAgentId = '0X9999999999999';
 
       await messageHandler({
         command: 'startSession',
@@ -2388,7 +2489,7 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockAgentPreview.send).toHaveBeenCalledWith('test-session', 'Hello agent');
 
-      expect((provider as any).latestPlanId).toBe('test-plan-id');
+      expect((provider as any).currentPlanId).toBe('test-plan-id');
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
         data: { content: 'Agent response' }
@@ -2411,7 +2512,7 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Hello' }
       });
 
-      expect((provider as any).latestPlanId).toBeUndefined();
+      expect((provider as any).currentPlanId).toBeUndefined();
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
         data: { content: undefined }
@@ -2440,7 +2541,7 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Hello' }
       });
 
-      expect((provider as any).latestPlanId).toBeUndefined();
+      expect((provider as any).currentPlanId).toBeUndefined();
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
         data: { content: 'Unfortunately a system error occurred. Please try again.' }
@@ -2462,7 +2563,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       // Mock saveApexDebugLog
       jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue('/path/to/log.log');
@@ -2494,7 +2595,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue('/path/to/log.log');
       jest.spyOn(provider as any, 'setupAutoDebugListeners').mockImplementation();
@@ -2520,7 +2621,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue(new Error('Failed to save log'));
 
@@ -2549,7 +2650,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue('string error');
 
@@ -2578,7 +2679,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue(undefined);
 
@@ -2603,7 +2704,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({
         command: 'sendChatMessage',
@@ -2651,6 +2752,9 @@ describe('AgentCombinedViewProvider', () => {
       const loadHistorySpy = jest
         .spyOn(provider as any, 'loadAndSendConversationHistory')
         .mockResolvedValue(true);
+      const loadTraceSpy = jest
+        .spyOn(provider as any, 'loadAndSendTraceHistory')
+        .mockResolvedValue(undefined);
 
       await messageHandler({
         command: 'loadAgentHistory',
@@ -2668,16 +2772,25 @@ describe('AgentCombinedViewProvider', () => {
         AgentSource.SCRIPT,
         mockWebviewView
       );
+      expect((provider as any).loadAndSendTraceHistory).toHaveBeenCalledWith(
+        'local:/workspace/myAgent.agent',
+        AgentSource.SCRIPT,
+        mockWebviewView
+      );
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalledWith(
         expect.objectContaining({ command: 'noHistoryFound' })
       );
       loadHistorySpy.mockRestore();
+      loadTraceSpy.mockRestore();
     });
 
     it('should load history for published agent when history exists', async () => {
       const loadHistorySpy = jest
         .spyOn(provider as any, 'loadAndSendConversationHistory')
         .mockResolvedValue(true);
+      const loadTraceSpy = jest
+        .spyOn(provider as any, 'loadAndSendTraceHistory')
+        .mockResolvedValue(undefined);
 
       await messageHandler({
         command: 'loadAgentHistory',
@@ -2690,10 +2803,16 @@ describe('AgentCombinedViewProvider', () => {
         AgentSource.PUBLISHED,
         mockWebviewView
       );
+      expect((provider as any).loadAndSendTraceHistory).toHaveBeenCalledWith(
+        '0X1234567890123',
+        AgentSource.PUBLISHED,
+        mockWebviewView
+      );
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalledWith(
         expect.objectContaining({ command: 'noHistoryFound' })
       );
       loadHistorySpy.mockRestore();
+      loadTraceSpy.mockRestore();
     });
 
     it('should send noHistoryFound when no history exists', async () => {
@@ -2875,6 +2994,28 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
 
+    it('should restore stored trace data when no active session is available', async () => {
+      (provider as any).currentAgentId = '0X123';
+      (provider as any).currentAgentSource = AgentSource.PUBLISHED;
+      (readTraceHistoryEntries as jest.Mock).mockResolvedValue([
+        {
+          storageKey: '0X123',
+          agentId: '0X123',
+          sessionId: 'old-session',
+          planId: 'stored-plan',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          trace: { plan: [{ type: 'UserInputStep' }], planId: 'stored-plan', sessionId: 'old-session' }
+        }
+      ]);
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: { plan: [{ type: 'UserInputStep' }], planId: 'stored-plan', sessionId: 'old-session' }
+      });
+    });
+
     it('should call trace API for AgentSimulate with planId', async () => {
       const mockTraceData = {
         type: 'PlanSuccessResponse',
@@ -2889,7 +3030,9 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
+      (provider as any).currentAgentId = '0X123';
+      (provider as any).currentAgentSource = AgentSource.PUBLISHED;
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
@@ -2899,6 +3042,14 @@ describe('AgentCombinedViewProvider', () => {
         command: 'traceData',
         data: mockTraceData
       });
+      expect(appendTraceHistoryEntry).toHaveBeenCalledWith(
+        '0X123',
+        expect.objectContaining({
+          agentId: '0X123',
+          planId: 'test-plan-id',
+          trace: mockTraceData
+        })
+      );
     });
 
     it('should return empty data for AgentPreview (not AgentSimulate)', async () => {
@@ -2923,7 +3074,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = undefined;
+      (provider as any).currentPlanId = undefined;
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
@@ -2942,7 +3093,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
@@ -2960,7 +3111,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
@@ -3332,8 +3483,8 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
 
-    it('should clear preselectedAgentId when no client app available', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+    it('should clear currentAgentId when no client app available', async () => {
+      (provider as any).currentAgentId = '0X1234567890123';
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
@@ -3344,7 +3495,7 @@ describe('AgentCombinedViewProvider', () => {
 
       await messageHandler({ command: 'getAvailableAgents' });
 
-      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect((provider as any).currentAgentId).toBeUndefined();
     });
 
     it('should handle multiple client apps case', async () => {
@@ -3380,8 +3531,8 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
 
-    it('should clear preselectedAgentId when multiple client apps', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+    it('should clear currentAgentId when multiple client apps', async () => {
+      (provider as any).currentAgentId = '0X1234567890123';
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
@@ -3392,7 +3543,7 @@ describe('AgentCombinedViewProvider', () => {
 
       await messageHandler({ command: 'getAvailableAgents' });
 
-      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect((provider as any).currentAgentId).toBeUndefined();
     });
 
     it('should handle single client app case and set selectedClientApp', async () => {
@@ -3543,8 +3694,8 @@ describe('AgentCombinedViewProvider', () => {
       expect(availableAgentsCall[0].data.agents[1].type).toBe('published');
     });
 
-    it('should send preselectedAgentId and then clear it', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+    it('should send currentAgentId and then clear it', async () => {
+      (provider as any).currentAgentId = '0X1234567890123';
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
@@ -3563,7 +3714,7 @@ describe('AgentCombinedViewProvider', () => {
       );
 
       expect(availableAgentsCall[0].data.selectedAgentId).toBe('0X1234567890123');
-      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect((provider as any).currentAgentId).toBeUndefined();
     });
 
     it('should handle error and return empty list', async () => {
@@ -3852,7 +4003,7 @@ describe('AgentCombinedViewProvider', () => {
     });
 
     it('should send preselectedAgentId and then clear it', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+      provider.setAgentId('0X1234567890123');
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (createConnectionWithClientApp as jest.Mock).mockResolvedValue({
@@ -4727,6 +4878,126 @@ describe('AgentCombinedViewProvider', () => {
 
       // Mode should persist (not reset when switching agents)
       expect((provider as any).isLiveMode).toBe(true);
+    });
+  });
+
+  describe('openTraceJson command', () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('writes the trace entry to disk and opens the document', async () => {
+      const mockDocument = { uri: { fsPath: '/tmp/trace.json' } };
+      (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
+      jest
+        .spyOn(provider as any, 'getHtmlForWebview')
+        .mockReturnValue('<html><head></head><body>Test</body></html>');
+
+      let messageHandler: ((message: any) => Promise<void>) | undefined;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn(handler => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      const entry = {
+        storageKey: 'agent-key',
+        agentId: 'agent-id',
+        planId: 'plan-1',
+        sessionId: 'session-1',
+        trace: { plan: [] },
+        timestamp: '2024-01-01T00:00:00.000Z'
+      };
+
+      await messageHandler!({ command: 'openTraceJson', data: { entry } });
+
+      expect(writeTraceEntryToFile).toHaveBeenCalledWith(entry);
+      expect(vscode.workspace.openTextDocument).toHaveBeenCalledWith(vscode.Uri.file('/tmp/trace.json'));
+      expect(vscode.window.showTextDocument).toHaveBeenCalledWith(mockDocument, { preview: true });
+    });
+
+    it('shows an error when entry data is missing', async () => {
+      jest
+        .spyOn(provider as any, 'getHtmlForWebview')
+        .mockReturnValue('<html><head></head><body>Test</body></html>');
+      let messageHandler: ((message: any) => Promise<void>) | undefined;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn(handler => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      await messageHandler!({ command: 'openTraceJson', data: { entry: null } });
+
+      expect(writeTraceEntryToFile).not.toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'Unable to open trace JSON: Missing trace details.'
+      );
+    });
+
+    it('shows an error when writing the file fails', async () => {
+      (writeTraceEntryToFile as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+      jest
+        .spyOn(provider as any, 'getHtmlForWebview')
+        .mockReturnValue('<html><head></head><body>Test</body></html>');
+
+      let messageHandler: ((message: any) => Promise<void>) | undefined;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn(handler => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      const entry = {
+        storageKey: 'agent-key',
+        agentId: 'agent-id',
+        planId: 'plan-err',
+        sessionId: 'session-err',
+        trace: {},
+        timestamp: '2024-01-01T00:00:00.000Z'
+      };
+
+      await messageHandler!({ command: 'openTraceJson', data: { entry } });
+
+      expect(writeTraceEntryToFile).toHaveBeenCalledWith(entry);
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Unable to open trace JSON: boom');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Unable to open trace JSON file:', expect.any(Error));
     });
   });
 });

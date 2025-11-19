@@ -59,20 +59,28 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const disposeSelectAgent = vscodeApi.onMessage('selectAgent', (data: SelectAgentMessage) => {
-      if (data && data.agentId) {
-        // Update the selected agent in the dropdown
-        setDesiredAgentId(data.agentId);
-        vscodeApi.setSelectedAgentId(data.agentId);
+      if (!data || typeof data.agentId === 'undefined') {
+        return;
+      }
 
-        if (data.forceRestart) {
-          // Restart Agent button clicked - force immediate restart
-          forceRestartRef.current = true;
-          setRestartTrigger(prev => prev + 1);
-        } else {
-          // Palette selection - let history flow decide whether to show saved conversation or placeholder
-          vscodeApi.clearMessages();
-          vscodeApi.loadAgentHistory(data.agentId);
-        }
+      // Update the selected agent in the dropdown (even when clearing selection)
+      setDesiredAgentId(data.agentId);
+      vscodeApi.setSelectedAgentId(data.agentId);
+
+      if (data.agentId === '') {
+        // Clear the view immediately when the provider resets the selection
+        vscodeApi.clearMessages();
+        return;
+      }
+
+      if (data.forceRestart) {
+        // Restart Agent button clicked - force immediate restart
+        forceRestartRef.current = true;
+        setRestartTrigger(prev => prev + 1);
+      } else {
+        // Palette selection - let history flow decide whether to show saved conversation or placeholder
+        vscodeApi.clearMessages();
+        vscodeApi.loadAgentHistory(data.agentId);
       }
     });
 

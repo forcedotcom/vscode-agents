@@ -209,7 +209,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
       if (selectedAgent && selectedAgent.id) {
         // Store the preference so the dropdown adopts the selection if the webview refreshes
-        provider.setPreselectedAgentId(selectedAgent.id);
+        provider.setAgentId(selectedAgent.id);
 
         // Reveal the Agentforce DX panel
         await vscode.commands.executeCommand('sf.agent.combined.view.focus');
@@ -292,7 +292,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
           if (selectedAgent && selectedAgent.id) {
             // Store the preference so the dropdown adopts the selection if the webview refreshes
-            provider.setPreselectedAgentId(selectedAgent.id);
+            provider.setAgentId(selectedAgent.id);
 
             // Reveal the Agentforce DX panel
             await vscode.commands.executeCommand('sf.agent.combined.view.focus');

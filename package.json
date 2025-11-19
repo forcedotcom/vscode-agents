@@ -2,7 +2,7 @@
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
   "description": "Provides a suite of tools to build, preview, and test agents",
-  "version": "1.2.0",
+  "version": "1.2.0-11-19",
   "publisher": "salesforce",
   "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
   "enableO11y": "true",
@@ -355,49 +355,49 @@
       },
       {
         "command": "sf.agent.startAgent",
-        "title": "AFDX: Start Agent",
+        "title": "Start Agent",
         "enablement": "!agentforceDX:sessionActive && !agentforceDX:sessionStarting"
       },
       {
         "command": "sf.agent.selectAndRun",
-        "title": "AFDX: Select Agent"
+        "title": "Select Agent"
       },
       {
         "command": "sf.agent.combined.view.stop",
-        "title": "AFDX: Stop Agent",
+        "title": "Stop Agent",
         "icon": "$(stop-circle)",
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
         "command": "sf.agent.combined.view.refresh",
-        "title": "AFDX: Restart Agent",
+        "title": "Restart Agent",
         "icon": "$(debug-rerun)",
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
         "command": "sf.agent.combined.view.exportConversation",
-        "title": "AFDX: Download Conversation",
+        "title": "Download Conversation",
         "icon": "$(arrow-circle-down)"
       },
       {
         "command": "sf.agent.combined.view.refreshAgents",
-        "title": "AFDX: Refresh Agent List",
+        "title": "Refresh Agent List",
         "icon": "$(refresh)"
       },
       {
         "command": "sf.agent.combined.view.resetAgentView",
-        "title": "AFDX: Reset Agent View",
+        "title": "Reset Agent View",
         "icon": "$(clear-all)"
       },
       {
         "command": "sf.agent.combined.view.debug",
-        "title": "AFDX: Start Debug Mode",
+        "title": "Start Debug Mode",
         "icon": "$(bug)",
         "enablement": "(agentforceDX:sessionActive || agentforceDX:sessionStarting) && !agentforceDX:debugMode"
       },
       {
         "command": "sf.agent.combined.view.debugStop",
-        "title": "AFDX: Stop Debug Mode",
+        "title": "Stop Debug Mode",
         "icon": "$(debug)",
         "enablement": "agentforceDX:debugMode"
       },
