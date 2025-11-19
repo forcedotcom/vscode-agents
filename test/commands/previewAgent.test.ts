@@ -82,7 +82,7 @@ describe('previewAgent', () => {
       const showMock = jest.fn();
       const postMessageMock = jest.fn();
       const providerMock = {
-        setPreselectedAgentId: jest.fn(),
+        setAgentId: jest.fn(),
         webviewView: {
           show: showMock,
           webview: {
@@ -97,7 +97,7 @@ describe('previewAgent', () => {
       const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
       await handler(mockUri);
 
-      expect(providerMock.setPreselectedAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
       expect(executeCommandSpy).toHaveBeenNthCalledWith(1, 'workbench.view.extension.agentforce-dx');
       expect(executeCommandSpy).toHaveBeenNthCalledWith(2, 'setContext', 'sf:project_opened', true);
       expect(showMock).toHaveBeenCalledWith(false);
@@ -111,7 +111,7 @@ describe('previewAgent', () => {
 
     it('logs errors to the channel service when preview fails', async () => {
       const providerMock = {
-        setPreselectedAgentId: jest.fn(),
+        setAgentId: jest.fn(),
         webviewView: undefined
       };
 
@@ -137,7 +137,7 @@ describe('previewAgent', () => {
       const showMock = jest.fn();
       const postMessageMock = jest.fn();
       const providerMock = {
-        setPreselectedAgentId: jest.fn(),
+        setAgentId: jest.fn(),
         webviewView: {
           show: showMock,
           webview: {
@@ -157,7 +157,7 @@ describe('previewAgent', () => {
       const handler = registerAndGetHandler();
       await handler();
 
-      expect(providerMock.setPreselectedAgentId).toHaveBeenCalledWith('local:/tmp/from-editor.agent');
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('local:/tmp/from-editor.agent');
       jest.advanceTimersByTime(500);
       expect(postMessageMock).toHaveBeenCalledWith({
         command: 'selectAgent',
@@ -174,7 +174,7 @@ describe('previewAgent', () => {
     it('handles provider without an attached webview gracefully', async () => {
       jest.useFakeTimers();
       const providerMock = {
-        setPreselectedAgentId: jest.fn(),
+        setAgentId: jest.fn(),
         webviewView: undefined
       };
 
@@ -185,7 +185,7 @@ describe('previewAgent', () => {
       await handler(mockUri);
       jest.runOnlyPendingTimers();
 
-      expect(providerMock.setPreselectedAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
       expect(errorMessageSpy).not.toHaveBeenCalled();
     });
   });

@@ -30,7 +30,7 @@ export const registerPreviewAgentCommand = () => {
       const localAgentId = `local:${filePath}`;
 
       // Set the preselected agent ID (this will be picked up when the session starts)
-      provider.setPreselectedAgentId(localAgentId);
+      provider.setAgentId(localAgentId);
 
       // Open the Agentforce DX view
       await vscode.commands.executeCommand('workbench.view.extension.agentforce-dx');
@@ -59,7 +59,7 @@ export const registerPreviewAgentCommand = () => {
       channelService.appendLine('Error Details:');
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
       channelService.appendLine(error.message || 'Something went wrong');
-      
+
       if (error.stack) {
         channelService.appendLine('');
         channelService.appendLine('Stack Trace:');

@@ -52,17 +52,15 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private static instance: AgentCombinedViewProvider;
   private agentPreview?: AgentPreviewBase;
   private sessionId = Date.now().toString();
-  private apexDebugging = false;
+  private isApexDebuggingEnabled = false;
   private selectedClientApp?: string;
-  private sessionActive = false;
-  private sessionStarting = false;
+  private isSessionActive = false;
+  private isSessionStarting = false;
   private currentAgentName?: string;
   private currentAgentId?: string;
   private currentAgentSource?: AgentSource;
-  private preselectedAgentId?: string;
-  private latestPlanId?: string;
-  private latestMessageId?: string;
-  private latestUserMessage?: string;
+  private currentPlanId?: string;
+  private currentUserMessage?: string;
   private isLiveMode = false;
   private sessionStartOperationId = 0;
   private pendingStartAgentId?: string;
@@ -88,12 +86,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Updates the session active state and context
    */
   private async setSessionActive(active: boolean): Promise<void> {
-    this.sessionActive = active;
+    this.isSessionActive = active;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionActive', active);
   }
 
   private async setSessionStarting(starting: boolean): Promise<void> {
-    this.sessionStarting = starting;
+    this.isSessionStarting = starting;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', starting);
   }
 
@@ -141,7 +139,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Updates the debug mode state and context
    */
   private async setDebugMode(enabled: boolean): Promise<void> {
-    this.apexDebugging = enabled;
+    this.isApexDebuggingEnabled = enabled;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', enabled);
   }
 
@@ -172,7 +170,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Toggles debug mode on/off
    */
   public async toggleDebugMode(): Promise<void> {
-    const newDebugMode = !this.apexDebugging;
+    const newDebugMode = !this.isApexDebuggingEnabled;
     await this.setDebugMode(newDebugMode);
 
     // If we have an active agent preview, update its debug mode
@@ -221,7 +219,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   public async endSession(): Promise<void> {
     this.cancelPendingSessionStart();
-    const sessionWasStarting = this.sessionStarting;
+    const sessionWasStarting = this.isSessionStarting;
 
     if (this.agentPreview && this.sessionId) {
       const agentName = this.currentAgentName;
@@ -235,7 +233,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
-      this.latestPlanId = undefined;
+      this.currentPlanId = undefined;
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
@@ -274,8 +272,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.pendingStartAgentSource = undefined;
   }
 
-  public setPreselectedAgentId(agentId: string) {
-    this.preselectedAgentId = agentId;
+  public setAgentId(agentId: string) {
+    this.currentAgentId = agentId;
   }
 
   /**
@@ -284,7 +282,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   public async refreshAvailableAgents(): Promise<void> {
     await this.endSession();
-    this.preselectedAgentId = undefined;
+    this.currentAgentId = undefined;
 
     if (this.webviewView) {
       // Clear the current agent selection
@@ -505,9 +503,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       storageKey: agentStorageKey,
       agentId: this.currentAgentId,
       sessionId: (traceData as { sessionId?: string })?.sessionId ?? this.sessionId ?? '',
-      planId: (traceData as { planId?: string })?.planId ?? this.latestPlanId ?? '',
-      messageId: this.latestMessageId,
-      userMessage: this.latestUserMessage,
+      planId: (traceData as { planId?: string })?.planId ?? this.currentPlanId ?? '',
+      messageId: this.currentPlanId,
+      userMessage: this.currentUserMessage,
       timestamp: new Date().toISOString(),
       trace: traceData
     };
@@ -820,7 +818,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
 
           // Reset planId when starting a new session
-          this.latestPlanId = undefined;
+          this.currentPlanId = undefined;
 
           // If a client app was previously selected, reuse it to avoid re-prompt loops
           const conn = this.selectedClientApp
@@ -829,7 +827,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           ensureActive();
 
           // Extract agentId from the message data and pass it as botId
-          const agentId = this.preselectedAgentId || message.data?.agentId;
+          const agentId = this.currentAgentId || message.data?.agentId;
 
           if (!agentId || typeof agentId !== 'string') {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
@@ -910,8 +908,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentId = agentId;
 
             // Enable debug mode from apex debugging setting
-            if (this.apexDebugging) {
-              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            if (this.isApexDebuggingEnabled) {
+              this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
             }
           } else {
             // Handle published agent (org agent)
@@ -933,8 +931,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentId = agentId;
 
             // Enable debug mode from apex debugging setting
-            if (this.apexDebugging) {
-            this.agentPreview.setApexDebugMode(this.apexDebugging);
+            if (this.isApexDebuggingEnabled) {
+            this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
           }
         }
 
@@ -989,12 +987,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
           if (this.agentPreview) {
-            this.agentPreview.setApexDebugMode(this.apexDebugging);
+            this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
           }
 
           webviewView.webview.postMessage({
             command: 'debugModeChanged',
-            data: { enabled: this.apexDebugging }
+            data: { enabled: this.isApexDebuggingEnabled }
           });
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
@@ -1011,9 +1009,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Get the latest agent response
           const lastMessage = response.messages?.at(-1);
-          this.latestPlanId = lastMessage?.planId;
-          this.latestMessageId = lastMessage?.id;
-          this.latestUserMessage = userMessage;
+          this.currentPlanId = lastMessage?.planId;
+          this.currentUserMessage = userMessage;
 
           webviewView.webview.postMessage({
             command: 'messageSent',
@@ -1021,7 +1018,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           });
 
 
-          if (this.apexDebugging && response.apexDebugLog) {
+          if (this.isApexDebuggingEnabled && response.apexDebugLog) {
             try {
               const logPath = await this.saveApexDebugLog(response.apexDebugLog);
               if (logPath) {
@@ -1049,7 +1046,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 }
               });
             }
-          } else if (this.apexDebugging && !response.apexDebugLog) {
+          } else if (this.isApexDebuggingEnabled && !response.apexDebugLog) {
             // Debug mode is enabled but no debug log was returned
             webviewView.webview.postMessage({
               command: 'debugLogInfo',
@@ -1079,7 +1076,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 command: 'availableAgents',
                 data: {
                   agents: localAgents,
-                  selectedAgentId: this.preselectedAgentId
+                  selectedAgentId: this.currentAgentId
                 }
               });
               webviewView.webview.postMessage({
@@ -1091,8 +1088,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   error: result.error
                 }
               });
-              if (this.preselectedAgentId) {
-                this.preselectedAgentId = undefined;
+              if (this.currentAgentId) {
+                this.currentAgentId = undefined;
               }
               return { status: 'handled' };
             },
@@ -1101,7 +1098,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 command: 'availableAgents',
                 data: {
                   agents: localAgents,
-                  selectedAgentId: this.preselectedAgentId
+                  selectedAgentId: this.currentAgentId
                 }
               });
               webviewView.webview.postMessage({
@@ -1111,8 +1108,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   username: result.username
                 }
               });
-              if (this.preselectedAgentId) {
-                this.preselectedAgentId = undefined;
+              if (this.currentAgentId) {
+                this.currentAgentId = undefined;
               }
               return { status: 'handled' };
             }
@@ -1129,12 +1126,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               command: 'availableAgents',
               data: {
                 agents: allAgents,
-                selectedAgentId: this.preselectedAgentId
+                selectedAgentId: this.currentAgentId
               }
             });
 
-            if (this.preselectedAgentId) {
-              this.preselectedAgentId = undefined;
+            if (this.currentAgentId) {
+              this.currentAgentId = undefined;
             }
           } catch (err) {
             console.error('Error getting available agents from org:', err);
@@ -1187,7 +1184,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               return;
             }
 
-            if (!(this.agentPreview instanceof AgentSimulate) || !this.latestPlanId) {
+            if (!(this.agentPreview instanceof AgentSimulate) || !this.currentPlanId) {
               const restored = await this.sendLastStoredTraceData(webviewView);
               if (!restored) {
                 webviewView.webview.postMessage({
@@ -1198,7 +1195,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               return;
             }
 
-            const data = await this.agentPreview.trace(this.sessionId, this.latestPlanId);
+            const data = await this.agentPreview.trace(this.sessionId, this.currentPlanId);
             await this.persistTraceHistory(data);
             if (this.currentAgentId && this.currentAgentSource) {
               await this.loadAndSendTraceHistory(this.currentAgentId, this.currentAgentSource, webviewView);
@@ -1241,13 +1238,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               command: 'availableAgents',
               data: {
                 agents: allAgents,
-                selectedAgentId: this.preselectedAgentId
+                selectedAgentId: this.currentAgentId
               }
             });
 
             // Clear the preselected agent ID after sending it
-            if (this.preselectedAgentId) {
-              this.preselectedAgentId = undefined;
+            if (this.currentAgentId) {
+              this.currentAgentId = undefined;
             }
           } catch (err) {
             console.error('Error selecting client app:', err);
@@ -1317,11 +1314,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
         // Clean up session state if connection failed
         // This ensures UI doesn't show as "connected" when the session actually failed
-        if (this.agentPreview || this.sessionActive) {
+        if (this.agentPreview || this.isSessionActive) {
           this.agentPreview = undefined;
           this.sessionId = Date.now().toString();
           this.currentAgentName = undefined;
-          this.latestPlanId = undefined;
+          this.currentPlanId = undefined;
           await this.setSessionActive(false);
           await this.setSessionStarting(false);
           await this.setDebugMode(false);
