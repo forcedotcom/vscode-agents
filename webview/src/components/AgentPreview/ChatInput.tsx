@@ -56,6 +56,16 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({ onSendMessage, dis
     }
   }, [message]);
 
+  // Refocus input when it transitions from disabled to enabled
+  const prevDisabledRef = useRef(disabled);
+  useEffect(() => {
+    if (prevDisabledRef.current && !disabled) {
+      // Was disabled, now enabled - refocus
+      textareaRef.current?.focus();
+    }
+    prevDisabledRef.current = disabled;
+  }, [disabled]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
