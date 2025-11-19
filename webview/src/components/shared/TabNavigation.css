@@ -114,20 +114,9 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   display: inline;
 }
 
-/* Hide "Agent" prefix when space is limited (medium screens) */
+/* Hide "Agent" prefix when space is limited */
 @media (max-width: 400px) {
   .tab-label-prefix {
     display: none;
-  }
-}
-
-/* Hide all text labels, keep only icons when space is very limited (small screens) */
-@media (max-width: 250px) {
-  .tab-label {
-    display: none;
-  }
-
-  .tab {
-    gap: 0;
   }
 }
