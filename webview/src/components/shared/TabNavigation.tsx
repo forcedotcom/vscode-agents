@@ -73,7 +73,10 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
               onClick={() => handleTabClick('preview')}
             >
               <span className="tab-icon tab-icon-comment"></span>
-              Agent Preview
+              <span className="tab-label">
+                <span className="tab-label-prefix">Agent </span>
+                <span className="tab-label-main">Preview</span>
+              </span>
             </button>
             {showTracerTab && (
               <button
@@ -82,7 +85,10 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
                 onClick={() => handleTabClick('tracer')}
               >
                 <span className="tab-icon tab-icon-tree"></span>
-                Agent Tracer
+                <span className="tab-label">
+                  <span className="tab-label-prefix">Agent </span>
+                  <span className="tab-label-main">Tracer</span>
+                </span>
               </button>
             )}
           </>

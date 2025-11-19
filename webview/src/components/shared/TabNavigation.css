@@ -103,3 +103,31 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   margin-top: -1px;
   opacity: 0.8;
 }
+
+/* Responsive behavior for tabs */
+.tab-label {
+  white-space: nowrap;
+}
+
+.tab-label-prefix,
+.tab-label-main {
+  display: inline;
+}
+
+/* Hide "Agent" prefix when space is limited (medium screens) */
+@media (max-width: 400px) {
+  .tab-label-prefix {
+    display: none;
+  }
+}
+
+/* Hide all text labels, keep only icons when space is very limited (small screens) */
+@media (max-width: 250px) {
+  .tab-label {
+    display: none;
+  }
+
+  .tab {
+    gap: 0;
+  }
+}
