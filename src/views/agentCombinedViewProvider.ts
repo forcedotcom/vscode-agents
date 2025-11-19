@@ -52,10 +52,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private static instance: AgentCombinedViewProvider;
   private agentPreview?: AgentPreviewBase;
   private sessionId = Date.now().toString();
-  private apexDebugging = false;
+  private isApexDebuggingEnabled = false;
   private selectedClientApp?: string;
-  private sessionActive = false;
-  private sessionStarting = false;
+  private isSessionActive = false;
+  private isSessionStarting = false;
   private currentAgentName?: string;
   private currentAgentId?: string;
   private currentAgentSource?: AgentSource;
@@ -86,12 +86,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Updates the session active state and context
    */
   private async setSessionActive(active: boolean): Promise<void> {
-    this.sessionActive = active;
+    this.isSessionActive = active;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionActive', active);
   }
 
   private async setSessionStarting(starting: boolean): Promise<void> {
-    this.sessionStarting = starting;
+    this.isSessionStarting = starting;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', starting);
   }
 
@@ -139,7 +139,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Updates the debug mode state and context
    */
   private async setDebugMode(enabled: boolean): Promise<void> {
-    this.apexDebugging = enabled;
+    this.isApexDebuggingEnabled = enabled;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', enabled);
   }
 
@@ -170,7 +170,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Toggles debug mode on/off
    */
   public async toggleDebugMode(): Promise<void> {
-    const newDebugMode = !this.apexDebugging;
+    const newDebugMode = !this.isApexDebuggingEnabled;
     await this.setDebugMode(newDebugMode);
 
     // If we have an active agent preview, update its debug mode
@@ -219,7 +219,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   public async endSession(): Promise<void> {
     this.cancelPendingSessionStart();
-    const sessionWasStarting = this.sessionStarting;
+    const sessionWasStarting = this.isSessionStarting;
 
     if (this.agentPreview && this.sessionId) {
       const agentName = this.currentAgentName;
@@ -908,8 +908,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentId = agentId;
 
             // Enable debug mode from apex debugging setting
-            if (this.apexDebugging) {
-              this.agentPreview.setApexDebugMode(this.apexDebugging);
+            if (this.isApexDebuggingEnabled) {
+              this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
             }
           } else {
             // Handle published agent (org agent)
@@ -931,8 +931,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             this.currentAgentId = agentId;
 
             // Enable debug mode from apex debugging setting
-            if (this.apexDebugging) {
-            this.agentPreview.setApexDebugMode(this.apexDebugging);
+            if (this.isApexDebuggingEnabled) {
+            this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
           }
         }
 
@@ -987,12 +987,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
           if (this.agentPreview) {
-            this.agentPreview.setApexDebugMode(this.apexDebugging);
+            this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
           }
 
           webviewView.webview.postMessage({
             command: 'debugModeChanged',
-            data: { enabled: this.apexDebugging }
+            data: { enabled: this.isApexDebuggingEnabled }
           });
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
@@ -1018,7 +1018,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           });
 
 
-          if (this.apexDebugging && response.apexDebugLog) {
+          if (this.isApexDebuggingEnabled && response.apexDebugLog) {
             try {
               const logPath = await this.saveApexDebugLog(response.apexDebugLog);
               if (logPath) {
@@ -1046,7 +1046,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 }
               });
             }
-          } else if (this.apexDebugging && !response.apexDebugLog) {
+          } else if (this.isApexDebuggingEnabled && !response.apexDebugLog) {
             // Debug mode is enabled but no debug log was returned
             webviewView.webview.postMessage({
               command: 'debugLogInfo',
@@ -1314,7 +1314,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
         // Clean up session state if connection failed
         // This ensures UI doesn't show as "connected" when the session actually failed
-        if (this.agentPreview || this.sessionActive) {
+        if (this.agentPreview || this.isSessionActive) {
           this.agentPreview = undefined;
           this.sessionId = Date.now().toString();
           this.currentAgentName = undefined;

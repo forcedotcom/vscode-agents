@@ -748,7 +748,7 @@ describe('AgentCombinedViewProvider', () => {
 
   describe('toggleDebugMode', () => {
     it('should toggle debug mode from false to true', async () => {
-      (provider as any).apexDebugging = false;
+      (provider as any).isApexDebuggingEnabled = false;
 
       await provider.toggleDebugMode();
 
@@ -770,7 +770,7 @@ describe('AgentCombinedViewProvider', () => {
     });
 
     it('should toggle debug mode from true to false', async () => {
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await provider.toggleDebugMode();
 
@@ -796,7 +796,7 @@ describe('AgentCombinedViewProvider', () => {
         setApexDebugMode: jest.fn()
       };
       (provider as any).agentPreview = mockAgentPreview;
-      (provider as any).apexDebugging = false;
+      (provider as any).isApexDebuggingEnabled = false;
 
       await provider.toggleDebugMode();
 
@@ -805,7 +805,7 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should work when webview does not exist', async () => {
       provider.webviewView = undefined;
-      (provider as any).apexDebugging = false;
+      (provider as any).isApexDebuggingEnabled = false;
 
       await expect(provider.toggleDebugMode()).resolves.not.toThrow();
       expect(vscode.window.showInformationMessage).toHaveBeenCalled();
@@ -941,7 +941,7 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should notify webview when cancelling a session during startup', async () => {
       (provider as any).agentPreview = undefined;
-      (provider as any).sessionStarting = true;
+      (provider as any).isSessionStarting = true;
       (provider as any).pendingStartAgentId = 'local:/workspace/testAgent.agent';
       (provider as any).pendingStartAgentSource = AgentSource.SCRIPT;
       const loadHistorySpy = jest
@@ -981,7 +981,7 @@ describe('AgentCombinedViewProvider', () => {
 
     it('should show placeholder when cancelling session start with no history', async () => {
       (provider as any).agentPreview = undefined;
-      (provider as any).sessionStarting = true;
+      (provider as any).isSessionStarting = true;
       (provider as any).pendingStartAgentId = '0X1234567890123';
       (provider as any).pendingStartAgentSource = AgentSource.PUBLISHED;
       const loadHistorySpy = jest
@@ -1012,7 +1012,7 @@ describe('AgentCombinedViewProvider', () => {
       Object.setPrototypeOf(mockAgentSimulate, AgentSimulate.prototype);
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).sessionStarting = true;
+      (provider as any).isSessionStarting = true;
       const restoreSpy = jest
         .spyOn(provider as any, 'restoreViewAfterCancelledStart')
         .mockResolvedValue(undefined);
@@ -1296,7 +1296,7 @@ describe('AgentCombinedViewProvider', () => {
 
       // Verify session state was rolled back after connection error
       expect((provider as any).agentPreview).toBeUndefined();
-      expect((provider as any).sessionActive).toBe(false);
+      expect((provider as any).isSessionActive).toBe(false);
       expect((provider as any).currentAgentName).toBeUndefined();
       expect((provider as any).currentPlanId).toBeUndefined();
 
@@ -1380,7 +1380,7 @@ describe('AgentCombinedViewProvider', () => {
       });
       (provider as any).agentPreview = { send: sendMock, setApexDebugMode: jest.fn() };
       (provider as any).sessionId = 'session-123';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       const saveSpy = jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue(new Error('write failed'));
 
@@ -1406,7 +1406,7 @@ describe('AgentCombinedViewProvider', () => {
       });
       (provider as any).agentPreview = { send: sendMock, setApexDebugMode: jest.fn() };
       (provider as any).sessionId = 'session-123';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({ command: 'sendChatMessage', data: { message: 'Hello' } });
 
@@ -2121,7 +2121,7 @@ describe('AgentCombinedViewProvider', () => {
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
 
       // Enable debug mode
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({
         command: 'startSession',
@@ -2332,7 +2332,7 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       // Enable debug mode
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({
         command: 'startSession',
@@ -2563,7 +2563,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       // Mock saveApexDebugLog
       jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue('/path/to/log.log');
@@ -2595,7 +2595,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue('/path/to/log.log');
       jest.spyOn(provider as any, 'setupAutoDebugListeners').mockImplementation();
@@ -2621,7 +2621,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue(new Error('Failed to save log'));
 
@@ -2650,7 +2650,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockRejectedValue('string error');
 
@@ -2679,7 +2679,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       jest.spyOn(provider as any, 'saveApexDebugLog').mockResolvedValue(undefined);
 
@@ -2704,7 +2704,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
-      (provider as any).apexDebugging = true;
+      (provider as any).isApexDebuggingEnabled = true;
 
       await messageHandler({
         command: 'sendChatMessage',
