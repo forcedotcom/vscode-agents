@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
 import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
@@ -26,6 +26,114 @@ interface PlanSuccessResponse {
   plan: any[];
 }
 
+export interface TraceHistoryEntry {
+  storageKey: string;
+  agentId: string;
+  sessionId: string;
+  planId: string;
+  messageId?: string;
+  timestamp?: string;
+  trace: PlanSuccessResponse;
+}
+
+export const isTraceErrorMessage = (message?: string): boolean => {
+  if (!message || typeof message !== 'string') {
+    return false;
+  }
+  const lowered = message.toLowerCase();
+  return lowered.includes('trace') || lowered.includes('plan id') || lowered.includes('session');
+};
+
+export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): string => {
+  const baseLabel = entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`;
+  if (!entry.timestamp) {
+    return baseLabel;
+  }
+  const date = new Date(entry.timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return baseLabel;
+  }
+  return `${baseLabel} • ${date.toLocaleTimeString()}`;
+};
+
+export const selectHistoryEntry = (entries: TraceHistoryEntry[], index: number): PlanSuccessResponse | null => {
+  if (index < 0 || index >= entries.length) {
+    return null;
+  }
+  return entries[index].trace ?? null;
+};
+
+export const applyHistorySelection = (
+  entries: TraceHistoryEntry[],
+  preferredIndex: number | null
+): { nextIndex: number | null; nextTraceData: PlanSuccessResponse | null } => {
+  if (entries.length === 0) {
+    return { nextIndex: null, nextTraceData: null };
+  }
+
+  const targetIndex =
+    preferredIndex !== null && preferredIndex >= 0 && preferredIndex < entries.length
+      ? preferredIndex
+      : entries.length - 1;
+
+  return {
+    nextIndex: targetIndex,
+    nextTraceData: entries[targetIndex].trace
+  };
+};
+
+export const buildTimelineItems = (
+  traceData: PlanSuccessResponse | null,
+  onSelect: (index: number) => void
+): TimelineItemProps[] => {
+  if (!traceData || !traceData.plan) {
+    return [];
+  }
+
+  return traceData.plan.map((step: any, index: number) => {
+    const status: 'success' | 'error' | 'pending' | 'incomplete' = 'success';
+    const stepType = step.type || step.stepType || '';
+    const stepName = step.name || step.label || step.description || '';
+
+    let label: string;
+    if (stepType && stepName) {
+      label = `${stepType}: ${stepName}`;
+    } else if (stepType) {
+      label = stepType;
+    } else if (stepName) {
+      label = stepName;
+    } else {
+      label = `Step ${index + 1}`;
+    }
+
+    const description = `Step ${index + 1}`;
+    const hasData = step && step.data;
+
+    return {
+      status,
+      label,
+      description,
+      onClick: hasData ? () => onSelect(index) : undefined
+    };
+  });
+};
+
+export const getStepData = (
+  traceData: PlanSuccessResponse | null,
+  selectedStepIndex: number | null
+): string | null => {
+  if (selectedStepIndex === null || !traceData || !traceData.plan) {
+    return null;
+  }
+
+  const step = traceData.plan[selectedStepIndex];
+  if (step && step.data) {
+    return JSON.stringify(step.data, null, 2);
+  }
+
+  return null;
+};
+
 const AgentTracer: React.FC<AgentTracerProps> = ({
   isVisible = true,
   onGoToPreview,
@@ -40,6 +148,14 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [panelHeight, setPanelHeight] = useState<number>(300);
   const [isResizing, setIsResizing] = useState<boolean>(false);
+  const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
+  const [selectedHistoryIndex, setSelectedHistoryIndex] = useState<number | null>(null);
+  const historyIndexRef = useRef<number | null>(null);
+
+  const updateSelectedHistoryIndex = (index: number | null) => {
+    historyIndexRef.current = index;
+    setSelectedHistoryIndex(index);
+  };
 
   const requestTraceData = useCallback(() => {
     setLoading(true);
@@ -57,13 +173,9 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
 
     // Listen for errors
     const disposeError = vscodeApi.onMessage('error', data => {
-      // Only show error if it's related to trace data, not other errors
-      if (data.message && typeof data.message === 'string') {
-        // Check if this is a trace-related error
-        if (data.message.includes('trace') || data.message.includes('plan ID') || data.message.includes('session')) {
-          setError(data.message);
-          setLoading(false);
-        }
+      if (isTraceErrorMessage(data?.message)) {
+        setError(data.message);
+        setLoading(false);
       }
     });
 
@@ -78,10 +190,29 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     // Request trace data when component mounts
     requestTraceData();
 
+    const disposeTraceHistory = vscodeApi.onMessage('traceHistory', data => {
+      const entries = Array.isArray(data?.entries) ? data.entries : [];
+      setTraceHistory(entries);
+      setLoading(false);
+
+      if (entries.length === 0) {
+        updateSelectedHistoryIndex(null);
+        setTraceData(null);
+        setSelectedStepIndex(null);
+        return;
+      }
+
+      const { nextIndex, nextTraceData } = applyHistorySelection(entries, historyIndexRef.current);
+      updateSelectedHistoryIndex(nextIndex);
+      setTraceData(nextTraceData);
+      setSelectedStepIndex(null);
+    });
+
     return () => {
       disposeTraceData();
       disposeError();
       disposeMessageSent();
+      disposeTraceHistory();
     };
   }, [requestTraceData]);
 
@@ -101,64 +232,29 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   }
 
   const hasTraceData = traceData !== null && traceData.plan && traceData.plan.length > 0;
-
-  // Convert plan steps to timeline items
-  const getTimelineItems = (): TimelineItemProps[] => {
-    if (!traceData || !traceData.plan) return [];
-
-    return traceData.plan.map((step: any, index: number) => {
-      // All steps are shown as success (checked state)
-      const status: 'success' | 'error' | 'pending' | 'incomplete' = 'success';
-
-      // Type as the label (at the top)
-      const stepType = step.type || step.stepType || '';
-      const stepName = step.name || step.label || step.description || '';
-
-      // Combine type and name for label
-      let label: string;
-      if (stepType && stepName) {
-        label = `${stepType}: ${stepName}`;
-      } else if (stepType) {
-        label = stepType;
-      } else if (stepName) {
-        label = stepName;
-      } else {
-        label = `Step ${index + 1}`;
-      }
-
-      // Step number as the description (underneath)
-      const description = `Step ${index + 1}`;
-
-      // Only add onClick if the step has data
-      const hasData = step && step.data;
-
-      return {
-        status,
-        label,
-        description,
-        onClick: hasData ? () => setSelectedStepIndex(index) : undefined
-      };
-    });
-  };
-
-  // Get selected step data
-  const getSelectedStepData = (): string | null => {
-    if (selectedStepIndex === null || !traceData || !traceData.plan) {
-      return null;
-    }
-
-    const step = traceData.plan[selectedStepIndex];
-    if (step && step.data) {
-      return JSON.stringify(step.data, null, 2);
-    }
-
-    return null;
-  };
+  const timelineItems = buildTimelineItems(traceData, index => setSelectedStepIndex(index));
+  const selectedStepData = getStepData(traceData, selectedStepIndex);
 
   // Handle panel resize
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
+  };
+
+  const handleHistoryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const index = parseInt(event.target.value, 10);
+    if (Number.isNaN(index)) {
+      return;
+    }
+
+    const nextTrace = selectHistoryEntry(traceHistory, index);
+    if (!nextTrace) {
+      return;
+    }
+
+    updateSelectedHistoryIndex(index);
+    setTraceData(nextTrace);
+    setSelectedStepIndex(null);
   };
 
   useEffect(() => {
@@ -191,6 +287,26 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-loading">Loading trace data...</div>
         ) : hasTraceData && traceData ? (
           <div className="tracer-simple">
+            {traceHistory.length > 0 && (
+              <div className="trace-history-selector">
+                <label htmlFor="trace-history-select">Trace history</label>
+                <select
+                  id="trace-history-select"
+                  value={
+                    selectedHistoryIndex !== null
+                      ? selectedHistoryIndex
+                      : Math.max(traceHistory.length - 1, 0)
+                  }
+                  onChange={handleHistoryChange}
+                >
+                  {traceHistory.map((entry, index) => (
+                    <option key={`${entry.planId}-${index}`} value={index}>
+                      {formatHistoryLabel(entry, index)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <table className="tracer-info-table">
               <tbody>
                 <tr>
@@ -211,7 +327,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             </table>
 
             <div className="tracer-plan-timeline">
-              <Timeline items={getTimelineItems()} />
+              <Timeline items={timelineItems} />
             </div>
           </div>
         ) : traceData === null ? (
@@ -229,7 +345,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
         )}
       </div>
 
-      {selectedStepIndex !== null && getSelectedStepData() && (
+      {selectedStepIndex !== null && selectedStepData && (
         <div
           className="tracer-step-data-panel"
           style={{ height: `${panelHeight}px` }}
@@ -256,7 +372,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           />
           <div className="tracer-step-data-panel__content">
             <CodeBlock
-              code={getSelectedStepData()!}
+              code={selectedStepData!}
               showCopy={false}
             />
           </div>

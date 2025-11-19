@@ -22,6 +22,11 @@ import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../../src/utils/clientAppUtils';
 import { Lifecycle } from '@salesforce/core';
 import * as path from 'path';
+import {
+  appendTraceHistoryEntry,
+  readTraceHistoryEntries,
+  clearTraceHistory
+} from '../../src/utils/traceHistory';
 
 // Mock VS Code
 jest.mock('vscode', () => ({
@@ -111,6 +116,12 @@ jest.mock('../../src/utils/clientAppUtils', () => ({
   createConnectionWithClientApp: jest.fn()
 }));
 
+jest.mock('../../src/utils/traceHistory', () => ({
+  appendTraceHistoryEntry: jest.fn(),
+  readTraceHistoryEntries: jest.fn().mockResolvedValue([]),
+  clearTraceHistory: jest.fn()
+}));
+
 // Mock fs
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -150,6 +161,7 @@ describe('AgentCombinedViewProvider', () => {
 
     // Reset all mocks
     jest.clearAllMocks();
+    (readTraceHistoryEntries as jest.Mock).mockResolvedValue([]);
 });
 
   afterEach(() => {
@@ -1727,6 +1739,38 @@ describe('AgentCombinedViewProvider', () => {
       expect(clearMessagesIndex).toBeLessThan(sessionStartingIndex);
     });
 
+    it('should reset trace history when a script session starts', async () => {
+      const mockLifecycle = {
+        on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        removeAllListeners: jest.fn()
+      };
+      (Lifecycle.getInstance as jest.Mock).mockReturnValue(mockLifecycle);
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
+        instanceUrl: 'https://test.salesforce.com'
+      });
+
+      const mockAgentSimulate = {
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'script-session',
+          messages: []
+        }),
+        setApexDebugMode: jest.fn()
+      };
+      (AgentSimulate as jest.Mock).mockImplementationOnce(() => mockAgentSimulate);
+
+      await messageHandler({
+        command: 'startSession',
+        data: { agentId: 'local:/workspace/test.agent' }
+      });
+
+      expect(clearTraceHistory).toHaveBeenCalledWith('test.agent');
+      expect(readTraceHistoryEntries).toHaveBeenCalledWith('test.agent');
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceHistory',
+        data: expect.objectContaining({ agentId: 'local:/workspace/test.agent', entries: [] })
+      });
+    });
+
     it('should start session with script agent and set up lifecycle listeners', async () => {
       const mockLifecycle = {
         on: jest.fn().mockReturnValue({ dispose: jest.fn() }),
@@ -2651,6 +2695,9 @@ describe('AgentCombinedViewProvider', () => {
       const loadHistorySpy = jest
         .spyOn(provider as any, 'loadAndSendConversationHistory')
         .mockResolvedValue(true);
+      const loadTraceSpy = jest
+        .spyOn(provider as any, 'loadAndSendTraceHistory')
+        .mockResolvedValue(undefined);
 
       await messageHandler({
         command: 'loadAgentHistory',
@@ -2668,16 +2715,25 @@ describe('AgentCombinedViewProvider', () => {
         AgentSource.SCRIPT,
         mockWebviewView
       );
+      expect((provider as any).loadAndSendTraceHistory).toHaveBeenCalledWith(
+        'local:/workspace/myAgent.agent',
+        AgentSource.SCRIPT,
+        mockWebviewView
+      );
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalledWith(
         expect.objectContaining({ command: 'noHistoryFound' })
       );
       loadHistorySpy.mockRestore();
+      loadTraceSpy.mockRestore();
     });
 
     it('should load history for published agent when history exists', async () => {
       const loadHistorySpy = jest
         .spyOn(provider as any, 'loadAndSendConversationHistory')
         .mockResolvedValue(true);
+      const loadTraceSpy = jest
+        .spyOn(provider as any, 'loadAndSendTraceHistory')
+        .mockResolvedValue(undefined);
 
       await messageHandler({
         command: 'loadAgentHistory',
@@ -2690,10 +2746,16 @@ describe('AgentCombinedViewProvider', () => {
         AgentSource.PUBLISHED,
         mockWebviewView
       );
+      expect((provider as any).loadAndSendTraceHistory).toHaveBeenCalledWith(
+        '0X1234567890123',
+        AgentSource.PUBLISHED,
+        mockWebviewView
+      );
       expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalledWith(
         expect.objectContaining({ command: 'noHistoryFound' })
       );
       loadHistorySpy.mockRestore();
+      loadTraceSpy.mockRestore();
     });
 
     it('should send noHistoryFound when no history exists', async () => {
@@ -2875,6 +2937,28 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
 
+    it('should restore stored trace data when no active session is available', async () => {
+      (provider as any).currentAgentId = '0X123';
+      (provider as any).currentAgentSource = AgentSource.PUBLISHED;
+      (readTraceHistoryEntries as jest.Mock).mockResolvedValue([
+        {
+          storageKey: '0X123',
+          agentId: '0X123',
+          sessionId: 'old-session',
+          planId: 'stored-plan',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          trace: { plan: [{ type: 'UserInputStep' }], planId: 'stored-plan', sessionId: 'old-session' }
+        }
+      ]);
+
+      await messageHandler({ command: 'getTraceData' });
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'traceData',
+        data: { plan: [{ type: 'UserInputStep' }], planId: 'stored-plan', sessionId: 'old-session' }
+      });
+    });
+
     it('should call trace API for AgentSimulate with planId', async () => {
       const mockTraceData = {
         type: 'PlanSuccessResponse',
@@ -2890,6 +2974,8 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
       (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentAgentId = '0X123';
+      (provider as any).currentAgentSource = AgentSource.PUBLISHED;
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
@@ -2899,6 +2985,14 @@ describe('AgentCombinedViewProvider', () => {
         command: 'traceData',
         data: mockTraceData
       });
+      expect(appendTraceHistoryEntry).toHaveBeenCalledWith(
+        '0X123',
+        expect.objectContaining({
+          agentId: '0X123',
+          planId: 'test-plan-id',
+          trace: mockTraceData
+        })
+      );
     });
 
     it('should return empty data for AgentPreview (not AgentSimulate)', async () => {

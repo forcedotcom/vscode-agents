@@ -39,6 +39,26 @@
   padding: 0;
 }
 
+.trace-history-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trace-history-selector label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.trace-history-selector select {
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
 .tracer-info-table {
   width: 100%;
   border-collapse: collapse;
