@@ -117,7 +117,8 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 
 .trace-time {
   color: var(--vscode-descriptionForeground);
-  font-size: 13px;
+  font-size: 12px;
+  font-family: var(--vscode-editor-font-family);
   opacity: 0.8;
   flex-shrink: 0;
 }
