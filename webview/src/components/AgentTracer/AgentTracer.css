@@ -189,14 +189,14 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 }
 
 .tracer-plan-timeline {
-  margin-top: 12px;
-  padding-left: 2px;
+  margin-top: 6px;
+  padding-left: 0;
   padding-bottom: 0;
 }
 
 .tracer-json-link {
   margin-top: 0;
-  padding: 8px 0 16px;
+  padding: 32px 0;
   display: flex;
   justify-content: flex-start;
 }
