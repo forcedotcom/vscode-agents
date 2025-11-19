@@ -82,6 +82,9 @@ body.vscode-high-contrast .trace-history-selector__input::after {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trace-history-selector__select:hover {

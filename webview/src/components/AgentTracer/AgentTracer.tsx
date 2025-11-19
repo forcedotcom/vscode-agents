@@ -32,6 +32,7 @@ export interface TraceHistoryEntry {
   sessionId: string;
   planId: string;
   messageId?: string;
+  userMessage?: string;
   timestamp?: string;
   trace: PlanSuccessResponse;
 }
@@ -45,7 +46,7 @@ export const isTraceErrorMessage = (message?: string): boolean => {
 };
 
 export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): string => {
-  const baseLabel = entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`;
+  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
   if (!entry.timestamp) {
     return baseLabel;
   }
@@ -53,7 +54,8 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): str
   if (Number.isNaN(date.getTime())) {
     return baseLabel;
   }
-  return `${baseLabel} • ${date.toLocaleTimeString()}`;
+  const time = date.toLocaleTimeString();
+  return `${baseLabel} • ${time}`;
 };
 
 export const selectHistoryEntry = (entries: TraceHistoryEntry[], index: number): PlanSuccessResponse | null => {
