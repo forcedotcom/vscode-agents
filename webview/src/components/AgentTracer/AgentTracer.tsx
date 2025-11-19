@@ -392,16 +392,18 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
               </tbody>
             </table>
 
-            <div className="tracer-plan-timeline">
-              <Timeline items={timelineItems} />
-            </div>
-            {currentHistoryEntry && (
-              <div className="tracer-json-link">
-                <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
-                  Open full trace JSON
-                </button>
+            <div className="tracer-scrollable-content">
+              <div className="tracer-plan-timeline">
+                <Timeline items={timelineItems} />
               </div>
-            )}
+              {currentHistoryEntry && (
+                <div className="tracer-json-link">
+                  <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
+                    Open full trace JSON
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : shouldShowPlaceholder ? (
           <TracerPlaceholder
