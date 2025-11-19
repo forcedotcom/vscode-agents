@@ -55,7 +55,23 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): str
     return baseLabel;
   }
   const time = date.toLocaleTimeString();
-  return `${baseLabel} • ${time}`;
+  return `${time} • ${baseLabel}`;
+};
+
+export const formatHistoryParts = (
+  entry: TraceHistoryEntry,
+  index: number
+): { time: string | null; message: string } => {
+  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
+  if (!entry.timestamp) {
+    return { time: null, message: baseLabel };
+  }
+  const date = new Date(entry.timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return { time: null, message: baseLabel };
+  }
+  const time = date.toLocaleTimeString();
+  return { time, message: baseLabel };
 };
 
 export const selectHistoryEntry = (entries: TraceHistoryEntry[], index: number): PlanSuccessResponse | null => {
@@ -295,7 +311,9 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                   <select
                     id="trace-history-select"
                     aria-label="Trace history"
-                    className="trace-history-selector__select"
+                    className={`trace-history-selector__select ${
+                      selectedHistoryIndex !== null ? 'has-selection' : ''
+                    }`}
                     value={
                       selectedHistoryIndex !== null
                         ? selectedHistoryIndex
@@ -309,6 +327,17 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                       </option>
                     ))}
                   </select>
+                  {selectedHistoryIndex !== null && (() => {
+                    const currentEntry = traceHistory[selectedHistoryIndex];
+                    const { time, message } = formatHistoryParts(currentEntry, selectedHistoryIndex);
+                    return (
+                      <div className="trace-history-selector__display">
+                        {time && <span className="trace-time">{time}</span>}
+                        {time && <span className="trace-separator">•</span>}
+                        <span className="trace-message">{message}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}

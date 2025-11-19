@@ -87,6 +87,10 @@ body.vscode-high-contrast .trace-history-selector__input::after {
   white-space: nowrap;
 }
 
+.trace-history-selector__select.has-selection {
+  color: transparent;
+}
+
 .trace-history-selector__select:hover {
   background: var(--vscode-dropdown-listBackground);
 }
@@ -94,6 +98,43 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 .trace-history-selector__select:focus {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
+}
+
+.trace-history-selector__display {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 48px);
+}
+
+.trace-time {
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.trace-separator {
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.trace-message {
+  color: var(--vscode-dropdown-foreground);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tracer-info-table {
