@@ -62,7 +62,7 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): str
     return baseLabel;
   }
   const time = formatTime(date);
-  return `${time} ${baseLabel}`;
+  return `${time} • ${baseLabel}`;
 };
 
 export const formatHistoryParts = (
@@ -340,6 +340,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     return (
                       <div className="trace-history-selector__display">
                         {time && <span className="trace-time">{time}</span>}
+                        {time && <span className="trace-separator">•</span>}
                         <span className="trace-message">{message}</span>
                       </div>
                     );
