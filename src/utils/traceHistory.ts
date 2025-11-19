@@ -31,6 +31,7 @@ export type TraceHistoryEntry<T = unknown> = {
   sessionId: string;
   planId: string;
   messageId?: string;
+  userMessage?: string;
   timestamp: string;
   trace: T;
 };

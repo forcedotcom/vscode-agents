@@ -40,23 +40,60 @@
 }
 
 .trace-history-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  width: 100%;
 }
 
-.trace-history-selector label {
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground);
+.trace-history-selector__input {
+  position: relative;
+  width: 100%;
 }
 
-.trace-history-selector select {
-  background-color: var(--vscode-input-background);
-  color: var(--vscode-input-foreground);
-  border: 1px solid var(--vscode-input-border);
-  border-radius: 2px;
-  padding: 4px 8px;
-  font-size: 11px;
+.trace-history-selector__input::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background-image: url('../../assets/chevron-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.8;
+}
+
+body.vscode-dark .trace-history-selector__input::after,
+body.vscode-high-contrast .trace-history-selector__input::after {
+  background-image: url('../../assets/chevron-dark.svg');
+}
+
+.trace-history-selector__select {
+  width: 100%;
+  padding: 6px 28px 6px 8px;
+  background: var(--vscode-dropdown-background);
+  border: 1px solid var(--vscode-dropdown-border);
+  border-radius: 3px;
+  color: var(--vscode-dropdown-foreground);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-history-selector__select:hover {
+  background: var(--vscode-dropdown-listBackground);
+}
+
+.trace-history-selector__select:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .tracer-info-table {

@@ -32,6 +32,7 @@ export interface TraceHistoryEntry {
   sessionId: string;
   planId: string;
   messageId?: string;
+  userMessage?: string;
   timestamp?: string;
   trace: PlanSuccessResponse;
 }
@@ -45,7 +46,7 @@ export const isTraceErrorMessage = (message?: string): boolean => {
 };
 
 export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): string => {
-  const baseLabel = entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`;
+  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
   if (!entry.timestamp) {
     return baseLabel;
   }
@@ -53,7 +54,8 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): str
   if (Number.isNaN(date.getTime())) {
     return baseLabel;
   }
-  return `${baseLabel} • ${date.toLocaleTimeString()}`;
+  const time = date.toLocaleTimeString();
+  return `${baseLabel} • ${time}`;
 };
 
 export const selectHistoryEntry = (entries: TraceHistoryEntry[], index: number): PlanSuccessResponse | null => {
@@ -289,22 +291,25 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-simple">
             {traceHistory.length > 0 && (
               <div className="trace-history-selector">
-                <label htmlFor="trace-history-select">Trace history</label>
-                <select
-                  id="trace-history-select"
-                  value={
-                    selectedHistoryIndex !== null
-                      ? selectedHistoryIndex
-                      : Math.max(traceHistory.length - 1, 0)
-                  }
-                  onChange={handleHistoryChange}
-                >
-                  {traceHistory.map((entry, index) => (
-                    <option key={`${entry.planId}-${index}`} value={index}>
-                      {formatHistoryLabel(entry, index)}
-                    </option>
-                  ))}
-                </select>
+                <div className="trace-history-selector__input">
+                  <select
+                    id="trace-history-select"
+                    aria-label="Trace history"
+                    className="trace-history-selector__select"
+                    value={
+                      selectedHistoryIndex !== null
+                        ? selectedHistoryIndex
+                        : Math.max(traceHistory.length - 1, 0)
+                    }
+                    onChange={handleHistoryChange}
+                  >
+                    {traceHistory.map((entry, index) => (
+                      <option key={`${entry.planId}-${index}`} value={index}>
+                        {formatHistoryLabel(entry, index)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
             <table className="tracer-info-table">
