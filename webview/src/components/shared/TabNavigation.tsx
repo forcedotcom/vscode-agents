@@ -22,7 +22,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
   // Use custom tabs if provided, otherwise use default tabs
   const isCustomTabs = tabs && tabs.length > 0;
 
-  React.useEffect(() => {
+  const updateIndicator = React.useCallback(() => {
     if (isCustomTabs) {
       const activeTabElement = tabRefs.current[activeTab.toString()];
       if (activeTabElement) {
@@ -40,7 +40,17 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
         });
       }
     }
-  }, [activeTab, showTracerTab, isCustomTabs, tabs]);
+  }, [activeTab, isCustomTabs, tabs]);
+
+  React.useEffect(() => {
+    updateIndicator();
+  }, [updateIndicator, showTracerTab]);
+
+  // Update indicator on window resize (for responsive behavior)
+  React.useEffect(() => {
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [updateIndicator]);
 
   const handleTabClick = (tab: any) => {
     onTabChange(tab);
