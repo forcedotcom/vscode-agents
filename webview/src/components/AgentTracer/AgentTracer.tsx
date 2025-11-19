@@ -391,7 +391,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
               {currentHistoryEntry && (
                 <div className="tracer-json-link">
                   <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
-                    Open Raw JSON
+                    View Raw JSON
                   </button>
                 </div>
               )}
