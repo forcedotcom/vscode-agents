@@ -45,6 +45,13 @@ export const isTraceErrorMessage = (message?: string): boolean => {
   return lowered.includes('trace') || lowered.includes('plan id') || lowered.includes('session');
 };
 
+const formatTime = (date: Date): string => {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+};
+
 export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): string => {
   const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
   if (!entry.timestamp) {
@@ -54,8 +61,8 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): str
   if (Number.isNaN(date.getTime())) {
     return baseLabel;
   }
-  const time = date.toLocaleTimeString();
-  return `${time} • ${baseLabel}`;
+  const time = formatTime(date);
+  return `${time} ${baseLabel}`;
 };
 
 export const formatHistoryParts = (
@@ -70,7 +77,7 @@ export const formatHistoryParts = (
   if (Number.isNaN(date.getTime())) {
     return { time: null, message: baseLabel };
   }
-  const time = date.toLocaleTimeString();
+  const time = formatTime(date);
   return { time, message: baseLabel };
 };
 
@@ -333,7 +340,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     return (
                       <div className="trace-history-selector__display">
                         {time && <span className="trace-time">{time}</span>}
-                        {time && <span className="trace-separator">•</span>}
                         <span className="trace-message">{message}</span>
                       </div>
                     );
