@@ -115,7 +115,7 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
 }
 
 /* Hide "Agent" prefix when space is limited */
-@media (max-width: 400px) {
+@media (max-width: 300px) {
   .tab-label-prefix {
     display: none;
   }
