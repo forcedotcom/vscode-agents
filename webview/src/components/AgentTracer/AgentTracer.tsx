@@ -368,12 +368,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                   <td className="tracer-info-table__label">Plan ID</td>
                   <td className="tracer-info-table__value">{traceData.planId}</td>
                 </tr>
-                {traceData.topic && (
-                  <tr>
-                    <td className="tracer-info-table__label">Topic</td>
-                    <td className="tracer-info-table__value">{traceData.topic}</td>
-                  </tr>
-                )}
               </tbody>
             </table>
 
