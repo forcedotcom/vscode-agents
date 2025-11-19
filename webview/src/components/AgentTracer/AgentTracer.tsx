@@ -3,6 +3,7 @@ import TracerPlaceholder from './TracerPlaceholder.js';
 import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
 import TabNavigation from '../shared/TabNavigation.js';
+import SystemMessage from '../AgentPreview/SystemMessage.js';
 
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
@@ -329,7 +330,10 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     <div className="agent-tracer">
       <div className="tracer-content">
         {loading ? (
-          <div className="tracer-loading">Loading trace data...</div>
+          <div className="tracer-loading">
+            <span className="loading-spinner"></span>
+            <span className="loading-text">Loading trace data...</span>
+          </div>
         ) : hasTraceData && traceData ? (
           <div className="tracer-simple">
             {traceHistory.length > 0 && (
@@ -406,7 +410,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             onModeChange={onLiveModeChange}
           />
         ) : (
-          <div className="tracer-empty">Unable to load trace data. Check the console for errors.</div>
+          <SystemMessage content="Unable to load trace data. Check the console for errors." type="error" />
         )}
       </div>
 

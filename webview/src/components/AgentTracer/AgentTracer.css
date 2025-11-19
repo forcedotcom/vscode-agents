@@ -22,14 +22,33 @@
 }
 
 .tracer-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
   padding: 16px;
-  color: var(--vscode-foreground);
 }
 
-.tracer-empty {
-  padding: 16px;
+.tracer-loading .loading-spinner {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background-image: url('../../assets/spinner-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  animation: spinner-rotate 1s linear infinite;
+  flex-shrink: 0;
+}
+
+.tracer-loading .loading-text {
+  font-size: 13px;
   color: var(--vscode-descriptionForeground);
-  font-style: italic;
+}
+
+body.vscode-dark .tracer-loading .loading-spinner,
+body.vscode-high-contrast .tracer-loading .loading-spinner {
+  background-image: url('../../assets/spinner-dark.svg');
 }
 
 .tracer-simple {
@@ -263,4 +282,13 @@ body.vscode-high-contrast .trace-history-selector__input::after {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+@keyframes spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
