@@ -13,6 +13,15 @@ const dispatchMessage = (command: string, data: any) => {
 };
 
 describe('AgentTracer', () => {
+  it('shows the placeholder when no trace history is available', () => {
+    render(<AgentTracer isVisible />);
+
+    dispatchMessage('traceHistory', { entries: [] });
+
+    expect(screen.getByText(/Agent Tracer displays/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Loading trace data/i)).not.toBeInTheDocument();
+  });
+
   it('should load trace history and allow selecting previous traces', () => {
     render(<AgentTracer isVisible />);
 

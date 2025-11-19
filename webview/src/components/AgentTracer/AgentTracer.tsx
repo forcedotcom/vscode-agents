@@ -258,7 +258,10 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     );
   }
 
-  const hasTraceData = traceData !== null && traceData.plan && traceData.plan.length > 0;
+  const planSteps = traceData?.plan;
+  const hasPlanArray = Array.isArray(planSteps);
+  const hasTraceData = hasPlanArray && planSteps.length > 0;
+  const shouldShowPlaceholder = !traceData || (hasPlanArray && planSteps.length === 0);
   const timelineItems = buildTimelineItems(traceData, index => setSelectedStepIndex(index));
   const selectedStepData = getStepData(traceData, selectedStepIndex);
 
@@ -375,9 +378,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
               <Timeline items={timelineItems} />
             </div>
           </div>
-        ) : traceData === null ? (
-          <div className="tracer-empty">Loading trace data...</div>
-        ) : traceData && traceData.plan && traceData.plan.length === 0 ? (
+        ) : shouldShowPlaceholder ? (
           <TracerPlaceholder
             onGoToPreview={onGoToPreview}
             isSessionActive={isSessionActive}
