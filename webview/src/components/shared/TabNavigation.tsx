@@ -22,7 +22,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
   // Use custom tabs if provided, otherwise use default tabs
   const isCustomTabs = tabs && tabs.length > 0;
 
-  React.useEffect(() => {
+  const updateIndicator = React.useCallback(() => {
     if (isCustomTabs) {
       const activeTabElement = tabRefs.current[activeTab.toString()];
       if (activeTabElement) {
@@ -40,7 +40,24 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
         });
       }
     }
-  }, [activeTab, showTracerTab, isCustomTabs, tabs]);
+  }, [activeTab, isCustomTabs, tabs]);
+
+  React.useEffect(() => {
+    updateIndicator();
+  }, [updateIndicator, showTracerTab]);
+
+  // Update indicator on window resize (for responsive behavior)
+  React.useEffect(() => {
+    const handleResize = () => {
+      // Use requestAnimationFrame to ensure DOM has updated after CSS media queries apply
+      requestAnimationFrame(() => {
+        updateIndicator();
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateIndicator]);
 
   const handleTabClick = (tab: any) => {
     onTabChange(tab);
@@ -73,7 +90,10 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
               onClick={() => handleTabClick('preview')}
             >
               <span className="tab-icon tab-icon-comment"></span>
-              Agent Preview
+              <span className="tab-label">
+                <span className="tab-label-prefix">Agent </span>
+                <span className="tab-label-main">Preview</span>
+              </span>
             </button>
             {showTracerTab && (
               <button
@@ -82,7 +102,10 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
                 onClick={() => handleTabClick('tracer')}
               >
                 <span className="tab-icon tab-icon-tree"></span>
-                Agent Tracer
+                <span className="tab-label">
+                  <span className="tab-label-prefix">Agent </span>
+                  <span className="tab-label-main">Tracer</span>
+                </span>
               </button>
             )}
           </>

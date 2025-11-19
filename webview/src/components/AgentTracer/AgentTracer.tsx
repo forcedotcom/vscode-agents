@@ -3,6 +3,7 @@ import TracerPlaceholder from './TracerPlaceholder.js';
 import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
 import TabNavigation from '../shared/TabNavigation.js';
+import SystemMessage from '../AgentPreview/SystemMessage.js';
 
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
@@ -145,10 +146,7 @@ export const buildTimelineItems = (
   });
 };
 
-export const getStepData = (
-  traceData: PlanSuccessResponse | null,
-  selectedStepIndex: number | null
-): string | null => {
+export const getStepData = (traceData: PlanSuccessResponse | null, selectedStepIndex: number | null): string | null => {
   if (selectedStepIndex === null || !traceData || !traceData.plan) {
     return null;
   }
@@ -226,6 +224,8 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
 
     // Listen for messageSent events to refresh trace data
     const disposeMessageSent = vscodeApi.onMessage('messageSent', () => {
+      // Reset history selection to automatically select the latest trace
+      historyIndexRef.current = null;
       // Wait a bit for the planId to be set in the provider before requesting
       setTimeout(() => {
         requestTraceData();
@@ -332,7 +332,10 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     <div className="agent-tracer">
       <div className="tracer-content">
         {loading ? (
-          <div className="tracer-loading">Loading trace data...</div>
+          <div className="tracer-loading">
+            <span className="loading-spinner"></span>
+            <span className="loading-text">Loading trace data...</span>
+          </div>
         ) : hasTraceData && traceData ? (
           <div className="tracer-simple">
             {traceHistory.length > 0 && (
@@ -341,14 +344,8 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                   <select
                     id="trace-history-select"
                     aria-label="Trace history"
-                    className={`trace-history-selector__select ${
-                      selectedHistoryIndex !== null ? 'has-selection' : ''
-                    }`}
-                    value={
-                      selectedHistoryIndex !== null
-                        ? selectedHistoryIndex
-                        : Math.max(traceHistory.length - 1, 0)
-                    }
+                    className={`trace-history-selector__select ${selectedHistoryIndex !== null ? 'has-selection' : ''}`}
+                    value={selectedHistoryIndex !== null ? selectedHistoryIndex : Math.max(traceHistory.length - 1, 0)}
                     onChange={handleHistoryChange}
                   >
                     {traceHistory.map((entry, index) => (
@@ -357,17 +354,18 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                       </option>
                     ))}
                   </select>
-                  {selectedHistoryIndex !== null && (() => {
-                    const currentEntry = traceHistory[selectedHistoryIndex];
-                    const { time, message } = formatHistoryParts(currentEntry, selectedHistoryIndex);
-                    return (
-                      <div className="trace-history-selector__display">
-                        {time && <span className="trace-time">{time}</span>}
-                        {time && <span className="trace-separator">•</span>}
-                        <span className="trace-message">{message}</span>
-                      </div>
-                    );
-                  })()}
+                  {selectedHistoryIndex !== null &&
+                    (() => {
+                      const currentEntry = traceHistory[selectedHistoryIndex];
+                      const { time, message } = formatHistoryParts(currentEntry, selectedHistoryIndex);
+                      return (
+                        <div className="trace-history-selector__display">
+                          {time && <span className="trace-time">{time}</span>}
+                          {time && <span className="trace-separator">•</span>}
+                          <span className="trace-message">{message}</span>
+                        </div>
+                      );
+                    })()}
                 </div>
               </div>
             )}
@@ -392,16 +390,18 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
               </tbody>
             </table>
 
-            <div className="tracer-plan-timeline">
-              <Timeline items={timelineItems} />
-            </div>
-            {currentHistoryEntry && (
-              <div className="tracer-json-link">
-                <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
-                  Open full trace JSON
-                </button>
+            <div className="tracer-scrollable-content">
+              <div className="tracer-plan-timeline">
+                <Timeline items={timelineItems} />
               </div>
-            )}
+              {currentHistoryEntry && (
+                <div className="tracer-json-link">
+                  <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
+                    View Raw JSON
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : shouldShowPlaceholder ? (
           <TracerPlaceholder
@@ -412,19 +412,13 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             onModeChange={onLiveModeChange}
           />
         ) : (
-          <div className="tracer-empty">Unable to load trace data. Check the console for errors.</div>
+          <SystemMessage content="Unable to load trace data. Check the console for errors." type="error" />
         )}
       </div>
 
       {selectedStepIndex !== null && selectedStepData && (
-        <div
-          className="tracer-step-data-panel"
-          style={{ height: `${panelHeight}px` }}
-        >
-          <div
-            className="tracer-step-data-panel__resize-handle"
-            onMouseDown={handleResizeStart}
-          />
+        <div className="tracer-step-data-panel" style={{ height: `${panelHeight}px` }}>
+          <div className="tracer-step-data-panel__resize-handle" onMouseDown={handleResizeStart} />
           <TabNavigation
             activeTab={0}
             onTabChange={() => {}}
@@ -434,18 +428,24 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                 id: 'json',
                 label: 'JSON',
                 icon: (
-                  <svg width="14" height="11" viewBox="0 0 14 11" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.68 2.61333L2.98667 1.86667L0 4.90667V5.6L2.98667 8.58667L3.68 7.89333L1.06667 5.22667L3.68 2.61333ZM10.72 1.86667L13.7067 4.90667V5.6L10.72 8.58667L9.97333 7.89333L12.64 5.22667L9.97333 2.61333L10.72 1.86667ZM3.89333 10.0267L8.90667 0L9.81333 0.48L4.8 10.4533L3.89333 10.0267Z" fill="currentColor"/>
+                  <svg
+                    width="14"
+                    height="11"
+                    viewBox="0 0 14 11"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3.68 2.61333L2.98667 1.86667L0 4.90667V5.6L2.98667 8.58667L3.68 7.89333L1.06667 5.22667L3.68 2.61333ZM10.72 1.86667L13.7067 4.90667V5.6L10.72 8.58667L9.97333 7.89333L12.64 5.22667L9.97333 2.61333L10.72 1.86667ZM3.89333 10.0267L8.90667 0L9.81333 0.48L4.8 10.4533L3.89333 10.0267Z"
+                      fill="currentColor"
+                    />
                   </svg>
                 )
               }
             ]}
           />
           <div className="tracer-step-data-panel__content">
-            <CodeBlock
-              code={selectedStepData!}
-              showCopy={false}
-            />
+            <CodeBlock code={selectedStepData!} showCopy={false} />
           </div>
         </div>
       )}
