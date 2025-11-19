@@ -67,4 +67,35 @@ describe('AgentTracer', () => {
     expect(selector).toHaveValue('0');
     expect(screen.getByText('session-1')).toBeInTheDocument();
   });
+
+  it('sends an openTraceJson request when the link is clicked', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-3',
+      sessionId: 'session-3',
+      plan: [{ type: 'UserInputStep', data: { content: 'link test' } }]
+    };
+    const historyEntries = [
+      {
+        storageKey: 'agent',
+        agentId: 'agent',
+        planId: 'plan-3',
+        sessionId: 'session-3',
+        timestamp: '2024-01-03T00:00:00.000Z',
+        trace
+      }
+    ];
+
+    dispatchMessage('traceHistory', { entries: historyEntries });
+
+    const button = screen.getByRole('button', { name: /open full trace json/i });
+    fireEvent.click(button);
+
+    expect((window as any).vscode.postMessage).toHaveBeenCalledWith({
+      command: 'openTraceJson',
+      data: { entry: historyEntries[0] }
+    });
+  });
 });

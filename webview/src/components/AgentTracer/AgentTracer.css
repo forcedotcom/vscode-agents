@@ -179,7 +179,40 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 .tracer-plan-timeline {
   margin-top: 12px;
   padding-left: 2px;
-  padding-bottom: 40px;
+  padding-bottom: 0;
+}
+
+.tracer-json-link {
+  margin-top: 0;
+  padding: 8px 0 16px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.tracer-json-link__button {
+  background: none;
+  border: none;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 12px;
+  font-family: var(--vscode-font-family);
+  padding: 0;
+}
+
+.tracer-json-link__button:hover {
+  color: var(--vscode-textLink-activeForeground);
+}
+
+.tracer-json-link__button:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.tracer-json-link__button:disabled {
+  color: var(--vscode-disabledForeground);
+  text-decoration: none;
+  cursor: default;
 }
 
 .tracer-step-data-panel {

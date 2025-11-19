@@ -13,6 +13,7 @@ import {
   appendTraceHistoryEntry,
   readTraceHistoryEntries,
   clearTraceHistory,
+  writeTraceEntryToFile,
   type TraceHistoryEntry
 } from '../utils/traceHistory';
 
@@ -521,6 +522,23 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       return true;
     }
     return false;
+  }
+
+  private async openTraceJsonEntry(entryData: TraceHistoryEntry | undefined): Promise<void> {
+    if (!entryData || typeof entryData !== 'object' || !entryData.storageKey) {
+      vscode.window.showErrorMessage('Unable to open trace JSON: Missing trace details.');
+      return;
+    }
+
+    try {
+      const filePath = await writeTraceEntryToFile(entryData);
+      const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+      await vscode.window.showTextDocument(document, { preview: true });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Unable to open trace JSON: ${errorMessage}`);
+      console.error('Unable to open trace JSON file:', error);
+    }
   }
 
   private async restoreViewAfterCancelledStart(): Promise<void> {
@@ -1181,6 +1199,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             const errorMessage = error instanceof Error ? error.message : String(error);
             await this.postErrorMessage(webviewView, errorMessage);
           }
+        } else if (message.command === 'openTraceJson') {
+          await this.openTraceJsonEntry(message.data?.entry);
         } else if (message.command === 'clientAppSelected') {
           // Handle client app selection (Case 3)
           try {

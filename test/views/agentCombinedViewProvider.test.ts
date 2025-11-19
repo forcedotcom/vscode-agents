@@ -25,7 +25,8 @@ import * as path from 'path';
 import {
   appendTraceHistoryEntry,
   readTraceHistoryEntries,
-  clearTraceHistory
+  clearTraceHistory,
+  writeTraceEntryToFile
 } from '../../src/utils/traceHistory';
 
 // Mock VS Code
@@ -36,6 +37,7 @@ jest.mock('vscode', () => ({
     showWarningMessage: jest.fn(),
     showQuickPick: jest.fn(),
     showSaveDialog: jest.fn(),
+    showTextDocument: jest.fn(),
     activeTextEditor: null
   },
   workspace: {
@@ -50,7 +52,8 @@ jest.mock('vscode', () => ({
       createDirectory: jest.fn(),
       stat: jest.fn()
     },
-    onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() }))
+    onDidChangeConfiguration: jest.fn(() => ({ dispose: jest.fn() })),
+    openTextDocument: jest.fn()
   },
   commands: {
     executeCommand: jest.fn(),
@@ -119,7 +122,8 @@ jest.mock('../../src/utils/clientAppUtils', () => ({
 jest.mock('../../src/utils/traceHistory', () => ({
   appendTraceHistoryEntry: jest.fn(),
   readTraceHistoryEntries: jest.fn().mockResolvedValue([]),
-  clearTraceHistory: jest.fn()
+  clearTraceHistory: jest.fn(),
+  writeTraceEntryToFile: jest.fn().mockResolvedValue('/tmp/trace.json')
 }));
 
 // Mock fs
@@ -162,6 +166,7 @@ describe('AgentCombinedViewProvider', () => {
     // Reset all mocks
     jest.clearAllMocks();
     (readTraceHistoryEntries as jest.Mock).mockResolvedValue([]);
+    (writeTraceEntryToFile as jest.Mock).mockResolvedValue('/tmp/trace.json');
 });
 
   afterEach(() => {
@@ -4821,6 +4826,115 @@ describe('AgentCombinedViewProvider', () => {
 
       // Mode should persist (not reset when switching agents)
       expect((provider as any).isLiveMode).toBe(true);
+    });
+  });
+
+  describe('openTraceJson command', () => {
+    it('writes the trace entry to disk and opens the document', async () => {
+      const mockDocument = { uri: { fsPath: '/tmp/trace.json' } };
+      (vscode.workspace.openTextDocument as jest.Mock).mockResolvedValue(mockDocument);
+      jest
+        .spyOn(provider as any, 'getHtmlForWebview')
+        .mockReturnValue('<html><head></head><body>Test</body></html>');
+
+      let messageHandler: ((message: any) => Promise<void>) | undefined;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn(handler => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      const entry = {
+        storageKey: 'agent-key',
+        agentId: 'agent-id',
+        planId: 'plan-1',
+        sessionId: 'session-1',
+        trace: { plan: [] },
+        timestamp: '2024-01-01T00:00:00.000Z'
+      };
+
+      await messageHandler!({ command: 'openTraceJson', data: { entry } });
+
+      expect(writeTraceEntryToFile).toHaveBeenCalledWith(entry);
+      expect(vscode.workspace.openTextDocument).toHaveBeenCalledWith(vscode.Uri.file('/tmp/trace.json'));
+      expect(vscode.window.showTextDocument).toHaveBeenCalledWith(mockDocument, { preview: true });
+    });
+
+    it('shows an error when entry data is missing', async () => {
+      jest
+        .spyOn(provider as any, 'getHtmlForWebview')
+        .mockReturnValue('<html><head></head><body>Test</body></html>');
+      let messageHandler: ((message: any) => Promise<void>) | undefined;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn(handler => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      await messageHandler!({ command: 'openTraceJson', data: { entry: null } });
+
+      expect(writeTraceEntryToFile).not.toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'Unable to open trace JSON: Missing trace details.'
+      );
+    });
+
+    it('shows an error when writing the file fails', async () => {
+      (writeTraceEntryToFile as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+      jest
+        .spyOn(provider as any, 'getHtmlForWebview')
+        .mockReturnValue('<html><head></head><body>Test</body></html>');
+
+      let messageHandler: ((message: any) => Promise<void>) | undefined;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn(handler => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      const entry = {
+        storageKey: 'agent-key',
+        agentId: 'agent-id',
+        planId: 'plan-err',
+        sessionId: 'session-err',
+        trace: {},
+        timestamp: '2024-01-01T00:00:00.000Z'
+      };
+
+      await messageHandler!({ command: 'openTraceJson', data: { entry } });
+
+      expect(writeTraceEntryToFile).toHaveBeenCalledWith(entry);
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Unable to open trace JSON: boom');
     });
   });
 });

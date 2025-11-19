@@ -28,6 +28,9 @@ const mockWebApi = getMockWebviewApi();
 
 // Mock the global function supplied to web views
 (global as any).acquireVsCodeApi = () => mockWebApi;
+if (typeof window !== 'undefined') {
+  (window as any).vscode = mockWebApi;
+}
 
 // Suppress React act() warnings in tests
 // These warnings occur when testing async state updates outside of user interactions
@@ -57,4 +60,7 @@ beforeEach(() => {
   mockWebApi.getState = jest.fn();
   mockWebApi.setState = jest.fn();
   (global as any).acquireVsCodeApi = () => mockWebApi;
+  if (typeof window !== 'undefined') {
+    (window as any).vscode = mockWebApi;
+  }
 });

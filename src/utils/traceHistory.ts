@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import { SfProject } from '@salesforce/core';
 
 const TRACE_FILE_NAME = 'traceHistory.json';
+const TRACE_EXPORT_DIR = 'traces';
 
 const resolveProjectLocalSfdx = async (): Promise<string> => {
   try {
@@ -18,6 +19,24 @@ const ensureAgentTraceDir = async (agentStorageKey: string): Promise<string> => 
   const dir = path.join(base, 'agents', agentStorageKey);
   await fs.mkdir(dir, { recursive: true });
   return dir;
+};
+
+const ensureTraceExportDir = async (agentStorageKey: string): Promise<string> => {
+  const baseDir = await ensureAgentTraceDir(agentStorageKey);
+  const exportDir = path.join(baseDir, TRACE_EXPORT_DIR);
+  await fs.mkdir(exportDir, { recursive: true });
+  return exportDir;
+};
+
+const sanitizeForFilename = (value: string): string =>
+  value.replace(/[^a-z0-9-_]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'trace';
+
+const formatTimestampForFilename = (timestamp?: string): string => {
+  const date = timestamp ? new Date(timestamp) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().replace(/[:.]/g, '-');
+  }
+  return date.toISOString().replace(/[:.]/g, '-');
 };
 
 const getTraceFilePath = async (agentStorageKey: string): Promise<string> => {
@@ -72,4 +91,26 @@ export const readTraceHistoryEntries = async <T>(
     }
     return [];
   }
+};
+
+export const writeTraceEntryToFile = async <T>(entry: TraceHistoryEntry<T>): Promise<string> => {
+  const { storageKey, planId, sessionId, timestamp, trace } = entry;
+  if (!storageKey) {
+    throw new Error('Trace entry is missing storage information.');
+  }
+
+  const exportDir = await ensureTraceExportDir(storageKey);
+  const safePlanId = sanitizeForFilename(planId || 'trace');
+  const safeSessionId = sessionId ? sanitizeForFilename(sessionId) : null;
+  const safeTimestamp = formatTimestampForFilename(timestamp);
+  const parts = [safePlanId];
+  if (safeSessionId) {
+    parts.push(safeSessionId);
+  }
+  parts.push(safeTimestamp);
+  const fileName = `${parts.join('-')}.json`;
+  const filePath = path.join(exportDir, fileName);
+
+  await fs.writeFile(filePath, JSON.stringify(trace ?? {}, null, 2), 'utf8');
+  return filePath;
 };

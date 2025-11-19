@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
 import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
@@ -178,6 +178,17 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
   const [selectedHistoryIndex, setSelectedHistoryIndex] = useState<number | null>(null);
   const historyIndexRef = useRef<number | null>(null);
+  const currentHistoryEntry = useMemo(() => {
+    if (selectedHistoryIndex !== null && traceHistory[selectedHistoryIndex]) {
+      return traceHistory[selectedHistoryIndex];
+    }
+
+    if (traceHistory.length > 0 && (selectedHistoryIndex === null || selectedHistoryIndex >= traceHistory.length)) {
+      return traceHistory[traceHistory.length - 1];
+    }
+
+    return null;
+  }, [selectedHistoryIndex, traceHistory]);
 
   const updateSelectedHistoryIndex = (index: number | null) => {
     historyIndexRef.current = index;
@@ -189,6 +200,13 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     setError(null);
     vscodeApi.getTraceData();
   }, []);
+
+  const handleOpenTraceJson = useCallback(() => {
+    if (!currentHistoryEntry) {
+      return;
+    }
+    vscodeApi.openTraceJson(currentHistoryEntry);
+  }, [currentHistoryEntry]);
 
   useEffect(() => {
     // Listen for trace data response
@@ -377,6 +395,13 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             <div className="tracer-plan-timeline">
               <Timeline items={timelineItems} />
             </div>
+            {currentHistoryEntry && (
+              <div className="tracer-json-link">
+                <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
+                  Open full trace JSON
+                </button>
+              </div>
+            )}
           </div>
         ) : shouldShowPlaceholder ? (
           <TracerPlaceholder

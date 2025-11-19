@@ -210,6 +210,25 @@ describe('vscodeApi', () => {
     });
   });
 
+  describe('Trace Utilities', () => {
+    it('should send openTraceJson message with entry payload', () => {
+      const entry = {
+        storageKey: 'agent',
+        agentId: 'agent',
+        sessionId: 'session',
+        planId: 'plan',
+        trace: { foo: 'bar' }
+      };
+
+      vscodeApi.openTraceJson(entry);
+
+      expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith({
+        command: 'openTraceJson',
+        data: { entry }
+      });
+    });
+  });
+
   describe('Configuration', () => {
     it('should send getConfiguration message with section', () => {
       vscodeApi.getConfiguration('salesforce.agentforceDX.someSetting');

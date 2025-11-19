@@ -19,6 +19,17 @@ export interface AgentInfo {
   type: 'published' | 'script';
 }
 
+export interface TraceHistoryMessageEntry {
+  storageKey: string;
+  agentId: string;
+  sessionId: string;
+  planId: string;
+  messageId?: string;
+  userMessage?: string;
+  timestamp?: string;
+  trace: unknown;
+}
+
 export interface TraceData {
   sessionId: string;
   planId: string;
@@ -158,6 +169,10 @@ class VSCodeApiService {
 
   sendConversationExport(content: string, fileName: string) {
     this.postMessage('conversationExportReady', { content, fileName });
+  }
+
+  openTraceJson(entry: TraceHistoryMessageEntry) {
+    this.postMessage('openTraceJson', { entry });
   }
 }
 
