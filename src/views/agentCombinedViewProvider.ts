@@ -61,7 +61,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private currentAgentSource?: AgentSource;
   private preselectedAgentId?: string;
   private latestPlanId?: string;
-  private latestMessageId?: string;
   private latestUserMessage?: string;
   private isLiveMode = false;
   private sessionStartOperationId = 0;
@@ -506,7 +505,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       agentId: this.currentAgentId,
       sessionId: (traceData as { sessionId?: string })?.sessionId ?? this.sessionId ?? '',
       planId: (traceData as { planId?: string })?.planId ?? this.latestPlanId ?? '',
-      messageId: this.latestMessageId,
+      messageId: this.latestPlanId,
       userMessage: this.latestUserMessage,
       timestamp: new Date().toISOString(),
       trace: traceData
@@ -1012,7 +1011,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           // Get the latest agent response
           const lastMessage = response.messages?.at(-1);
           this.latestPlanId = lastMessage?.planId;
-          this.latestMessageId = lastMessage?.id;
           this.latestUserMessage = userMessage;
 
           webviewView.webview.postMessage({
