@@ -65,7 +65,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private sessionStartOperationId = 0;
   private pendingStartAgentId?: string;
   private pendingStartAgentSource?: AgentSource;
-  private hasConversationData = false;
 
   private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
 
@@ -162,7 +161,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async setConversationDataAvailable(available: boolean): Promise<void> {
-    this.hasConversationData = available;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:hasConversationData', available);
   }
 
@@ -240,9 +238,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setDebugMode(false);
       await this.setLiveMode(false);
 
-      // Show notification
+      // Log to output panel instead of showing notification
       if (agentName) {
-        vscode.window.showInformationMessage(`AFDX: Session ended with ${agentName}`);
+        try {
+          const channelService = CoreExtensionService.getChannelService();
+          channelService.appendLine(`Simulation ended`);
+        } catch {
+          // Channel service may not be available, ignore
+        }
       }
 
       if (this.webviewView) {
@@ -862,16 +865,35 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               if (!isActive()) {
                 return;
               }
-              if (data.error) {
-                webviewView.webview.postMessage({
-                  command: 'compilationError',
-                  data: { message: data.error }
-                });
-              } else {
-                webviewView.webview.postMessage({
-                  command: 'compilationStarting',
-                  data: { message: data.message || 'Compiling agent...' }
-                });
+              try {
+                const channelService = CoreExtensionService.getChannelService();
+                if (data.error) {
+                  channelService.appendLine(`Compilation failed, with errors shown`);
+                  channelService.appendLine(`Error: ${data.error}`);
+                  webviewView.webview.postMessage({
+                    command: 'compilationError',
+                    data: { message: data.error }
+                  });
+                } else {
+                  channelService.appendLine(`Compilation end point called`);
+                  webviewView.webview.postMessage({
+                    command: 'compilationStarting',
+                    data: { message: data.message || 'Compiling agent...' }
+                  });
+                }
+              } catch {
+                // Channel service may not be available, continue with webview messages
+                if (data.error) {
+                  webviewView.webview.postMessage({
+                    command: 'compilationError',
+                    data: { message: data.error }
+                  });
+                } else {
+                  webviewView.webview.postMessage({
+                    command: 'compilationStarting',
+                    data: { message: data.message || 'Compiling agent...' }
+                  });
+                }
               }
             });
 
@@ -879,6 +901,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
               if (!isActive()) {
                 return;
+              }
+              try {
+                const channelService = CoreExtensionService.getChannelService();
+                channelService.appendLine(`Simulation session started`);
+              } catch {
+                // Channel service may not be available, ignore
               }
               const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
               webviewView.webview.postMessage({
@@ -946,6 +974,17 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const session = await this.agentPreview.start();
           ensureActive();
           this.sessionId = session.sessionId;
+
+          // Log compilation success for script agents (compilation happens during start)
+          if (agentSource === AgentSource.SCRIPT) {
+            try {
+              const channelService = CoreExtensionService.getChannelService();
+              channelService.appendLine(`Compilation succeeded`);
+            } catch {
+              // Channel service may not be available, ignore
+            }
+          }
+
           const storageKey = this.getAgentStorageKey(agentId, agentSource);
           await clearTraceHistory(storageKey);
           await this.loadAndSendTraceHistory(agentId, agentSource, webviewView);
@@ -954,8 +993,15 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setSessionStarting(false);
           ensureActive();
 
-          // Show notification
-          vscode.window.showInformationMessage(`AFDX: Session started with ${this.currentAgentName}`);
+          // Log to output panel for published agents (script agents log via lifecycle event)
+          if (agentSource === AgentSource.PUBLISHED) {
+            try {
+              const channelService = CoreExtensionService.getChannelService();
+              channelService.appendLine(`Live test session started`);
+            } catch {
+              // Channel service may not be available, ignore
+            }
+          }
 
           // History loading is now exclusively handled by loadAgentHistory flow
           // Don't load history here to avoid duplicate messages
@@ -1005,6 +1051,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           });
 
           const userMessage = message.data.message;
+          try {
+            const channelService = CoreExtensionService.getChannelService();
+            channelService.appendLine(`Simulation message sent`);
+          } catch {
+            // Channel service may not be available, ignore
+          }
           const response = await this.agentPreview.send(this.sessionId, userMessage);
 
           // Get the latest agent response
@@ -1309,6 +1361,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        try {
+          const channelService = CoreExtensionService.getChannelService();
+          channelService.appendLine(`Error: ${errorMessage}`);
+        } catch {
+          // Channel service may not be available, ignore
+        }
         this.pendingStartAgentId = undefined;
         this.pendingStartAgentSource = undefined;
 

@@ -828,17 +828,16 @@ describe('AgentCombinedViewProvider', () => {
       // Mock instanceof check
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
+      const channelService = CoreExtensionService.getChannelService();
       await provider.endSession();
 
       expect(mockAgentSimulate.end).toHaveBeenCalled();
       expect((provider as any).agentPreview).toBeUndefined();
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'AFDX: Session ended with TestAgent'
-      );
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'sessionEnded',
         data: {}
       });
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended');
     });
 
     it('should end AgentPreview session', async () => {
@@ -856,19 +855,20 @@ describe('AgentCombinedViewProvider', () => {
       // Mock instanceof check - NOT an AgentSimulate
       Object.setPrototypeOf((provider as any).agentPreview, AgentPreview.prototype);
 
+      const channelService = CoreExtensionService.getChannelService();
       await provider.endSession();
 
       expect(mockAgentPreview.end).toHaveBeenCalledWith('test-session', 'UserRequest');
       expect((provider as any).agentPreview).toBeUndefined();
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'AFDX: Session ended with TestAgent'
-      );
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended');
     });
 
     it('should not throw when no active session', async () => {
       (provider as any).agentPreview = undefined;
+      const channelService = CoreExtensionService.getChannelService();
       await expect(provider.endSession()).resolves.not.toThrow();
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
+      expect(channelService.appendLine).not.toHaveBeenCalled();
     });
 
     it('should skip notification when agent name is not set', async () => {
@@ -880,6 +880,7 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).sessionId = 'test-session';
       (provider as any).currentAgentName = undefined;
 
+      const channelService = CoreExtensionService.getChannelService();
       await provider.endSession();
 
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
@@ -887,6 +888,7 @@ describe('AgentCombinedViewProvider', () => {
         command: 'sessionEnded',
         data: {}
       });
+      expect(channelService.appendLine).not.toHaveBeenCalled();
     });
 
     it('should reset session state after ending', async () => {
@@ -933,10 +935,6 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockAgentSimulate.end).toHaveBeenCalled();
       expect((provider as any).agentPreview).toBeUndefined();
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'AFDX: Session ended with TestAgent'
-      );
-      // Should not throw when trying to postMessage to null webviewView
     });
 
     it('should notify webview when cancelling a session during startup', async () => {
@@ -1687,6 +1685,10 @@ describe('AgentCombinedViewProvider', () => {
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalledWith(
         expect.stringContaining('Session started')
       );
+      
+      // Verify no logging when session is cancelled
+      const channelService = CoreExtensionService.getChannelService();
+      expect(channelService.appendLine).not.toHaveBeenCalledWith(expect.stringContaining('Simulation session started'));
     });
 
     it('should suppress start errors if session was cancelled', async () => {
@@ -1846,6 +1848,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
 
+      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'startSession',
         data: { agentId: 'local:/workspace/testAgent.agent' }
@@ -1870,6 +1873,9 @@ describe('AgentCombinedViewProvider', () => {
           command: 'sessionStarted'
         })
       );
+      
+      // Verify logging
+      expect(channelService.appendLine).toHaveBeenCalledWith('Compilation succeeded');
     });
 
     it('should handle compilation error event from lifecycle', async () => {
@@ -1896,6 +1902,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
 
+      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'startSession',
         data: { agentId: 'local:/workspace/testAgent.agent' }
@@ -1908,6 +1915,8 @@ describe('AgentCombinedViewProvider', () => {
         command: 'compilationError',
         data: { message: 'Compilation failed!' }
       });
+      expect(channelService.appendLine).toHaveBeenCalledWith('Compilation failed, with errors shown');
+      expect(channelService.appendLine).toHaveBeenCalledWith('Error: Compilation failed!');
     });
 
     it('should handle compilation starting event from lifecycle', async () => {
@@ -1934,6 +1943,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
 
+      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'startSession',
         data: { agentId: 'local:/workspace/testAgent.agent' }
@@ -1946,6 +1956,7 @@ describe('AgentCombinedViewProvider', () => {
         command: 'compilationStarting',
         data: { message: 'Compiling agent...' }
       });
+      expect(channelService.appendLine).toHaveBeenCalledWith('Compilation end point called');
     });
 
     it('should handle simulation starting event from lifecycle', async () => {
@@ -1972,6 +1983,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
 
+      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'startSession',
         data: { agentId: 'local:/workspace/testAgent.agent' }
@@ -1984,6 +1996,7 @@ describe('AgentCombinedViewProvider', () => {
         command: 'simulationStarting',
         data: { message: 'Starting simulation...' }
       });
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation session started');
     });
 
     it('should ignore lifecycle events after session start cancellation', async () => {
@@ -2195,6 +2208,7 @@ describe('AgentCombinedViewProvider', () => {
         tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
       });
 
+      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'startSession',
         data: { agentId: '0X1234567890123' }
@@ -2212,9 +2226,9 @@ describe('AgentCombinedViewProvider', () => {
 
       // Verify session was started
       expect(mockAgentPreview.start).toHaveBeenCalled();
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'AFDX: Session started with Test Agent'
-      );
+      
+      // Verify logging for published agent
+      expect(channelService.appendLine).toHaveBeenCalledWith('Live test session started');
     });
 
     it('should handle different agent message formats for content fallback', async () => {
@@ -2477,6 +2491,7 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
 
+      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'sendChatMessage',
         data: { message: 'Hello agent' }
@@ -2494,6 +2509,9 @@ describe('AgentCombinedViewProvider', () => {
         command: 'messageSent',
         data: { content: 'Agent response' }
       });
+      
+      // Verify logging
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation message sent');
     });
 
     it('should use default message when agent response is empty', async () => {
@@ -3096,12 +3114,16 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).currentPlanId = 'test-plan-id';
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
+      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({ command: 'getTraceData' });
 
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'error',
         data: { message: 'Trace API failed' }
       });
+      
+      // Verify error logging
+      expect(channelService.appendLine).toHaveBeenCalledWith('Error: Trace API failed');
     });
 
     it('should handle non-Error exceptions from trace API', async () => {
