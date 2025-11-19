@@ -48,8 +48,15 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
 
   // Update indicator on window resize (for responsive behavior)
   React.useEffect(() => {
-    window.addEventListener('resize', updateIndicator);
-    return () => window.removeEventListener('resize', updateIndicator);
+    const handleResize = () => {
+      // Use requestAnimationFrame to ensure DOM has updated after CSS media queries apply
+      requestAnimationFrame(() => {
+        updateIndicator();
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [updateIndicator]);
 
   const handleTabClick = (tab: any) => {
