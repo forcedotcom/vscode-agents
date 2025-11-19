@@ -184,7 +184,7 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 
 .tracer-json-link {
   margin-top: 0;
-  padding: 8px 0 16px;
+  padding: 16px 0 32px 0;
   display: flex;
   justify-content: flex-start;
 }

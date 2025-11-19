@@ -90,7 +90,7 @@ describe('AgentTracer', () => {
 
     dispatchMessage('traceHistory', { entries: historyEntries });
 
-    const button = screen.getByRole('button', { name: /open full trace json/i });
+    const button = screen.getByRole('button', { name: /view raw json/i });
     fireEvent.click(button);
 
     expect((window as any).vscode.postMessage).toHaveBeenCalledWith({
