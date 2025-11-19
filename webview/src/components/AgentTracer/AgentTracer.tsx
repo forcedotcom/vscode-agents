@@ -224,6 +224,8 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
 
     // Listen for messageSent events to refresh trace data
     const disposeMessageSent = vscodeApi.onMessage('messageSent', () => {
+      // Reset history selection to automatically select the latest trace
+      historyIndexRef.current = null;
       // Wait a bit for the planId to be set in the provider before requesting
       setTimeout(() => {
         requestTraceData();
