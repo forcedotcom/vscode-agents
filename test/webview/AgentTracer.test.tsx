@@ -68,6 +68,70 @@ describe('AgentTracer', () => {
     expect(screen.getByText('session-1')).toBeInTheDocument();
   });
 
+  it('auto-selects the latest trace after a new message is sent', () => {
+    render(<AgentTracer isVisible />);
+
+    const historyEntries = [
+      {
+        storageKey: 'agent',
+        agentId: 'agent',
+        planId: 'plan-1',
+        sessionId: 'session-1',
+        timestamp: '2024-01-01T00:00:00.000Z',
+        trace: {
+          type: 'PlanSuccessResponse',
+          planId: 'plan-1',
+          sessionId: 'session-1',
+          plan: [{ type: 'UserInputStep', data: { content: 'hi' } }]
+        }
+      },
+      {
+        storageKey: 'agent',
+        agentId: 'agent',
+        planId: 'plan-2',
+        sessionId: 'session-2',
+        timestamp: '2024-01-02T00:00:00.000Z',
+        trace: {
+          type: 'PlanSuccessResponse',
+          planId: 'plan-2',
+          sessionId: 'session-2',
+          plan: [{ type: 'UserInputStep', data: { content: 'second' } }]
+        }
+      }
+    ];
+
+    dispatchMessage('traceData', historyEntries[1].trace);
+    dispatchMessage('traceHistory', { entries: historyEntries });
+
+    const selector = screen.getByLabelText(/trace history/i);
+    expect(selector).toHaveValue('1');
+    expect(screen.getByText('session-2')).toBeInTheDocument();
+
+    fireEvent.change(selector, { target: { value: '0' } });
+    expect(selector).toHaveValue('0');
+    expect(screen.getByText('session-1')).toBeInTheDocument();
+
+    const newestEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      planId: 'plan-3',
+      sessionId: 'session-3',
+      timestamp: '2024-01-03T00:00:00.000Z',
+      trace: {
+        type: 'PlanSuccessResponse',
+        planId: 'plan-3',
+        sessionId: 'session-3',
+        plan: [{ type: 'UserInputStep', data: { content: 'latest' } }]
+      }
+    };
+
+    dispatchMessage('messageSent', {});
+    dispatchMessage('traceHistory', { entries: [...historyEntries, newestEntry] });
+
+    expect(selector).toHaveValue('2');
+    expect(screen.getByText('session-3')).toBeInTheDocument();
+  });
+
   it('sends an openTraceJson request when the link is clicked', () => {
     render(<AgentTracer isVisible />);
 
