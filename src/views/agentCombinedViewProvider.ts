@@ -59,8 +59,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private currentAgentName?: string;
   private currentAgentId?: string;
   private currentAgentSource?: AgentSource;
-  private latestPlanId?: string;
-  private latestUserMessage?: string;
+  private currentPlanId?: string;
+  private currentUserMessage?: string;
   private isLiveMode = false;
   private sessionStartOperationId = 0;
   private pendingStartAgentId?: string;
@@ -233,7 +233,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
-      this.latestPlanId = undefined;
+      this.currentPlanId = undefined;
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
@@ -503,9 +503,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       storageKey: agentStorageKey,
       agentId: this.currentAgentId,
       sessionId: (traceData as { sessionId?: string })?.sessionId ?? this.sessionId ?? '',
-      planId: (traceData as { planId?: string })?.planId ?? this.latestPlanId ?? '',
-      messageId: this.latestPlanId,
-      userMessage: this.latestUserMessage,
+      planId: (traceData as { planId?: string })?.planId ?? this.currentPlanId ?? '',
+      messageId: this.currentPlanId,
+      userMessage: this.currentUserMessage,
       timestamp: new Date().toISOString(),
       trace: traceData
     };
@@ -818,7 +818,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
 
           // Reset planId when starting a new session
-          this.latestPlanId = undefined;
+          this.currentPlanId = undefined;
 
           // If a client app was previously selected, reuse it to avoid re-prompt loops
           const conn = this.selectedClientApp
@@ -1009,8 +1009,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Get the latest agent response
           const lastMessage = response.messages?.at(-1);
-          this.latestPlanId = lastMessage?.planId;
-          this.latestUserMessage = userMessage;
+          this.currentPlanId = lastMessage?.planId;
+          this.currentUserMessage = userMessage;
 
           webviewView.webview.postMessage({
             command: 'messageSent',
@@ -1184,7 +1184,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               return;
             }
 
-            if (!(this.agentPreview instanceof AgentSimulate) || !this.latestPlanId) {
+            if (!(this.agentPreview instanceof AgentSimulate) || !this.currentPlanId) {
               const restored = await this.sendLastStoredTraceData(webviewView);
               if (!restored) {
                 webviewView.webview.postMessage({
@@ -1195,7 +1195,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               return;
             }
 
-            const data = await this.agentPreview.trace(this.sessionId, this.latestPlanId);
+            const data = await this.agentPreview.trace(this.sessionId, this.currentPlanId);
             await this.persistTraceHistory(data);
             if (this.currentAgentId && this.currentAgentSource) {
               await this.loadAndSendTraceHistory(this.currentAgentId, this.currentAgentSource, webviewView);
@@ -1318,7 +1318,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           this.agentPreview = undefined;
           this.sessionId = Date.now().toString();
           this.currentAgentName = undefined;
-          this.latestPlanId = undefined;
+          this.currentPlanId = undefined;
           await this.setSessionActive(false);
           await this.setSessionStarting(false);
           await this.setDebugMode(false);

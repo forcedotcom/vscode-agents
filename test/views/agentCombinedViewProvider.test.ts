@@ -1280,7 +1280,7 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).sessionId = 'existing-session';
       (provider as any).sessionActive = true;
       (provider as any).currentAgentName = 'TestAgent';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
 
       // Mock Agent.listRemote to throw an error during session start
       const { Agent } = require('@salesforce/agents');
@@ -1298,7 +1298,7 @@ describe('AgentCombinedViewProvider', () => {
       expect((provider as any).agentPreview).toBeUndefined();
       expect((provider as any).sessionActive).toBe(false);
       expect((provider as any).currentAgentName).toBeUndefined();
-      expect((provider as any).latestPlanId).toBeUndefined();
+      expect((provider as any).currentPlanId).toBeUndefined();
 
       // Verify error was sent to webview
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith(
@@ -2489,7 +2489,7 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockAgentPreview.send).toHaveBeenCalledWith('test-session', 'Hello agent');
 
-      expect((provider as any).latestPlanId).toBe('test-plan-id');
+      expect((provider as any).currentPlanId).toBe('test-plan-id');
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
         data: { content: 'Agent response' }
@@ -2512,7 +2512,7 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Hello' }
       });
 
-      expect((provider as any).latestPlanId).toBeUndefined();
+      expect((provider as any).currentPlanId).toBeUndefined();
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
         data: { content: undefined }
@@ -2541,7 +2541,7 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Hello' }
       });
 
-      expect((provider as any).latestPlanId).toBeUndefined();
+      expect((provider as any).currentPlanId).toBeUndefined();
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'messageSent',
         data: { content: 'Unfortunately a system error occurred. Please try again.' }
@@ -3030,7 +3030,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
       (provider as any).currentAgentId = '0X123';
       (provider as any).currentAgentSource = AgentSource.PUBLISHED;
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
@@ -3074,7 +3074,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = undefined;
+      (provider as any).currentPlanId = undefined;
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
@@ -3093,7 +3093,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
@@ -3111,7 +3111,7 @@ describe('AgentCombinedViewProvider', () => {
 
       (provider as any).agentPreview = mockAgentSimulate;
       (provider as any).sessionId = 'test-session';
-      (provider as any).latestPlanId = 'test-plan-id';
+      (provider as any).currentPlanId = 'test-plan-id';
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
       await messageHandler({ command: 'getTraceData' });
