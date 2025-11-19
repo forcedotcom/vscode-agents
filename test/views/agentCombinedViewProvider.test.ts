@@ -1151,24 +1151,24 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('setPreselectedAgentId', () => {
-    it('should set preselected agent ID', () => {
-      provider.setPreselectedAgentId('0X123456789012345');
-      expect((provider as any).preselectedAgentId).toBe('0X123456789012345');
+  describe('setAgentId', () => {
+    it('should set agent ID', () => {
+      provider.setAgentId('0X123456789012345');
+      expect((provider as any).currentAgentId).toBe('0X123456789012345');
     });
 
-    it('should update preselected agent ID when called multiple times', () => {
-      provider.setPreselectedAgentId('0X111111111111111');
-      expect((provider as any).preselectedAgentId).toBe('0X111111111111111');
+    it('should update agent ID when called multiple times', () => {
+      provider.setAgentId('0X111111111111111');
+      expect((provider as any).currentAgentId).toBe('0X111111111111111');
 
-      provider.setPreselectedAgentId('0X222222222222222');
-      expect((provider as any).preselectedAgentId).toBe('0X222222222222222');
+      provider.setAgentId('0X222222222222222');
+      expect((provider as any).currentAgentId).toBe('0X222222222222222');
     });
   });
 
   describe('refreshAvailableAgents', () => {
     it('should clear pending preselected agent IDs so refresh does not immediately reselect', async () => {
-      provider.setPreselectedAgentId('0X123456789012345');
+      provider.setAgentId('0X123456789012345');
       (provider as any).currentAgentId = '0X123456789012345';
       const postMessageMock = mockWebviewView.webview.postMessage as jest.Mock;
       postMessageMock.mockClear();
@@ -2418,7 +2418,7 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       // Set preselected agent ID (15 characters: 0X + 13 digits)
-      (provider as any).preselectedAgentId = '0X9999999999999';
+      (provider as any).currentAgentId = '0X9999999999999';
 
       await messageHandler({
         command: 'startSession',
@@ -3483,8 +3483,8 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
 
-    it('should clear preselectedAgentId when no client app available', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+    it('should clear currentAgentId when no client app available', async () => {
+      (provider as any).currentAgentId = '0X1234567890123';
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
@@ -3495,7 +3495,7 @@ describe('AgentCombinedViewProvider', () => {
 
       await messageHandler({ command: 'getAvailableAgents' });
 
-      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect((provider as any).currentAgentId).toBeUndefined();
     });
 
     it('should handle multiple client apps case', async () => {
@@ -3531,8 +3531,8 @@ describe('AgentCombinedViewProvider', () => {
       });
     });
 
-    it('should clear preselectedAgentId when multiple client apps', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+    it('should clear currentAgentId when multiple client apps', async () => {
+      (provider as any).currentAgentId = '0X1234567890123';
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
@@ -3543,7 +3543,7 @@ describe('AgentCombinedViewProvider', () => {
 
       await messageHandler({ command: 'getAvailableAgents' });
 
-      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect((provider as any).currentAgentId).toBeUndefined();
     });
 
     it('should handle single client app case and set selectedClientApp', async () => {
@@ -3694,8 +3694,8 @@ describe('AgentCombinedViewProvider', () => {
       expect(availableAgentsCall[0].data.agents[1].type).toBe('published');
     });
 
-    it('should send preselectedAgentId and then clear it', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+    it('should send currentAgentId and then clear it', async () => {
+      (provider as any).currentAgentId = '0X1234567890123';
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (getAvailableClientApps as jest.Mock).mockResolvedValue({
@@ -3714,7 +3714,7 @@ describe('AgentCombinedViewProvider', () => {
       );
 
       expect(availableAgentsCall[0].data.selectedAgentId).toBe('0X1234567890123');
-      expect((provider as any).preselectedAgentId).toBeUndefined();
+      expect((provider as any).currentAgentId).toBeUndefined();
     });
 
     it('should handle error and return empty list', async () => {
@@ -4003,7 +4003,7 @@ describe('AgentCombinedViewProvider', () => {
     });
 
     it('should send preselectedAgentId and then clear it', async () => {
-      (provider as any).preselectedAgentId = '0X1234567890123';
+      provider.setAgentId('0X1234567890123');
 
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
       (createConnectionWithClientApp as jest.Mock).mockResolvedValue({

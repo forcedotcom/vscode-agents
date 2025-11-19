@@ -59,7 +59,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private currentAgentName?: string;
   private currentAgentId?: string;
   private currentAgentSource?: AgentSource;
-  private preselectedAgentId?: string;
   private latestPlanId?: string;
   private latestUserMessage?: string;
   private isLiveMode = false;
@@ -273,8 +272,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.pendingStartAgentSource = undefined;
   }
 
-  public setPreselectedAgentId(agentId: string) {
-    this.preselectedAgentId = agentId;
+  public setAgentId(agentId: string) {
+    this.currentAgentId = agentId;
   }
 
   /**
@@ -283,7 +282,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   public async refreshAvailableAgents(): Promise<void> {
     await this.endSession();
-    this.preselectedAgentId = undefined;
+    this.currentAgentId = undefined;
 
     if (this.webviewView) {
       // Clear the current agent selection
@@ -828,7 +827,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           ensureActive();
 
           // Extract agentId from the message data and pass it as botId
-          const agentId = this.preselectedAgentId || message.data?.agentId;
+          const agentId = this.currentAgentId || message.data?.agentId;
 
           if (!agentId || typeof agentId !== 'string') {
             throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
@@ -1077,7 +1076,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 command: 'availableAgents',
                 data: {
                   agents: localAgents,
-                  selectedAgentId: this.preselectedAgentId
+                  selectedAgentId: this.currentAgentId
                 }
               });
               webviewView.webview.postMessage({
@@ -1089,8 +1088,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   error: result.error
                 }
               });
-              if (this.preselectedAgentId) {
-                this.preselectedAgentId = undefined;
+              if (this.currentAgentId) {
+                this.currentAgentId = undefined;
               }
               return { status: 'handled' };
             },
@@ -1099,7 +1098,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 command: 'availableAgents',
                 data: {
                   agents: localAgents,
-                  selectedAgentId: this.preselectedAgentId
+                  selectedAgentId: this.currentAgentId
                 }
               });
               webviewView.webview.postMessage({
@@ -1109,8 +1108,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   username: result.username
                 }
               });
-              if (this.preselectedAgentId) {
-                this.preselectedAgentId = undefined;
+              if (this.currentAgentId) {
+                this.currentAgentId = undefined;
               }
               return { status: 'handled' };
             }
@@ -1127,12 +1126,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               command: 'availableAgents',
               data: {
                 agents: allAgents,
-                selectedAgentId: this.preselectedAgentId
+                selectedAgentId: this.currentAgentId
               }
             });
 
-            if (this.preselectedAgentId) {
-              this.preselectedAgentId = undefined;
+            if (this.currentAgentId) {
+              this.currentAgentId = undefined;
             }
           } catch (err) {
             console.error('Error getting available agents from org:', err);
@@ -1239,13 +1238,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               command: 'availableAgents',
               data: {
                 agents: allAgents,
-                selectedAgentId: this.preselectedAgentId
+                selectedAgentId: this.currentAgentId
               }
             });
 
             // Clear the preselected agent ID after sending it
-            if (this.preselectedAgentId) {
-              this.preselectedAgentId = undefined;
+            if (this.currentAgentId) {
+              this.currentAgentId = undefined;
             }
           } catch (err) {
             console.error('Error selecting client app:', err);
