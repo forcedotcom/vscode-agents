@@ -1259,6 +1259,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
+            const channelService = CoreExtensionService.getChannelService();
+            channelService.appendLine(`Error: ${errorMessage}`);
             await this.postErrorMessage(webviewView, errorMessage);
           }
         } else if (message.command === 'openTraceJson') {

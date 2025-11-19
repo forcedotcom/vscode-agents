@@ -99,19 +99,23 @@ jest.mock('@salesforce/core', () => ({
 }));
 
 // Mock services
-jest.mock('../../src/services/coreExtensionService', () => ({
-  CoreExtensionService: {
-    getDefaultConnection: jest.fn(),
-    getTelemetryService: jest.fn(() => ({
-      sendCommandEvent: jest.fn()
-    })),
-    getChannelService: jest.fn(() => ({
-      appendLine: jest.fn(),
-      showChannelOutput: jest.fn(),
-      clear: jest.fn()
-    }))
-  }
-}));
+const mockChannelServiceInstance = {
+  appendLine: jest.fn(),
+  showChannelOutput: jest.fn(),
+  clear: jest.fn()
+};
+
+jest.mock('../../src/services/coreExtensionService', () => {
+  return {
+    CoreExtensionService: {
+      getDefaultConnection: jest.fn(),
+      getTelemetryService: jest.fn(() => ({
+        sendCommandEvent: jest.fn()
+      })),
+      getChannelService: jest.fn(() => mockChannelServiceInstance)
+    }
+  };
+});
 
 // Mock utils
 jest.mock('../../src/utils/clientAppUtils', () => ({
@@ -165,6 +169,12 @@ describe('AgentCombinedViewProvider', () => {
 
     // Reset all mocks
     jest.clearAllMocks();
+    // Reset the shared channel service mock
+    mockChannelServiceInstance.appendLine.mockClear();
+    mockChannelServiceInstance.showChannelOutput.mockClear();
+    mockChannelServiceInstance.clear.mockClear();
+    // Ensure getChannelService always returns the mock
+    (CoreExtensionService.getChannelService as jest.Mock).mockReturnValue(mockChannelServiceInstance);
     (readTraceHistoryEntries as jest.Mock).mockResolvedValue([]);
     (writeTraceEntryToFile as jest.Mock).mockResolvedValue('/tmp/trace.json');
 });
@@ -828,7 +838,6 @@ describe('AgentCombinedViewProvider', () => {
       // Mock instanceof check
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
-      const channelService = CoreExtensionService.getChannelService();
       await provider.endSession();
 
       expect(mockAgentSimulate.end).toHaveBeenCalled();
@@ -837,6 +846,7 @@ describe('AgentCombinedViewProvider', () => {
         command: 'sessionEnded',
         data: {}
       });
+      const channelService = CoreExtensionService.getChannelService();
       expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended');
     });
 
@@ -1685,7 +1695,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalledWith(
         expect.stringContaining('Session started')
       );
-      
+
       // Verify no logging when session is cancelled
       const channelService = CoreExtensionService.getChannelService();
       expect(channelService.appendLine).not.toHaveBeenCalledWith(expect.stringContaining('Simulation session started'));
@@ -1848,7 +1858,6 @@ describe('AgentCombinedViewProvider', () => {
 
       (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({ instanceUrl: 'https://test.salesforce.com' });
 
-      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'startSession',
         data: { agentId: 'local:/workspace/testAgent.agent' }
@@ -1873,8 +1882,9 @@ describe('AgentCombinedViewProvider', () => {
           command: 'sessionStarted'
         })
       );
-      
+
       // Verify logging
+      const channelService = CoreExtensionService.getChannelService();
       expect(channelService.appendLine).toHaveBeenCalledWith('Compilation succeeded');
     });
 
@@ -2226,7 +2236,7 @@ describe('AgentCombinedViewProvider', () => {
 
       // Verify session was started
       expect(mockAgentPreview.start).toHaveBeenCalled();
-      
+
       // Verify logging for published agent
       expect(channelService.appendLine).toHaveBeenCalledWith('Live test session started');
     });
@@ -2491,7 +2501,6 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).agentPreview = mockAgentPreview;
       (provider as any).sessionId = 'test-session';
 
-      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({
         command: 'sendChatMessage',
         data: { message: 'Hello agent' }
@@ -2509,8 +2518,9 @@ describe('AgentCombinedViewProvider', () => {
         command: 'messageSent',
         data: { content: 'Agent response' }
       });
-      
+
       // Verify logging
+      const channelService = CoreExtensionService.getChannelService();
       expect(channelService.appendLine).toHaveBeenCalledWith('Simulation message sent');
     });
 
@@ -3114,15 +3124,15 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).currentPlanId = 'test-plan-id';
       Object.setPrototypeOf((provider as any).agentPreview, AgentSimulate.prototype);
 
-      const channelService = CoreExtensionService.getChannelService();
       await messageHandler({ command: 'getTraceData' });
 
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'error',
         data: { message: 'Trace API failed' }
       });
-      
+
       // Verify error logging
+      const channelService = CoreExtensionService.getChannelService();
       expect(channelService.appendLine).toHaveBeenCalledWith('Error: Trace API failed');
     });
 
