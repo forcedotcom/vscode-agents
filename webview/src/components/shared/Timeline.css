@@ -65,11 +65,6 @@
 	color: inherit;
 }
 
-.vscode-timeline-item__link:hover .vscode-timeline-item__label {
-	color: var(--vscode-textLink-activeForeground);
-	text-decoration: underline;
-}
-
 .vscode-timeline-item__link .vscode-timeline-item__label {
 	color: var(--vscode-textLink-foreground);
 }
@@ -143,7 +138,7 @@
 	padding-bottom: 0;
 }
 
-/* Clickable items - add underline on hover */
-.vscode-timeline-item--clickable:hover .vscode-timeline-item__label {
-	text-decoration: underline;
+/* Clickable items - style as links */
+.vscode-timeline-item--clickable .vscode-timeline-item__label {
+	color: var(--vscode-textLink-foreground);
 }
