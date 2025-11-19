@@ -22,7 +22,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading, load
 
   // Auto-scroll to bottom when messages change or when loading
   useEffect(() => {
-    if (chatEndRef.current) {
+    if (chatEndRef.current?.scrollIntoView) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isLoading]);
