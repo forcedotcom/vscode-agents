@@ -756,12 +756,6 @@ describe('AgentCombinedViewProvider', () => {
       await provider.toggleDebugMode();
 
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', true);
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugModeChanged',
-        data: {
-          enabled: true
-        }
-      });
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode activated.');
     });
 
@@ -771,12 +765,6 @@ describe('AgentCombinedViewProvider', () => {
       await provider.toggleDebugMode();
 
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugModeChanged',
-        data: {
-          enabled: false
-        }
-      });
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode deactivated.');
     });
 

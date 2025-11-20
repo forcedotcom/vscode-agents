@@ -181,16 +181,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.agentPreview.setApexDebugMode(newDebugMode);
     }
 
-    // Notify webview
-    if (this.webviewView) {
-      this.webviewView.webview.postMessage({
-        command: 'debugModeChanged',
-        data: {
-          enabled: newDebugMode
-        }
-      });
-    }
-
     const statusMessage = newDebugMode ? 'Debug mode activated.' : 'Debug mode deactivated.';
     vscode.window.showInformationMessage(`Agentforce DX: ${statusMessage}`);
   }
