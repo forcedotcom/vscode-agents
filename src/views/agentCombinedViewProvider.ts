@@ -240,7 +240,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
       await this.setDebugMode(false);
-      await this.setLiveMode(false);
 
       if (this.webviewView) {
         this.webviewView.webview.postMessage({
