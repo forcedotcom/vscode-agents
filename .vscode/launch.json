@@ -11,10 +11,7 @@
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/lib/**/*.js"],
-      "preLaunchTask": "build-all",
-      "env": {
-        "SF_TEST_API": "true"
-      }
+      "preLaunchTask": "build-all"
     }
   ]
 }
