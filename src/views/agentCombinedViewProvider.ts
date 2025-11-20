@@ -193,7 +193,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
 
     const statusMessage = newDebugMode ? 'Debug mode activated' : 'Debug mode deactivated';
-    vscode.window.showInformationMessage(`AFDX: ${statusMessage}`);
+    vscode.window.showInformationMessage(`Agentforce DX: ${statusMessage}`);
   }
 
   /**

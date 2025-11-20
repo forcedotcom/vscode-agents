@@ -763,7 +763,7 @@ describe('AgentCombinedViewProvider', () => {
           message: 'Debug mode activated'
         }
       });
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('AFDX: Debug mode activated');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode activated');
     });
 
     it('should toggle debug mode from true to false', async () => {
@@ -779,7 +779,7 @@ describe('AgentCombinedViewProvider', () => {
           message: 'Debug mode deactivated'
         }
       });
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('AFDX: Debug mode deactivated');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode deactivated');
     });
 
     it('should update agent preview debug mode when agent preview exists', async () => {
