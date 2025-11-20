@@ -128,6 +128,10 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
+    // CRITICAL: Set up getChannelService mock BEFORE creating the provider
+    // since channelService is required in the constructor
+    (CoreExtensionService.getChannelService as jest.Mock).mockReturnValue(mockChannelServiceInstance);
+
     mockContext = {
       extensionUri: vscode.Uri.file('/mock/path'),
       extensionPath: '/mock/path',
