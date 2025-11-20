@@ -57,9 +57,9 @@ describe('AgentTracer helpers', () => {
       userMessage: longMessage,
       trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
     };
-    const result = formatHistoryLabel(entry, 0, 100);
+    const result = formatHistoryLabel(entry, 0, 80);
     expect(result).toContain('...');
-    expect(result).toBe('B'.repeat(100) + '...');
+    expect(result).toBe('B'.repeat(80) + '...');
   });
 
   it('formatHistoryLabel does not truncate short messages even with maxLength', () => {
@@ -72,7 +72,7 @@ describe('AgentTracer helpers', () => {
       userMessage: shortMessage,
       trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
     };
-    const result = formatHistoryLabel(entry, 0, 100);
+    const result = formatHistoryLabel(entry, 0, 80);
     expect(result).toBe(shortMessage);
     expect(result).not.toContain('...');
   });
