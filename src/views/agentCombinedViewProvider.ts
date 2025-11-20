@@ -225,11 +225,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const sessionWasStarting = this.isSessionStarting;
 
     if (this.agentPreview && this.sessionId) {
-      const agentName = this.currentAgentName;
       // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
       // Both extend AgentPreviewBase, so we need to handle this carefully
       if (this.agentPreview instanceof AgentSimulate) {
-        await (this.agentPreview as AgentSimulate).end();
+        await this.agentPreview.end();
       } else {
         await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
       }
@@ -243,7 +242,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setDebugMode(false);
       await this.setLiveMode(false);
 
-      this.channelService.appendLine(`Simulation ended`);
+
 
       if (this.webviewView) {
         this.webviewView.webview.postMessage({
@@ -270,6 +269,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     this.pendingStartAgentId = undefined;
     this.pendingStartAgentSource = undefined;
+
+    this.channelService.appendLine(`Simulation ended`);
+    this.channelService.appendLine('---------------------')
   }
 
   public setAgentId(agentId: string) {
@@ -861,18 +863,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 return;
               }
               if (data.error) {
-
-                  this.channelService.appendLine(`Compilation failed, with errors shown`);
-                  this.channelService.appendLine(`Error: ${data.error}`);
-
                 webviewView.webview.postMessage({
                   command: 'compilationError',
                   data: { message: data.error }
                 });
               } else {
-
-                  this.channelService.appendLine(`Compilation end point called`);
-                  this.channelService.appendLine(`SF_TEST_API value = ${process.env.SF_TEST_API}`)
+                this.channelService.appendLine(`SF_TEST_API = ${process.env.SF_TEST_API}`)
+                this.channelService.appendLine(`Compilation end point called`);
 
                 webviewView.webview.postMessage({
                   command: 'compilationStarting',
@@ -956,12 +953,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           ensureActive();
           this.sessionId = session.sessionId;
 
-          // Log compilation success for script agents (compilation happens during start)
-          if (agentSource === AgentSource.SCRIPT) {
-              this.channelService.appendLine(`Compilation succeeded`);
-
-          }
-
           const storageKey = this.getAgentStorageKey(agentId, agentSource);
           await clearTraceHistory(storageKey);
           await this.loadAndSendTraceHistory(agentId, agentSource, webviewView);
@@ -969,15 +960,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           ensureActive();
           await this.setSessionStarting(false);
           ensureActive();
-
-          // Log to output panel for published agents (script agents log via lifecycle event)
-          if (agentSource === AgentSource.PUBLISHED) {
-              this.channelService.appendLine(`Live test session started`);
-
-          }
-
-          // History loading is now exclusively handled by loadAgentHistory flow
-          // Don't load history here to avoid duplicate messages
 
           // Find the agent's welcome message or create a default one
           const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
@@ -1000,6 +982,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             if (err instanceof SessionStartCancelledError || !isActive()) {
               return;
             }
+            this.channelService.appendLine(`Error starting session: ${err}`);
+            this.channelService.appendLine('---------------------')
+
             throw err;
           }
         } else if (message.command === 'setApexDebugging') {
@@ -1228,7 +1213,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-              this.channelService.appendLine(`Error: ${errorMessage}`);
 
             await this.postErrorMessage(webviewView, errorMessage);
           }
@@ -1333,6 +1317,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
           this.channelService.appendLine(`Error: ${errorMessage}`);
+        this.channelService.appendLine('---------------------')
 
         this.pendingStartAgentId = undefined;
         this.pendingStartAgentSource = undefined;
