@@ -54,7 +54,7 @@ export const registerOpenAgentInOrgCommand = () => {
           vscode.window.showErrorMessage(`Unable to open agent: ${result.stderr.toString()}`);
           telemetryService.sendException('sf_command_failed', `stderr: ${result.stderr.toString()}`);
         } else {
-          vscode.window.showInformationMessage('SFDX: Open an Agent in the Default Org successfully ran.');
+          vscode.window.showInformationMessage('Agentforce DX: Open an Agent in the Default Org successfully ran.');
         }
       }
     );
