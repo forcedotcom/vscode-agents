@@ -980,8 +980,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // Use this.currentAgentSource since agentSource may be out of scope
             if (this.currentAgentSource === AgentSource.SCRIPT && err instanceof SfError && err.message.includes('Failed to compile agent script')) {
               const sfError = err as SfError;
-              // SfError from AgentSimulate.start() has detailed compilation errors in the actions property
-
                 const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
                 this.channelService.appendLine(detailedError);
                 webviewView.webview.postMessage({
@@ -990,7 +988,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                 });
                 // Don't re-throw, the error has been handled and shown to the user
                 return;
-
             }
 
             this.channelService.appendLine(`Error starting session: ${err}`);
