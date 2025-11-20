@@ -9,6 +9,7 @@ import type { ClientAppResult, ClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
 import { Lifecycle } from '@salesforce/core';
 import type { Connection } from '@salesforce/core';
+import type { ChannelService } from '../types/ChannelService';
 import {
   appendTraceHistoryEntry,
   readTraceHistoryEntries,
@@ -65,6 +66,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private sessionStartOperationId = 0;
   private pendingStartAgentId?: string;
   private pendingStartAgentSource?: AgentSource;
+  private readonly channelService: ChannelService;
 
   private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
 
@@ -72,6 +74,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     AgentCombinedViewProvider.instance = this;
     // Load the last selected mode from storage
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
+    this.channelService = CoreExtensionService.getChannelService()
+
     void this.setResetAgentViewAvailable(false);
     void this.setSessionErrorState(false);
     void this.setConversationDataAvailable(false);
@@ -80,6 +84,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static getInstance(): AgentCombinedViewProvider {
     return AgentCombinedViewProvider.instance;
   }
+
 
   /**
    * Updates the session active state and context
@@ -238,15 +243,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setDebugMode(false);
       await this.setLiveMode(false);
 
-      // Log to output panel instead of showing notification
-      if (agentName) {
-        try {
-          const channelService = CoreExtensionService.getChannelService();
-          channelService.appendLine(`Simulation ended`);
-        } catch {
-          // Channel service may not be available, ignore
-        }
-      }
+      this.channelService.appendLine(`Simulation ended`);
 
       if (this.webviewView) {
         this.webviewView.webview.postMessage({
@@ -775,9 +772,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _context: vscode.WebviewViewResolveContext,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _token: vscode.CancellationToken
   ) {
     this.webviewView = webviewView;
@@ -865,35 +860,24 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               if (!isActive()) {
                 return;
               }
-              try {
-                const channelService = CoreExtensionService.getChannelService();
-                if (data.error) {
-                  channelService.appendLine(`Compilation failed, with errors shown`);
-                  channelService.appendLine(`Error: ${data.error}`);
-                  webviewView.webview.postMessage({
-                    command: 'compilationError',
-                    data: { message: data.error }
-                  });
-                } else {
-                  channelService.appendLine(`Compilation end point called`);
-                  webviewView.webview.postMessage({
-                    command: 'compilationStarting',
-                    data: { message: data.message || 'Compiling agent...' }
-                  });
-                }
-              } catch {
-                // Channel service may not be available, continue with webview messages
-                if (data.error) {
-                  webviewView.webview.postMessage({
-                    command: 'compilationError',
-                    data: { message: data.error }
-                  });
-                } else {
-                  webviewView.webview.postMessage({
-                    command: 'compilationStarting',
-                    data: { message: data.message || 'Compiling agent...' }
-                  });
-                }
+              if (data.error) {
+
+                  this.channelService.appendLine(`Compilation failed, with errors shown`);
+                  this.channelService.appendLine(`Error: ${data.error}`);
+
+                webviewView.webview.postMessage({
+                  command: 'compilationError',
+                  data: { message: data.error }
+                });
+              } else {
+
+                  this.channelService.appendLine(`Compilation end point called`);
+                  this.channelService.appendLine(`SF_TEST_API value = ${process.env.SF_TEST_API}`)
+
+                webviewView.webview.postMessage({
+                  command: 'compilationStarting',
+                  data: { message: data.message || 'Compiling agent...' }
+                });
               }
             });
 
@@ -902,12 +886,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               if (!isActive()) {
                 return;
               }
-              try {
-                const channelService = CoreExtensionService.getChannelService();
-                channelService.appendLine(`Simulation session started`);
-              } catch {
-                // Channel service may not be available, ignore
-              }
+
+                this.channelService.appendLine(`Simulation session started`);
+
               const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
               webviewView.webview.postMessage({
                 command: 'simulationStarting',
@@ -977,12 +958,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Log compilation success for script agents (compilation happens during start)
           if (agentSource === AgentSource.SCRIPT) {
-            try {
-              const channelService = CoreExtensionService.getChannelService();
-              channelService.appendLine(`Compilation succeeded`);
-            } catch {
-              // Channel service may not be available, ignore
-            }
+              this.channelService.appendLine(`Compilation succeeded`);
+
           }
 
           const storageKey = this.getAgentStorageKey(agentId, agentSource);
@@ -995,12 +972,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
           // Log to output panel for published agents (script agents log via lifecycle event)
           if (agentSource === AgentSource.PUBLISHED) {
-            try {
-              const channelService = CoreExtensionService.getChannelService();
-              channelService.appendLine(`Live test session started`);
-            } catch {
-              // Channel service may not be available, ignore
-            }
+              this.channelService.appendLine(`Live test session started`);
+
           }
 
           // History loading is now exclusively handled by loadAgentHistory flow
@@ -1051,12 +1024,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           });
 
           const userMessage = message.data.message;
-          try {
-            const channelService = CoreExtensionService.getChannelService();
-            channelService.appendLine(`Simulation message sent`);
-          } catch {
-            // Channel service may not be available, ignore
-          }
+            this.channelService.appendLine(`Simulation message sent`);
+
           const response = await this.agentPreview.send(this.sessionId, userMessage);
 
           // Get the latest agent response
@@ -1259,8 +1228,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            const channelService = CoreExtensionService.getChannelService();
-            channelService.appendLine(`Error: ${errorMessage}`);
+              this.channelService.appendLine(`Error: ${errorMessage}`);
+
             await this.postErrorMessage(webviewView, errorMessage);
           }
         } else if (message.command === 'openTraceJson') {
@@ -1363,12 +1332,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-        try {
-          const channelService = CoreExtensionService.getChannelService();
-          channelService.appendLine(`Error: ${errorMessage}`);
-        } catch {
-          // Channel service may not be available, ignore
-        }
+          this.channelService.appendLine(`Error: ${errorMessage}`);
+
         this.pendingStartAgentId = undefined;
         this.pendingStartAgentSource = undefined;
 
