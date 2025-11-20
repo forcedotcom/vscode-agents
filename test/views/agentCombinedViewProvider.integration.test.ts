@@ -93,13 +93,21 @@ jest.mock('@salesforce/core', () => ({
   }
 }));
 
+// Create a shared mock channel service for integration tests
+const mockChannelServiceInstance = {
+  appendLine: jest.fn(),
+  showChannelOutput: jest.fn(),
+  clear: jest.fn()
+};
+
 // Mock services
 jest.mock('../../src/services/coreExtensionService', () => ({
   CoreExtensionService: {
     getDefaultConnection: jest.fn(),
     getTelemetryService: jest.fn(() => ({
       sendCommandEvent: jest.fn()
-    }))
+    })),
+    getChannelService: jest.fn(() => mockChannelServiceInstance)
   }
 }));
 
@@ -148,11 +156,19 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
       }
     };
 
+    // Reset channel service mock
+    mockChannelServiceInstance.appendLine.mockClear();
+    mockChannelServiceInstance.showChannelOutput.mockClear();
+    mockChannelServiceInstance.clear.mockClear();
+    
     // Mock CoreExtensionService
     (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
       instanceUrl: 'https://test.salesforce.com',
       tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
     });
+    
+    // Ensure getChannelService returns the mock
+    (CoreExtensionService.getChannelService as jest.Mock).mockReturnValue(mockChannelServiceInstance);
 
     // Mock Agent.listRemote
     const { Agent } = require('@salesforce/agents');

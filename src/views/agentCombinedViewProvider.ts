@@ -7,7 +7,7 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
 import type { ClientAppResult, ClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
-import { Lifecycle } from '@salesforce/core';
+import { Lifecycle, SfError } from '@salesforce/core';
 import type { Connection } from '@salesforce/core';
 import type { ChannelService } from '../types/ChannelService';
 import {
@@ -17,6 +17,7 @@ import {
   writeTraceEntryToFile,
   type TraceHistoryEntry
 } from '../utils/traceHistory';
+import { EOL } from 'os';
 
 interface AgentMessage {
   type: string;
@@ -962,18 +963,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           ensureActive();
 
           // Find the agent's welcome message or create a default one
-          const agentMessage = session.messages.find(msg => msg.type === 'Inform') as AgentMessage;
+          const agentMessage = session.messages.find(msg => msg.type === 'Inform');
             webviewView.webview.postMessage({
               command: 'sessionStarted',
-              data: agentMessage
-                ? {
-                    content:
-                      (agentMessage as { message?: string }).message ||
-                      (agentMessage as { data?: string }).data ||
-                      (agentMessage as { body?: string }).body ||
-                      "Hi! I'm ready to help. What can I do for you?"
-                  }
-                : { content: "Hi! I'm ready to help. What can I do for you?" }
+              data: agentMessage?.message
             });
             this.pendingStartAgentId = undefined;
             this.pendingStartAgentSource = undefined;
@@ -982,6 +975,24 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             if (err instanceof SessionStartCancelledError || !isActive()) {
               return;
             }
+
+            // Check if this is a compilation error and extract detailed information
+            // Use this.currentAgentSource since agentSource may be out of scope
+            if (this.currentAgentSource === AgentSource.SCRIPT && err instanceof SfError && err.message.includes('Failed to compile agent script')) {
+              const sfError = err as SfError;
+              // SfError from AgentSimulate.start() has detailed compilation errors in the actions property
+
+                const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
+                this.channelService.appendLine(detailedError);
+                webviewView.webview.postMessage({
+                  command: 'compilationError',
+                  data: { message: detailedError }
+                });
+                // Don't re-throw, the error has been handled and shown to the user
+                return;
+
+            }
+
             this.channelService.appendLine(`Error starting session: ${err}`);
             this.channelService.appendLine('---------------------')
 
@@ -1009,7 +1020,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           });
 
           const userMessage = message.data.message;
-            this.channelService.appendLine(`Simulation message sent`);
+          this.channelService.appendLine(`Simulation message sent - "${userMessage}"`);
 
           const response = await this.agentPreview.send(this.sessionId, userMessage);
 
@@ -1023,6 +1034,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             data: { content: lastMessage?.message }
           });
 
+          this.channelService.appendLine(`Simulation message received - "${lastMessage?.message}"`);
 
           if (this.isApexDebuggingEnabled && response.apexDebugLog) {
             try {
@@ -1316,7 +1328,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       } catch (err) {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-          this.channelService.appendLine(`Error: ${errorMessage}`);
+        this.channelService.appendLine(`Error: ${errorMessage}`);
         this.channelService.appendLine('---------------------')
 
         this.pendingStartAgentId = undefined;
