@@ -16,7 +16,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       // Get the project root
       const project = await SfProject.getInstance();
       const projectRoot = project.getPath();
-      
+
       // Determine the target directory
       let targetDir: string;
       if (uri?.fsPath) {
@@ -38,7 +38,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       const name = await vscode.window.showInputBox({
         prompt: 'Enter the name for the AI Authoring Bundle',
         placeHolder: 'My Agent Bundle',
-        validateInput: (value) => {
+        validateInput: value => {
           if (!value) {
             return 'Bundle name is required';
           }
@@ -59,7 +59,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       // Look for spec files in the specs directory (at project root)
       const specsDir = path.join(projectRoot, 'specs');
       let specFiles: string[] = [];
-      
+
       try {
         const specDirUri = vscode.Uri.file(specsDir);
         const files = await vscode.workspace.fs.readDirectory(specDirUri);
@@ -98,15 +98,15 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           title: `Creating AI Authoring Bundle: ${apiName}`,
           cancellable: false
         },
-        async (progress) => {
+        async progress => {
           try {
             progress.report({ message: 'Generating agent script...' });
 
             // Create the agent script using the spec
-            const agentScript = await Agent.createAgentScript(
-              await CoreExtensionService.getDefaultConnection(),
-              { ...specData, ...{ name, developerName: apiName } }
-            );
+            const agentScript = await Agent.createAgentScript(await CoreExtensionService.getDefaultConnection(), {
+              ...specData,
+              ...{ name, developerName: apiName }
+            });
 
             if (!agentScript) {
               throw new Error('Failed to generate agent script');
@@ -132,17 +132,11 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 `;
 
             const metaXmlPath = path.join(bundleDir, `${apiName}.bundle-meta.xml`);
-            await vscode.workspace.fs.writeFile(
-              vscode.Uri.file(metaXmlPath),
-              Buffer.from(metaXml, 'utf-8')
-            );
+            await vscode.workspace.fs.writeFile(vscode.Uri.file(metaXmlPath), Buffer.from(metaXml, 'utf-8'));
 
             // Create the .agent file
             const agentFilePath = path.join(bundleDir, `${apiName}.agent`);
-            await vscode.workspace.fs.writeFile(
-              vscode.Uri.file(agentFilePath),
-              Buffer.from(agentScript, 'utf-8')
-            );
+            await vscode.workspace.fs.writeFile(vscode.Uri.file(agentFilePath), Buffer.from(agentScript, 'utf-8'));
 
             progress.report({ message: 'Complete!', increment: 100 });
 
@@ -153,10 +147,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             const doc = await vscode.workspace.openTextDocument(agentFilePath);
             await vscode.window.showTextDocument(doc);
 
-            vscode.window.showInformationMessage(
-              `AI Authoring Bundle "${name}" created successfully! 🎉`
-            );
-
+            vscode.window.showInformationMessage(`AI Authoring Bundle "${name}" created successfully! 🎉`);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             channelService.showChannelOutput();
@@ -167,11 +158,9 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           }
         }
       );
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Failed to create AI Authoring Bundle: ${errorMessage}`);
     }
   });
 };
-

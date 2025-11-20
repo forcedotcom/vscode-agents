@@ -15,7 +15,13 @@ interface TabNavigationProps {
   onClose?: () => void;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, showTracerTab = false, tabs, onClose }) => {
+const TabNavigation: React.FC<TabNavigationProps> = ({
+  activeTab,
+  onTabChange,
+  showTracerTab = false,
+  tabs,
+  onClose
+}) => {
   const tabRefs = React.useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const [indicatorStyle, setIndicatorStyle] = React.useState({ width: 0, left: 0 });
 
@@ -28,7 +34,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
       if (activeTabElement) {
         setIndicatorStyle({
           width: activeTabElement.offsetWidth,
-          left: activeTabElement.offsetLeft,
+          left: activeTabElement.offsetLeft
         });
       }
     } else {
@@ -36,7 +42,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
       if (activeTabElement) {
         setIndicatorStyle({
           width: activeTabElement.offsetWidth,
-          left: activeTabElement.offsetLeft,
+          left: activeTabElement.offsetLeft
         });
       }
     }
@@ -72,7 +78,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
             {tabs.map((tab, index) => (
               <button
                 key={tab.id}
-                ref={(el) => (tabRefs.current[index.toString()] = el)}
+                ref={el => (tabRefs.current[index.toString()] = el)}
                 className={`tab ${activeTab === index ? 'active' : ''}`}
                 onClick={() => handleTabClick(index)}
               >
@@ -85,7 +91,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
           // Render default tabs
           <>
             <button
-              ref={(el) => (tabRefs.current['preview'] = el)}
+              ref={el => (tabRefs.current['preview'] = el)}
               className={`tab ${activeTab === 'preview' ? 'active' : ''}`}
               onClick={() => handleTabClick('preview')}
             >
@@ -97,7 +103,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
             </button>
             {showTracerTab && (
               <button
-                ref={(el) => (tabRefs.current['tracer'] = el)}
+                ref={el => (tabRefs.current['tracer'] = el)}
                 className={`tab ${activeTab === 'tracer' ? 'active' : ''}`}
                 onClick={() => handleTabClick('tracer')}
               >
@@ -115,7 +121,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
             className="tab-navigation-indicator"
             style={{
               width: `${indicatorStyle.width}px`,
-              transform: `translateX(${indicatorStyle.left}px)`,
+              transform: `translateX(${indicatorStyle.left}px)`
             }}
           />
         )}
@@ -123,7 +129,10 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange, s
       {onClose && (
         <button className="tab-navigation-close" onClick={onClose} aria-label="Close">
           <svg width="10" height="10" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4.53333 5.44L0 0.906667L0.906667 0L5.44 4.53333L9.97333 0L10.88 0.906667L6.34667 5.44L10.88 9.97333L9.97333 10.88L5.44 6.34667L0.906667 10.88L0 9.97333L4.53333 5.44Z" fill="currentColor"/>
+            <path
+              d="M4.53333 5.44L0 0.906667L0.906667 0L5.44 4.53333L9.97333 0L10.88 0.906667L6.34667 5.44L10.88 9.97333L9.97333 10.88L5.44 6.34667L0.906667 10.88L0 9.97333L4.53333 5.44Z"
+              fill="currentColor"
+            />
           </svg>
         </button>
       )}

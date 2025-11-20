@@ -139,10 +139,7 @@ describe('Bot Version File System Lookup', () => {
   });
 
   it('should return filename as-is for unrecognized file types', async () => {
-    const botName = await getAgentNameFromFile(
-      'someRandomFile.xml',
-      path.join('path', 'to', 'someRandomFile.xml')
-    );
+    const botName = await getAgentNameFromFile('someRandomFile.xml', path.join('path', 'to', 'someRandomFile.xml'));
     expect(botName).toBe('someRandomFile.xml');
   });
 });

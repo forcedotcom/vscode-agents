@@ -30,7 +30,7 @@ export const registerPublishAgentCommand = () => {
     try {
       const project = SfProject.getInstance();
       const fileName = path.basename(filePath, '.agent');
-      
+
       channelService.appendLine(`Publishing agent: ${fileName}`);
       channelService.showChannelOutput();
 
@@ -40,14 +40,14 @@ export const registerPublishAgentCommand = () => {
           title: `Publishing agent: ${fileName}`,
           cancellable: false
         },
-        async (progress) => {
+        async progress => {
           try {
             // Get connection to the org
             const connection = CoreExtensionService.getDefaultConnection();
 
             // Read the agent file contents
             const fileUri = vscode.Uri.file(filePath);
-            const fileContents = Buffer.from((await vscode.workspace.fs.readFile(fileUri))).toString();
+            const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
 
             // Step 1: Compile the agent script
             progress.report({ message: 'Compiling agent...', increment: 0 });
@@ -56,9 +56,7 @@ export const registerPublishAgentCommand = () => {
             // Check if compilation failed
             if (compileResponse.status === 'failure') {
               const errorMessages = compileResponse.errors
-                .map((error) => 
-                  `[${error.errorType}] Line ${error.lineStart}:${error.colStart} - ${error.description}`
-                )
+                .map(error => `[${error.errorType}] Line ${error.lineStart}:${error.colStart} - ${error.description}`)
                 .join(EOL);
 
               channelService.appendLine('❌ Agent compilation failed!');
@@ -81,16 +79,14 @@ export const registerPublishAgentCommand = () => {
 
             // Register event listeners
             lifecycle.on('scopedPreRetrieve', async () => {
-                progress.report({ message: 'Retrieving metadata...', increment: 70 });
-                channelService.appendLine('Retrieving metadata from org...');
+              progress.report({ message: 'Retrieving metadata...', increment: 70 });
+              channelService.appendLine('Retrieving metadata from org...');
             });
 
             lifecycle.on('scopedPostRetrieve', async () => {
-                progress.report({ message: 'Metadata retrieved successfully', increment: 90 });
-                channelService.appendLine('Metadata retrieved successfully.');
-            
+              progress.report({ message: 'Metadata retrieved successfully', increment: 90 });
+              channelService.appendLine('Metadata retrieved successfully.');
             });
-
 
             try {
               // Type cast needed due to local dependency setup with separate @salesforce/core instances
@@ -103,14 +99,14 @@ export const registerPublishAgentCommand = () => {
 
             progress.report({ message: 'Successfully published! 🎉', increment: 100 });
             channelService.appendLine(`Successfully published agent: ${fileName}`);
-            
+
             vscode.window.showInformationMessage(`Agent "${fileName}" has been published successfully.`);
           } catch (publishError) {
             const error = SfError.wrap(publishError);
             channelService.appendLine('❌ Agent publish failed!');
             channelService.appendLine('────────────────────────────────────────────────────────────────────────');
             channelService.appendLine(`Error: ${error.message}`);
-            
+
             if (error.stack) {
               channelService.appendLine('');
               channelService.appendLine('Stack Trace:');
@@ -134,4 +130,3 @@ export const registerPublishAgentCommand = () => {
     }
   });
 };
-

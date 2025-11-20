@@ -28,11 +28,7 @@ describe('SplitButton', () => {
 
   describe('Rendering', () => {
     it('should render the split button with main button text', () => {
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       expect(screen.getByText('Test Button')).toBeInTheDocument();
     });
@@ -49,22 +45,14 @@ describe('SplitButton', () => {
     });
 
     it('should render dropdown trigger button', () => {
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       const triggerButton = screen.getByLabelText('Show options');
       expect(triggerButton).toBeInTheDocument();
     });
 
     it('should render all options in select element', () => {
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       expect(screen.getByRole('option', { name: 'Option 1' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: 'Option 2' })).toBeInTheDocument();
@@ -72,11 +60,7 @@ describe('SplitButton', () => {
     });
 
     it('should disable options when marked as disabled', () => {
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       const option3 = screen.getByRole('option', { name: 'Option 3' }) as HTMLOptionElement;
       expect(option3.disabled).toBe(true);
@@ -218,11 +202,7 @@ describe('SplitButton', () => {
         click: jest.fn()
       };
 
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       const triggerButton = screen.getByLabelText('Show options');
 
@@ -239,11 +219,7 @@ describe('SplitButton', () => {
     });
 
     it('should fall back to focus and click when showPicker is not available', async () => {
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       const triggerButton = screen.getByLabelText('Show options');
       const select = screen.getByRole('combobox');
@@ -283,11 +259,7 @@ describe('SplitButton', () => {
 
   describe('Appearance and Styling', () => {
     it('should apply primary appearance class by default', () => {
-      const { container } = render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      const { container } = render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       const splitButton = container.querySelector('.vscode-split-button');
       expect(splitButton).toHaveClass('vscode-split-button--primary');
@@ -358,22 +330,14 @@ describe('SplitButton', () => {
 
   describe('Accessibility', () => {
     it('should have proper aria-label for dropdown trigger', () => {
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       const triggerButton = screen.getByLabelText('Show options');
       expect(triggerButton).toHaveAttribute('aria-label', 'Show options');
     });
 
     it('should use button text for select aria-label when children is string', () => {
-      render(
-        <SplitButton options={mockOptions}>
-          Test Button
-        </SplitButton>
-      );
+      render(<SplitButton options={mockOptions}>Test Button</SplitButton>);
 
       const select = screen.getByRole('combobox');
       expect(select).toHaveAttribute('aria-label', 'Test Button');

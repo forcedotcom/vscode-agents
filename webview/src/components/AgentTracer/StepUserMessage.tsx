@@ -11,7 +11,8 @@ interface StepUserMessageProps {
 }
 
 export const StepUserMessage: React.FC<StepUserMessageProps> = ({ message, timing }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-user-message step-user-message--user">

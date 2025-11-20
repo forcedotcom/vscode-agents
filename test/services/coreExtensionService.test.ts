@@ -149,7 +149,7 @@ describe('CoreExtensionService', () => {
       services: {
         ChannelService: channelServiceInstance,
         TelemetryService: telemetryServiceInstance,
-        WorkspaceContext: undefined  // No WorkspaceContext
+        WorkspaceContext: undefined // No WorkspaceContext
       }
     });
 
@@ -164,9 +164,7 @@ describe('CoreExtensionService', () => {
   it('should show warning for invalid version format', () => {
     (valid as jest.Mock).mockReturnValue(false);
     CoreExtensionService.isAboveMinimumRequiredVersion('60.13.0', 'invalid-version');
-    expect(window.showWarningMessage).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid version format found')
-    );
+    expect(window.showWarningMessage).toHaveBeenCalledWith(expect.stringContaining('Invalid version format found'));
   });
 
   it('should return channel service when initialized', async () => {

@@ -24,12 +24,17 @@ const ExpandableSection: React.FC<{
   defaultExpanded?: boolean;
 }> = ({ title, badge, children, defaultExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-topic-expandable">
       <button className="step-topic-expandable-header" onClick={() => setIsExpanded(!isExpanded)}>
-        <img src={isDark ? chevronIconDark : chevronIconLight} alt="Expand" className={`step-topic-expand-icon ${isExpanded ? 'expanded' : ''}`} />
+        <img
+          src={isDark ? chevronIconDark : chevronIconLight}
+          alt="Expand"
+          className={`step-topic-expand-icon ${isExpanded ? 'expanded' : ''}`}
+        />
         <span className="step-topic-section-title">{title}</span>
         {badge && <span className="step-topic-section-badge">{badge}</span>}
       </button>
@@ -47,7 +52,8 @@ export const StepTopic: React.FC<StepTopicProps> = ({
   availableTopics,
   availableTopicsCount = 4
 }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-topic step-topic--default">

@@ -13,15 +13,18 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({ type, content }) => {
   const [isDark, setIsDark] = useState(() => {
     const classList = document.body.classList;
-    return classList.contains('vscode-dark') ||
-           (classList.contains('vscode-high-contrast') && !classList.contains('vscode-high-contrast-light'));
+    return (
+      classList.contains('vscode-dark') ||
+      (classList.contains('vscode-high-contrast') && !classList.contains('vscode-high-contrast-light'))
+    );
   });
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
       const classList = document.body.classList;
-      const newIsDark = classList.contains('vscode-dark') ||
-                        (classList.contains('vscode-high-contrast') && !classList.contains('vscode-high-contrast-light'));
+      const newIsDark =
+        classList.contains('vscode-dark') ||
+        (classList.contains('vscode-high-contrast') && !classList.contains('vscode-high-contrast-light'));
       setIsDark(newIsDark);
     });
 
@@ -33,18 +36,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ type, content }) => {
     return () => observer.disconnect();
   }, []);
 
-  const iconSrc = type === 'user'
-    ? (isDark ? userIconDark : userIconLight)
-    : (isDark ? agentIconDark : agentIconLight);
+  const iconSrc = type === 'user' ? (isDark ? userIconDark : userIconLight) : isDark ? agentIconDark : agentIconLight;
 
   return (
     <div className={`chat-message ${type}`}>
       <div className="message-icon">
-        <img
-          src={iconSrc}
-          alt={type === 'user' ? 'User' : 'Agent'}
-          className="icon-svg"
-        />
+        <img src={iconSrc} alt={type === 'user' ? 'User' : 'Agent'} className="icon-svg" />
       </div>
       <div className="message-content-wrapper">
         <div className="message-content">{content}</div>

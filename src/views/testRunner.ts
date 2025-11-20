@@ -81,7 +81,9 @@ export class AgentTestRunner {
         });
 
       // Show generated data only if enabled in settings
-      const showGeneratedData = vscode.workspace.getConfiguration('salesforce.agentforceDX').get<boolean>('showGeneratedData');
+      const showGeneratedData = vscode.workspace
+        .getConfiguration('salesforce.agentforceDX')
+        .get<boolean>('showGeneratedData');
       if (showGeneratedData && tc.generatedData?.actionsSequence?.length > 2) {
         channelService.appendLine('❯ ACTION: INVOCATION ℹ️');
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');

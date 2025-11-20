@@ -22,9 +22,7 @@ describe('package.json', () => {
       const viewTitleMenus = packageJson.contributes.menus['view/title'];
 
       it('should have restart agent command visible only when session is active and not starting', () => {
-        const restartCommand = viewTitleMenus.find(
-          (menu: any) => menu.command === 'sf.agent.combined.view.refresh'
-        );
+        const restartCommand = viewTitleMenus.find((menu: any) => menu.command === 'sf.agent.combined.view.refresh');
 
         expect(restartCommand).toBeDefined();
         expect(restartCommand?.when).toContain('agentforceDX:sessionActive');
@@ -66,9 +64,7 @@ describe('package.json', () => {
       });
 
       it('should ensure restart and refresh agent commands are mutually exclusive', () => {
-        const restartCommand = viewTitleMenus.find(
-          (menu: any) => menu.command === 'sf.agent.combined.view.refresh'
-        );
+        const restartCommand = viewTitleMenus.find((menu: any) => menu.command === 'sf.agent.combined.view.refresh');
         const refreshAgentsCommand = viewTitleMenus.find(
           (menu: any) => menu.command === 'sf.agent.combined.view.refreshAgents'
         );
@@ -97,9 +93,7 @@ describe('package.json', () => {
       const commands = packageJson.contributes.commands;
 
       it('should have restart agent command defined', () => {
-        const restartCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.combined.view.refresh'
-        );
+        const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.refresh');
 
         expect(restartCommand).toBeDefined();
         expect(restartCommand?.title).toBe('Restart Agent');
@@ -107,9 +101,7 @@ describe('package.json', () => {
       });
 
       it('should have refresh agents command defined', () => {
-        const refreshCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.combined.view.refreshAgents'
-        );
+        const refreshCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.refreshAgents');
 
         expect(refreshCommand).toBeDefined();
         expect(refreshCommand?.title).toBe('Refresh Agent List');
@@ -117,9 +109,7 @@ describe('package.json', () => {
       });
 
       it('should define the export conversation command', () => {
-        const exportCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversation'
-        );
+        const exportCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversation');
 
         expect(exportCommand).toBeDefined();
         expect(exportCommand?.title).toBe('Download Conversation');
@@ -127,9 +117,7 @@ describe('package.json', () => {
       });
 
       it('should define the reset agent view command', () => {
-        const resetCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.combined.view.resetAgentView'
-        );
+        const resetCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.resetAgentView');
 
         expect(resetCommand).toBeDefined();
         expect(resetCommand?.title).toBe('Reset Agent View');
@@ -137,12 +125,8 @@ describe('package.json', () => {
       });
 
       it('should have focus view alias commands defined', () => {
-        const focusViewCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.focusView'
-        );
-        const focusTestViewCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.focusTestView'
-        );
+        const focusViewCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.focusView');
+        const focusTestViewCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.focusTestView');
 
         expect(focusViewCommand).toBeDefined();
         expect(focusViewCommand?.title).toBe('AFDX: Focus on Agentforce DX View');
@@ -152,9 +136,7 @@ describe('package.json', () => {
       });
 
       it('should have start agent command defined with proper enablement', () => {
-        const startAgentCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.startAgent'
-        );
+        const startAgentCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.startAgent');
 
         expect(startAgentCommand).toBeDefined();
         expect(startAgentCommand?.title).toBe('Start Agent');
@@ -163,21 +145,15 @@ describe('package.json', () => {
       });
 
       it('should have select agent command defined', () => {
-        const selectAgentCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.selectAndRun'
-        );
+        const selectAgentCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.selectAndRun');
 
         expect(selectAgentCommand).toBeDefined();
         expect(selectAgentCommand?.title).toBe('Select Agent');
       });
 
       it('should have debug commands with proper enablement', () => {
-        const startDebugCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.combined.view.debug'
-        );
-        const stopDebugCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.combined.view.debugStop'
-        );
+        const startDebugCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.debug');
+        const stopDebugCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.debugStop');
 
         expect(startDebugCommand).toBeDefined();
         expect(startDebugCommand?.title).toBe('Start Debug Mode');
@@ -189,12 +165,8 @@ describe('package.json', () => {
       });
 
       it('should ensure start and restart commands are mutually exclusive', () => {
-        const startCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.startAgent'
-        );
-        const restartCommand = commands.find(
-          (cmd: any) => cmd.command === 'sf.agent.combined.view.refresh'
-        );
+        const startCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.startAgent');
+        const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.refresh');
 
         expect(startCommand).toBeDefined();
         expect(restartCommand).toBeDefined();

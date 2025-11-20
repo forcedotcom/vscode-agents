@@ -74,12 +74,7 @@ const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
             Send a Message
           </Button>
         ) : isPublishedAgent ? (
-          <Button
-            appearance="primary"
-            size="small"
-            onClick={onGoToPreview}
-            startIcon={playIcon}
-          >
+          <Button appearance="primary" size="small" onClick={onGoToPreview} startIcon={playIcon}>
             Start Live Test
           </Button>
         ) : (

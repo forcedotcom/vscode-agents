@@ -20,18 +20,26 @@ export const SessionInfo: React.FC<SessionInfoProps> = ({
   onToggleAll,
   isAllExpanded = true
 }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="session-info">
       <button className="session-info-header" onClick={onToggle}>
-        <img src={isDark ? chevronIconDark : chevronIconLight} alt="Expand" className={`session-icon ${isExpanded ? 'expanded' : ''}`} />
+        <img
+          src={isDark ? chevronIconDark : chevronIconLight}
+          alt="Expand"
+          className={`session-icon ${isExpanded ? 'expanded' : ''}`}
+        />
         <span className="session-title">Session Details</span>
         {onToggleAll && (
-          <button className="toggle-all-button" onClick={(e) => {
-            e.stopPropagation();
-            onToggleAll();
-          }}>
+          <button
+            className="toggle-all-button"
+            onClick={e => {
+              e.stopPropagation();
+              onToggleAll();
+            }}
+          >
             {isAllExpanded ? 'Collapse All' : 'Expand All'}
           </button>
         )}

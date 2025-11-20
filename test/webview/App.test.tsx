@@ -50,7 +50,10 @@ const mockFocusInput = jest.fn();
 
 // Mock the components to simplify testing
 jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
-  return React.forwardRef(function MockAgentPreview({ selectedAgentId, pendingAgentId, isSessionTransitioning }: any, ref: any) {
+  return React.forwardRef(function MockAgentPreview(
+    { selectedAgentId, pendingAgentId, isSessionTransitioning }: any,
+    ref: any
+  ) {
     React.useImperativeHandle(ref, () => ({
       focusInput: mockFocusInput
     }));
@@ -85,11 +88,7 @@ jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
   return function MockAgentSelector({ selectedAgent, onAgentChange, onClientAppRequired, onClientAppSelection }: any) {
     return (
       <div data-testid="agent-selector">
-        <select
-          data-testid="agent-select"
-          value={selectedAgent}
-          onChange={e => onAgentChange(e.target.value)}
-        >
+        <select data-testid="agent-select" value={selectedAgent} onChange={e => onAgentChange(e.target.value)}>
           <option value="">Select agent...</option>
           <option value="agent1">Agent 1</option>
           <option value="agent2">Agent 2</option>
@@ -217,7 +216,6 @@ describe('App', () => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
     });
-
   });
 
   describe('Tab Navigation', () => {
@@ -353,16 +351,22 @@ describe('App', () => {
       jest.clearAllMocks();
       triggerMessage('selectAgent', { agentId: 'agent2', forceRestart: true });
 
-      await waitFor(() => {
-        expect(mockVscodeApi.endSession).toHaveBeenCalled();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(mockVscodeApi.endSession).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
 
       // Simulate session ended
       triggerMessage('sessionEnded', {});
 
-      await waitFor(() => {
-        expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent2', { isLiveMode: false });
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(mockVscodeApi.startSession).toHaveBeenCalledWith('agent2', { isLiveMode: false });
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
@@ -398,7 +402,6 @@ describe('App', () => {
       });
     });
   });
-
 
   describe('Client App State', () => {
     it('should handle client app required state', async () => {
@@ -496,9 +499,12 @@ describe('App', () => {
       // Switch to another agent (creates end promise)
       triggerMessage('selectAgent', { agentId: 'agent2' });
 
-      await waitFor(() => {
-        expect(mockVscodeApi.endSession).toHaveBeenCalled();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockVscodeApi.endSession).toHaveBeenCalled();
+        },
+        { timeout: 1000 }
+      );
 
       // Resolve the end promise
       triggerMessage('sessionEnded', {});
@@ -545,7 +551,6 @@ describe('App', () => {
   });
 
   describe('Edge Cases', () => {
-
     it('should handle selectAgent without agentId', () => {
       render(<App />);
 
@@ -661,9 +666,12 @@ describe('App', () => {
       // Resolve the session start successfully
       triggerMessage('sessionStarted', {});
 
-      await waitFor(() => {
-        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+        },
+        { timeout: 3000 }
+      );
     });
 
     it('should handle session start failure by resolving promise with false', async () => {
@@ -994,7 +1002,8 @@ describe('App', () => {
       // This should not trigger another startSession call
       const handleGoToPreview = () => {
         // Simulate the handleGoToPreview logic
-        if (!false && !true && 'agent1') {  // !isSessionActive && !isSessionStarting && desiredAgentId
+        if (!false && !true && 'agent1') {
+          // !isSessionActive && !isSessionStarting && desiredAgentId
           mockVscodeApi.startSession('agent1');
         }
       };

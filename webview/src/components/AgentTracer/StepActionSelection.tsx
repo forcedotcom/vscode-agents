@@ -19,7 +19,8 @@ const ExpandableSection: React.FC<{
   defaultExpanded?: boolean;
 }> = ({ title, badge, children, defaultExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-action-selection-expandable">
@@ -38,18 +39,27 @@ const ExpandableSection: React.FC<{
 };
 
 export const StepActionSelection: React.FC<StepActionSelectionProps> = ({ timing, promptUsed }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-action-selection">
       <div className="step-action-selection-header">
         <div className="step-action-selection-title">
-          <img src={isDark ? sparklesIconDark : sparklesIconLight} alt="Sparkles" className="step-action-selection-icon" />
+          <img
+            src={isDark ? sparklesIconDark : sparklesIconLight}
+            alt="Sparkles"
+            className="step-action-selection-icon"
+          />
           Reasoning: Action Selection
         </div>
         {timing && (
           <div className="step-action-selection-timing">
-            <img src={isDark ? clockIconDark : clockIconLight} alt="Clock" className="step-action-selection-timing-icon" />
+            <img
+              src={isDark ? clockIconDark : clockIconLight}
+              alt="Clock"
+              className="step-action-selection-timing-icon"
+            />
             {timing}
           </div>
         )}

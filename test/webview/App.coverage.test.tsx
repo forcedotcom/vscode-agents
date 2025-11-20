@@ -46,10 +46,7 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
 
 // Mock components
 jest.mock('../../webview/src/components/AgentPreview/AgentPreview', () => {
-  return React.forwardRef(function MockAgentPreview(
-    { selectedAgentId, isSessionTransitioning }: any,
-    ref: any
-  ) {
+  return React.forwardRef(function MockAgentPreview({ selectedAgentId, isSessionTransitioning }: any, ref: any) {
     return (
       <div data-testid="agent-preview" ref={ref}>
         <div data-testid="selected-agent">{selectedAgentId || 'none'}</div>
@@ -229,9 +226,12 @@ describe('App Coverage Tests', () => {
       });
 
       // This should hit lines 191-192: if (startSucceeded) { setDisplayedAgentIdState(nextAgentId); }
-      await waitFor(() => {
-        expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('selected-agent').textContent).toBe('agent1');
+        },
+        { timeout: 3000 }
+      );
     });
 
     it('should hit lines 202-203: catch block in session management', async () => {
@@ -328,7 +328,6 @@ describe('App Coverage Tests', () => {
       // The race condition should have been handled gracefully
       expect(screen.getByTestId('agent-selector')).toBeInTheDocument();
     });
-
   });
 
   describe('Coverage: Force restart session flows', () => {

@@ -49,12 +49,7 @@ const AgentPreviewPlaceholder: React.FC<AgentPreviewPlaceholderProps> = ({
       </p>
       {onStartSession &&
         (isPublishedAgent ? (
-          <Button
-            appearance="primary"
-            size="small"
-            onClick={onStartSession}
-            startIcon={playIcon}
-          >
+          <Button appearance="primary" size="small" onClick={onStartSession} startIcon={playIcon}>
             Start Live Test
           </Button>
         ) : (

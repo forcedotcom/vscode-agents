@@ -286,7 +286,14 @@ const App: React.FC = () => {
         console.error('Error managing agent session:', err);
         handleSessionTransitionSettled();
       });
-  }, [desiredAgentId, restartTrigger, waitForSessionEnd, waitForSessionStart, handleSessionTransitionSettled, isLiveMode]);
+  }, [
+    desiredAgentId,
+    restartTrigger,
+    waitForSessionEnd,
+    waitForSessionStart,
+    handleSessionTransitionSettled,
+    isLiveMode
+  ]);
 
   const previewAgentId = desiredAgentId !== '' ? desiredAgentId : displayedAgentId;
   const pendingAgentId = desiredAgentId !== displayedAgentId ? desiredAgentId : null;

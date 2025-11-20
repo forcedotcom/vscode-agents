@@ -15,7 +15,11 @@ vscode.DiagnosticSeverity = {
 class DiagnosticMock {
   public source: string | undefined;
   public code: unknown;
-  constructor(public range: unknown, public message: string, public severity: unknown) {
+  constructor(
+    public range: unknown,
+    public message: string,
+    public severity: unknown
+  ) {
     this.range = range;
     this.message = message;
     this.severity = severity;
@@ -24,7 +28,8 @@ class DiagnosticMock {
 
 vscode.Diagnostic = DiagnosticMock as any;
 
-const validateAgentModule = require('../../src/commands/validateAgent') as typeof import('../../src/commands/validateAgent');
+const validateAgentModule =
+  require('../../src/commands/validateAgent') as typeof import('../../src/commands/validateAgent');
 const { registerValidateAgentCommand, initializeDiagnosticCollection } = validateAgentModule;
 
 describe('validateAgent', () => {
@@ -73,17 +78,15 @@ describe('validateAgent', () => {
     errorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
 
     progressReportSpy = jest.fn();
-    progressSpy = jest
-      .spyOn(vscode.window, 'withProgress')
-      .mockImplementation(async (_options, task) => {
-        return await task({ report: progressReportSpy }, {} as vscodeTypes.CancellationToken);
-      });
+    progressSpy = jest.spyOn(vscode.window, 'withProgress').mockImplementation(async (_options, task) => {
+      return await task({ report: progressReportSpy }, {} as vscodeTypes.CancellationToken);
+    });
 
     jest.spyOn(vscode.languages, 'createDiagnosticCollection').mockReturnValue(diagnosticCollectionMock);
 
-    readFileSpy = jest.spyOn(vscode.workspace.fs, 'readFile').mockResolvedValue(
-      new TextEncoder().encode('agent Test { }')
-    );
+    readFileSpy = jest
+      .spyOn(vscode.workspace.fs, 'readFile')
+      .mockResolvedValue(new TextEncoder().encode('agent Test { }'));
 
     // Mock activeTextEditor as undefined by default
     Object.defineProperty(vscode.window, 'activeTextEditor', {
@@ -92,17 +95,20 @@ describe('validateAgent', () => {
     });
 
     // Mock Uri.file to return a proper Uri-like object
-    jest.spyOn(vscode.Uri, 'file').mockImplementation((path: string) => ({
-      fsPath: path,
-      scheme: 'file',
-      path,
-      authority: '',
-      query: '',
-      fragment: '',
-      with: jest.fn(),
-      toJSON: jest.fn(),
-      toString: jest.fn(() => path)
-    } as any));
+    jest.spyOn(vscode.Uri, 'file').mockImplementation(
+      (path: string) =>
+        ({
+          fsPath: path,
+          scheme: 'file',
+          path,
+          authority: '',
+          query: '',
+          fragment: '',
+          with: jest.fn(),
+          toJSON: jest.fn(),
+          toString: jest.fn(() => path)
+        }) as any
+    );
 
     // Mock Agent.compileAgentScript
     compileAgentScriptSpy = jest.spyOn(Agent, 'compileAgentScript');
@@ -156,7 +162,7 @@ describe('validateAgent', () => {
       });
 
       const mockUri = vscode.Uri.file('/test/agent.agent');
-      
+
       registerValidateAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
@@ -201,9 +207,7 @@ describe('validateAgent', () => {
       expect(fakeChannelService.showChannelOutput).toHaveBeenCalled();
       expect(fakeChannelService.clear).toHaveBeenCalled();
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-        expect.stringContaining('Found 2 error(s):')
-      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s):'));
 
       expect(diagnosticCollectionMock.clear).not.toHaveBeenCalled();
       expect(diagnosticCollectionMock.set).toHaveBeenCalledTimes(1);
@@ -250,7 +254,9 @@ describe('validateAgent', () => {
 
       // Verify error message is displayed without "Error:" prefix
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Connection failed');
-      expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(expect.stringContaining('Error: Connection failed'));
+      expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(
+        expect.stringContaining('Error: Connection failed')
+      );
     });
 
     it('displays "Something went wrong" for empty error message', async () => {
@@ -281,7 +287,7 @@ describe('validateAgent', () => {
       const startCol = Math.max(0, mockError.colStart - 1);
       const endLine = Math.max(0, mockError.lineEnd - 1);
       const endCol = Math.max(0, mockError.colEnd - 1);
-      
+
       // Verify conversion
       expect(startLine).toBe(4); // lineStart 5 -> 4
       expect(startCol).toBe(9); // colStart 10 -> 9
@@ -300,7 +306,7 @@ describe('validateAgent', () => {
       });
 
       const mockFilePath = '/test/agent.agent';
-      
+
       // Mock active text editor
       Object.defineProperty(vscode.window, 'activeTextEditor', {
         get: jest.fn(() => ({

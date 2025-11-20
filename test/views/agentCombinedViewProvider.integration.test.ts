@@ -151,7 +151,7 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
     mockWebviewView = {
       webview: {
         options: {},
-        onDidReceiveMessage: jest.fn((handler) => {
+        onDidReceiveMessage: jest.fn(handler => {
           messageHandler = handler;
           return { dispose: jest.fn() };
         }),
@@ -164,21 +164,21 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
     mockChannelServiceInstance.appendLine.mockClear();
     mockChannelServiceInstance.showChannelOutput.mockClear();
     mockChannelServiceInstance.clear.mockClear();
-    
+
     // Mock CoreExtensionService
     (CoreExtensionService.getDefaultConnection as jest.Mock).mockResolvedValue({
       instanceUrl: 'https://test.salesforce.com',
       tooling: { _baseUrl: () => 'https://test.salesforce.com/services/data/v56.0' }
     });
-    
+
     // Ensure getChannelService returns the mock
     (CoreExtensionService.getChannelService as jest.Mock).mockReturnValue(mockChannelServiceInstance);
 
     // Mock Agent.listRemote
     const { Agent } = require('@salesforce/agents');
-    Agent.listRemote = jest.fn().mockResolvedValue([
-      { Id: '0X1234567890123', MasterLabel: 'Test Agent', DeveloperName: 'TestAgent' }
-    ]);
+    Agent.listRemote = jest
+      .fn()
+      .mockResolvedValue([{ Id: '0X1234567890123', MasterLabel: 'Test Agent', DeveloperName: 'TestAgent' }]);
 
     // Mock Lifecycle
     const mockLifecycle = {

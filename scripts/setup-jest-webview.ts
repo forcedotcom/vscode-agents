@@ -40,8 +40,7 @@ beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
-      (args[0].includes('Warning: An update to') ||
-       args[0].includes('Warning: `ReactDOMTestUtils.act`'))
+      (args[0].includes('Warning: An update to') || args[0].includes('Warning: `ReactDOMTestUtils.act`'))
     ) {
       return;
     }

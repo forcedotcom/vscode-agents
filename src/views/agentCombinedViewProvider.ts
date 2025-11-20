@@ -75,7 +75,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     AgentCombinedViewProvider.instance = this;
     // Load the last selected mode from storage
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
-    this.channelService = CoreExtensionService.getChannelService()
+    this.channelService = CoreExtensionService.getChannelService();
 
     void this.setResetAgentViewAvailable(false);
     void this.setSessionErrorState(false);
@@ -85,7 +85,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public static getInstance(): AgentCombinedViewProvider {
     return AgentCombinedViewProvider.instance;
   }
-
 
   /**
    * Updates the session active state and context
@@ -243,8 +242,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setDebugMode(false);
       await this.setLiveMode(false);
 
-
-
       if (this.webviewView) {
         this.webviewView.webview.postMessage({
           command: 'sessionEnded',
@@ -261,7 +258,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           data: {}
         });
       }
-
     }
 
     if (sessionWasStarting) {
@@ -272,7 +268,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.pendingStartAgentSource = undefined;
 
     this.channelService.appendLine(`Simulation ended`);
-    this.channelService.appendLine('---------------------')
+    this.channelService.appendLine('---------------------');
   }
 
   public setAgentId(agentId: string) {
@@ -339,7 +335,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   private sanitizeFileName(name: string): string {
-    return name.replace(/[^a-z0-9-_]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    return name
+      .replace(/[^a-z0-9-_]+/gi, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   private async saveConversationExport(content: string, suggestedFileName?: string): Promise<void> {
@@ -355,9 +354,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         ? this.sanitizeFileName(suggestedFileName.replace(/\.md$/i, ''))
         : undefined;
     const defaultNameBase =
-      suggestedBase && suggestedBase.length > 0
-        ? suggestedBase
-        : `${fallbackBase}-conversation-${timestamp}`;
+      suggestedBase && suggestedBase.length > 0 ? suggestedBase : `${fallbackBase}-conversation-${timestamp}`;
     const defaultName = defaultNameBase.endsWith('.md') ? defaultNameBase : `${defaultNameBase}.md`;
 
     const defaultFolder = vscode.workspace.workspaceFolders?.[0]?.uri ?? this.context.globalStorageUri;
@@ -411,9 +408,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   private validatePublishedAgentId(agentId: string): void {
     if (!agentId.startsWith('0X') || (agentId.length !== 15 && agentId.length !== 18)) {
-      throw new Error(
-        `The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`
-      );
+      throw new Error(`The Bot ID provided must begin with "0X" and be either 15 or 18 characters. Found: ${agentId}`);
     }
   }
 
@@ -630,7 +625,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
 
     // Sort local agents alphabetically by name
-      localAgents.sort((a, b) => a.name.localeCompare(b.name));
+    localAgents.sort((a, b) => a.name.localeCompare(b.name));
 
     return localAgents;
   }
@@ -803,167 +798,168 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               data: { message: 'Starting session...' }
             });
 
-          // End existing session if one exists
-          if (this.agentPreview && this.sessionId) {
-            try {
-              // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
-              if (this.agentPreview instanceof AgentSimulate) {
-                await (this.agentPreview as AgentSimulate).end();
-              } else {
-                await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+            // End existing session if one exists
+            if (this.agentPreview && this.sessionId) {
+              try {
+                // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
+                if (this.agentPreview instanceof AgentSimulate) {
+                  await (this.agentPreview as AgentSimulate).end();
+                } else {
+                  await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+                }
+                ensureActive();
+              } catch (err) {
+                console.warn('Error ending previous session:', err);
               }
-              ensureActive();
-            } catch (err) {
-              console.warn('Error ending previous session:', err);
-            }
-          }
-
-          // Reset planId when starting a new session
-          this.currentPlanId = undefined;
-
-          // If a client app was previously selected, reuse it to avoid re-prompt loops
-          const conn = this.selectedClientApp
-            ? await createConnectionWithClientApp(this.selectedClientApp)
-            : await CoreExtensionService.getDefaultConnection();
-          ensureActive();
-
-          // Extract agentId from the message data and pass it as botId
-          const agentId = this.currentAgentId || message.data?.agentId;
-
-          if (!agentId || typeof agentId !== 'string') {
-            throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
-          }
-
-          // Determine agent source type using the library's AgentSource enum
-          const agentSource = this.getAgentSource(agentId);
-          this.pendingStartAgentId = agentId;
-          this.pendingStartAgentSource = agentSource;
-
-          if (agentSource === AgentSource.SCRIPT) {
-            // Handle script agent (.agent file)
-            const filePath = this.getLocalAgentFilePath(agentId);
-
-            if (!filePath) {
-              throw new Error('No file path found for local agent.');
             }
 
-            // Determine mode before setting up listeners
-            const isLiveMode = message.data?.isLiveMode ?? false;
-            await this.setLiveMode(isLiveMode);
+            // Reset planId when starting a new session
+            this.currentPlanId = undefined;
+
+            // If a client app was previously selected, reuse it to avoid re-prompt loops
+            const conn = this.selectedClientApp
+              ? await createConnectionWithClientApp(this.selectedClientApp)
+              : await CoreExtensionService.getDefaultConnection();
             ensureActive();
 
-            // Set up lifecycle event listeners for compilation progress
-            // Remove all existing listeners for these events to prevent duplicates
-            const lifecycle = Lifecycle.getInstance();
-            (lifecycle).removeAllListeners?.('agents:compiling');
-            (lifecycle).removeAllListeners?.('agents:simulation-starting');
+            // Extract agentId from the message data and pass it as botId
+            const agentId = this.currentAgentId || message.data?.agentId;
 
-            // Listen for compilation events
-            lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
-              if (!isActive()) {
-                return;
-              }
-              if (data.error) {
-                webviewView.webview.postMessage({
-                  command: 'compilationError',
-                  data: { message: data.error }
-                });
-              } else {
-                this.channelService.appendLine(`SF_TEST_API = ${process.env.SF_TEST_API}`)
-                this.channelService.appendLine(`Compilation end point called`);
+            if (!agentId || typeof agentId !== 'string') {
+              throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
+            }
 
-                webviewView.webview.postMessage({
-                  command: 'compilationStarting',
-                  data: { message: data.message || 'Compiling agent...' }
-                });
-              }
-            });
+            // Determine agent source type using the library's AgentSource enum
+            const agentSource = this.getAgentSource(agentId);
+            this.pendingStartAgentId = agentId;
+            this.pendingStartAgentSource = agentSource;
 
-            // Listen for simulation starting event
-            lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
-              if (!isActive()) {
-                return;
+            if (agentSource === AgentSource.SCRIPT) {
+              // Handle script agent (.agent file)
+              const filePath = this.getLocalAgentFilePath(agentId);
+
+              if (!filePath) {
+                throw new Error('No file path found for local agent.');
               }
+
+              // Determine mode before setting up listeners
+              const isLiveMode = message.data?.isLiveMode ?? false;
+              await this.setLiveMode(isLiveMode);
+              ensureActive();
+
+              // Set up lifecycle event listeners for compilation progress
+              // Remove all existing listeners for these events to prevent duplicates
+              const lifecycle = Lifecycle.getInstance();
+              lifecycle.removeAllListeners?.('agents:compiling');
+              lifecycle.removeAllListeners?.('agents:simulation-starting');
+
+              // Listen for compilation events
+              lifecycle.on('agents:compiling', async (data: { message?: string; error?: string }) => {
+                if (!isActive()) {
+                  return;
+                }
+                if (data.error) {
+                  webviewView.webview.postMessage({
+                    command: 'compilationError',
+                    data: { message: data.error }
+                  });
+                } else {
+                  this.channelService.appendLine(`SF_TEST_API = ${process.env.SF_TEST_API}`);
+                  this.channelService.appendLine(`Compilation end point called`);
+
+                  webviewView.webview.postMessage({
+                    command: 'compilationStarting',
+                    data: { message: data.message || 'Compiling agent...' }
+                  });
+                }
+              });
+
+              // Listen for simulation starting event
+              lifecycle.on('agents:simulation-starting', async (data: { message?: string }) => {
+                if (!isActive()) {
+                  return;
+                }
 
                 this.channelService.appendLine(`Simulation session started`);
 
-              const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
-              webviewView.webview.postMessage({
-                command: 'simulationStarting',
-                data: { message: data.message || modeMessage }
-              });
+                const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
+                webviewView.webview.postMessage({
+                  command: 'simulationStarting',
+                  data: { message: data.message || modeMessage }
+                });
 
-              // Show disclaimer for agent preview (script agents only)
-              if (!isActive()) {
-                return;
-              }
-              webviewView.webview.postMessage({
-                command: 'previewDisclaimer',
-                data: {
-                  message: 'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).'
+                // Show disclaimer for agent preview (script agents only)
+                if (!isActive()) {
+                  return;
                 }
+                webviewView.webview.postMessage({
+                  command: 'previewDisclaimer',
+                  data: {
+                    message:
+                      'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).'
+                  }
+                });
               });
-            });
 
-            // Create AgentSimulate with just the file path
-            // Type cast needed due to local dependency setup with separate @salesforce/core instances
-            // mockActions: true = simulate (mock actions), false = live test (real side effects)
-            // The lifecycle listeners will automatically handle compilation progress messages
-            const mockActions = !isLiveMode; // Simulate = true, Live Test = false
-            this.agentPreview = new AgentSimulate(conn as any, filePath, mockActions);
-            this.currentAgentName = path.basename(filePath, '.agent');
-            this.currentAgentId = agentId;
+              // Create AgentSimulate with just the file path
+              // Type cast needed due to local dependency setup with separate @salesforce/core instances
+              // mockActions: true = simulate (mock actions), false = live test (real side effects)
+              // The lifecycle listeners will automatically handle compilation progress messages
+              const mockActions = !isLiveMode; // Simulate = true, Live Test = false
+              this.agentPreview = new AgentSimulate(conn as any, filePath, mockActions);
+              this.currentAgentName = path.basename(filePath, '.agent');
+              this.currentAgentId = agentId;
 
-            // Enable debug mode from apex debugging setting
-            if (this.isApexDebuggingEnabled) {
-              this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
+              // Enable debug mode from apex debugging setting
+              if (this.isApexDebuggingEnabled) {
+                this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
+              }
+            } else {
+              // Handle published agent (org agent)
+              // Validate that the agentId follows Salesforce Bot ID format
+              this.validatePublishedAgentId(agentId);
+
+              // Published agents are always in live mode
+              await this.setLiveMode(true);
+              ensureActive();
+
+              // Type cast needed due to local dependency setup with separate @salesforce/core instances
+              this.agentPreview = new AgentPreview(conn as any, agentId);
+
+              // Get agent name for notifications
+              const remoteAgents = await Agent.listRemote(conn as any);
+              ensureActive();
+              const agent = remoteAgents?.find(bot => bot.Id === agentId);
+              this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
+              this.currentAgentId = agentId;
+
+              // Enable debug mode from apex debugging setting
+              if (this.isApexDebuggingEnabled) {
+                this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
+              }
             }
-          } else {
-            // Handle published agent (org agent)
-            // Validate that the agentId follows Salesforce Bot ID format
-            this.validatePublishedAgentId(agentId);
 
-            // Published agents are always in live mode
-            await this.setLiveMode(true);
+            this.currentAgentSource = agentSource;
+
+            if (!this.agentPreview) {
+              throw new Error('Failed to initialize agent preview.');
+            }
+
+            // Start the session - this will trigger compilation for local agents
+            const session = await this.agentPreview.start();
+            ensureActive();
+            this.sessionId = session.sessionId;
+
+            const storageKey = this.getAgentStorageKey(agentId, agentSource);
+            await clearTraceHistory(storageKey);
+            await this.loadAndSendTraceHistory(agentId, agentSource, webviewView);
+            await this.setSessionActive(true);
+            ensureActive();
+            await this.setSessionStarting(false);
             ensureActive();
 
-            // Type cast needed due to local dependency setup with separate @salesforce/core instances
-            this.agentPreview = new AgentPreview(conn as any, agentId);
-
-            // Get agent name for notifications
-            const remoteAgents = await Agent.listRemote(conn as any);
-            ensureActive();
-            const agent = remoteAgents?.find(bot => bot.Id === agentId);
-            this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
-            this.currentAgentId = agentId;
-
-            // Enable debug mode from apex debugging setting
-            if (this.isApexDebuggingEnabled) {
-            this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
-          }
-        }
-
-        this.currentAgentSource = agentSource;
-
-        if (!this.agentPreview) {
-          throw new Error('Failed to initialize agent preview.');
-        }
-
-          // Start the session - this will trigger compilation for local agents
-          const session = await this.agentPreview.start();
-          ensureActive();
-          this.sessionId = session.sessionId;
-
-          const storageKey = this.getAgentStorageKey(agentId, agentSource);
-          await clearTraceHistory(storageKey);
-          await this.loadAndSendTraceHistory(agentId, agentSource, webviewView);
-          await this.setSessionActive(true);
-          ensureActive();
-          await this.setSessionStarting(false);
-          ensureActive();
-
-          // Find the agent's welcome message or create a default one
-          const agentMessage = session.messages.find(msg => msg.type === 'Inform');
+            // Find the agent's welcome message or create a default one
+            const agentMessage = session.messages.find(msg => msg.type === 'Inform');
             webviewView.webview.postMessage({
               command: 'sessionStarted',
               data: agentMessage?.message
@@ -978,20 +974,24 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
             // Check if this is a compilation error and extract detailed information
             // Use this.currentAgentSource since agentSource may be out of scope
-            if (this.currentAgentSource === AgentSource.SCRIPT && err instanceof SfError && err.message.includes('Failed to compile agent script')) {
+            if (
+              this.currentAgentSource === AgentSource.SCRIPT &&
+              err instanceof SfError &&
+              err.message.includes('Failed to compile agent script')
+            ) {
               const sfError = err as SfError;
-                const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
-                this.channelService.appendLine(detailedError);
-                webviewView.webview.postMessage({
-                  command: 'compilationError',
-                  data: { message: detailedError }
-                });
-                // Don't re-throw, the error has been handled and shown to the user
-                return;
+              const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
+              this.channelService.appendLine(detailedError);
+              webviewView.webview.postMessage({
+                command: 'compilationError',
+                data: { message: detailedError }
+              });
+              // Don't re-throw, the error has been handled and shown to the user
+              return;
             }
 
             this.channelService.appendLine(`Error starting session: ${err}`);
-            this.channelService.appendLine('---------------------')
+            this.channelService.appendLine('---------------------');
 
             throw err;
           }
@@ -1071,7 +1071,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             });
           }
         } else if (message.command === 'endSession') {
-             await this.endSession()
+          await this.endSession();
         } else if (message.command === 'loadAgentHistory') {
           // Load conversation history for the selected agent
           // If history exists: Show it and wait for user to manually start session
@@ -1086,49 +1086,49 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             const localAgents = await this.discoverLocalAgents();
 
             const connectionResult = await this.resolveClientAppConnection({
-            onNone: async result => {
-              webviewView.webview.postMessage({
-                command: 'availableAgents',
-                data: {
-                  agents: localAgents,
-                  selectedAgentId: this.currentAgentId
+              onNone: async result => {
+                webviewView.webview.postMessage({
+                  command: 'availableAgents',
+                  data: {
+                    agents: localAgents,
+                    selectedAgentId: this.currentAgentId
+                  }
+                });
+                webviewView.webview.postMessage({
+                  command: 'clientAppRequired',
+                  data: {
+                    message:
+                      'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
+                    username: result.username,
+                    error: result.error
+                  }
+                });
+                if (this.currentAgentId) {
+                  this.currentAgentId = undefined;
                 }
-              });
-              webviewView.webview.postMessage({
-                command: 'clientAppRequired',
-                data: {
-                  message:
-                    'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
-                  username: result.username,
-                  error: result.error
+                return { status: 'handled' };
+              },
+              onMultiple: async result => {
+                webviewView.webview.postMessage({
+                  command: 'availableAgents',
+                  data: {
+                    agents: localAgents,
+                    selectedAgentId: this.currentAgentId
+                  }
+                });
+                webviewView.webview.postMessage({
+                  command: 'selectClientApp',
+                  data: {
+                    clientApps: result.clientApps,
+                    username: result.username
+                  }
+                });
+                if (this.currentAgentId) {
+                  this.currentAgentId = undefined;
                 }
-              });
-              if (this.currentAgentId) {
-                this.currentAgentId = undefined;
+                return { status: 'handled' };
               }
-              return { status: 'handled' };
-            },
-            onMultiple: async result => {
-              webviewView.webview.postMessage({
-                command: 'availableAgents',
-                data: {
-                  agents: localAgents,
-                  selectedAgentId: this.currentAgentId
-                }
-              });
-              webviewView.webview.postMessage({
-                command: 'selectClientApp',
-                data: {
-                  clientApps: result.clientApps,
-                  username: result.username
-                }
-              });
-              if (this.currentAgentId) {
-                this.currentAgentId = undefined;
-              }
-              return { status: 'handled' };
-            }
-          });
+            });
 
             if (connectionResult.status !== 'ready') {
               return;
@@ -1288,19 +1288,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'setSelectedAgentId') {
           // Update the currently selected agent ID from the dropdown
-        const agentId = message.data?.agentId;
-        if (agentId && typeof agentId === 'string' && agentId !== '') {
-          this.currentAgentId = agentId;
-          this.currentAgentSource = this.getAgentSource(agentId);
-          await this.setAgentSelected(true);
-          await this.setResetAgentViewAvailable(false);
-          await this.setSessionErrorState(false);
-          await this.setConversationDataAvailable(false);
-        } else {
-          this.currentAgentId = undefined;
-          this.currentAgentSource = undefined;
-          await this.setAgentSelected(false);
-        }
+          const agentId = message.data?.agentId;
+          if (agentId && typeof agentId === 'string' && agentId !== '') {
+            this.currentAgentId = agentId;
+            this.currentAgentSource = this.getAgentSource(agentId);
+            await this.setAgentSelected(true);
+            await this.setResetAgentViewAvailable(false);
+            await this.setSessionErrorState(false);
+            await this.setConversationDataAvailable(false);
+          } else {
+            this.currentAgentId = undefined;
+            this.currentAgentSource = undefined;
+            await this.setAgentSelected(false);
+          }
         } else if (message.command === 'setLiveMode') {
           // Update and persist the live mode selection
           const isLiveMode = message.data?.isLiveMode;
@@ -1326,7 +1326,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         console.error('AgentCombinedViewProvider Error:', err);
         let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         this.channelService.appendLine(`Error: ${errorMessage}`);
-        this.channelService.appendLine('---------------------')
+        this.channelService.appendLine('---------------------');
 
         this.pendingStartAgentId = undefined;
         this.pendingStartAgentSource = undefined;
@@ -1387,7 +1387,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     return html;
   }
-
 
   /**
    * Automatically continues the Apex Replay Debugger after it's launched,
