@@ -1062,12 +1062,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           } else if (this.isApexDebuggingEnabled && !response.apexDebugLog) {
             // Debug mode is enabled but no debug log was returned
-            webviewView.webview.postMessage({
-              command: 'debugLogInfo',
-              data: {
-                message: 'Debug mode is enabled, but no Apex was executed.'
-              }
-            });
+            vscode.window.showInformationMessage('Agentforce DX: Debug mode is enabled, but no Apex was executed.');
           }
         } else if (message.command === 'endSession') {
           await this.endSession();
