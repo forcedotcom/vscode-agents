@@ -357,7 +357,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                   >
                     {traceHistory.map((entry, index) => {
                       const fullLabel = formatHistoryLabel(entry, index);
-                      const truncatedLabel = formatHistoryLabel(entry, index, 80);
+                      const truncatedLabel = formatHistoryLabel(entry, index, 60);
                       return (
                         <option key={`${entry.planId}-${index}`} value={index} title={fullLabel}>
                           {truncatedLabel}
