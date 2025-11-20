@@ -55,14 +55,8 @@ const formatTime = (date: Date): string => {
   return `${hours}:${minutes}:${seconds} ${ampm}`;
 };
 
-export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number, maxLength = 60): string => {
-  let baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
-
-  // Truncate baseLabel if it exceeds maxLength
-  if (baseLabel.length > maxLength) {
-    baseLabel = baseLabel.substring(0, maxLength) + '...';
-  }
-
+export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): string => {
+  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
   if (!entry.timestamp) {
     return baseLabel;
   }
@@ -77,11 +71,11 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number, maxL
 export const formatHistoryParts = (
   entry: TraceHistoryEntry,
   index: number,
-  maxLength = 60
+  maxLength = 100
 ): { time: string | null; message: string } => {
   let baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
 
-  // Truncate baseLabel if it exceeds maxLength
+  // Truncate baseLabel if it exceeds maxLength (only for display overlay, not dropdown options)
   if (baseLabel.length > maxLength) {
     baseLabel = baseLabel.substring(0, maxLength) + '...';
   }
@@ -362,11 +356,10 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     onChange={handleHistoryChange}
                   >
                     {traceHistory.map((entry, index) => {
-                      const truncatedLabel = formatHistoryLabel(entry, index);
-                      const fullLabel = formatHistoryLabel(entry, index, Infinity);
+                      const label = formatHistoryLabel(entry, index);
                       return (
-                        <option key={`${entry.planId}-${index}`} value={index} title={fullLabel}>
-                          {truncatedLabel}
+                        <option key={`${entry.planId}-${index}`} value={index} title={label}>
+                          {label}
                         </option>
                       );
                     })}

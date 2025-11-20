@@ -32,8 +32,8 @@ describe('AgentTracer helpers', () => {
     expect(formatHistoryLabel({ ...entry, timestamp: undefined }, 1)).toBe('Trace 2');
   });
 
-  it('truncates long messages with ellipsis', () => {
-    const longMessage = 'A'.repeat(100);
+  it('formatHistoryLabel does not truncate messages (CSS handles it)', () => {
+    const longMessage = 'A'.repeat(200);
     const entry: TraceHistoryEntry = {
       storageKey: 'agent',
       agentId: 'agent',
@@ -43,41 +43,12 @@ describe('AgentTracer helpers', () => {
       trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
     };
     const result = formatHistoryLabel(entry, 0);
-    expect(result).toContain('...');
-    expect(result.length).toBeLessThan(longMessage.length);
-  });
-
-  it('does not truncate messages shorter than maxLength', () => {
-    const shortMessage = 'Short message';
-    const entry: TraceHistoryEntry = {
-      storageKey: 'agent',
-      agentId: 'agent',
-      sessionId: 'session',
-      planId: 'plan',
-      userMessage: shortMessage,
-      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
-    };
-    const result = formatHistoryLabel(entry, 0);
-    expect(result).toBe(shortMessage);
+    expect(result).toBe(longMessage);
     expect(result).not.toContain('...');
   });
 
-  it('respects custom maxLength parameter', () => {
-    const message = 'A'.repeat(30);
-    const entry: TraceHistoryEntry = {
-      storageKey: 'agent',
-      agentId: 'agent',
-      sessionId: 'session',
-      planId: 'plan',
-      userMessage: message,
-      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
-    };
-    const result = formatHistoryLabel(entry, 0, 20);
-    expect(result).toBe('A'.repeat(20) + '...');
-  });
-
-  it('formatHistoryParts truncates long messages', () => {
-    const longMessage = 'B'.repeat(100);
+  it('formatHistoryParts truncates messages longer than 100 chars for display overlay', () => {
+    const longMessage = 'B'.repeat(150);
     const entry: TraceHistoryEntry = {
       storageKey: 'agent',
       agentId: 'agent',
@@ -89,8 +60,39 @@ describe('AgentTracer helpers', () => {
     };
     const result = formatHistoryParts(entry, 0);
     expect(result.message).toContain('...');
-    expect(result.message.length).toBeLessThan(longMessage.length);
+    expect(result.message).toBe('B'.repeat(100) + '...');
     expect(result.time).toBeTruthy();
+  });
+
+  it('formatHistoryParts does not truncate messages shorter than 100 chars', () => {
+    const shortMessage = 'Short message';
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      userMessage: shortMessage,
+      timestamp: '2024-05-01T12:34:56Z',
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+    const result = formatHistoryParts(entry, 0);
+    expect(result.message).toBe(shortMessage);
+    expect(result.message).not.toContain('...');
+  });
+
+  it('formatHistoryParts respects custom maxLength parameter', () => {
+    const message = 'C'.repeat(50);
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      userMessage: message,
+      timestamp: '2024-05-01T12:34:56Z',
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+    const result = formatHistoryParts(entry, 0, 30);
+    expect(result.message).toBe('C'.repeat(30) + '...');
   });
 
   it('selects trace history entries safely', () => {
