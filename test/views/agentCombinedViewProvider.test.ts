@@ -4133,10 +4133,6 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       expect(mockAgentPreview.setApexDebugMode).toHaveBeenCalledWith(true);
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugModeChanged',
-        data: { enabled: true }
-      });
     });
 
     it('should handle getConfiguration with valid section', async () => {

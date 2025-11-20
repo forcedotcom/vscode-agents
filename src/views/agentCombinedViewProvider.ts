@@ -989,11 +989,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           if (this.agentPreview) {
             this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
           }
-
-          webviewView.webview.postMessage({
-            command: 'debugModeChanged',
-            data: { enabled: this.isApexDebuggingEnabled }
-          });
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
             throw new Error('Session has not been started.');
