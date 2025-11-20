@@ -77,10 +77,10 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // Handle Enter key: submit on Enter, newline on Alt+Enter
+      // Handle Enter key: submit on Enter, newline on Alt+Enter or Shift+Enter
       if (e.key === 'Enter') {
-        if (e.altKey) {
-          // Alt+Enter: insert newline at cursor position
+        if (e.altKey || e.shiftKey) {
+          // Alt+Enter or Shift+Enter: insert newline at cursor position
           e.preventDefault();
           const target = e.currentTarget;
           const start = target.selectionStart;

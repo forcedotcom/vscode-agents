@@ -35,6 +35,23 @@ describe('ChatInput', () => {
     expect(onSendMessage).not.toHaveBeenCalled();
   });
 
+  it('inserts newline on Shift+Enter without sending', async () => {
+    const onSendMessage = jest.fn();
+    render(<ChatInput onSendMessage={onSendMessage} disabled={false} />);
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    await userEvent.type(textarea, 'Line 1');
+
+    fireEvent.keyDown(textarea, {
+      key: 'Enter',
+      shiftKey: true,
+      currentTarget: textarea
+    });
+
+    expect(textarea.value).toBe('Line 1\n');
+    expect(onSendMessage).not.toHaveBeenCalled();
+  });
+
   it('navigates user message history with arrow keys', () => {
     const messages = [
       { id: '1', type: 'user', content: 'First message' },
