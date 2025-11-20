@@ -347,10 +347,20 @@ describe('App', () => {
         expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
       });
 
+      // Clear only the specific mocks we want to track for the next operations
+      mockVscodeApi.endSession.mockClear();
+      mockVscodeApi.startSession.mockClear();
+      mockVscodeApi.setSelectedAgentId.mockClear();
+
       // Switch to a different agent (force restart)
-      jest.clearAllMocks();
       triggerMessage('selectAgent', { agentId: 'agent2', forceRestart: true });
 
+      // Wait for setSelectedAgentId to be called with the new agent
+      await waitFor(() => {
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent2');
+      });
+
+      // Wait for endSession to be called
       await waitFor(
         () => {
           expect(mockVscodeApi.endSession).toHaveBeenCalled();
