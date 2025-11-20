@@ -864,7 +864,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                     data: { message: data.error }
                   });
                 } else {
-                  this.channelService.appendLine(`SF_TEST_API = ${process.env.SF_TEST_API}`);
+                  this.channelService.appendLine(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
                   this.channelService.appendLine(`Compilation end point called`);
 
                   webviewView.webview.postMessage({

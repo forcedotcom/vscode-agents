@@ -48,6 +48,24 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize diagnostic collection for agent validation
     initializeDiagnosticCollection(context);
 
+    // Initialize and watch SF_TEST_API setting
+    const updateTestApiEnv = () => {
+      const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+      process.env.SF_TEST_API = config.get<boolean>('useTestApi', false) ? 'true' : 'false';
+    };
+
+    // Set initial value
+    updateTestApiEnv();
+
+    // Watch for configuration changes
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('salesforce.agentforceDX.useTestApi')) {
+          updateTestApiEnv();
+        }
+      })
+    );
+
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
     disposables.push(commands.registerOpenAgentInOrgCommand());
