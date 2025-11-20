@@ -4742,6 +4742,17 @@ describe('AgentCombinedViewProvider', () => {
       // Mode should persist (not reset when switching agents)
       expect((provider as any).isLiveMode).toBe(true);
     });
+
+    it('should keep the selected live mode after ending a session', async () => {
+      // Simulate an active session that was started in live mode
+      (provider as any).isLiveMode = true;
+      (provider as any).agentPreview = { end: jest.fn() };
+
+      await provider.endSession();
+
+      expect((provider as any).isLiveMode).toBe(true);
+      expect(mockContext.globalState.update).not.toHaveBeenCalledWith('agentforceDX.lastLiveMode', false);
+    });
   });
 
   describe('openTraceJson command', () => {
