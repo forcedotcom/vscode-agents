@@ -759,8 +759,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'debugModeChanged',
         data: {
-          enabled: true,
-          message: 'Debug mode activated'
+          enabled: true
         }
       });
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode activated.');
@@ -775,8 +774,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'debugModeChanged',
         data: {
-          enabled: false,
-          message: 'Debug mode deactivated'
+          enabled: false
         }
       });
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode deactivated.');
