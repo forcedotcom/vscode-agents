@@ -1345,10 +1345,9 @@ describe('AgentCombinedViewProvider', () => {
 
       await messageHandler({ command: 'sendChatMessage', data: { message: 'Hello' } });
 
-      const debugInfoCall = mockWebviewView.webview.postMessage.mock.calls.find(
-        (call: any[]) => call[0].command === 'debugLogInfo'
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Debug mode is enabled, but no Apex was executed.'
       );
-      expect(debugInfoCall?.[0].data?.message).toContain('no Apex was executed');
     });
 
     it('should handle endSession when no session active', async () => {
@@ -2615,10 +2614,9 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Test' }
       });
 
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugLogInfo',
-        data: { message: 'Debug mode is enabled, but no Apex was executed.' }
-      });
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Debug mode is enabled, but no Apex was executed.'
+      );
     });
   });
 
