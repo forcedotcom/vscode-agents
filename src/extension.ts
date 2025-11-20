@@ -174,7 +174,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
       const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
       const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
 
-      const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> = [];
+      const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> =
+        [];
 
       if (scriptAgents.length > 0) {
         allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
@@ -257,7 +258,12 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
           const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
           const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
 
-          const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> = [];
+          const allAgents: Array<{
+            label: string;
+            description?: string;
+            id?: string;
+            kind?: vscode.QuickPickItemKind;
+          }> = [];
 
           if (scriptAgents.length > 0) {
             allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });

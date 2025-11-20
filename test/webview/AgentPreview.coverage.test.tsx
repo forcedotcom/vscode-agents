@@ -51,20 +51,21 @@ describe('AgentPreview - Coverage Tests', () => {
     (vscodeApi.onClientAppReady as jest.Mock).mockImplementation(() => () => {});
   });
 
-  const renderComponent = (props: Partial<React.ComponentProps<typeof AgentPreview>> = {}) => render(
-    <AgentPreview
-      selectedAgentId="test-agent"
-      pendingAgentId={null}
-      clientAppState="none"
-      availableClientApps={[]}
-      onClientAppStateChange={jest.fn()}
-      onAvailableClientAppsChange={jest.fn()}
-      isSessionTransitioning={false}
-      onSessionTransitionSettled={jest.fn()}
-      isLiveMode={false}
-      {...props}
-    />
-  );
+  const renderComponent = (props: Partial<React.ComponentProps<typeof AgentPreview>> = {}) =>
+    render(
+      <AgentPreview
+        selectedAgentId="test-agent"
+        pendingAgentId={null}
+        clientAppState="none"
+        availableClientApps={[]}
+        onClientAppStateChange={jest.fn()}
+        onAvailableClientAppsChange={jest.fn()}
+        isSessionTransitioning={false}
+        onSessionTransitionSettled={jest.fn()}
+        isLiveMode={false}
+        {...props}
+      />
+    );
 
   describe('focusInput ref method', () => {
     it('should expose focusInput method via ref', () => {
@@ -357,9 +358,7 @@ describe('AgentPreview - Coverage Tests', () => {
       const onClientAppStateChange = jest.fn();
       renderComponent({
         clientAppState: 'selecting',
-        availableClientApps: [
-          { name: 'App 1', clientId: 'app1' }
-        ],
+        availableClientApps: [{ name: 'App 1', clientId: 'app1' }],
         onClientAppStateChange
       });
 
@@ -374,9 +373,7 @@ describe('AgentPreview - Coverage Tests', () => {
       const user = userEvent.setup();
       renderComponent({
         clientAppState: 'selecting',
-        availableClientApps: [
-          { name: 'App 1', clientId: 'app1' }
-        ]
+        availableClientApps: [{ name: 'App 1', clientId: 'app1' }]
       });
 
       const select = screen.getByRole('combobox');

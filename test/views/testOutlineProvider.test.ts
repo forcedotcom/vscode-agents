@@ -16,7 +16,11 @@
 
 import * as vscode from 'vscode';
 import { AgentTestGroupNode, AgentTestNode } from '../../src/types';
-import { AgentTestOutlineProvider, getTestOutlineProvider, parseAgentTestsFromProject } from '../../src/views/testOutlineProvider';
+import {
+  AgentTestOutlineProvider,
+  getTestOutlineProvider,
+  parseAgentTestsFromProject
+} from '../../src/views/testOutlineProvider';
 import { Commands } from '../../src/enums/commands';
 import { EOL } from 'os';
 
@@ -77,9 +81,7 @@ describe('AgentTestOutlineProvider', () => {
     const mockMap = new Map<string, AgentTestGroupNode>();
     mockMap.set('TestGroup1', testGroupNode);
 
-    jest
-      .spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject')
-      .mockResolvedValue(mockMap);
+    jest.spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject').mockResolvedValue(mockMap);
 
     await provider.refresh();
 
@@ -90,9 +92,7 @@ describe('AgentTestOutlineProvider', () => {
 
   it('getTestGroup should return undefined for non-existent key', async () => {
     const mockMap = new Map<string, AgentTestGroupNode>();
-    jest
-      .spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject')
-      .mockResolvedValue(mockMap);
+    jest.spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject').mockResolvedValue(mockMap);
 
     await provider.refresh();
 
@@ -127,9 +127,7 @@ describe('AgentTestOutlineProvider', () => {
     const mockMap = new Map<string, AgentTestGroupNode>();
     mockMap.set('TestGroup1', testGroup);
 
-    jest
-      .spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject')
-      .mockResolvedValue(mockMap);
+    jest.spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject').mockResolvedValue(mockMap);
 
     await provider.refresh();
 
@@ -148,9 +146,7 @@ describe('AgentTestOutlineProvider', () => {
     mockMap.set('ATest', testGroup2);
     mockMap.set('MTest', testGroup3);
 
-    jest
-      .spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject')
-      .mockResolvedValue(mockMap);
+    jest.spyOn(require('../../src/views/testOutlineProvider'), 'parseAgentTestsFromProject').mockResolvedValue(mockMap);
 
     await provider.refresh();
 
@@ -297,7 +293,8 @@ describe('parseAgentTestsFromProject', () => {
     } as vscode.Uri;
 
     jest.spyOn(vscode.workspace, 'findFiles').mockResolvedValue([mockUri1, mockUri2]);
-    jest.spyOn(vscode.workspace.fs, 'readFile')
+    jest
+      .spyOn(vscode.workspace.fs, 'readFile')
       .mockResolvedValueOnce(Buffer.from(mockXmlContent1))
       .mockResolvedValueOnce(Buffer.from(mockXmlContent2));
 
@@ -322,9 +319,7 @@ describe('parseAgentTestsFromProject', () => {
     } as vscode.Uri;
 
     jest.spyOn(vscode.workspace, 'findFiles').mockResolvedValue([mockUri]);
-    jest
-      .spyOn(vscode.workspace.fs, 'readFile')
-      .mockRejectedValue(new Error('read failure'));
+    jest.spyOn(vscode.workspace.fs, 'readFile').mockRejectedValue(new Error('read failure'));
 
     await expect(parseAgentTestsFromProject()).rejects.toThrow('read failure');
   });

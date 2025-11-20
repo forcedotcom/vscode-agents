@@ -8,7 +8,8 @@ interface StepAgentResponseProps {
 }
 
 export const StepAgentResponse: React.FC<StepAgentResponseProps> = ({ response }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-agent-response step-agent-response--response">

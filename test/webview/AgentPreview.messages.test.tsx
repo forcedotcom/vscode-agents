@@ -50,19 +50,20 @@ describe('AgentPreview - Message Handlers', () => {
     (vscodeApi.onClientAppReady as jest.Mock).mockImplementation(() => () => {});
   });
 
-  const renderComponent = () => render(
-    <AgentPreview
-      selectedAgentId="test-agent"
-      pendingAgentId={null}
-      clientAppState="none"
-      availableClientApps={[]}
-      onClientAppStateChange={jest.fn()}
-      onAvailableClientAppsChange={jest.fn()}
-      isSessionTransitioning={false}
-      onSessionTransitionSettled={jest.fn()}
-      isLiveMode={false}
-    />
-  );
+  const renderComponent = () =>
+    render(
+      <AgentPreview
+        selectedAgentId="test-agent"
+        pendingAgentId={null}
+        clientAppState="none"
+        availableClientApps={[]}
+        onClientAppStateChange={jest.fn()}
+        onAvailableClientAppsChange={jest.fn()}
+        isSessionTransitioning={false}
+        onSessionTransitionSettled={jest.fn()}
+        isLiveMode={false}
+      />
+    );
 
   describe('Compilation Messages', () => {
     it('should handle compilationStarting with custom message', async () => {
@@ -213,9 +214,7 @@ describe('AgentPreview - Message Handlers', () => {
     it('should handle conversation history with messages', async () => {
       renderComponent();
       handlers.get('conversationHistory')?.({
-        messages: [
-          { id: '1', type: 'user', content: 'Hello', timestamp: new Date().toISOString() }
-        ]
+        messages: [{ id: '1', type: 'user', content: 'Hello', timestamp: new Date().toISOString() }]
       });
       await waitFor(() => {
         expect(screen.getByText('Hello')).toBeInTheDocument();
@@ -320,9 +319,7 @@ describe('AgentPreview - Message Handlers', () => {
     it('fills missing id and timestamp when mapping history messages', async () => {
       renderComponent();
       handlers.get('conversationHistory')?.({
-        messages: [
-          { type: 'user', content: 'History fallback' }
-        ]
+        messages: [{ type: 'user', content: 'History fallback' }]
       });
 
       await waitFor(() => {

@@ -44,10 +44,7 @@ describe('TestNodes', () => {
     });
 
     it('should create a test group node with a label and location', () => {
-      const location = new vscode.Location(
-        { fsPath: '/test/file.ts' } as vscode.Uri,
-        new vscode.Position(0, 0)
-      ) as any;
+      const location = new vscode.Location({ fsPath: '/test/file.ts' } as vscode.Uri, new vscode.Position(0, 0)) as any;
       const node = new AgentTestGroupNode('TestGroup', location);
       expect(node.name).toBe('TestGroup');
       expect(node.location).toBe(location);

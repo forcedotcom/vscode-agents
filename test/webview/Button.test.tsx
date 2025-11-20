@@ -77,7 +77,11 @@ describe('Button', () => {
     });
 
     it('should forward other button props', () => {
-      render(<Button disabled data-testid="test-button">Disabled</Button>);
+      render(
+        <Button disabled data-testid="test-button">
+          Disabled
+        </Button>
+      );
       const button = screen.getByTestId('test-button');
       expect(button).toBeDisabled();
     });

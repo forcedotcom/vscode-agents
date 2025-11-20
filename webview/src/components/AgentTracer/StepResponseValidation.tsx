@@ -11,18 +11,27 @@ interface StepResponseValidationProps {
 }
 
 export const StepResponseValidation: React.FC<StepResponseValidationProps> = ({ timing, validationCode }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-response-validation step-response-validation--default">
       <div className="step-response-validation-header">
         <div className="step-response-validation-title">
-          <img src={isDark ? sparklesIconDark : sparklesIconLight} alt="Sparkles" className="step-response-validation-icon" />
+          <img
+            src={isDark ? sparklesIconDark : sparklesIconLight}
+            alt="Sparkles"
+            className="step-response-validation-icon"
+          />
           Reasoning: Response Validation
         </div>
         {timing && (
           <div className="step-response-validation-timing">
-            <img src={isDark ? clockIconDark : clockIconLight} alt="Clock" className="step-response-validation-timing-icon" />
+            <img
+              src={isDark ? clockIconDark : clockIconLight}
+              alt="Clock"
+              className="step-response-validation-timing-icon"
+            />
             {timing}
           </div>
         )}

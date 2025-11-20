@@ -151,9 +151,7 @@ describe('AgentSelector', () => {
   describe('Agent Selection and Display', () => {
     it('should call onAgentChange when an agent is selected', async () => {
       const onAgentChange = jest.fn();
-      const agents: AgentInfo[] = [
-        { id: 'agent1', name: 'TestAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={onAgentChange} />);
 
@@ -171,9 +169,7 @@ describe('AgentSelector', () => {
     });
 
     it('should display agent type for selected agent', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'CaseAssistant', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'CaseAssistant', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} />);
 
@@ -189,9 +185,7 @@ describe('AgentSelector', () => {
     });
 
     it('should display "Published" type for published agents', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'pub1', name: 'MyPublishedAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'pub1', name: 'MyPublishedAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="pub1" onAgentChange={jest.fn()} />);
 
@@ -207,9 +201,7 @@ describe('AgentSelector', () => {
     });
 
     it('should not display type overlay when no agent is selected', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'agent1', name: 'TestAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} />);
 
@@ -225,9 +217,7 @@ describe('AgentSelector', () => {
     });
 
     it('should clear messages and load history when agent is selected', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'agent1', name: 'TestAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} />);
 
@@ -246,9 +236,7 @@ describe('AgentSelector', () => {
     });
 
     it('should clear messages when deselecting agent', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'agent1', name: 'TestAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="agent1" onAgentChange={jest.fn()} />);
 
@@ -271,9 +259,7 @@ describe('AgentSelector', () => {
     it('should call onClientAppRequired when clientAppRequired message is received', async () => {
       const onClientAppRequired = jest.fn();
 
-      render(
-        <AgentSelector selectedAgent="" onAgentChange={jest.fn()} onClientAppRequired={onClientAppRequired} />
-      );
+      render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} onClientAppRequired={onClientAppRequired} />);
 
       const clientAppRequiredHandler = messageHandlers.get('clientAppRequired');
       const mockData = { message: 'Client app needed' };
@@ -287,9 +273,7 @@ describe('AgentSelector', () => {
     it('should call onClientAppSelection when selectClientApp message is received', async () => {
       const onClientAppSelection = jest.fn();
 
-      render(
-        <AgentSelector selectedAgent="" onAgentChange={jest.fn()} onClientAppSelection={onClientAppSelection} />
-      );
+      render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} onClientAppSelection={onClientAppSelection} />);
 
       const selectClientAppHandler = messageHandlers.get('selectClientApp');
       const mockData = { clientApps: [{ name: 'App1', clientId: '123' }] };
@@ -323,9 +307,7 @@ describe('AgentSelector', () => {
 
     it('should not auto-select agent if preselected agent does not exist in list', async () => {
       const onAgentChange = jest.fn();
-      const agents: AgentInfo[] = [
-        { id: 'agent1', name: 'TestAgent1', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent1', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={onAgentChange} />);
 
@@ -342,9 +324,7 @@ describe('AgentSelector', () => {
 
   describe('Legacy Format Support', () => {
     it('should handle legacy array format for available agents', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'agent1', name: 'TestAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} />);
 
@@ -361,9 +341,7 @@ describe('AgentSelector', () => {
   describe('Live Mode Handling', () => {
     it('should set live mode to true for published agents', async () => {
       const onAgentChange = jest.fn();
-      const agents: AgentInfo[] = [
-        { id: 'pub1', name: 'PublishedAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'pub1', name: 'PublishedAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={onAgentChange} />);
 
@@ -383,9 +361,7 @@ describe('AgentSelector', () => {
 
     it('should restore saved mode preference for script agents', async () => {
       const onAgentChange = jest.fn();
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={onAgentChange} />);
 
@@ -412,9 +388,7 @@ describe('AgentSelector', () => {
     });
 
     it('should render mode selector for script agents', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionActive={false} />);
 
@@ -429,9 +403,7 @@ describe('AgentSelector', () => {
     });
 
     it('should call onLiveModeChange when the user toggles mode', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       const onLiveModeChange = jest.fn();
       render(
@@ -467,9 +439,7 @@ describe('AgentSelector', () => {
     });
 
     it('should start session for published agent when button clicked', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'pub1', name: 'PublishedAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'pub1', name: 'PublishedAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="pub1" onAgentChange={jest.fn()} isSessionActive={false} />);
 
@@ -488,9 +458,7 @@ describe('AgentSelector', () => {
     });
 
     it('should start session for script agent when button clicked', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionActive={false} />);
 
@@ -508,9 +476,7 @@ describe('AgentSelector', () => {
     });
 
     it('should stop script agent when session is starting', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(
         <AgentSelector
@@ -537,9 +503,7 @@ describe('AgentSelector', () => {
     });
 
     it('should stop session when stop button clicked', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'pub1', name: 'PublishedAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'pub1', name: 'PublishedAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="pub1" onAgentChange={jest.fn()} isSessionActive={true} />);
 
@@ -557,12 +521,15 @@ describe('AgentSelector', () => {
     });
 
     it('should stop session when starting', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'pub1', name: 'PublishedAgent', type: 'published' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'pub1', name: 'PublishedAgent', type: 'published' }];
 
       render(
-        <AgentSelector selectedAgent="pub1" onAgentChange={jest.fn()} isSessionActive={false} isSessionStarting={true} />
+        <AgentSelector
+          selectedAgent="pub1"
+          onAgentChange={jest.fn()}
+          isSessionActive={false}
+          isSessionStarting={true}
+        />
       );
 
       const availableAgentsHandler = messageHandlers.get('availableAgents');
@@ -580,9 +547,7 @@ describe('AgentSelector', () => {
     });
 
     it('should change mode from simulate to live for script agent', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionActive={false} />);
 
@@ -608,9 +573,7 @@ describe('AgentSelector', () => {
     });
 
     it('should hide mode selector when session is active', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionActive={true} />);
 
@@ -624,9 +587,7 @@ describe('AgentSelector', () => {
     });
 
     it('should hide mode selector when session is starting', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionStarting={true} />);
 
@@ -640,9 +601,7 @@ describe('AgentSelector', () => {
     });
 
     it('should not render start button when no agent is selected', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       const onAgentChange = jest.fn();
       render(<AgentSelector selectedAgent="" onAgentChange={onAgentChange} isSessionActive={false} />);
@@ -659,9 +618,7 @@ describe('AgentSelector', () => {
     });
 
     it('should handle refreshAgents message', async () => {
-      const agents: AgentInfo[] = [
-        { id: 'script1', name: 'ScriptAgent', type: 'script' }
-      ];
+      const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       const onAgentChange = jest.fn();
       render(<AgentSelector selectedAgent="script1" onAgentChange={onAgentChange} isSessionActive={false} />);

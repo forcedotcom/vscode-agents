@@ -4,7 +4,8 @@ import { Commands } from '../../src/enums/commands';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { AgentCombinedViewProvider } from '../../src/views/agentCombinedViewProvider';
 
-const previewAgentModule = require('../../src/commands/previewAgent') as typeof import('../../src/commands/previewAgent');
+const previewAgentModule =
+  require('../../src/commands/previewAgent') as typeof import('../../src/commands/previewAgent');
 const { registerPreviewAgentCommand } = previewAgentModule;
 
 describe('previewAgent', () => {
@@ -117,9 +118,7 @@ describe('previewAgent', () => {
 
       jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
 
-      executeCommandSpy
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error('unable to open view'));
+      executeCommandSpy.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('unable to open view'));
 
       const handler = registerAndGetHandler();
       const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;

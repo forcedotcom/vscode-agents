@@ -61,7 +61,7 @@ describe('publishAgent', () => {
       })
     };
 
-   jest.spyOn(Lifecycle, 'getInstance').mockReturnValue(lifecycleMock);
+    jest.spyOn(Lifecycle, 'getInstance').mockReturnValue(lifecycleMock);
 
     // Mock CoreExtensionService
     jest.spyOn(CoreExtensionService, 'getTelemetryService').mockReturnValue(fakeTelemetryInstance);
@@ -77,15 +77,13 @@ describe('publishAgent', () => {
     infoMessageSpy = jest.spyOn(vscode.window, 'showInformationMessage').mockImplementation();
 
     progressReportSpy = jest.fn();
-    progressSpy = jest
-      .spyOn(vscode.window, 'withProgress')
-      .mockImplementation(async (_options, task) => {
-        return await task({ report: progressReportSpy }, {} as vscode.CancellationToken);
-      });
+    progressSpy = jest.spyOn(vscode.window, 'withProgress').mockImplementation(async (_options, task) => {
+      return await task({ report: progressReportSpy }, {} as vscode.CancellationToken);
+    });
 
-    readFileSpy = jest.spyOn(vscode.workspace.fs, 'readFile').mockResolvedValue(
-      new TextEncoder().encode('agent TestAgent { }')
-    );
+    readFileSpy = jest
+      .spyOn(vscode.workspace.fs, 'readFile')
+      .mockResolvedValue(new TextEncoder().encode('agent TestAgent { }'));
 
     // Mock activeTextEditor as undefined by default
     Object.defineProperty(vscode.window, 'activeTextEditor', {
@@ -94,17 +92,20 @@ describe('publishAgent', () => {
     });
 
     // Mock Uri.file to return a proper Uri-like object
-    jest.spyOn(vscode.Uri, 'file').mockImplementation((path: string) => ({
-      fsPath: path,
-      scheme: 'file',
-      path,
-      authority: '',
-      query: '',
-      fragment: '',
-      with: jest.fn(),
-      toJSON: jest.fn(),
-      toString: jest.fn(() => path)
-    } as any));
+    jest.spyOn(vscode.Uri, 'file').mockImplementation(
+      (path: string) =>
+        ({
+          fsPath: path,
+          scheme: 'file',
+          path,
+          authority: '',
+          query: '',
+          fragment: '',
+          with: jest.fn(),
+          toJSON: jest.fn(),
+          toString: jest.fn(() => path)
+        }) as any
+    );
 
     // Mock Agent methods
     compileAgentScriptSpy = jest.spyOn(Agent, 'compileAgentScript');
@@ -215,9 +216,7 @@ describe('publishAgent', () => {
       expect(compileAgentScriptSpy).toHaveBeenCalled();
       expect(publishAgentJsonSpy).not.toHaveBeenCalled();
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent compilation failed!');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-        expect.stringContaining('Found 2 error(s):')
-      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s):'));
       expect(progressReportSpy).toHaveBeenCalledWith({
         message: 'Compilation failed with 2 error(s)'
       });
@@ -253,9 +252,7 @@ describe('publishAgent', () => {
         expect.stringContaining('Error: Publish failed: Connection timeout')
       );
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed' });
-      expect(errorMessageSpy).toHaveBeenCalledWith(
-        'Failed to publish agent: Publish failed: Connection timeout'
-      );
+      expect(errorMessageSpy).toHaveBeenCalledWith('Failed to publish agent: Publish failed: Connection timeout');
       expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith(
         'agent_publish_failed',
         'Publish failed: Connection timeout'
@@ -318,9 +315,7 @@ describe('publishAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         'Failed to publish agent: Project initialization failed'
       );
-      expect(errorMessageSpy).toHaveBeenCalledWith(
-        'Failed to publish agent: Project initialization failed'
-      );
+      expect(errorMessageSpy).toHaveBeenCalledWith('Failed to publish agent: Project initialization failed');
       expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith(
         'agent_publish_failed',
         'Failed to publish agent: Project initialization failed'
@@ -419,4 +414,3 @@ describe('publishAgent', () => {
     });
   });
 });
-

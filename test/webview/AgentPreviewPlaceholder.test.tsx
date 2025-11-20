@@ -64,7 +64,9 @@ describe('AgentPreviewPlaceholder', () => {
     it('should show "Start Simulation" button when not in live mode for script agents', () => {
       const mockStartSession = jest.fn();
       const scriptAgent = { id: '1', name: 'Test Agent', type: 'script' as const };
-      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={false} selectedAgentInfo={scriptAgent} />);
+      render(
+        <AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={false} selectedAgentInfo={scriptAgent} />
+      );
 
       expect(screen.getByText('Start Simulation')).toBeInTheDocument();
     });
@@ -72,7 +74,9 @@ describe('AgentPreviewPlaceholder', () => {
     it('should show "Start Live Test" button when in live mode for script agents', () => {
       const mockStartSession = jest.fn();
       const scriptAgent = { id: '1', name: 'Test Agent', type: 'script' as const };
-      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={true} selectedAgentInfo={scriptAgent} />);
+      render(
+        <AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={true} selectedAgentInfo={scriptAgent} />
+      );
 
       expect(screen.getByText('Start Live Test')).toBeInTheDocument();
     });
@@ -88,7 +92,13 @@ describe('AgentPreviewPlaceholder', () => {
     it('should always show "Start Live Test" for published agents', () => {
       const mockStartSession = jest.fn();
       const publishedAgent = { id: '1', name: 'Test Agent', type: 'published' as const };
-      render(<AgentPreviewPlaceholder onStartSession={mockStartSession} isLiveMode={false} selectedAgentInfo={publishedAgent} />);
+      render(
+        <AgentPreviewPlaceholder
+          onStartSession={mockStartSession}
+          isLiveMode={false}
+          selectedAgentInfo={publishedAgent}
+        />
+      );
 
       expect(screen.getByText('Start Live Test')).toBeInTheDocument();
     });

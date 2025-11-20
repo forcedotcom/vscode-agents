@@ -184,8 +184,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     selectedAgentInfo?.type === 'script'
       ? 'Agent Script'
       : selectedAgentInfo?.type === 'published'
-      ? 'Published'
-      : null;
+        ? 'Published'
+        : null;
 
   // Notify parent of selected agent info changes
   useEffect(() => {
@@ -301,8 +301,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
                 ? 'Stop Live Test'
                 : 'Stop Simulation'
               : isLiveMode
-              ? 'Start Live Test'
-              : 'Start Simulation'}
+                ? 'Start Live Test'
+                : 'Start Simulation'}
           </SplitButton>
         ))}
     </div>

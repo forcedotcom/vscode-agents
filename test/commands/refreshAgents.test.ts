@@ -117,6 +117,8 @@ describe('Refresh Agents Command', () => {
     await resetCommand();
 
     expect(mockProvider.resetCurrentAgentView).toHaveBeenCalled();
-    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Agentforce DX: Unable to reset agent view: reset failed');
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+      'Agentforce DX: Unable to reset agent view: reset failed'
+    );
   });
 });

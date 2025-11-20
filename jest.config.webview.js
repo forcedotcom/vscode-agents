@@ -28,9 +28,12 @@ module.exports = {
   },
   moduleDirectories: ['node_modules', 'webview/node_modules'],
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: './tsconfig.test.json'
-    }]
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: './tsconfig.test.json'
+      }
+    ]
   },
   reporters: ['default', ['jest-junit', { outputName: 'junit-webview-tests.xml' }]],
   coverageReporters: ['lcov', 'text'],

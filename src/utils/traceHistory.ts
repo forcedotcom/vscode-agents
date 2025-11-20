@@ -29,7 +29,10 @@ const ensureTraceExportDir = async (agentStorageKey: string): Promise<string> =>
 };
 
 const sanitizeForFilename = (value: string): string =>
-  value.replace(/[^a-z0-9-_]+/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'trace';
+  value
+    .replace(/[^a-z0-9-_]+/gi, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'trace';
 
 const getTraceFilePath = async (agentStorageKey: string): Promise<string> => {
   const dir = await ensureAgentTraceDir(agentStorageKey);
@@ -67,9 +70,7 @@ export const appendTraceHistoryEntry = async <T>(
   await fs.appendFile(filePath, line, 'utf8');
 };
 
-export const readTraceHistoryEntries = async <T>(
-  agentStorageKey: string
-): Promise<TraceHistoryEntry<T>[]> => {
+export const readTraceHistoryEntries = async <T>(agentStorageKey: string): Promise<TraceHistoryEntry<T>[]> => {
   const filePath = await getTraceFilePath(agentStorageKey);
   try {
     const content = await fs.readFile(filePath, 'utf8');

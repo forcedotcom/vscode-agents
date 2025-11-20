@@ -87,11 +87,7 @@ jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
   return function MockAgentSelector({ selectedAgent, onAgentChange }: any) {
     return (
       <div data-testid="agent-selector">
-        <select
-          data-testid="agent-select"
-          value={selectedAgent}
-          onChange={e => onAgentChange(e.target.value)}
-        >
+        <select data-testid="agent-select" value={selectedAgent} onChange={e => onAgentChange(e.target.value)}>
           <option value="">Select agent...</option>
           <option value="agent1">Agent 1</option>
           <option value="agent2">Agent 2</option>

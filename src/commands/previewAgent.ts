@@ -51,7 +51,6 @@ export const registerPreviewAgentCommand = () => {
           });
         }
       }, 500);
-
     } catch (e) {
       const error = SfError.wrap(e);
       channelService.appendLine('❌ Error previewing .agent file!');

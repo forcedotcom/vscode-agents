@@ -2,210 +2,210 @@
 /* Licensed under the MIT License. */
 
 .vscode-split-button {
-	position: relative;
-	display: flex;
-	align-items: stretch;
-	border-radius: 2px;
-	overflow: hidden;
-	border-top: 1px solid transparent;
-	border-bottom: 1px solid transparent;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-radius: 2px;
+  overflow: hidden;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
 }
 
 .vscode-split-button__main,
 .vscode-split-button__trigger {
-	outline: none;
-	font-family: var(--vscode-font-family);
-	font-size: var(--vscode-font-size);
-	line-height: normal;
-	border: none;
-	fill: currentColor;
-	cursor: pointer;
-	box-sizing: border-box;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	white-space: nowrap;
-	text-decoration: none;
-	transition: background 0.1s ease;
+  outline: none;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  line-height: normal;
+  border: none;
+  fill: currentColor;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.1s ease;
 }
 
 .vscode-split-button__main {
-	padding: 4px 11px;
-	border-top-left-radius: 2px;
-	border-bottom-left-radius: 2px;
-	flex: 1;
+  padding: 4px 11px;
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+  flex: 1;
 }
 
 .vscode-split-button__trigger {
-	padding: 4px 6px;
-	border-top-right-radius: 2px;
-	border-bottom-right-radius: 2px;
+  padding: 4px 6px;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
 }
 
 .vscode-split-button__divider {
-	width: 1px;
-	align-self: stretch;
+  width: 1px;
+  align-self: stretch;
 }
 
 .vscode-split-button__content {
-	display: flex;
-	align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .vscode-split-button__start {
-	display: flex;
-	margin-inline-end: 8px;
+  display: flex;
+  margin-inline-end: 8px;
 }
 
 .vscode-split-button__start svg,
 .vscode-split-button__start span {
-	width: 16px;
-	height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .vscode-split-button__main:focus-visible,
 .vscode-split-button__trigger:focus-visible {
-	outline: 1px solid var(--vscode-focusBorder);
-	outline-offset: 2px;
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
 }
 
 .vscode-split-button__main::-moz-focus-inner,
 .vscode-split-button__trigger::-moz-focus-inner {
-	border: 0;
+  border: 0;
 }
 
 .vscode-split-button__main:disabled,
 .vscode-split-button__trigger:disabled {
-	opacity: 0.4;
-	cursor: not-allowed;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .vscode-split-button__select {
-	position: absolute;
-	top: 0;
-	right: 0;
-	width: 40px;
-	height: 100%;
-	opacity: 0;
-	cursor: pointer;
-	appearance: none;
-	border: none;
-	background: transparent;
-	font-size: 13px;
-	padding: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  padding: 0;
 }
 
 /* Primary Button Styles */
 .vscode-split-button--primary {
-	border-top-color: var(--vscode-button-border, transparent);
-	border-bottom-color: var(--vscode-button-border, transparent);
+  border-top-color: var(--vscode-button-border, transparent);
+  border-bottom-color: var(--vscode-button-border, transparent);
 }
 
 .vscode-split-button--primary .vscode-split-button__main,
 .vscode-split-button--primary .vscode-split-button__trigger {
-	background: var(--vscode-button-background);
-	color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
 }
 
 .vscode-split-button--primary .vscode-split-button__divider {
-	background: transparent;
+  background: transparent;
 }
 
 .vscode-split-button--primary .vscode-split-button__main:hover,
 .vscode-split-button--primary .vscode-split-button__trigger:hover {
-	background: var(--vscode-button-hoverBackground);
+  background: var(--vscode-button-hoverBackground);
 }
 
 .vscode-split-button--primary .vscode-split-button__main:active,
 .vscode-split-button--primary .vscode-split-button__trigger:active {
-	background: var(--vscode-button-background);
+  background: var(--vscode-button-background);
 }
 
 .vscode-split-button--primary .vscode-split-button__main:disabled,
 .vscode-split-button--primary .vscode-split-button__trigger:disabled {
-	background: var(--vscode-button-background);
+  background: var(--vscode-button-background);
 }
 
 /* Secondary Button Styles */
 .vscode-split-button--secondary {
-	border-top-color: var(--vscode-button-border, transparent);
-	border-bottom-color: var(--vscode-button-border, transparent);
+  border-top-color: var(--vscode-button-border, transparent);
+  border-bottom-color: var(--vscode-button-border, transparent);
 }
 
 .vscode-split-button--secondary .vscode-split-button__main,
 .vscode-split-button--secondary .vscode-split-button__trigger {
-	background: var(--vscode-button-secondaryBackground);
-	color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
 }
 
 .vscode-split-button--secondary .vscode-split-button__divider {
-	background: transparent;
+  background: transparent;
 }
 
 .vscode-split-button--secondary .vscode-split-button__main:hover,
 .vscode-split-button--secondary .vscode-split-button__trigger:hover {
-	background: var(--vscode-button-secondaryHoverBackground);
+  background: var(--vscode-button-secondaryHoverBackground);
 }
 
 .vscode-split-button--secondary .vscode-split-button__main:active,
 .vscode-split-button--secondary .vscode-split-button__trigger:active {
-	background: var(--vscode-button-secondaryBackground);
+  background: var(--vscode-button-secondaryBackground);
 }
 
 .vscode-split-button--secondary .vscode-split-button__main:disabled,
 .vscode-split-button--secondary .vscode-split-button__trigger:disabled {
-	background: var(--vscode-button-secondaryBackground);
+  background: var(--vscode-button-secondaryBackground);
 }
 
 /* Icon Button Styles */
 .vscode-split-button--icon {
-	border-top-color: transparent;
-	border-bottom-color: transparent;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
 }
 
 .vscode-split-button--icon .vscode-split-button__main,
 .vscode-split-button--icon .vscode-split-button__trigger {
-	background: transparent;
-	color: var(--vscode-foreground);
-	padding: 3px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  padding: 3px;
 }
 
 .vscode-split-button--icon .vscode-split-button__divider {
-	background: transparent;
+  background: transparent;
 }
 
 .vscode-split-button--icon .vscode-split-button__main:hover,
 .vscode-split-button--icon .vscode-split-button__trigger:hover {
-	background: rgba(90, 93, 94, 0.31);
-	outline: 1px dotted var(--vscode-contrastActiveBorder);
-	outline-offset: -1px;
+  background: rgba(90, 93, 94, 0.31);
+  outline: 1px dotted var(--vscode-contrastActiveBorder);
+  outline-offset: -1px;
 }
 
 .vscode-split-button--icon .vscode-split-button__main:active,
 .vscode-split-button--icon .vscode-split-button__trigger:active {
-	background: rgba(90, 93, 94, 0.31);
+  background: rgba(90, 93, 94, 0.31);
 }
 
 .vscode-split-button--icon .vscode-split-button__main:focus-visible,
 .vscode-split-button--icon .vscode-split-button__trigger:focus-visible {
-	outline: 1px solid var(--vscode-focusBorder);
-	outline-offset: 0;
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 0;
 }
 
 .vscode-split-button--icon .vscode-split-button__main:disabled,
 .vscode-split-button--icon .vscode-split-button__trigger:disabled {
-	background: transparent;
+  background: transparent;
 }
 
 /* Small size variant */
 .vscode-split-button--small .vscode-split-button__main {
-	font-size: 13px;
-	padding: 6px 12px;
-	font-weight: 500;
+  font-size: 13px;
+  padding: 6px 12px;
+  font-weight: 500;
 }
 
 .vscode-split-button--small .vscode-split-button__trigger {
-	font-size: 13px;
-	padding: 6px 8px;
-	font-weight: 500;
+  font-size: 13px;
+  padding: 6px 8px;
+  font-weight: 500;
 }

@@ -45,10 +45,7 @@ export const normalizeHistoryMessage = (msg: any): Message => ({
 export const pruneStartingSessionMessages = (messages: Message[]): Message[] =>
   messages.filter(message => !(message.type === 'system' && message.content === 'Starting session...'));
 
-export const createSystemMessage = (
-  message?: string,
-  systemType: Message['systemType'] = 'debug'
-): Message | null => {
+export const createSystemMessage = (message?: string, systemType: Message['systemType'] = 'debug'): Message | null => {
   if (!message) {
     return null;
   }
@@ -62,10 +59,7 @@ export const createSystemMessage = (
   };
 };
 
-export const shouldShowTransitionLoader = (
-  pendingAgentId?: string | null,
-  selectedAgentId?: string
-): boolean => {
+export const shouldShowTransitionLoader = (pendingAgentId?: string | null, selectedAgentId?: string): boolean => {
   return !pendingAgentId || pendingAgentId === selectedAgentId || selectedAgentId === '';
 };
 
@@ -125,493 +119,513 @@ export const buildConversationMarkdown = (
   return lines.join('\n');
 };
 
-const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
-  clientAppState,
-  availableClientApps,
-  onClientAppStateChange,
-  onAvailableClientAppsChange: _onAvailableClientAppsChange,
-  isSessionTransitioning,
-  onSessionTransitionSettled,
-  pendingAgentId,
-  selectedAgentId,
-  onHasSessionError,
-  onLoadingChange,
-  isLiveMode = false,
-  selectedAgentInfo = null,
-  onLiveModeChange
-}, ref) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [sessionActive, setSessionActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Loading...');
-  const [agentConnected, setAgentConnected] = useState(false);
-  const [hasSessionError, setHasSessionError] = useState(false);
-  const [showPlaceholder, setShowPlaceholder] = useState(false);
-  const sessionErrorTimestampRef = React.useRef<number>(0);
-  const sessionActiveStateRef = React.useRef(false);
-  const hasSessionErrorRef = React.useRef(false);
-  const pendingDisclaimerRef = React.useRef<string | null>(null);
-  const previousSelectedAgentRef = React.useRef<string>('');
-  const selectedAgentIdRef = React.useRef(selectedAgentId);
-  const pendingAgentIdRef = React.useRef(pendingAgentId);
-  const chatInputRef = useRef<ChatInputRef>(null);
-  const messagesRef = useRef<Message[]>([]);
-  const agentInfoRef = useRef<AgentInfo | null>(selectedAgentInfo ?? null);
+const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
+  (
+    {
+      clientAppState,
+      availableClientApps,
+      onClientAppStateChange,
+      onAvailableClientAppsChange: _onAvailableClientAppsChange,
+      isSessionTransitioning,
+      onSessionTransitionSettled,
+      pendingAgentId,
+      selectedAgentId,
+      onHasSessionError,
+      onLoadingChange,
+      isLiveMode = false,
+      selectedAgentInfo = null,
+      onLiveModeChange
+    },
+    ref
+  ) => {
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [sessionActive, setSessionActive] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('Loading...');
+    const [agentConnected, setAgentConnected] = useState(false);
+    const [hasSessionError, setHasSessionError] = useState(false);
+    const [showPlaceholder, setShowPlaceholder] = useState(false);
+    const sessionErrorTimestampRef = React.useRef<number>(0);
+    const sessionActiveStateRef = React.useRef(false);
+    const hasSessionErrorRef = React.useRef(false);
+    const pendingDisclaimerRef = React.useRef<string | null>(null);
+    const previousSelectedAgentRef = React.useRef<string>('');
+    const selectedAgentIdRef = React.useRef(selectedAgentId);
+    const pendingAgentIdRef = React.useRef(pendingAgentId);
+    const chatInputRef = useRef<ChatInputRef>(null);
+    const messagesRef = useRef<Message[]>([]);
+    const agentInfoRef = useRef<AgentInfo | null>(selectedAgentInfo ?? null);
 
-  // Expose focus method to parent components
-  useImperativeHandle(ref, () => ({
-    focusInput: () => {
-      chatInputRef.current?.focus();
-    }
-  }));
+    // Expose focus method to parent components
+    useImperativeHandle(ref, () => ({
+      focusInput: () => {
+        chatInputRef.current?.focus();
+      }
+    }));
 
-  useEffect(() => {
-    selectedAgentIdRef.current = selectedAgentId;
-  }, [selectedAgentId]);
+    useEffect(() => {
+      selectedAgentIdRef.current = selectedAgentId;
+    }, [selectedAgentId]);
 
-  useEffect(() => {
-    pendingAgentIdRef.current = pendingAgentId;
-  }, [pendingAgentId]);
+    useEffect(() => {
+      pendingAgentIdRef.current = pendingAgentId;
+    }, [pendingAgentId]);
 
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
+    useEffect(() => {
+      messagesRef.current = messages;
+    }, [messages]);
 
-  useEffect(() => {
-    agentInfoRef.current = selectedAgentInfo ?? null;
-  }, [selectedAgentInfo]);
+    useEffect(() => {
+      agentInfoRef.current = selectedAgentInfo ?? null;
+    }, [selectedAgentInfo]);
 
-  // Notify parent when session error state changes and keep ref in sync
-  useEffect(() => {
-    hasSessionErrorRef.current = hasSessionError;
-    if (onHasSessionError) {
-      onHasSessionError(hasSessionError);
-    }
-  }, [hasSessionError, onHasSessionError]);
+    // Notify parent when session error state changes and keep ref in sync
+    useEffect(() => {
+      hasSessionErrorRef.current = hasSessionError;
+      if (onHasSessionError) {
+        onHasSessionError(hasSessionError);
+      }
+    }, [hasSessionError, onHasSessionError]);
 
-  // Notify parent when loading state changes
-  useEffect(() => {
-    if (onLoadingChange) {
-      onLoadingChange(isLoading);
-    }
-  }, [isLoading, onLoadingChange]);
+    // Notify parent when loading state changes
+    useEffect(() => {
+      if (onLoadingChange) {
+        onLoadingChange(isLoading);
+      }
+    }, [isLoading, onLoadingChange]);
 
-  useEffect(() => {
-    const disposers: Array<() => void> = [];
+    useEffect(() => {
+      const disposers: Array<() => void> = [];
 
-    const disposeClearMessages = vscodeApi.onMessage('clearMessages', () => {
-      setMessages([]);
-      setSessionActive(false);
-      setAgentConnected(false);
-      setIsLoading(false);
-      setHasSessionError(false); // Clear error state when switching agents
-      setShowPlaceholder(false); // Clear placeholder when switching agents
-      pendingDisclaimerRef.current = null; // Clear pending disclaimer
-    });
-    disposers.push(disposeClearMessages);
-
-    const disposeConversationHistory = vscodeApi.onMessage('conversationHistory', data => {
-      if (data && Array.isArray(data.messages) && data.messages.length > 0) {
-        const historyMessages: Message[] = data.messages.map(normalizeHistoryMessage);
-
-        // Always add disclaimer at the top of saved conversation history
-        const disclaimerText = pendingDisclaimerRef.current || DEFAULT_HISTORY_DISCLAIMER;
-
-        const disclaimerMessage: Message = {
-          id: `disclaimer-${Date.now()}`,
-          type: 'system',
-          content: disclaimerText,
-          systemType: 'debug',
-          timestamp: new Date().toISOString()
-        };
-        historyMessages.unshift(disclaimerMessage); // Add at the beginning
-        pendingDisclaimerRef.current = null; // Clear after showing
-
-        setMessages(historyMessages);
-      } else {
+      const disposeClearMessages = vscodeApi.onMessage('clearMessages', () => {
         setMessages([]);
-      }
-
-      // History loaded - show it without starting session
-      // User will manually click play button to start new session
-      setSessionActive(false);
-      setAgentConnected(false);
-      setIsLoading(false);
-    });
-    disposers.push(disposeConversationHistory);
-
-    const disposeNoHistoryFound = vscodeApi.onMessage('noHistoryFound', data => {
-      // No history found - show placeholder instead of auto-starting
-      if (data && data.agentId) {
-        setShowPlaceholder(true);
+        setSessionActive(false);
+        setAgentConnected(false);
         setIsLoading(false);
-      }
-    });
-    disposers.push(disposeNoHistoryFound);
+        setHasSessionError(false); // Clear error state when switching agents
+        setShowPlaceholder(false); // Clear placeholder when switching agents
+        pendingDisclaimerRef.current = null; // Clear pending disclaimer
+      });
+      disposers.push(disposeClearMessages);
 
-    const disposeExportRequest = vscodeApi.onMessage('requestConversationExport', data => {
-      const agentLabel = agentInfoRef.current?.name || data?.agentName || 'Agent Conversation';
-      const disclaimer = DEFAULT_HISTORY_DISCLAIMER;
-      const filteredMessages = messagesRef.current.filter(
-        msg => !(msg.type === 'system' && msg.content === disclaimer)
-      );
-      const markdown = buildConversationMarkdown(agentLabel, filteredMessages, disclaimer);
-      const safeBase = sanitizeConversationFileName(agentLabel) || 'agent-conversation';
-      const exported = new Date();
-      const datePart = exported.toISOString().slice(0, 10);
-      const timePart = `${exported.getUTCHours().toString().padStart(2, '0')}-${exported
-        .getUTCMinutes()
-        .toString()
-        .padStart(2, '0')}-${exported.getUTCSeconds().toString().padStart(2, '0')}`;
-      const fileName = `${datePart}-${timePart}-${safeBase}.md`;
-      vscodeApi.sendConversationExport(markdown, fileName);
-    });
-    disposers.push(disposeExportRequest);
+      const disposeConversationHistory = vscodeApi.onMessage('conversationHistory', data => {
+        if (data && Array.isArray(data.messages) && data.messages.length > 0) {
+          const historyMessages: Message[] = data.messages.map(normalizeHistoryMessage);
 
-    const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', data => {
-      const timeSinceError = Date.now() - sessionErrorTimestampRef.current;
-      if (sessionErrorTimestampRef.current > 0 && timeSinceError < 500) {
-        console.warn('Ignoring sessionStarted that arrived too soon after error (race condition)');
-        return;
-      }
+          // Always add disclaimer at the top of saved conversation history
+          const disclaimerText = pendingDisclaimerRef.current || DEFAULT_HISTORY_DISCLAIMER;
 
-      sessionErrorTimestampRef.current = 0;
-      sessionActiveStateRef.current = true;
-
-      if (data) {
-        setMessages(prev => {
-          const newMessages = [...prev];
-
-          // Show disclaimer first (if queued)
-          if (pendingDisclaimerRef.current) {
-            const disclaimerMessage: Message = {
-              id: Date.now().toString(),
-              type: 'system',
-              content: pendingDisclaimerRef.current,
-              systemType: 'debug',
-              timestamp: new Date().toISOString()
-            };
-            newMessages.push(disclaimerMessage);
-            pendingDisclaimerRef.current = null; // Clear after showing
-          }
-
-          // Then add welcome message
-          const welcomeMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            type: 'agent',
-            content: data.content || "Hi! I'm ready to help. What can I do for you?",
+          const disclaimerMessage: Message = {
+            id: `disclaimer-${Date.now()}`,
+            type: 'system',
+            content: disclaimerText,
+            systemType: 'debug',
             timestamp: new Date().toISOString()
           };
-          newMessages.push(welcomeMessage);
+          historyMessages.unshift(disclaimerMessage); // Add at the beginning
+          pendingDisclaimerRef.current = null; // Clear after showing
 
-          return newMessages;
-        });
-      }
+          setMessages(historyMessages);
+        } else {
+          setMessages([]);
+        }
 
-      setSessionActive(true);
-      setAgentConnected(true);
-      setIsLoading(false);
-      setHasSessionError(false); // Clear error state when session successfully starts
-      setShowPlaceholder(false); // Clear placeholder when session starts
-      onSessionTransitionSettled();
-    });
-    disposers.push(disposeSessionStarted);
-
-    const disposeClientAppReady = vscodeApi.onClientAppReady(() => {
-      onClientAppStateChange('ready');
-      setIsLoading(false);
-    });
-    disposers.push(disposeClientAppReady);
-
-    const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
-      const currentSelectedAgentId = selectedAgentIdRef.current;
-      const currentPendingAgentId = pendingAgentIdRef.current;
-
-      setSessionActive(false);
-      setAgentConnected(false);
-      sessionActiveStateRef.current = false;
-      sessionErrorTimestampRef.current = 0;
-
-      if (currentSelectedAgentId === '') {
+        // History loaded - show it without starting session
+        // User will manually click play button to start new session
+        setSessionActive(false);
+        setAgentConnected(false);
         setIsLoading(false);
-        setMessages([]);
-        return;
-      }
+      });
+      disposers.push(disposeConversationHistory);
 
-      if (currentPendingAgentId && currentPendingAgentId === currentSelectedAgentId) {
-        setIsLoading(true);
-        setLoadingMessage('Connecting to agent...');
-      } else if (!currentPendingAgentId) {
-        setIsLoading(true);
-        setLoadingMessage('Loading agent...');
-        setMessages([]);
-      } else {
+      const disposeNoHistoryFound = vscodeApi.onMessage('noHistoryFound', data => {
+        // No history found - show placeholder instead of auto-starting
+        if (data && data.agentId) {
+          setShowPlaceholder(true);
+          setIsLoading(false);
+        }
+      });
+      disposers.push(disposeNoHistoryFound);
+
+      const disposeExportRequest = vscodeApi.onMessage('requestConversationExport', data => {
+        const agentLabel = agentInfoRef.current?.name || data?.agentName || 'Agent Conversation';
+        const disclaimer = DEFAULT_HISTORY_DISCLAIMER;
+        const filteredMessages = messagesRef.current.filter(
+          msg => !(msg.type === 'system' && msg.content === disclaimer)
+        );
+        const markdown = buildConversationMarkdown(agentLabel, filteredMessages, disclaimer);
+        const safeBase = sanitizeConversationFileName(agentLabel) || 'agent-conversation';
+        const exported = new Date();
+        const datePart = exported.toISOString().slice(0, 10);
+        const timePart = `${exported.getUTCHours().toString().padStart(2, '0')}-${exported
+          .getUTCMinutes()
+          .toString()
+          .padStart(2, '0')}-${exported.getUTCSeconds().toString().padStart(2, '0')}`;
+        const fileName = `${datePart}-${timePart}-${safeBase}.md`;
+        vscodeApi.sendConversationExport(markdown, fileName);
+      });
+      disposers.push(disposeExportRequest);
+
+      const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', data => {
+        const timeSinceError = Date.now() - sessionErrorTimestampRef.current;
+        if (sessionErrorTimestampRef.current > 0 && timeSinceError < 500) {
+          console.warn('Ignoring sessionStarted that arrived too soon after error (race condition)');
+          return;
+        }
+
+        sessionErrorTimestampRef.current = 0;
+        sessionActiveStateRef.current = true;
+
+        if (data) {
+          setMessages(prev => {
+            const newMessages = [...prev];
+
+            // Show disclaimer first (if queued)
+            if (pendingDisclaimerRef.current) {
+              const disclaimerMessage: Message = {
+                id: Date.now().toString(),
+                type: 'system',
+                content: pendingDisclaimerRef.current,
+                systemType: 'debug',
+                timestamp: new Date().toISOString()
+              };
+              newMessages.push(disclaimerMessage);
+              pendingDisclaimerRef.current = null; // Clear after showing
+            }
+
+            // Then add welcome message
+            const welcomeMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              type: 'agent',
+              content: data.content || "Hi! I'm ready to help. What can I do for you?",
+              timestamp: new Date().toISOString()
+            };
+            newMessages.push(welcomeMessage);
+
+            return newMessages;
+          });
+        }
+
+        setSessionActive(true);
+        setAgentConnected(true);
         setIsLoading(false);
-      }
-    });
-    disposers.push(disposeSessionStarting);
+        setHasSessionError(false); // Clear error state when session successfully starts
+        setShowPlaceholder(false); // Clear placeholder when session starts
+        onSessionTransitionSettled();
+      });
+      disposers.push(disposeSessionStarted);
 
-    const disposeCompilationStarting = vscodeApi.onMessage('compilationStarting', data => {
-      setIsLoading(true);
-      setLoadingMessage(data?.message || 'Compiling agent...');
-    });
-    disposers.push(disposeCompilationStarting);
+      const disposeClientAppReady = vscodeApi.onClientAppReady(() => {
+        onClientAppStateChange('ready');
+        setIsLoading(false);
+      });
+      disposers.push(disposeClientAppReady);
 
-    const disposeCompilationError = vscodeApi.onMessage('compilationError', data => {
-      setIsLoading(false);
-      setAgentConnected(false);
+      const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
+        const currentSelectedAgentId = selectedAgentIdRef.current;
+        const currentPendingAgentId = pendingAgentIdRef.current;
 
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        type: 'system',
-        content: data?.message || 'Failed to compile agent',
-        systemType: 'error',
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    });
-    disposers.push(disposeCompilationError);
+        setSessionActive(false);
+        setAgentConnected(false);
+        sessionActiveStateRef.current = false;
+        sessionErrorTimestampRef.current = 0;
 
-    const disposeSimulationStarting = vscodeApi.onMessage('simulationStarting', data => {
-      setIsLoading(true);
-      setLoadingMessage(data?.message || 'Starting simulation...');
-    });
-    disposers.push(disposeSimulationStarting);
+        if (currentSelectedAgentId === '') {
+          setIsLoading(false);
+          setMessages([]);
+          return;
+        }
 
-    const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
-      const disclaimer = data?.message;
-      if (!disclaimer) {
-        return;
-      }
-      // Always queue the disclaimer - it will be shown after welcome message
-      pendingDisclaimerRef.current = disclaimer;
-    });
-    disposers.push(disposePreviewDisclaimer);
+        if (currentPendingAgentId && currentPendingAgentId === currentSelectedAgentId) {
+          setIsLoading(true);
+          setLoadingMessage('Connecting to agent...');
+        } else if (!currentPendingAgentId) {
+          setIsLoading(true);
+          setLoadingMessage('Loading agent...');
+          setMessages([]);
+        } else {
+          setIsLoading(false);
+        }
+      });
+      disposers.push(disposeSessionStarting);
 
-    const disposeMessageSent = vscodeApi.onMessage('messageSent', data => {
-      if (data && data.content) {
-        const agentMessage: Message = {
+      const disposeCompilationStarting = vscodeApi.onMessage('compilationStarting', data => {
+        setIsLoading(true);
+        setLoadingMessage(data?.message || 'Compiling agent...');
+      });
+      disposers.push(disposeCompilationStarting);
+
+      const disposeCompilationError = vscodeApi.onMessage('compilationError', data => {
+        setIsLoading(false);
+        setAgentConnected(false);
+
+        const errorMessage: Message = {
           id: Date.now().toString(),
-          type: 'agent',
-          content: data.content,
+          type: 'system',
+          content: data?.message || 'Failed to compile agent',
+          systemType: 'error',
           timestamp: new Date().toISOString()
         };
-        setMessages(prev => [...prev, agentMessage]);
-      }
-
-      setIsLoading(false);
-    });
-    disposers.push(disposeMessageSent);
-
-    const disposeMessageStarting = vscodeApi.onMessage('messageStarting', () => {
-      setIsLoading(true);
-      setLoadingMessage('Agent is thinking...');
-    });
-    disposers.push(disposeMessageStarting);
-
-    const disposeError = vscodeApi.onMessage('error', data => {
-      setAgentConnected(false);
-      sessionActiveStateRef.current = false;
-      sessionErrorTimestampRef.current = Date.now();
-      setHasSessionError(true); // Set error state when session fails
-      pendingDisclaimerRef.current = null; // Clear pending disclaimer on error
-
-      setMessages(prev => {
-        const filteredMessages = pruneStartingSessionMessages(prev);
-        const errorMessage = createSystemMessage(data?.message || 'Something went wrong', 'error');
-        return errorMessage ? [...filteredMessages, errorMessage] : filteredMessages;
-      });
-
-      setIsLoading(false);
-      onSessionTransitionSettled();
-    });
-    disposers.push(disposeError);
-
-    const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
-      setSessionActive(false);
-      setIsLoading(false);
-      setAgentConnected(false);
-      sessionActiveStateRef.current = false;
-      onSessionTransitionSettled();
-    });
-    disposers.push(disposeSessionEnded);
-
-    const disposeDebugModeChanged = vscodeApi.onMessage('debugModeChanged', data => {
-      const debugMessage = createSystemMessage(data?.message, 'debug');
-      if (debugMessage) {
-        setMessages(prev => [...prev, debugMessage]);
-      }
-    });
-    disposers.push(disposeDebugModeChanged);
-
-    const disposeDebugLogProcessed = vscodeApi.onMessage('debugLogProcessed', data => {
-      const logMessage = createSystemMessage(data?.message, 'debug');
-      if (logMessage) {
-        setMessages(prev => [...prev, logMessage]);
-      }
-    });
-    disposers.push(disposeDebugLogProcessed);
-
-    const disposeDebugLogError = vscodeApi.onMessage('debugLogError', data => {
-      const errorMessage = createSystemMessage(data?.message, 'error');
-      if (errorMessage) {
         setMessages(prev => [...prev, errorMessage]);
+      });
+      disposers.push(disposeCompilationError);
+
+      const disposeSimulationStarting = vscodeApi.onMessage('simulationStarting', data => {
+        setIsLoading(true);
+        setLoadingMessage(data?.message || 'Starting simulation...');
+      });
+      disposers.push(disposeSimulationStarting);
+
+      const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
+        const disclaimer = data?.message;
+        if (!disclaimer) {
+          return;
+        }
+        // Always queue the disclaimer - it will be shown after welcome message
+        pendingDisclaimerRef.current = disclaimer;
+      });
+      disposers.push(disposePreviewDisclaimer);
+
+      const disposeMessageSent = vscodeApi.onMessage('messageSent', data => {
+        if (data && data.content) {
+          const agentMessage: Message = {
+            id: Date.now().toString(),
+            type: 'agent',
+            content: data.content,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, agentMessage]);
+        }
+
+        setIsLoading(false);
+      });
+      disposers.push(disposeMessageSent);
+
+      const disposeMessageStarting = vscodeApi.onMessage('messageStarting', () => {
+        setIsLoading(true);
+        setLoadingMessage('Agent is thinking...');
+      });
+      disposers.push(disposeMessageStarting);
+
+      const disposeError = vscodeApi.onMessage('error', data => {
+        setAgentConnected(false);
+        sessionActiveStateRef.current = false;
+        sessionErrorTimestampRef.current = Date.now();
+        setHasSessionError(true); // Set error state when session fails
+        pendingDisclaimerRef.current = null; // Clear pending disclaimer on error
+
+        setMessages(prev => {
+          const filteredMessages = pruneStartingSessionMessages(prev);
+          const errorMessage = createSystemMessage(data?.message || 'Something went wrong', 'error');
+          return errorMessage ? [...filteredMessages, errorMessage] : filteredMessages;
+        });
+
+        setIsLoading(false);
+        onSessionTransitionSettled();
+      });
+      disposers.push(disposeError);
+
+      const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
+        setSessionActive(false);
+        setIsLoading(false);
+        setAgentConnected(false);
+        sessionActiveStateRef.current = false;
+        onSessionTransitionSettled();
+      });
+      disposers.push(disposeSessionEnded);
+
+      const disposeDebugModeChanged = vscodeApi.onMessage('debugModeChanged', data => {
+        const debugMessage = createSystemMessage(data?.message, 'debug');
+        if (debugMessage) {
+          setMessages(prev => [...prev, debugMessage]);
+        }
+      });
+      disposers.push(disposeDebugModeChanged);
+
+      const disposeDebugLogProcessed = vscodeApi.onMessage('debugLogProcessed', data => {
+        const logMessage = createSystemMessage(data?.message, 'debug');
+        if (logMessage) {
+          setMessages(prev => [...prev, logMessage]);
+        }
+      });
+      disposers.push(disposeDebugLogProcessed);
+
+      const disposeDebugLogError = vscodeApi.onMessage('debugLogError', data => {
+        const errorMessage = createSystemMessage(data?.message, 'error');
+        if (errorMessage) {
+          setMessages(prev => [...prev, errorMessage]);
+        }
+      });
+      disposers.push(disposeDebugLogError);
+
+      const disposeDebugLogInfo = vscodeApi.onMessage('debugLogInfo', data => {
+        const infoMessage = createSystemMessage(data?.message, 'debug');
+        if (infoMessage) {
+          setMessages(prev => [...prev, infoMessage]);
+        }
+      });
+      disposers.push(disposeDebugLogInfo);
+
+      return () => {
+        disposers.forEach(dispose => dispose());
+      };
+    }, [onClientAppStateChange, onSessionTransitionSettled]);
+
+    useEffect(() => {
+      if (selectedAgentId === previousSelectedAgentRef.current) {
+        return;
       }
-    });
-    disposers.push(disposeDebugLogError);
 
-    const disposeDebugLogInfo = vscodeApi.onMessage('debugLogInfo', data => {
-      const infoMessage = createSystemMessage(data?.message, 'debug');
-      if (infoMessage) {
-        setMessages(prev => [...prev, infoMessage]);
+      previousSelectedAgentRef.current = selectedAgentId;
+      sessionActiveStateRef.current = false;
+      setSessionActive(false);
+      setAgentConnected(false);
+      setShowPlaceholder(false); // Reset placeholder when agent changes
+
+      if (selectedAgentId === '') {
+        setIsLoading(false);
+        setMessages([]);
+        return;
       }
-    });
-    disposers.push(disposeDebugLogInfo);
 
-    return () => {
-      disposers.forEach(dispose => dispose());
-    };
-  }, [onClientAppStateChange, onSessionTransitionSettled]);
-
-  useEffect(() => {
-    if (selectedAgentId === previousSelectedAgentRef.current) {
-      return;
-    }
-
-    previousSelectedAgentRef.current = selectedAgentId;
-    sessionActiveStateRef.current = false;
-    setSessionActive(false);
-    setAgentConnected(false);
-    setShowPlaceholder(false); // Reset placeholder when agent changes
-
-    if (selectedAgentId === '') {
-      setIsLoading(false);
       setMessages([]);
-      return;
-    }
 
-    setMessages([]);
-
-    if (pendingAgentId && pendingAgentId === selectedAgentId) {
-      setIsLoading(true);
-      setLoadingMessage('Connecting to agent...');
-    }
-  }, [selectedAgentId, pendingAgentId]);
-
-  useEffect(() => {
-    if (isSessionTransitioning) {
-      if (shouldShowTransitionLoader(pendingAgentId, selectedAgentId)) {
+      if (pendingAgentId && pendingAgentId === selectedAgentId) {
         setIsLoading(true);
         setLoadingMessage('Connecting to agent...');
-        setAgentConnected(false);
       }
-    } else if (shouldShowTransitionLoader(pendingAgentId, selectedAgentId)) {
-      setIsLoading(false);
-    }
-  }, [isSessionTransitioning, pendingAgentId, selectedAgentId]);
+    }, [selectedAgentId, pendingAgentId]);
 
-  const handleSendMessage = (content: string) => {
-    if (!agentConnected) {
-      return;
-    }
+    useEffect(() => {
+      if (isSessionTransitioning) {
+        if (shouldShowTransitionLoader(pendingAgentId, selectedAgentId)) {
+          setIsLoading(true);
+          setLoadingMessage('Connecting to agent...');
+          setAgentConnected(false);
+        }
+      } else if (shouldShowTransitionLoader(pendingAgentId, selectedAgentId)) {
+        setIsLoading(false);
+      }
+    }, [isSessionTransitioning, pendingAgentId, selectedAgentId]);
 
-    // Allow sending even when loading - let the backend handle message queuing
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content,
-      timestamp: new Date().toISOString()
+    const handleSendMessage = (content: string) => {
+      if (!agentConnected) {
+        return;
+      }
+
+      // Allow sending even when loading - let the backend handle message queuing
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, userMessage]);
+
+      // Send message to VS Code
+      vscodeApi.sendChatMessage(content);
     };
-    setMessages(prev => [...prev, userMessage]);
 
-    // Send message to VS Code
-    vscodeApi.sendChatMessage(content);
-  };
-
-  const handleClientAppSelected = (clientAppName: string) => {
-    // Hide client app selection UI and reset chat area to normal
-    onClientAppStateChange('ready');
-    // Clear any prior selection/status messages and return to normal chat state
-    setMessages([]);
-    // Notify backend to finalize the client app selection and refresh agents
-    vscodeApi.selectClientApp(clientAppName);
-  };
-
-  // Watch for when selectedAgentId becomes empty (user selects default option)
-  useEffect(() => {
-    if (selectedAgentId === '') {
-      // End any active session
-      if (sessionActive || agentConnected) {
-        vscodeApi.endSession();
-      }
-      // Reset to default welcome state
-      setSessionActive(false);
-      setIsLoading(false);
-      setAgentConnected(false);
+    const handleClientAppSelected = (clientAppName: string) => {
+      // Hide client app selection UI and reset chat area to normal
+      onClientAppStateChange('ready');
+      // Clear any prior selection/status messages and return to normal chat state
       setMessages([]);
+      // Notify backend to finalize the client app selection and refresh agents
+      vscodeApi.selectClientApp(clientAppName);
+    };
+
+    // Watch for when selectedAgentId becomes empty (user selects default option)
+    useEffect(() => {
+      if (selectedAgentId === '') {
+        // End any active session
+        if (sessionActive || agentConnected) {
+          vscodeApi.endSession();
+        }
+        // Reset to default welcome state
+        setSessionActive(false);
+        setIsLoading(false);
+        setAgentConnected(false);
+        setMessages([]);
+        setShowPlaceholder(false);
+      }
+    }, [selectedAgentId, sessionActive, agentConnected]);
+
+    // Render client app selection UI in the chat area for case 3
+    const renderAgentSelection = () => {
+      if (clientAppState !== 'selecting') return null;
+
+      return (
+        <div className="agent-selection">
+          <h4>Select Client App:</h4>
+          <select
+            className="agent-select"
+            onChange={e => {
+              if (e.target.value) {
+                handleClientAppSelected(e.target.value);
+              }
+            }}
+          >
+            <option value="">Choose a client app...</option>
+            {availableClientApps.map(app => (
+              <option key={app.name} value={app.name}>
+                {app.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    };
+
+    const handleStartSession = () => {
+      if (!hasAgentSelection(selectedAgentId)) {
+        return;
+      }
       setShowPlaceholder(false);
+      setIsLoading(true);
+      vscodeApi.startSession(selectedAgentId);
+    };
+
+    // Show placeholder when no agent is selected or in special client app states
+    if (selectedAgentId === '' || clientAppState === 'selecting') {
+      return (
+        <div className="agent-preview">
+          {renderAgentSelection()}
+          <PlaceholderContent />
+        </div>
+      );
     }
-  }, [selectedAgentId, sessionActive, agentConnected]);
 
-  // Render client app selection UI in the chat area for case 3
-  const renderAgentSelection = () => {
-    if (clientAppState !== 'selecting') return null;
-
-    return (
-      <div className="agent-selection">
-        <h4>Select Client App:</h4>
-        <select
-          className="agent-select"
-          onChange={e => {
-            if (e.target.value) {
-              handleClientAppSelected(e.target.value);
-            }
-          }}
-        >
-          <option value="">Choose a client app...</option>
-          {availableClientApps.map(app => (
-            <option key={app.name} value={app.name}>
-              {app.name}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  };
-
-  const handleStartSession = () => {
-    if (!hasAgentSelection(selectedAgentId)) {
-      return;
+    // Show agent preview placeholder when agent is selected but has no history
+    if (showPlaceholder && !isLoading && messages.length === 0) {
+      return (
+        <div className="agent-preview">
+          <AgentPreviewPlaceholder
+            onStartSession={handleStartSession}
+            isLiveMode={isLiveMode}
+            selectedAgentInfo={selectedAgentInfo}
+            onModeChange={onLiveModeChange}
+          />
+          <FormContainer
+            ref={chatInputRef}
+            onSendMessage={handleSendMessage}
+            sessionActive={false}
+            isLoading={isLoading}
+            messages={messages}
+            isLiveMode={isLiveMode}
+          />
+        </div>
+      );
     }
-    setShowPlaceholder(false);
-    setIsLoading(true);
-    vscodeApi.startSession(selectedAgentId);
-  };
 
-  // Show placeholder when no agent is selected or in special client app states
-  if (selectedAgentId === '' || clientAppState === 'selecting') {
     return (
       <div className="agent-preview">
         {renderAgentSelection()}
-        <PlaceholderContent />
-      </div>
-    );
-  }
-
-  // Show agent preview placeholder when agent is selected but has no history
-  if (showPlaceholder && !isLoading && messages.length === 0) {
-    return (
-      <div className="agent-preview">
-        <AgentPreviewPlaceholder
-          onStartSession={handleStartSession}
-          isLiveMode={isLiveMode}
-          selectedAgentInfo={selectedAgentInfo}
-          onModeChange={onLiveModeChange}
-        />
+        <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
         <FormContainer
           ref={chatInputRef}
           onSendMessage={handleSendMessage}
-          sessionActive={false}
+          sessionActive={agentConnected}
           isLoading={isLoading}
           messages={messages}
           isLiveMode={isLiveMode}
@@ -619,22 +633,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(({
       </div>
     );
   }
-
-  return (
-    <div className="agent-preview">
-      {renderAgentSelection()}
-      <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
-      <FormContainer
-        ref={chatInputRef}
-        onSendMessage={handleSendMessage}
-        sessionActive={agentConnected}
-        isLoading={isLoading}
-        messages={messages}
-        isLiveMode={isLiveMode}
-      />
-    </div>
-  );
-});
+);
 
 AgentPreview.displayName = 'AgentPreview';
 

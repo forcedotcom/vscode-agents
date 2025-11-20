@@ -18,17 +18,16 @@ export const registerValidateAgentCommand = () => {
     const channelService = CoreExtensionService.getChannelService();
     telemetryService.sendCommandEvent(Commands.validateAgent);
 
-    
-      // Get the file path from the context menu
-      const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
+    // Get the file path from the context menu
+    const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
 
-      if (!filePath) {
-        vscode.window.showErrorMessage('No .agent file selected.');
-        return;
-      }
+    if (!filePath) {
+      vscode.window.showErrorMessage('No .agent file selected.');
+      return;
+    }
 
     const fileUri = vscode.Uri.file(filePath);
-    const fileContents = Buffer.from((await vscode.workspace.fs.readFile(fileUri))).toString();
+    const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
 
     // Show progress notification with spinner
     await vscode.window.withProgress(
@@ -37,7 +36,7 @@ export const registerValidateAgentCommand = () => {
         title: 'Validating Agent',
         cancellable: false
       },
-      async (progress) => {
+      async progress => {
         try {
           const response = await Agent.compileAgentScript(
             await CoreExtensionService.getDefaultConnection(),
@@ -53,11 +52,7 @@ export const registerValidateAgentCommand = () => {
                 new vscode.Position(Math.max(0, error.lineEnd - 1), Math.max(0, error.colEnd - 1))
               );
 
-              const diagnostic = new vscode.Diagnostic(
-                range,
-                error.description,
-                vscode.DiagnosticSeverity.Error
-              );
+              const diagnostic = new vscode.Diagnostic(range, error.description, vscode.DiagnosticSeverity.Error);
               diagnostic.source = 'Agent Validation';
               diagnostic.code = error.errorType;
 

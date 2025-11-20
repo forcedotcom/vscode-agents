@@ -188,7 +188,9 @@ describe('AgentPreview - Placeholder Behavior', () => {
       sessionStartedHandler!({ content: 'Welcome!' });
 
       await waitFor(() => {
-        expect(screen.queryByText(/Agent Preview lets you test an agent by having a conversation/)).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(/Agent Preview lets you test an agent by having a conversation/)
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -220,7 +222,9 @@ describe('AgentPreview - Placeholder Behavior', () => {
       clearMessagesHandler!();
 
       await waitFor(() => {
-        expect(screen.queryByText(/Agent Preview lets you test an agent by having a conversation/)).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(/Agent Preview lets you test an agent by having a conversation/)
+        ).not.toBeInTheDocument();
       });
     });
   });
@@ -256,7 +260,9 @@ describe('AgentPreview - Placeholder Behavior', () => {
       });
 
       // Placeholder should not be shown
-      expect(screen.queryByText(/Agent Preview lets you test an agent by having a conversation/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Agent Preview lets you test an agent by having a conversation/)
+      ).not.toBeInTheDocument();
     });
   });
 });

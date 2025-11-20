@@ -22,123 +22,131 @@ export interface ChatInputRef {
 
 const DEFAULT_MESSAGES: Message[] = [];
 
-const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(({ onSendMessage, disabled = false, messages = DEFAULT_MESSAGES, isLiveMode = false }, ref) => {
-  const [message, setMessage] = useState('');
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [userMessageHistory, setUserMessageHistory] = useState<string[]>([]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
+  ({ onSendMessage, disabled = false, messages = DEFAULT_MESSAGES, isLiveMode = false }, ref) => {
+    const [message, setMessage] = useState('');
+    const [historyIndex, setHistoryIndex] = useState(-1);
+    const [userMessageHistory, setUserMessageHistory] = useState<string[]>([]);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Expose focus method to parent components
-  useImperativeHandle(ref, () => ({
-    focus: () => {
-      textareaRef.current?.focus();
-    }
-  }));
-
-  // Update user message history when messages change
-  useEffect(() => {
-    const userMessages = messages
-      .filter(msg => msg.type === 'user')
-      .map(msg => msg.content)
-      .reverse(); // Most recent first
-    setUserMessageHistory(userMessages);
-    setHistoryIndex(-1); // Reset history index when messages update
-  }, [messages]);
-
-  // Auto-resize textarea based on content
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      // Reset height to auto to get the correct scrollHeight
-      textarea.style.height = 'auto';
-      // Set height to scrollHeight (content height)
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-  }, [message]);
-
-  // Refocus input when it transitions from disabled to enabled
-  const prevDisabledRef = useRef(disabled);
-  useEffect(() => {
-    if (prevDisabledRef.current && !disabled) {
-      // Was disabled, now enabled - refocus
-      textareaRef.current?.focus();
-    }
-    prevDisabledRef.current = disabled;
-  }, [disabled]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (message.trim() && !disabled) {
-      onSendMessage(message);
-      setMessage('');
-      setHistoryIndex(-1); // Reset history index after sending
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Handle Enter key: submit on Enter, newline on Alt+Enter
-    if (e.key === 'Enter') {
-      if (e.altKey) {
-        // Alt+Enter: insert newline at cursor position
-        e.preventDefault();
-        const target = e.currentTarget;
-        const start = target.selectionStart;
-        const end = target.selectionEnd;
-        const newMessage = message.substring(0, start) + '\n' + message.substring(end);
-        setMessage(newMessage);
-        // Set cursor position after the inserted newline
-        setTimeout(() => {
-          target.selectionStart = target.selectionEnd = start + 1;
-        }, 0);
-        return;
-      } else {
-        // Regular Enter: submit message
-        e.preventDefault();
-        handleSubmit(e);
-        return;
+    // Expose focus method to parent components
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        textareaRef.current?.focus();
       }
-    }
+    }));
 
-    if (e.key === 'ArrowUp') {
+    // Update user message history when messages change
+    useEffect(() => {
+      const userMessages = messages
+        .filter(msg => msg.type === 'user')
+        .map(msg => msg.content)
+        .reverse(); // Most recent first
+      setUserMessageHistory(userMessages);
+      setHistoryIndex(-1); // Reset history index when messages update
+    }, [messages]);
+
+    // Auto-resize textarea based on content
+    useEffect(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        // Set height to scrollHeight (content height)
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      }
+    }, [message]);
+
+    // Refocus input when it transitions from disabled to enabled
+    const prevDisabledRef = useRef(disabled);
+    useEffect(() => {
+      if (prevDisabledRef.current && !disabled) {
+        // Was disabled, now enabled - refocus
+        textareaRef.current?.focus();
+      }
+      prevDisabledRef.current = disabled;
+    }, [disabled]);
+
+    const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      if (userMessageHistory.length > 0) {
-        const nextIndex = historyIndex + 1;
-        if (nextIndex < userMessageHistory.length) {
-          setMessage(userMessageHistory[nextIndex]);
-          setHistoryIndex(nextIndex);
+      if (message.trim() && !disabled) {
+        onSendMessage(message);
+        setMessage('');
+        setHistoryIndex(-1); // Reset history index after sending
+      }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Handle Enter key: submit on Enter, newline on Alt+Enter
+      if (e.key === 'Enter') {
+        if (e.altKey) {
+          // Alt+Enter: insert newline at cursor position
+          e.preventDefault();
+          const target = e.currentTarget;
+          const start = target.selectionStart;
+          const end = target.selectionEnd;
+          const newMessage = message.substring(0, start) + '\n' + message.substring(end);
+          setMessage(newMessage);
+          // Set cursor position after the inserted newline
+          setTimeout(() => {
+            target.selectionStart = target.selectionEnd = start + 1;
+          }, 0);
+          return;
+        } else {
+          // Regular Enter: submit message
+          e.preventDefault();
+          handleSubmit(e);
+          return;
         }
       }
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (historyIndex > 0) {
-        const nextIndex = historyIndex - 1;
-        setMessage(userMessageHistory[nextIndex]);
-        setHistoryIndex(nextIndex);
-      } else if (historyIndex === 0) {
-        setMessage('');
-        setHistoryIndex(-1);
-      }
-    }
-  };
 
-  return (
-    <form className="chat-input" onSubmit={handleSubmit}>
-      <textarea
-        ref={textareaRef}
-        value={message}
-        onChange={e => setMessage(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={disabled ? (isLiveMode ? 'Start the live test to chat…' : 'Start the simulation to chat…') : 'Write something to start testing…'}
-        className="chat-input-field"
-        disabled={disabled}
-        rows={1}
-      />
-      <button type="submit" className="chat-input-button" disabled={disabled || !message.trim()}>
-        <span className="send-icon"></span>
-      </button>
-    </form>
-  );
-});
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (userMessageHistory.length > 0) {
+          const nextIndex = historyIndex + 1;
+          if (nextIndex < userMessageHistory.length) {
+            setMessage(userMessageHistory[nextIndex]);
+            setHistoryIndex(nextIndex);
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (historyIndex > 0) {
+          const nextIndex = historyIndex - 1;
+          setMessage(userMessageHistory[nextIndex]);
+          setHistoryIndex(nextIndex);
+        } else if (historyIndex === 0) {
+          setMessage('');
+          setHistoryIndex(-1);
+        }
+      }
+    };
+
+    return (
+      <form className="chat-input" onSubmit={handleSubmit}>
+        <textarea
+          ref={textareaRef}
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            disabled
+              ? isLiveMode
+                ? 'Start the live test to chat…'
+                : 'Start the simulation to chat…'
+              : 'Write something to start testing…'
+          }
+          className="chat-input-field"
+          disabled={disabled}
+          rows={1}
+        />
+        <button type="submit" className="chat-input-button" disabled={disabled || !message.trim()}>
+          <span className="send-icon"></span>
+        </button>
+      </form>
+    );
+  }
+);
 
 ChatInput.displayName = 'ChatInput';
 

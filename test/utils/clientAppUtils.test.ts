@@ -73,7 +73,8 @@ describe('clientAppUtils', () => {
       expect(result).toEqual({
         type: 'none',
         clientApps: [],
-        error: 'No default target org configured. Please set your default target org using "sf config set target-org <username>"'
+        error:
+          'No default target org configured. Please set your default target org using "sf config set target-org <username>"'
       });
     });
 
@@ -118,7 +119,8 @@ describe('clientAppUtils', () => {
         type: 'none',
         clientApps: [],
         username: 'test@example.com',
-        error: 'Authentication file not found for username: test@example.com. Please authenticate using "sf org login jwt"'
+        error:
+          'Authentication file not found for username: test@example.com. Please authenticate using "sf org login jwt"'
       });
       expect(mockFs.existsSync).toHaveBeenCalledWith('/home/testuser/.sfdx/test@example.com.json');
     });
@@ -136,10 +138,12 @@ describe('clientAppUtils', () => {
       });
 
       mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify({
-        username: 'test@example.com',
-        clientApps: {}
-      }));
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          username: 'test@example.com',
+          clientApps: {}
+        })
+      );
 
       const result = await getAvailableClientApps();
 
@@ -163,22 +167,22 @@ describe('clientAppUtils', () => {
       });
 
       mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify({
-        username: 'test@example.com',
-        clientApps: {
-          'app1': {
-            clientId: 'client-id-1'
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          username: 'test@example.com',
+          clientApps: {
+            app1: {
+              clientId: 'client-id-1'
+            }
           }
-        }
-      }));
+        })
+      );
 
       const result = await getAvailableClientApps();
 
       expect(result).toEqual({
         type: 'single',
-        clientApps: [
-          { name: 'app1', clientId: 'client-id-1' }
-        ],
+        clientApps: [{ name: 'app1', clientId: 'client-id-1' }],
         username: 'test@example.com'
       });
     });
@@ -196,17 +200,19 @@ describe('clientAppUtils', () => {
       });
 
       mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify({
-        username: 'test@example.com',
-        clientApps: {
-          'app1': {
-            clientId: 'client-id-1'
-          },
-          'app2': {
-            clientId: 'client-id-2'
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          username: 'test@example.com',
+          clientApps: {
+            app1: {
+              clientId: 'client-id-1'
+            },
+            app2: {
+              clientId: 'client-id-2'
+            }
           }
-        }
-      }));
+        })
+      );
 
       const result = await getAvailableClientApps();
 
@@ -233,21 +239,23 @@ describe('clientAppUtils', () => {
       });
 
       mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify({
-        username: 'test@example.com',
-        clientApps: {
-          'app1': {
-            clientId: 'client-id-1'
-          },
-          'invalid-app': {
-            // Missing clientId
-            name: 'Invalid'
-          },
-          'app2': {
-            clientId: 'client-id-2'
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          username: 'test@example.com',
+          clientApps: {
+            app1: {
+              clientId: 'client-id-1'
+            },
+            'invalid-app': {
+              // Missing clientId
+              name: 'Invalid'
+            },
+            app2: {
+              clientId: 'client-id-2'
+            }
           }
-        }
-      }));
+        })
+      );
 
       const result = await getAvailableClientApps();
 
@@ -274,10 +282,12 @@ describe('clientAppUtils', () => {
       });
 
       mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify({
-        username: 'test@example.com',
-        clientApps: [] // Array instead of object
-      }));
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          username: 'test@example.com',
+          clientApps: [] // Array instead of object
+        })
+      );
 
       const result = await getAvailableClientApps();
 
@@ -301,22 +311,22 @@ describe('clientAppUtils', () => {
       });
 
       mockFs.existsSync.mockReturnValue(true);
-      mockFs.readFileSync.mockReturnValue(JSON.stringify({
-        // No username field
-        clientApps: {
-          'app1': {
-            clientId: 'client-id-1'
+      mockFs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          // No username field
+          clientApps: {
+            app1: {
+              clientId: 'client-id-1'
+            }
           }
-        }
-      }));
+        })
+      );
 
       const result = await getAvailableClientApps();
 
       expect(result).toEqual({
         type: 'single',
-        clientApps: [
-          { name: 'app1', clientId: 'client-id-1' }
-        ],
+        clientApps: [{ name: 'app1', clientId: 'client-id-1' }],
         username: 'test@example.com' // Falls back to resolved username
       });
     });

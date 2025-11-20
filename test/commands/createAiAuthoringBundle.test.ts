@@ -41,7 +41,7 @@ describe('createAiAuthoringBundle', () => {
   };
 
   let mockProject: any;
-  
+
   const createMockProject = () => ({
     getPath: jest.fn().mockReturnValue('/test/project'),
     getDefaultPackage: jest.fn().mockReturnValue({
@@ -76,11 +76,9 @@ describe('createAiAuthoringBundle', () => {
     jest.spyOn(vscode.window, 'showInformationMessage').mockImplementation();
     showErrorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
 
-    jest
-      .spyOn(vscode.window, 'withProgress')
-      .mockImplementation(async (_options, task) => {
-        return await task({ report: jest.fn() }, {} as vscode.CancellationToken);
-      });
+    jest.spyOn(vscode.window, 'withProgress').mockImplementation(async (_options, task) => {
+      return await task({ report: jest.fn() }, {} as vscode.CancellationToken);
+    });
 
     // Mock file system operations
     createDirectorySpy = jest.spyOn(vscode.workspace.fs, 'createDirectory').mockResolvedValue(undefined);
@@ -89,17 +87,20 @@ describe('createAiAuthoringBundle', () => {
     readFileSpy = jest.spyOn(vscode.workspace.fs, 'readFile');
 
     // Mock Uri.file
-    jest.spyOn(vscode.Uri, 'file').mockImplementation((path: string) => ({
-      fsPath: path,
-      scheme: 'file',
-      path,
-      authority: '',
-      query: '',
-      fragment: '',
-      with: jest.fn(),
-      toJSON: jest.fn(),
-      toString: jest.fn(() => path)
-    } as any));
+    jest.spyOn(vscode.Uri, 'file').mockImplementation(
+      (path: string) =>
+        ({
+          fsPath: path,
+          scheme: 'file',
+          path,
+          authority: '',
+          query: '',
+          fragment: '',
+          with: jest.fn(),
+          toJSON: jest.fn(),
+          toString: jest.fn(() => path)
+        }) as any
+    );
 
     // Mock Agent.createAgentScript
     createAgentScriptSpy = jest.spyOn(Agent, 'createAgentScript');
@@ -117,19 +118,19 @@ describe('createAiAuthoringBundle', () => {
   it('creates bundle successfully with valid inputs', async () => {
     // Mock user inputs
     showInputBoxSpy.mockResolvedValue('My Test Agent');
-    
+
     // Mock spec files
     readDirectorySpy.mockResolvedValue([
       ['test-spec.yaml', vscode.FileType.File],
       ['another-spec.yml', vscode.FileType.File]
     ]);
-    
+
     showQuickPickSpy.mockResolvedValue('test-spec.yaml');
-    
+
     // Mock spec file content
     const specContent = 'agentType: customer\nrole: Test Role';
     readFileSpy.mockResolvedValue(new TextEncoder().encode(specContent));
-    
+
     // Mock agent script generation
     createAgentScriptSpy.mockResolvedValue('agent MyTestAgent { }');
 
@@ -162,16 +163,12 @@ describe('createAiAuthoringBundle', () => {
     const handler = commandSpy.mock.calls[0][1];
     await handler();
 
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No YAML spec files found')
-    );
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No YAML spec files found'));
   });
 
   it('cancels when user cancels spec selection', async () => {
     showInputBoxSpy.mockResolvedValue('My Test Agent');
-    readDirectorySpy.mockResolvedValue([
-      ['test-spec.yaml', vscode.FileType.File]
-    ]);
+    readDirectorySpy.mockResolvedValue([['test-spec.yaml', vscode.FileType.File]]);
     showQuickPickSpy.mockResolvedValue(undefined); // User cancelled
 
     registerCreateAiAuthoringBundleCommand();
@@ -183,7 +180,7 @@ describe('createAiAuthoringBundle', () => {
 
   it('filters only YAML files from specs directory', async () => {
     showInputBoxSpy.mockResolvedValue('My Test Agent');
-    
+
     readDirectorySpy.mockResolvedValue([
       ['test-spec.yaml', vscode.FileType.File],
       ['another-spec.yml', vscode.FileType.File],
@@ -191,7 +188,7 @@ describe('createAiAuthoringBundle', () => {
       ['readme.md', vscode.FileType.File], // Should be filtered out
       ['subdir', vscode.FileType.Directory] // Should be filtered out
     ]);
-    
+
     showQuickPickSpy.mockResolvedValue('test-spec.yaml');
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue('agent MyTestAgent { }');
@@ -201,10 +198,7 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify only YAML files were shown
-    expect(showQuickPickSpy).toHaveBeenCalledWith(
-      ['test-spec.yaml', 'another-spec.yml'],
-      expect.any(Object)
-    );
+    expect(showQuickPickSpy).toHaveBeenCalledWith(['test-spec.yaml', 'another-spec.yml'], expect.any(Object));
   });
 
   it('generates correct API name from regular name', async () => {
@@ -251,9 +245,7 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify error was shown
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to create AI Authoring Bundle')
-    );
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to create AI Authoring Bundle'));
   });
 
   it('displays error message without "Error:" prefix in output channel', async () => {
@@ -271,7 +263,9 @@ describe('createAiAuthoringBundle', () => {
 
     // Verify error message is displayed without "Error:" prefix
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith('API connection timeout');
-    expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(expect.stringContaining('Error: API connection timeout'));
+    expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(
+      expect.stringContaining('Error: API connection timeout')
+    );
   });
 
   it('displays "Something went wrong" for empty error message in output channel', async () => {
@@ -294,7 +288,7 @@ describe('createAiAuthoringBundle', () => {
 
   it('validates bundle name is not empty', async () => {
     let validator: any;
-    showInputBoxSpy.mockImplementation(async (options) => {
+    showInputBoxSpy.mockImplementation(async options => {
       validator = options?.validateInput;
       return undefined;
     });
@@ -311,7 +305,7 @@ describe('createAiAuthoringBundle', () => {
 
   it('uses provided URI when command invoked from context menu', async () => {
     const contextUri = vscode.Uri.file(path.join('custom', 'path', 'aiAuthoringBundles'));
-    
+
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
     showQuickPickSpy.mockResolvedValue('test.yaml');
@@ -335,7 +329,7 @@ describe('createAiAuthoringBundle', () => {
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
-    
+
     // Handle the command execution - it will fail at openTextDocument but that's ok
     try {
       await handler();
@@ -368,7 +362,7 @@ describe('createAiAuthoringBundle', () => {
         role: 'TestRole'
       })
     );
-    
+
     // Verify generateApiName was called with the name
     expect(generateApiName).toHaveBeenCalledWith('Test Agent');
   });
@@ -383,13 +377,9 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Should show error about no spec files
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No YAML spec files found')
-    );
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No YAML spec files found'));
     // Should log the error
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringContaining('No specs directory found')
-    );
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('No specs directory found'));
   });
 
   it('handles null agent script from createAgentScript', async () => {
@@ -406,13 +396,9 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify error was shown
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to create AI Authoring Bundle')
-    );
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to create AI Authoring Bundle'));
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
       expect.stringContaining('Failed to generate agent script')
     );
   });
-
 });
-

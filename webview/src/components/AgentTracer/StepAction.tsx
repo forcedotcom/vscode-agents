@@ -14,7 +14,8 @@ interface StepActionProps {
 }
 
 export const StepAction: React.FC<StepActionProps> = ({ actionName, description, timing, inputCode, outputCode }) => {
-  const isDark = document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
+  const isDark =
+    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
 
   return (
     <div className="step-action step-action--default">

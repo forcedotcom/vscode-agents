@@ -34,7 +34,13 @@
       "type": "EnabledToolsStep",
       "data": {
         "agent_name": "topic_selector",
-        "enabled_tools": ["assembly_instructions", "escalation", "Inappropriate_Content", "Prompt_Injection", "Reverse_Engineering"],
+        "enabled_tools": [
+          "assembly_instructions",
+          "escalation",
+          "Inappropriate_Content",
+          "Prompt_Injection",
+          "Reverse_Engineering"
+        ],
         "directive_context": "on_message"
       }
     },

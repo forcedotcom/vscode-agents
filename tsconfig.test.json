@@ -9,8 +9,5 @@
     "types": ["jest", "node", "@testing-library/jest-dom"],
     "isolatedModules": false
   },
-  "include": [
-    "webview/src/**/*",
-    "test/webview/**/*"
-  ]
+  "include": ["webview/src/**/*", "test/webview/**/*"]
 }
