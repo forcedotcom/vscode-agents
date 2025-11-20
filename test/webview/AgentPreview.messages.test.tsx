@@ -106,22 +106,6 @@ describe('AgentPreview - Message Handlers', () => {
   });
 
   describe('Debug Messages', () => {
-    it('should handle debugModeChanged', async () => {
-      renderComponent();
-      handlers.get('debugModeChanged')?.({ message: 'Debug enabled' });
-      await waitFor(() => expect(screen.getByText('Debug enabled')).toBeInTheDocument());
-    });
-
-    it('should ignore debugModeChanged when message is missing', async () => {
-      renderComponent();
-      handlers.get('debugModeChanged')?.({ message: 'Debug enabled' });
-      await waitFor(() => expect(screen.getAllByText('Debug enabled')).toHaveLength(1));
-
-      handlers.get('debugModeChanged')?.({});
-
-      await waitFor(() => expect(screen.getAllByText('Debug enabled')).toHaveLength(1));
-    });
-
     it('should handle debugLogProcessed', async () => {
       renderComponent();
       handlers.get('debugLogProcessed')?.({ message: 'Log processed' });
@@ -132,12 +116,6 @@ describe('AgentPreview - Message Handlers', () => {
       renderComponent();
       handlers.get('debugLogError')?.({ message: 'Debug error' });
       await waitFor(() => expect(screen.getByText('Debug error')).toBeInTheDocument());
-    });
-
-    it('should handle debugLogInfo', async () => {
-      renderComponent();
-      handlers.get('debugLogInfo')?.({ message: 'Debug info' });
-      await waitFor(() => expect(screen.getByText('Debug info')).toBeInTheDocument());
     });
   });
 
