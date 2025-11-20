@@ -55,8 +55,14 @@ const formatTime = (date: Date): string => {
   return `${hours}:${minutes}:${seconds} ${ampm}`;
 };
 
-export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): string => {
-  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
+export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number, maxLength?: number): string => {
+  let baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
+
+  // Truncate baseLabel if maxLength is specified (for dropdown options)
+  if (maxLength !== undefined && baseLabel.length > maxLength) {
+    baseLabel = baseLabel.substring(0, maxLength) + '...';
+  }
+
   if (!entry.timestamp) {
     return baseLabel;
   }
@@ -70,15 +76,9 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): str
 
 export const formatHistoryParts = (
   entry: TraceHistoryEntry,
-  index: number,
-  maxLength = 100
+  index: number
 ): { time: string | null; message: string } => {
-  let baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
-
-  // Truncate baseLabel if it exceeds maxLength (only for display overlay, not dropdown options)
-  if (baseLabel.length > maxLength) {
-    baseLabel = baseLabel.substring(0, maxLength) + '...';
-  }
+  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
 
   if (!entry.timestamp) {
     return { time: null, message: baseLabel };
@@ -356,10 +356,11 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     onChange={handleHistoryChange}
                   >
                     {traceHistory.map((entry, index) => {
-                      const label = formatHistoryLabel(entry, index);
+                      const fullLabel = formatHistoryLabel(entry, index);
+                      const truncatedLabel = formatHistoryLabel(entry, index, 100);
                       return (
-                        <option key={`${entry.planId}-${index}`} value={index} title={label}>
-                          {label}
+                        <option key={`${entry.planId}-${index}`} value={index} title={fullLabel}>
+                          {truncatedLabel}
                         </option>
                       );
                     })}
