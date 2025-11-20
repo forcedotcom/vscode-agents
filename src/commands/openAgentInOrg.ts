@@ -48,7 +48,7 @@ export const registerOpenAgentInOrgCommand = () => {
         cancellable: true
       },
       async progress => {
-        progress.report({ message: 'Running SFDX: Open an Agent in the Default Org.' });
+        progress.report({ message: 'Agentforce DX: Open an Agent in the Default Org.' });
         const result = sync('sf', ['org', 'open', 'agent', '--name', agentName]);
         if (result.status !== 0) {
           vscode.window.showErrorMessage(`Unable to open agent: ${result.stderr.toString()}`);
