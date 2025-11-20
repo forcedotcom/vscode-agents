@@ -5,6 +5,23 @@ import userEvent from '@testing-library/user-event';
 import ChatInput, { ChatInputRef } from '../../webview/src/components/AgentPreview/ChatInput';
 
 describe('ChatInput', () => {
+  let localStorageMock: { [key: string]: string } = {};
+
+  beforeEach(() => {
+    // Mock localStorage
+    localStorageMock = {};
+    Storage.prototype.getItem = jest.fn((key: string) => localStorageMock[key] || null);
+    Storage.prototype.setItem = jest.fn((key: string, value: string) => {
+      localStorageMock[key] = value;
+    });
+    Storage.prototype.clear = jest.fn(() => {
+      localStorageMock = {};
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
   it('submits message on Enter and clears the field', async () => {
     const user = userEvent.setup();
     const onSendMessage = jest.fn();
@@ -35,14 +52,28 @@ describe('ChatInput', () => {
     expect(onSendMessage).not.toHaveBeenCalled();
   });
 
-  it('navigates user message history with arrow keys', () => {
-    const messages = [
-      { id: '1', type: 'user', content: 'First message' },
-      { id: '2', type: 'agent', content: 'Agent reply' },
-      { id: '3', type: 'user', content: 'Second message' }
-    ];
+  it('inserts newline on Shift+Enter without sending', async () => {
+    const onSendMessage = jest.fn();
+    render(<ChatInput onSendMessage={onSendMessage} disabled={false} />);
 
-    render(<ChatInput onSendMessage={jest.fn()} disabled={false} messages={messages as any} />);
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    await userEvent.type(textarea, 'Line 1');
+
+    fireEvent.keyDown(textarea, {
+      key: 'Enter',
+      shiftKey: true,
+      currentTarget: textarea
+    });
+
+    expect(textarea.value).toBe('Line 1\n');
+    expect(onSendMessage).not.toHaveBeenCalled();
+  });
+
+  it('navigates user message history with arrow keys', () => {
+    // Pre-populate localStorage with message history
+    localStorageMock['chatInputHistory'] = JSON.stringify(['Second message', 'First message']);
+
+    render(<ChatInput onSendMessage={jest.fn()} disabled={false} />);
 
     const textarea = screen.getByRole('textbox');
     textarea.focus();
@@ -58,6 +89,64 @@ describe('ChatInput', () => {
 
     fireEvent.keyDown(textarea, { key: 'ArrowDown', currentTarget: textarea });
     expect(textarea).toHaveValue('');
+  });
+
+  it('persists message history across sessions', async () => {
+    const user = userEvent.setup();
+    const onSendMessage = jest.fn();
+
+    // First session: send a message
+    const { unmount } = render(<ChatInput onSendMessage={onSendMessage} disabled={false} />);
+    const textarea = screen.getByRole('textbox');
+    await user.type(textarea, 'First message');
+    await user.type(textarea, '{Enter}');
+
+    // Verify message was saved to localStorage
+    expect(localStorageMock['chatInputHistory']).toBe(JSON.stringify(['First message']));
+
+    unmount();
+
+    // Second session: verify history is loaded
+    render(<ChatInput onSendMessage={onSendMessage} disabled={false} />);
+    const textarea2 = screen.getByRole('textbox');
+    textarea2.focus();
+
+    fireEvent.keyDown(textarea2, { key: 'ArrowUp', currentTarget: textarea2 });
+    expect(textarea2).toHaveValue('First message');
+  });
+
+  it('maintains history across multiple messages', async () => {
+    const user = userEvent.setup();
+    const onSendMessage = jest.fn();
+
+    render(<ChatInput onSendMessage={onSendMessage} disabled={false} />);
+    const textarea = screen.getByRole('textbox');
+
+    // Send first message
+    await user.type(textarea, 'First message');
+    await user.type(textarea, '{Enter}');
+
+    // Send second message
+    await user.type(textarea, 'Second message');
+    await user.type(textarea, '{Enter}');
+
+    // Send third message
+    await user.type(textarea, 'Third message');
+    await user.type(textarea, '{Enter}');
+
+    // Verify all messages are in localStorage in correct order (most recent first)
+    const storedHistory = JSON.parse(localStorageMock['chatInputHistory']);
+    expect(storedHistory).toEqual(['Third message', 'Second message', 'First message']);
+
+    // Navigate through history
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', currentTarget: textarea });
+    expect(textarea).toHaveValue('Third message');
+
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', currentTarget: textarea });
+    expect(textarea).toHaveValue('Second message');
+
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', currentTarget: textarea });
+    expect(textarea).toHaveValue('First message');
   });
 
   it('exposes focus method through ref', () => {
