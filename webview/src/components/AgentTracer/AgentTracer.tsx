@@ -55,8 +55,14 @@ const formatTime = (date: Date): string => {
   return `${hours}:${minutes}:${seconds} ${ampm}`;
 };
 
-export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): string => {
-  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
+export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number, maxLength = 60): string => {
+  let baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
+
+  // Truncate baseLabel if it exceeds maxLength
+  if (baseLabel.length > maxLength) {
+    baseLabel = baseLabel.substring(0, maxLength) + '...';
+  }
+
   if (!entry.timestamp) {
     return baseLabel;
   }
@@ -70,9 +76,16 @@ export const formatHistoryLabel = (entry: TraceHistoryEntry, index: number): str
 
 export const formatHistoryParts = (
   entry: TraceHistoryEntry,
-  index: number
+  index: number,
+  maxLength = 60
 ): { time: string | null; message: string } => {
-  const baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
+  let baseLabel = entry.userMessage || (entry.messageId ? `Message ${index + 1}` : `Trace ${index + 1}`);
+
+  // Truncate baseLabel if it exceeds maxLength
+  if (baseLabel.length > maxLength) {
+    baseLabel = baseLabel.substring(0, maxLength) + '...';
+  }
+
   if (!entry.timestamp) {
     return { time: null, message: baseLabel };
   }
@@ -348,11 +361,15 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     value={selectedHistoryIndex !== null ? selectedHistoryIndex : Math.max(traceHistory.length - 1, 0)}
                     onChange={handleHistoryChange}
                   >
-                    {traceHistory.map((entry, index) => (
-                      <option key={`${entry.planId}-${index}`} value={index}>
-                        {formatHistoryLabel(entry, index)}
-                      </option>
-                    ))}
+                    {traceHistory.map((entry, index) => {
+                      const truncatedLabel = formatHistoryLabel(entry, index);
+                      const fullLabel = formatHistoryLabel(entry, index, Infinity);
+                      return (
+                        <option key={`${entry.planId}-${index}`} value={index} title={fullLabel}>
+                          {truncatedLabel}
+                        </option>
+                      );
+                    })}
                   </select>
                   {selectedHistoryIndex !== null &&
                     (() => {
