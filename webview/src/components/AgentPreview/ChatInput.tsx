@@ -20,10 +20,30 @@ export interface ChatInputRef {
   focus: () => void;
 }
 
-const DEFAULT_MESSAGES: Message[] = [];
+const HISTORY_STORAGE_KEY = 'chatInputHistory';
+const MAX_HISTORY_SIZE = 100;
+
+// Helper functions for localStorage
+const loadHistory = (): string[] => {
+  try {
+    const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Failed to load chat history:', error);
+    return [];
+  }
+};
+
+const saveHistory = (history: string[]) => {
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to save chat history:', error);
+  }
+};
 
 const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
-  ({ onSendMessage, disabled = false, messages = DEFAULT_MESSAGES, isLiveMode = false }, ref) => {
+  ({ onSendMessage, disabled = false, isLiveMode = false }, ref) => {
     const [message, setMessage] = useState('');
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [userMessageHistory, setUserMessageHistory] = useState<string[]>([]);
@@ -36,15 +56,11 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
       }
     }));
 
-    // Update user message history when messages change
+    // Load persistent message history on mount
     useEffect(() => {
-      const userMessages = messages
-        .filter(msg => msg.type === 'user')
-        .map(msg => msg.content)
-        .reverse(); // Most recent first
-      setUserMessageHistory(userMessages);
-      setHistoryIndex(-1); // Reset history index when messages update
-    }, [messages]);
+      const history = loadHistory();
+      setUserMessageHistory(history);
+    }, []);
 
     // Auto-resize textarea based on content
     useEffect(() => {
@@ -70,6 +86,12 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (message.trim() && !disabled) {
+        // Add message to persistent history
+        const trimmedMessage = message.trim();
+        const updatedHistory = [trimmedMessage, ...userMessageHistory].slice(0, MAX_HISTORY_SIZE);
+        setUserMessageHistory(updatedHistory);
+        saveHistory(updatedHistory);
+
         onSendMessage(message);
         setMessage('');
         setHistoryIndex(-1); // Reset history index after sending
