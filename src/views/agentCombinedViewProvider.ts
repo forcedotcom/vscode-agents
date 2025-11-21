@@ -181,19 +181,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.agentPreview.setApexDebugMode(newDebugMode);
     }
 
-    // Notify webview
-    if (this.webviewView) {
-      this.webviewView.webview.postMessage({
-        command: 'debugModeChanged',
-        data: {
-          enabled: newDebugMode,
-          message: newDebugMode ? 'Debug mode activated' : 'Debug mode deactivated'
-        }
-      });
-    }
-
-    const statusMessage = newDebugMode ? 'Debug mode activated' : 'Debug mode deactivated';
-    vscode.window.showInformationMessage(`AFDX: ${statusMessage}`);
+    const statusMessage = newDebugMode ? 'Debug mode activated.' : 'Debug mode deactivated.';
+    vscode.window.showInformationMessage(`Agentforce DX: ${statusMessage}`);
   }
 
   /**
@@ -992,11 +981,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           if (this.agentPreview) {
             this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
           }
-
-          webviewView.webview.postMessage({
-            command: 'debugModeChanged',
-            data: { enabled: this.isApexDebuggingEnabled }
-          });
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
             throw new Error('Session has not been started.');
@@ -1054,12 +1038,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           } else if (this.isApexDebuggingEnabled && !response.apexDebugLog) {
             // Debug mode is enabled but no debug log was returned
-            webviewView.webview.postMessage({
-              command: 'debugLogInfo',
-              data: {
-                message: 'Debug mode is enabled, but no Apex was executed.'
-              }
-            });
+            vscode.window.showInformationMessage('Agentforce DX: Debug mode is enabled, but no Apex was executed.');
           }
         } else if (message.command === 'endSession') {
           await this.endSession();

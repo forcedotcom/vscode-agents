@@ -434,14 +434,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeSessionEnded);
 
-      const disposeDebugModeChanged = vscodeApi.onMessage('debugModeChanged', data => {
-        const debugMessage = createSystemMessage(data?.message, 'debug');
-        if (debugMessage) {
-          setMessages(prev => [...prev, debugMessage]);
-        }
-      });
-      disposers.push(disposeDebugModeChanged);
-
       const disposeDebugLogProcessed = vscodeApi.onMessage('debugLogProcessed', data => {
         const logMessage = createSystemMessage(data?.message, 'debug');
         if (logMessage) {
@@ -457,14 +449,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         }
       });
       disposers.push(disposeDebugLogError);
-
-      const disposeDebugLogInfo = vscodeApi.onMessage('debugLogInfo', data => {
-        const infoMessage = createSystemMessage(data?.message, 'debug');
-        if (infoMessage) {
-          setMessages(prev => [...prev, infoMessage]);
-        }
-      });
-      disposers.push(disposeDebugLogInfo);
 
       return () => {
         disposers.forEach(dispose => dispose());

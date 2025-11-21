@@ -756,14 +756,7 @@ describe('AgentCombinedViewProvider', () => {
       await provider.toggleDebugMode();
 
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', true);
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugModeChanged',
-        data: {
-          enabled: true,
-          message: 'Debug mode activated'
-        }
-      });
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('AFDX: Debug mode activated');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode activated.');
     });
 
     it('should toggle debug mode from true to false', async () => {
@@ -772,14 +765,7 @@ describe('AgentCombinedViewProvider', () => {
       await provider.toggleDebugMode();
 
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugModeChanged',
-        data: {
-          enabled: false,
-          message: 'Debug mode deactivated'
-        }
-      });
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('AFDX: Debug mode deactivated');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode deactivated.');
     });
 
     it('should update agent preview debug mode when agent preview exists', async () => {
@@ -1359,10 +1345,9 @@ describe('AgentCombinedViewProvider', () => {
 
       await messageHandler({ command: 'sendChatMessage', data: { message: 'Hello' } });
 
-      const debugInfoCall = mockWebviewView.webview.postMessage.mock.calls.find(
-        (call: any[]) => call[0].command === 'debugLogInfo'
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Debug mode is enabled, but no Apex was executed.'
       );
-      expect(debugInfoCall?.[0].data?.message).toContain('no Apex was executed');
     });
 
     it('should handle endSession when no session active', async () => {
@@ -2629,10 +2614,9 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'Test' }
       });
 
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugLogInfo',
-        data: { message: 'Debug mode is enabled, but no Apex was executed.' }
-      });
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Agentforce DX: Debug mode is enabled, but no Apex was executed.'
+      );
     });
   });
 
@@ -4149,10 +4133,6 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       expect(mockAgentPreview.setApexDebugMode).toHaveBeenCalledWith(true);
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'debugModeChanged',
-        data: { enabled: true }
-      });
     });
 
     it('should handle getConfiguration with valid section', async () => {
