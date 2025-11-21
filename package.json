@@ -203,17 +203,17 @@
       "editor/context": [
         {
           "command": "salesforcedx-vscode-agents.validateAgent",
-          "when": "resourceFilename =~ /.*\\.agent$/",
+          "when": "resourcePath =~ /aiAuthoringBundles\\/.*\\.agent$/",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.previewAgent",
-          "when": "resourceFilename =~ /.*\\.agent$/",
+          "when": "resourcePath =~ /aiAuthoringBundles\\/.*\\.agent$/",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.publishAgent",
-          "when": "resourceFilename =~ /.*\\.agent$/",
+          "when": "resourcePath =~ /aiAuthoringBundles\\/.*\\.agent$/",
           "group": "agent@1"
         },
         {
@@ -235,17 +235,17 @@
       "explorer/context": [
         {
           "command": "salesforcedx-vscode-agents.validateAgent",
-          "when": "resourceFilename =~ /.*\\.agent$/",
+          "when": "resourcePath =~ /aiAuthoringBundles\\/.*\\.agent$/",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.previewAgent",
-          "when": "resourceFilename =~ /.*\\.agent$/",
+          "when": "resourcePath =~ /aiAuthoringBundles\\/.*\\.agent$/",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.publishAgent",
-          "when": "resourceFilename =~ /.*\\.agent$/",
+          "when": "resourcePath =~ /aiAuthoringBundles\\/.*\\.agent$/",
           "group": "agent@1"
         },
         {

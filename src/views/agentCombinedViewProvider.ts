@@ -598,29 +598,21 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   private async discoverLocalAgents(): Promise<AvailableAgent[]> {
     const localAgents: AvailableAgent[] = [];
+    // Find all .agent files in the workspace
+    // Pass undefined for maxResults to get all files (not just the default limit)
+    const agentFiles = await vscode.workspace.findFiles(
+      '**/aiAuthoringBundles/**/*.agent',
+      '**/node_modules/**',
+      undefined
+    );
 
-    try {
-      // Find all .agent files in the workspace
-      // Pass undefined for maxResults to get all files (not just the default limit)
-      const agentFiles = await vscode.workspace.findFiles('**/*.agent', '**/node_modules/**', undefined);
-
-      for (const agentFile of agentFiles) {
-        // Verify the file still exists (in case it was deleted between scan and processing)
-        try {
-          await vscode.workspace.fs.stat(agentFile);
-          const fileName = path.basename(agentFile.fsPath, '.agent');
-          localAgents.push({
-            name: fileName,
-            id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
-            type: 'script',
-            filePath: agentFile.fsPath
-          });
-        } catch {
-          // File was deleted or is inaccessible, skip it
-        }
-      }
-    } catch {
-      // Error discovering local .agent files - return empty array
+    for (const agentFile of agentFiles) {
+      localAgents.push({
+        name: path.basename(agentFile.fsPath, '.agent'),
+        id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
+        type: 'script',
+        filePath: agentFile.fsPath
+      });
     }
 
     // Sort local agents alphabetically by name
