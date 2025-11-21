@@ -1,6 +1,7 @@
 import {
   isTraceErrorMessage,
   formatHistoryLabel,
+  formatHistoryParts,
   selectHistoryEntry,
   applyHistorySelection,
   buildTimelineItems,
@@ -29,6 +30,68 @@ describe('AgentTracer helpers', () => {
     const expectedTime = new Date(entry.timestamp!).toLocaleTimeString();
     expect(formatHistoryLabel(entry, 0)).toContain(expectedTime);
     expect(formatHistoryLabel({ ...entry, timestamp: undefined }, 1)).toBe('Trace 2');
+  });
+
+  it('formatHistoryLabel does not truncate by default', () => {
+    const longMessage = 'A'.repeat(200);
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      userMessage: longMessage,
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+    const result = formatHistoryLabel(entry, 0);
+    expect(result).toBe(longMessage);
+    expect(result).not.toContain('...');
+  });
+
+  it('formatHistoryLabel truncates when maxLength is specified', () => {
+    const longMessage = 'B'.repeat(150);
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      userMessage: longMessage,
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+    const result = formatHistoryLabel(entry, 0, 60);
+    expect(result).toContain('...');
+    expect(result).toBe('B'.repeat(60) + '...');
+  });
+
+  it('formatHistoryLabel does not truncate short messages even with maxLength', () => {
+    const shortMessage = 'Short message';
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      userMessage: shortMessage,
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+    const result = formatHistoryLabel(entry, 0, 60);
+    expect(result).toBe(shortMessage);
+    expect(result).not.toContain('...');
+  });
+
+  it('formatHistoryParts does not truncate messages', () => {
+    const longMessage = 'C'.repeat(200);
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      userMessage: longMessage,
+      timestamp: '2024-05-01T12:34:56Z',
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+    const result = formatHistoryParts(entry, 0);
+    expect(result.message).toBe(longMessage);
+    expect(result.message).not.toContain('...');
+    expect(result.time).toBeTruthy();
   });
 
   it('selects trace history entries safely', () => {
