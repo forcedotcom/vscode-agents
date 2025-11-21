@@ -1,0 +1,13 @@
+{
+  "extends": "./webview/tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "types": ["jest", "node", "@testing-library/jest-dom"],
+    "isolatedModules": false
+  },
+  "include": ["webview/src/**/*", "test/webview/**/*"]
+}

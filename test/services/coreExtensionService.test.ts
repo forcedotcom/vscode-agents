@@ -4,7 +4,8 @@ import {
   CORE_EXTENSION_NOT_FOUND,
   CHANNEL_SERVICE_NOT_FOUND,
   TELEMETRY_SERVICE_NOT_FOUND,
-  NOT_INITIALIZED_ERROR
+  NOT_INITIALIZED_ERROR,
+  WORKSPACE_CONTEXT_NOT_FOUND
 } from '../../src/services/coreExtensionService';
 import { ChannelService } from '../../src/types';
 import { TelemetryService } from '../../src/types/TelemetryService';
@@ -62,6 +63,8 @@ describe('CoreExtensionService', () => {
   });
 
   afterEach(() => {
+    // Reset the initialized state
+    (CoreExtensionService as any).initialized = false;
     jest.restoreAllMocks();
   });
 
@@ -117,5 +120,129 @@ describe('CoreExtensionService', () => {
     expect(channelSpy).toHaveBeenCalledWith('Agentforce DX');
     expect(telemetrySpy).toHaveBeenCalledWith('test-extension');
     expect(workspaceSpy).toHaveBeenCalledWith(false);
+  });
+
+  it('should return isInitialized as false before initialization', () => {
+    expect(CoreExtensionService.isInitialized).toBe(false);
+  });
+
+  it('should return isInitialized as true after initialization', async () => {
+    jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+    await CoreExtensionService.loadDependencies(mockContext);
+    expect(CoreExtensionService.isInitialized).toBe(true);
+  });
+
+  it('should throw error if WorkspaceContext is not found', async () => {
+    const mockChannelService = { appendLine: jest.fn() };
+    const mockTelemetryService = { sendCommandEvent: jest.fn(), initializeService: jest.fn() };
+
+    channelServiceInstance.getInstance = jest.fn().mockReturnValue(mockChannelService);
+    telemetryServiceInstance.getInstance = jest.fn().mockReturnValue(mockTelemetryService);
+
+    jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: undefined // No WorkspaceContext
+      }
+    });
+
+    await expect(CoreExtensionService.loadDependencies(mockContext)).rejects.toThrow(WORKSPACE_CONTEXT_NOT_FOUND);
+  });
+
+  it('should throw error when getting core extension version if extension not found', () => {
+    (extensions.getExtension as jest.Mock).mockReturnValue(null);
+    expect(() => CoreExtensionService.getCoreExtensionVersion()).toThrow(CORE_EXTENSION_NOT_FOUND);
+  });
+
+  it('should show warning for invalid version format', () => {
+    (valid as jest.Mock).mockReturnValue(false);
+    CoreExtensionService.isAboveMinimumRequiredVersion('60.13.0', 'invalid-version');
+    expect(window.showWarningMessage).toHaveBeenCalledWith(expect.stringContaining('Invalid version format found'));
+  });
+
+  it('should return channel service when initialized', async () => {
+    const mockChannelService = { appendLine: jest.fn() };
+    channelServiceInstance.getInstance = jest.fn().mockReturnValue(mockChannelService);
+
+    jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+
+    await CoreExtensionService.loadDependencies(mockContext);
+    const service = CoreExtensionService.getChannelService();
+    expect(service).toBe(mockChannelService);
+  });
+
+  it('should return telemetry service when initialized', async () => {
+    const mockTelemetryService = { sendCommandEvent: jest.fn(), initializeService: jest.fn() };
+    telemetryServiceInstance.getInstance = jest.fn().mockReturnValue(mockTelemetryService);
+
+    jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+
+    await CoreExtensionService.loadDependencies(mockContext);
+    const service = CoreExtensionService.getTelemetryService();
+    expect(service).toBe(mockTelemetryService);
+  });
+
+  it('should return default connection when initialized', async () => {
+    const mockConnection = { instanceUrl: 'https://test.salesforce.com' };
+    const mockWorkspaceContext = {
+      getConnection: jest.fn().mockResolvedValue(mockConnection)
+    };
+    workspaceContextInstance.getInstance = jest.fn().mockReturnValue(mockWorkspaceContext);
+
+    jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+
+    await CoreExtensionService.loadDependencies(mockContext);
+    const connection = await CoreExtensionService.getDefaultConnection();
+    expect(connection).toBe(mockConnection);
+    expect(mockWorkspaceContext.getConnection).toHaveBeenCalled();
+  });
+
+  it('should throw error when getting default connection before initialization', async () => {
+    await expect(CoreExtensionService.getDefaultConnection()).rejects.toThrow(NOT_INITIALIZED_ERROR);
+  });
+
+  it('should not reinitialize if already initialized', async () => {
+    const validateSpy = jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+
+    // First initialization
+    await CoreExtensionService.loadDependencies(mockContext);
+    expect(validateSpy).toHaveBeenCalledTimes(1);
+    expect(CoreExtensionService.isInitialized).toBe(true);
+
+    // Second call should not reinitialize
+    await CoreExtensionService.loadDependencies(mockContext);
+    expect(validateSpy).toHaveBeenCalledTimes(1); // Still only called once
+    expect(CoreExtensionService.isInitialized).toBe(true);
   });
 });

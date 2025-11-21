@@ -1,0 +1,142 @@
+/* Copyright (c) Microsoft Corporation. */
+/* Licensed under the MIT License. */
+
+.vscode-button {
+  display: inline-flex;
+  outline: none;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  line-height: normal;
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+  border-radius: 2px;
+  fill: currentColor;
+  cursor: pointer;
+  border: 1px solid var(--vscode-button-border, transparent);
+  padding: 4px 11px;
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
+  white-space: wrap;
+  text-decoration: none;
+  height: 28px;
+}
+
+.vscode-button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.vscode-button:active {
+  background: var(--vscode-button-background);
+}
+
+.vscode-button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.vscode-button::-moz-focus-inner {
+  border: 0;
+}
+
+.vscode-button:disabled {
+  opacity: 0.4;
+  background: var(--vscode-button-background);
+  cursor: not-allowed;
+}
+
+.vscode-button__content {
+  display: flex;
+}
+
+.vscode-button__start {
+  display: flex;
+  margin-inline-end: 8px;
+}
+
+.vscode-button__start svg,
+.vscode-button__start span {
+  width: 16px;
+  height: 16px;
+}
+
+/* Primary Button Styles */
+.vscode-button--primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.vscode-button--primary:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.vscode-button--primary:active {
+  background: var(--vscode-button-background);
+}
+
+.vscode-button--primary:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.vscode-button--primary:disabled {
+  background: var(--vscode-button-background);
+}
+
+/* Secondary Button Styles */
+.vscode-button--secondary {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.vscode-button--secondary:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.vscode-button--secondary:active {
+  background: var(--vscode-button-secondaryBackground);
+}
+
+.vscode-button--secondary:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.vscode-button--secondary:disabled {
+  background: var(--vscode-button-secondaryBackground);
+}
+
+/* Icon Button Styles */
+.vscode-button--icon {
+  background: transparent;
+  border-radius: 2px;
+  color: var(--vscode-foreground);
+  padding: 3px;
+  border: none;
+}
+
+.vscode-button--icon:hover {
+  background: rgba(90, 93, 94, 0.31);
+  outline: 1px dotted var(--vscode-contrastActiveBorder);
+  outline-offset: -1px;
+}
+
+.vscode-button--icon:active {
+  background: rgba(90, 93, 94, 0.31);
+}
+
+.vscode-button--icon:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 0;
+}
+
+.vscode-button--icon:disabled {
+  background: transparent;
+}
+
+/* Small Button Styles */
+.vscode-button--small {
+  font-size: 13px;
+  padding: 6px 12px;
+  font-weight: 500;
+}

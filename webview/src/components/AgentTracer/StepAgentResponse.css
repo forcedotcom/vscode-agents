@@ -1,0 +1,46 @@
+.step-agent-response {
+  border-radius: 8px;
+  border: 1px solid var(--vscode-input-border);
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-agent-response-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--vscode-input-background);
+  height: 35px;
+  border-bottom: 1px solid var(--vscode-input-border);
+}
+
+.step-agent-response-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-agent-response-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.step-agent-response-content {
+  padding: 16px;
+}
+
+.step-agent-response-content p {
+  margin: 0;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  line-height: 1.4;
+}

@@ -1,0 +1,122 @@
+.tab-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--vscode-sideBar-background);
+  padding: 0 18px;
+  height: 35px;
+  margin-top: 6px;
+}
+
+.tab-navigation-left {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  color: var(--vscode-tab-activeForeground);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  font-weight: 500;
+}
+
+.tab:hover {
+  color: var(--vscode-tab-activeForeground);
+}
+
+.tab.active {
+  color: var(--vscode-tab-activeForeground);
+}
+
+.tab-navigation-indicator {
+  position: absolute;
+  bottom: 0;
+  height: 1px;
+  background-color: var(--vscode-panelTitle-activeBorder);
+  transition: all 0.2s ease;
+}
+
+.tab-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.tab-icon-comment {
+  background-image: url('../../assets/comment-light.svg');
+}
+
+.tab-icon-tree {
+  background-image: url('../../assets/tree-light.svg');
+}
+
+body.vscode-dark .tab-icon-comment,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-comment {
+  background-image: url('../../assets/comment-dark.svg');
+}
+
+body.vscode-dark .tab-icon-tree,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
+  background-image: url('../../assets/tree-dark.svg');
+}
+
+.tab-navigation-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--vscode-tab-activeForeground);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: all 0.2s;
+  margin-right: -4px;
+  width: 20px;
+  height: 20px;
+}
+
+.tab-navigation-close:hover {
+  background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.tab-navigation-close svg {
+  flex-shrink: 0;
+  display: block;
+  margin-top: -1px;
+  opacity: 0.8;
+}
+
+/* Responsive behavior for tabs */
+.tab-label {
+  white-space: nowrap;
+}
+
+.tab-label-prefix,
+.tab-label-main {
+  display: inline;
+}
+
+/* Hide "Agent" prefix when space is limited */
+@media (max-width: 300px) {
+  .tab-label-prefix {
+    display: none;
+  }
+}
