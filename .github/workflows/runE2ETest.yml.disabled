@@ -1,0 +1,112 @@
+#name: Run E2E Test
+#on:
+#  workflow_call:
+#    inputs:
+#      automationBranch:
+#        description: 'Set the branch to use for automation tests'
+#        required: false
+#        default: 'main'
+#        type: string
+#      testToRun:
+#        description: 'Run this E2E test'
+#        required: false
+#        type: string
+#      vscodeVersion:
+#        description: 'VSCode Version'
+#        required: false
+#        default: 'stable'
+#        type: string
+#      runId:
+#        description: 'Run ID of the workflow run that created the vsixes'
+#        required: false
+#        type: string
+#      os:
+#        description: 'Operating System(s) to run the E2E tests on'
+#        required: false
+#        default: '["macos-latest", "ubuntu-latest", "windows-latest"]'
+#        type: string
+#
+#jobs:
+#  build:
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: ${{ fromJson(inputs.os) }}
+#        nodeVersion:
+#          - 21.7.3
+#        vscodeVersion:
+#          - ${{ inputs.vscodeVersion }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v4
+#        with:
+#          path: ./vscode-agents
+#          ref: ${{ github.event.ref }}
+#      - name: Download extension vsixes
+#        run: |
+#          mkdir ./extensions
+#          pwd
+#          gh run download ${{ inputs.runId }} -D ./extensions
+#          mv ./extensions/*/* ./extensions/
+#        working-directory: vscode-agents
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.IDEE_GH_TOKEN }}
+##      - name: Display downloaded vsix files
+##        run: ls -R ./salesforcedx-vscode-einstein-gpt/extensions
+#      - name: Setup node
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: ${{ matrix.nodeVersion }}
+#          cache: npm
+##          cache-dependency-path: |
+##            salesforcedx-vscode-einstein-gpt/package-lock.json
+##            salesforcedx-e4d-automation-tests/package-lock.json
+#      - name: Setup java
+#        uses: actions/setup-java@v4
+#        with:
+#          distribution: 'zulu'
+#          java-version: '11'
+##      - name: Clone automation tests
+##        uses: actions/checkout@v4
+##        with:
+##          repository: forcedotcom/salesforcedx-e4d-automation-tests
+##          path: salesforcedx-e4d-automation-tests
+##          ref: ${{ inputs.automationBranch }}
+##          token: ${{ secrets.IDEE_GH_TOKEN }}
+##      - name: Install Test Dependencies
+##        run: |
+##          npm install
+##        working-directory: salesforcedx-e4d-automation-tests
+#      - name: Install the Salesforce CLI
+#        run: npm install -g @salesforce/cli
+#      - name: Verify CLI
+#        shell: bash
+#        run: |
+#          set -e
+#          sf version
+#          SF_CLI_VERSION=$(sf version)
+#          if [[ ((`echo $SF_CLI_VERSION | grep -c "@salesforce/cli/"` > 0))]]
+#          then
+#            echo "@salesforce/cli installed -" $SF_CLI_VERSION
+#          else
+#            echo "The @salesforce/cli installation could not be verified"
+#            exit 1
+#          fi
+#      - name: Run headless test
+#        uses: coactions/setup-xvfb@b6b4fcfb9f5a895edadc3bc76318fae0ac17c8b3
+#        with:
+#          run: |
+#            npm run setup
+#            npm run automation-tests
+#          working-directory: salesforcedx-e4d-automation-tests
+#        env:
+#          VSCODE_VERSION: ${{ matrix.vscodeVersion }}
+#          SPEC_FILES: ${{ inputs.testToRun }}
+#          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL_E2E }}
+#          ORG_ID: ${{ secrets.ORG_ID_E2E }}
+#      - uses: actions/upload-artifact@v4
+#        if: failure()
+#        with:
+#          name: screenshots-${{ inputs.testToRun }}-${{ matrix.os }}
+#          path: ./salesforcedx-e4d-automation-tests/screenshots

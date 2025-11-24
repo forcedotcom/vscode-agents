@@ -1,0 +1,43 @@
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  height: 100%;
+  padding: 20px 40px 40px 40px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.placeholder-icon {
+  margin-bottom: 20px;
+  opacity: 0.2;
+  width: 70px;
+  height: 70px;
+  background-image: url('../../assets/agent-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+body.vscode-dark .placeholder-icon,
+body.vscode-high-contrast .placeholder-icon {
+  background-image: url('../../assets/agent-dark.svg');
+}
+
+.placeholder-content p {
+  margin: 0 0 30px 0;
+  color: var(--vscode-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+/* Button wrapper to prevent full-width expansion */
+.placeholder-content .vscode-button {
+  width: auto;
+  min-width: auto;
+}

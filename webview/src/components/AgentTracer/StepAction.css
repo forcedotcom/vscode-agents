@@ -1,0 +1,95 @@
+.step-action {
+  border-radius: 8px;
+  border: 1px solid var(--vscode-input-border);
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-action-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--vscode-input-background);
+  height: 35px;
+  border-bottom: 1px solid var(--vscode-input-border);
+}
+
+.step-action-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-action-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.step-action-timing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vscode-foreground);
+  font-size: 12px;
+}
+
+.step-action-timing-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.8;
+}
+
+.step-action-content {
+  padding: 16px;
+}
+
+.step-action-content p {
+  margin: 0;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.step-action-blocks {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.step-action-blocks > * {
+  flex: 1;
+}
+
+.step-action-code-block {
+  border-radius: 4px;
+  border: 1px solid var(--vscode-input-border);
+  overflow: hidden;
+}
+
+.step-action-code-block-header {
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  padding: 8px 12px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--vscode-input-border);
+}
+
+.step-action-code-block-content pre {
+  color: var(--vscode-foreground);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-x: auto;
+  padding: 12px;
+}

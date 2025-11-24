@@ -1,0 +1,57 @@
+.tracer-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  height: 100%;
+  padding: 40px 40px 104px 40px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.tracer-placeholder-icon {
+  margin-bottom: 30px;
+  opacity: 0.2;
+  width: 50px;
+  height: 50px;
+  background-image: url('../../assets/tree-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+body.vscode-dark .tracer-placeholder-icon,
+body.vscode-high-contrast .tracer-placeholder-icon {
+  background-image: url('../../assets/tree-dark.svg');
+}
+
+.tracer-placeholder p {
+  margin: 0 0 30px 0;
+  color: var(--vscode-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+/* Button wrapper to prevent full-width expansion */
+.tracer-placeholder .vscode-button,
+.tracer-placeholder .vscode-split-button {
+  width: auto;
+  min-width: auto;
+}
+
+/* Icon sizing to match top button */
+.tracer-placeholder .vscode-button__start svg,
+.tracer-placeholder .vscode-split-button__start svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Larger send icon specifically */
+.tracer-placeholder .tracer-send-icon .vscode-button__start svg {
+  width: 16px;
+  height: 16px;
+}
