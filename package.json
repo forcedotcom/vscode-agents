@@ -140,7 +140,7 @@
         },
         {
           "command": "sf.agent.combined.view.refreshAgents",
-          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && !agentforceDX:canResetAgentView",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView",
           "group": "navigation@0"
         },
         {
