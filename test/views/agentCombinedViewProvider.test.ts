@@ -1125,6 +1125,100 @@ describe('AgentCombinedViewProvider', () => {
       });
       endSessionSpy.mockRestore();
     });
+
+    it('should set agentSelected to false to keep reload button visible', async () => {
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:agentSelected', false);
+      endSessionSpy.mockRestore();
+    });
+
+    it('should set sessionActive to false for reload button visibility', async () => {
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionActive', false);
+      endSessionSpy.mockRestore();
+    });
+
+    it('should set sessionStarting to false for reload button visibility', async () => {
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionStarting', false);
+      endSessionSpy.mockRestore();
+    });
+
+    it('should set canResetAgentView to false for reload button visibility', async () => {
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:canResetAgentView', false);
+      endSessionSpy.mockRestore();
+    });
+
+    it('should maintain reload button visibility even without agent selection', async () => {
+      // Simulate state where no agent was ever selected
+      (provider as any).currentAgentId = undefined;
+      (provider as any).currentAgentName = undefined;
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      // Verify all context variables are set to values that allow reload button visibility
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:agentSelected', false);
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionActive', false);
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionStarting', false);
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:canResetAgentView', false);
+      endSessionSpy.mockRestore();
+    });
+
+    it('should clear current agent and reset all session state', async () => {
+      provider.setAgentId('0X123456789012345');
+      (provider as any).currentAgentId = '0X123456789012345';
+      (provider as any).currentAgentName = 'TestAgent';
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect((provider as any).currentAgentId).toBeUndefined();
+      expect((provider as any).currentAgentName).toBeUndefined();
+      expect((provider as any).pendingStartAgentId).toBeUndefined();
+      expect((provider as any).pendingStartAgentSource).toBeUndefined();
+      endSessionSpy.mockRestore();
+    });
+
+    it('should send refresh commands to webview', async () => {
+      const postMessageMock = mockWebviewView.webview.postMessage as jest.Mock;
+      postMessageMock.mockClear();
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect(postMessageMock).toHaveBeenCalledWith({ command: 'selectAgent', data: { agentId: '' } });
+      expect(postMessageMock).toHaveBeenCalledWith({ command: 'clearMessages' });
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'noHistoryFound',
+        data: { agentId: 'refresh-placeholder' }
+      });
+      expect(postMessageMock).toHaveBeenCalledWith({ command: 'refreshAgents' });
+      endSessionSpy.mockRestore();
+    });
   });
 
   describe('resolveWebviewView', () => {
