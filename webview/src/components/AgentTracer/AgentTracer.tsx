@@ -127,7 +127,7 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   VariableUpdateStep: 'Variable Update',
   TransitionStep: 'Topic Transition',
   BeforeReasoningStep: 'Before Reasoning',
-  ReasoningStep: 'Reasoning',
+  ReasoningStep: 'Output Evaluation',
   PlannerResponseStep: 'Agent Response',
   UpdateTopicStep: 'Topic Selected'
 };
