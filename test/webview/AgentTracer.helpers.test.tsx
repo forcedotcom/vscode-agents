@@ -179,7 +179,7 @@ describe('AgentTracer helpers', () => {
 
     const items = buildTimelineItems(trace, () => {});
     expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('LLM Call');
+    expect(items[0].label).toBe('Reasoning');
     expect(items[0].description).toBe('topic_selector (1084ms)');
   });
 

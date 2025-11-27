@@ -123,7 +123,7 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   SessionInitialStateStep: 'Session Initialized',
   NodeEntryStateStep: 'Entered Topic',
   EnabledToolsStep: 'Tools Enabled',
-  LLMStep: 'LLM Call',
+  LLMStep: 'Reasoning',
   VariableUpdateStep: 'Variable Update',
   TransitionStep: 'Topic Transition',
   BeforeReasoningStep: 'Before Reasoning',
