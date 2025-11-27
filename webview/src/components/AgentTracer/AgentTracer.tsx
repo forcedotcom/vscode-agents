@@ -130,11 +130,14 @@ export const buildTimelineItems = (
     const stepType = step.type || step.stepType || '';
     const stepName = step.name || step.label || step.description || '';
 
+    // Map step types to user-friendly display names
+    const displayType = stepType === 'UserInputStep' ? 'User Input' : stepType;
+
     let label: string;
     if (stepType && stepName) {
-      label = `${stepType}: ${stepName}`;
+      label = `${displayType}: ${stepName}`;
     } else if (stepType) {
-      label = stepType;
+      label = displayType;
     } else if (stepName) {
       label = stepName;
     } else {

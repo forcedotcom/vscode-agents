@@ -150,7 +150,7 @@ describe('AgentTracer helpers', () => {
     const indices: number[] = [];
     const items = buildTimelineItems(trace, index => indices.push(index));
     expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('UserInputStep: Greeting');
+    expect(items[0].label).toBe('User Input: Greeting');
     items[0].onClick?.();
     expect(indices).toEqual([0]);
   });
@@ -165,7 +165,7 @@ describe('AgentTracer helpers', () => {
 
     const items = buildTimelineItems(trace, () => {});
     expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('UserInputStep');
+    expect(items[0].label).toBe('User Input');
     expect(items[0].description).toBe('Hello, how can I help?');
   });
 
