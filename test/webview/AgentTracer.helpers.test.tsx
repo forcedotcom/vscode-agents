@@ -169,18 +169,102 @@ describe('AgentTracer helpers', () => {
     expect(items[0].description).toBe('Hello, how can I help?');
   });
 
-  it('does not show description for non-UserInputStep types', () => {
+  it('shows agent name and latency for LLMStep', () => {
     const trace = {
       type: 'PlanSuccessResponse',
       planId: 'plan',
       sessionId: 'session',
-      plan: [{ type: 'LLMStep', data: { agent_name: 'test' } }]
+      plan: [{ type: 'LLMStep', data: { agent_name: 'topic_selector', execution_latency: 1084 } }]
     };
 
     const items = buildTimelineItems(trace, () => {});
     expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('LLMStep');
-    expect(items[0].description).toBeUndefined();
+    expect(items[0].label).toBe('LLM Call');
+    expect(items[0].description).toBe('topic_selector (1084ms)');
+  });
+
+  it('shows agent name for NodeEntryStateStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'NodeEntryStateStep', data: { agent_name: 'share_local_events' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Entered Topic');
+    expect(items[0].description).toBe('share_local_events');
+  });
+
+  it('shows tool count for EnabledToolsStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'EnabledToolsStep', data: { agent_name: 'topic_selector', enabled_tools: ['tool1', 'tool2', 'tool3'] } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Tools Enabled');
+    expect(items[0].description).toBe('3 tools for topic_selector');
+  });
+
+  it('shows transition details for TransitionStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'TransitionStep', data: { from_agent: 'topic_selector', to_agent: 'share_local_events' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Topic Transition');
+    expect(items[0].description).toBe('topic_selector → share_local_events');
+  });
+
+  it('shows variable name for VariableUpdateStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'VariableUpdateStep', data: { variable_updates: [{ variable_name: '__next__' }] } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Variable Update');
+    expect(items[0].description).toBe('__next__');
+  });
+
+  it('shows reasoning category for ReasoningStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'ReasoningStep', reason: 'SMALL_TALK: The response contains no factual claims' }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Reasoning');
+    expect(items[0].description).toBe('SMALL_TALK');
+  });
+
+  it('shows truncated message for PlannerResponseStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'PlannerResponseStep', message: 'Could you please confirm your city?' }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Agent Response');
+    expect(items[0].description).toBe('Could you please confirm your city?');
   });
 
   it('returns selected step data when available', () => {
@@ -193,5 +277,18 @@ describe('AgentTracer helpers', () => {
 
     expect(getStepData(trace, 0)).toContain('"foo": "bar"');
     expect(getStepData(trace, null)).toBeNull();
+  });
+
+  it('returns step data including message and reason properties', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'ReasoningStep', reason: 'SMALL_TALK: Test reason' }]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"reason"');
+    expect(result).toContain('SMALL_TALK: Test reason');
   });
 });
