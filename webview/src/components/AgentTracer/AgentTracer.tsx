@@ -141,7 +141,8 @@ export const buildTimelineItems = (
       label = `Step ${index + 1}`;
     }
 
-    const description = `Step ${index + 1}`;
+    // For UserInputStep, show the message below the title
+    const description = stepType === 'UserInputStep' && step.message ? step.message : undefined;
     const hasData = step && step.data;
 
     return {

@@ -155,6 +155,34 @@ describe('AgentTracer helpers', () => {
     expect(indices).toEqual([0]);
   });
 
+  it('shows message as description for UserInputStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'UserInputStep', message: 'Hello, how can I help?' }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('UserInputStep');
+    expect(items[0].description).toBe('Hello, how can I help?');
+  });
+
+  it('does not show description for non-UserInputStep types', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'LLMStep', data: { agent_name: 'test' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('LLMStep');
+    expect(items[0].description).toBeUndefined();
+  });
+
   it('returns selected step data when available', () => {
     const trace = {
       type: 'PlanSuccessResponse',
