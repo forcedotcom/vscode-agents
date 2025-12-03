@@ -873,17 +873,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   data: { message: data.message || modeMessage }
                 });
 
-                // Show disclaimer for agent preview (script agents only)
-                if (!isActive()) {
-                  return;
-                }
-                webviewView.webview.postMessage({
-                  command: 'previewDisclaimer',
-                  data: {
-                    message:
-                      'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).'
-                  }
-                });
               });
 
               // Create AgentSimulate with just the file path

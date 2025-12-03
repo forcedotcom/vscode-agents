@@ -32,8 +32,6 @@ export interface AgentPreviewRef {
   focusInput: () => void;
 }
 
-export const DEFAULT_HISTORY_DISCLAIMER =
-  'Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation, publish your agent then use the desired connection endpoint (e.g., Web Page, SMS, etc).';
 
 export const normalizeHistoryMessage = (msg: any): Message => ({
   id: msg?.id || `${msg?.timestamp ?? 'history'}-${Date.now()}`,
@@ -148,7 +146,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     const sessionErrorTimestampRef = React.useRef<number>(0);
     const sessionActiveStateRef = React.useRef(false);
     const hasSessionErrorRef = React.useRef(false);
-    const pendingDisclaimerRef = React.useRef<string | null>(null);
     const previousSelectedAgentRef = React.useRef<string>('');
     const selectedAgentIdRef = React.useRef(selectedAgentId);
     const pendingAgentIdRef = React.useRef(pendingAgentId);
@@ -204,27 +201,12 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         setIsLoading(false);
         setHasSessionError(false); // Clear error state when switching agents
         setShowPlaceholder(false); // Clear placeholder when switching agents
-        pendingDisclaimerRef.current = null; // Clear pending disclaimer
       });
       disposers.push(disposeClearMessages);
 
       const disposeConversationHistory = vscodeApi.onMessage('conversationHistory', data => {
         if (data && Array.isArray(data.messages) && data.messages.length > 0) {
           const historyMessages: Message[] = data.messages.map(normalizeHistoryMessage);
-
-          // Always add disclaimer at the top of saved conversation history
-          const disclaimerText = pendingDisclaimerRef.current || DEFAULT_HISTORY_DISCLAIMER;
-
-          const disclaimerMessage: Message = {
-            id: `disclaimer-${Date.now()}`,
-            type: 'system',
-            content: disclaimerText,
-            systemType: 'debug',
-            timestamp: new Date().toISOString()
-          };
-          historyMessages.unshift(disclaimerMessage); // Add at the beginning
-          pendingDisclaimerRef.current = null; // Clear after showing
-
           setMessages(historyMessages);
         } else {
           setMessages([]);
@@ -249,11 +231,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
       const disposeExportRequest = vscodeApi.onMessage('requestConversationExport', data => {
         const agentLabel = agentInfoRef.current?.name || data?.agentName || 'Agent Conversation';
-        const disclaimer = DEFAULT_HISTORY_DISCLAIMER;
-        const filteredMessages = messagesRef.current.filter(
-          msg => !(msg.type === 'system' && msg.content === disclaimer)
-        );
-        const markdown = buildConversationMarkdown(agentLabel, filteredMessages, disclaimer);
+        const markdown = buildConversationMarkdown(agentLabel, messagesRef.current);
         const safeBase = sanitizeConversationFileName(agentLabel) || 'agent-conversation';
         const exported = new Date();
         const datePart = exported.toISOString().slice(0, 10);
@@ -280,20 +258,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
           setMessages(prev => {
             const newMessages = [...prev];
 
-            // Show disclaimer first (if queued)
-            if (pendingDisclaimerRef.current) {
-              const disclaimerMessage: Message = {
-                id: Date.now().toString(),
-                type: 'system',
-                content: pendingDisclaimerRef.current,
-                systemType: 'debug',
-                timestamp: new Date().toISOString()
-              };
-              newMessages.push(disclaimerMessage);
-              pendingDisclaimerRef.current = null; // Clear after showing
-            }
-
-            // Then add welcome message
+            // Add welcome message
             const welcomeMessage: Message = {
               id: (Date.now() + 1).toString(),
               type: 'agent',
@@ -376,15 +341,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeSimulationStarting);
 
-      const disposePreviewDisclaimer = vscodeApi.onMessage('previewDisclaimer', data => {
-        const disclaimer = data?.message;
-        if (!disclaimer) {
-          return;
-        }
-        // Always queue the disclaimer - it will be shown after welcome message
-        pendingDisclaimerRef.current = disclaimer;
-      });
-      disposers.push(disposePreviewDisclaimer);
 
       const disposeMessageSent = vscodeApi.onMessage('messageSent', data => {
         if (data && data.content) {
@@ -412,7 +368,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         sessionActiveStateRef.current = false;
         sessionErrorTimestampRef.current = Date.now();
         setHasSessionError(true); // Set error state when session fails
-        pendingDisclaimerRef.current = null; // Clear pending disclaimer on error
 
         setMessages(prev => {
           const filteredMessages = pruneStartingSessionMessages(prev);

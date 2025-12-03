@@ -221,32 +221,12 @@ describe('AgentPreview - Message Handlers', () => {
       expect(content).toContain('# Agentforce DX (AFDX) Log');
       expect(content).toContain('## Details');
       expect(content).toContain('## Conversation');
-      expect(content).toContain('> Agent preview does not provide strict adherence');
       expect(content).toContain('###');
       expect(content).toContain('Hello from history');
       expect(fileName).toMatch(/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-test-agent\.md$/);
     });
   });
 
-  describe('Preview Disclaimer', () => {
-    it('should queue disclaimer for session start', async () => {
-      renderComponent();
-      handlers.get('previewDisclaimer')?.({ message: 'Custom disclaimer' });
-      handlers.get('sessionStarted')?.({});
-      await waitFor(() => {
-        expect(screen.getByText('Custom disclaimer')).toBeInTheDocument();
-      });
-    });
-
-    it('should ignore previewDisclaimer without message', async () => {
-      renderComponent();
-      handlers.get('previewDisclaimer')?.({});
-      handlers.get('sessionStarted')?.({});
-      await waitFor(() => {
-        expect(screen.getByText(/I'm ready to help/)).toBeInTheDocument();
-      });
-    });
-  });
 
   describe('Client App Ready', () => {
     it('should call onClientAppStateChange when ready', async () => {
