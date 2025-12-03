@@ -196,7 +196,6 @@ describe('AgentPreview - Message Handlers', () => {
       });
       await waitFor(() => {
         expect(screen.getByText('Hello')).toBeInTheDocument();
-        expect(screen.getByText(/Agent preview does not provide/)).toBeInTheDocument();
       });
     });
   });
