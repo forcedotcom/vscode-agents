@@ -163,16 +163,16 @@ describe('ChatInput', () => {
 
   it('shows simulation placeholder when input is disabled and not in live mode', () => {
     render(<ChatInput onSendMessage={jest.fn()} disabled={true} isLiveMode={false} />);
-    expect(screen.getByPlaceholderText('Start the simulation to chat…')).toBeDisabled();
+    expect(screen.getByPlaceholderText('Type something to start the simulation...')).toBeDisabled();
   });
 
   it('shows live test placeholder when input is disabled and in live mode', () => {
     render(<ChatInput onSendMessage={jest.fn()} disabled={true} isLiveMode={true} />);
-    expect(screen.getByPlaceholderText('Start the live test to chat…')).toBeDisabled();
+    expect(screen.getByPlaceholderText('Type something to start the live test...')).toBeDisabled();
   });
 
   it('shows default placeholder when enabled', () => {
     render(<ChatInput onSendMessage={jest.fn()} disabled={false} />);
-    expect(screen.getByPlaceholderText('Write something to start testing…')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type something to start testing...')).toBeInTheDocument();
   });
 });

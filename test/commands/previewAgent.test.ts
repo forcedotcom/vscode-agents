@@ -125,7 +125,7 @@ describe('previewAgent', () => {
 
       await handler(mockUri);
 
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Error previewing .agent file!');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Error previewing the .agent file.');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Error Details:');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('unable to open view'));
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Stack Trace:');

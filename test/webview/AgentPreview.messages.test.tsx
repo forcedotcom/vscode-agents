@@ -87,7 +87,7 @@ describe('AgentPreview - Message Handlers', () => {
     it('should handle compilationError with default message', async () => {
       renderComponent();
       handlers.get('compilationError')?.({});
-      await waitFor(() => expect(screen.getByText('Failed to compile agent')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Failed to compile the agent.')).toBeInTheDocument());
     });
   });
 
@@ -176,7 +176,7 @@ describe('AgentPreview - Message Handlers', () => {
     it('should handle error without message', async () => {
       renderComponent();
       handlers.get('error')?.({});
-      await waitFor(() => expect(screen.getByText('Something went wrong')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Something went wrong.')).toBeInTheDocument());
     });
   });
 

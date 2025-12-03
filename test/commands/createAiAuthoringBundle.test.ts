@@ -163,7 +163,7 @@ describe('createAiAuthoringBundle', () => {
     const handler = commandSpy.mock.calls[0][1];
     await handler();
 
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No YAML spec files found'));
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No agent spec YAML files found'));
   });
 
   it('cancels when user cancels spec selection', async () => {
@@ -245,7 +245,7 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify error was shown
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to create AI Authoring Bundle'));
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to generate authoring bundle'));
   });
 
   it('displays error message without "Error:" prefix in output channel', async () => {
@@ -377,9 +377,11 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Should show error about no spec files
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No YAML spec files found'));
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No agent spec YAML files found'));
     // Should log the error
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('No specs directory found'));
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining('No agent spec directory found')
+    );
   });
 
   it('handles null agent script from createAgentScript', async () => {
@@ -396,7 +398,7 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify error was shown
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to create AI Authoring Bundle'));
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to generate authoring bundle'));
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
       expect.stringContaining('Failed to generate agent script')
     );

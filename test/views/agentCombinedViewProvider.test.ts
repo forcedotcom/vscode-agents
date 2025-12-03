@@ -628,7 +628,7 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(agents).toEqual(localAgents);
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Client app selection cancelled. Showing Agent Script files only.'
+        'Client app selection cancelled. Showing Agent Script files only.'
       );
       expect(createConnectionWithClientApp).not.toHaveBeenCalled();
     });
@@ -748,7 +748,7 @@ describe('AgentCombinedViewProvider', () => {
       await provider.toggleDebugMode();
 
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', true);
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode activated.');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Debug mode activated.');
     });
 
     it('should toggle debug mode from true to false', async () => {
@@ -757,7 +757,7 @@ describe('AgentCombinedViewProvider', () => {
       await provider.toggleDebugMode();
 
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Debug mode deactivated.');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Debug mode deactivated.');
     });
 
     it('should update agent preview debug mode when agent preview exists', async () => {
@@ -806,7 +806,7 @@ describe('AgentCombinedViewProvider', () => {
         data: {}
       });
       const channelService = CoreExtensionService.getChannelService();
-      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended');
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended.');
     });
 
     it('should end AgentPreview session', async () => {
@@ -829,7 +829,7 @@ describe('AgentCombinedViewProvider', () => {
 
       expect(mockAgentPreview.end).toHaveBeenCalledWith('test-session', 'UserRequest');
       expect((provider as any).agentPreview).toBeUndefined();
-      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended');
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended.');
     });
 
     it('should not throw when no active session', async () => {
@@ -838,7 +838,7 @@ describe('AgentCombinedViewProvider', () => {
       await expect(provider.endSession()).resolves.not.toThrow();
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
       // channelService.appendLine is always called at the end of endSession()
-      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended');
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended.');
       expect(channelService.appendLine).toHaveBeenCalledWith('---------------------');
     });
 
@@ -860,7 +860,7 @@ describe('AgentCombinedViewProvider', () => {
         data: {}
       });
       // channelService.appendLine is always called at the end of endSession()
-      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended');
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation ended.');
       expect(channelService.appendLine).toHaveBeenCalledWith('---------------------');
     });
 
@@ -1432,7 +1432,7 @@ describe('AgentCombinedViewProvider', () => {
       await messageHandler({ command: 'sendChatMessage', data: { message: 'Hello' } });
 
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Debug mode is enabled, but no Apex was executed.'
+        'Debug mode is enabled but no Apex was executed.'
       );
     });
 
@@ -1988,7 +1988,7 @@ describe('AgentCombinedViewProvider', () => {
         command: 'compilationStarting',
         data: { message: 'Compiling agent...' }
       });
-      expect(channelService.appendLine).toHaveBeenCalledWith('Compilation end point called');
+      expect(channelService.appendLine).toHaveBeenCalledWith('Compilation end point called.');
     });
 
     it('should handle simulation starting event from lifecycle', async () => {
@@ -2030,7 +2030,7 @@ describe('AgentCombinedViewProvider', () => {
         command: 'simulationStarting',
         data: { message: 'Starting simulation...' }
       });
-      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation session started');
+      expect(channelService.appendLine).toHaveBeenCalledWith('Simulation session started.');
     });
 
     it('should ignore lifecycle events after session start cancellation', async () => {
@@ -2361,7 +2361,7 @@ describe('AgentCombinedViewProvider', () => {
       const errorCall = mockWebviewView.webview.postMessage.mock.calls.find(
         (call: any[]) => call[0].command === 'error'
       );
-      expect(errorCall?.[0].data?.message).toContain('could not be found');
+      expect(errorCall?.[0].data?.message).toContain("couldn't be found");
 
       defaultConnectionMock.mockReset();
     });
@@ -2701,7 +2701,7 @@ describe('AgentCombinedViewProvider', () => {
       });
 
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Debug mode is enabled, but no Apex was executed.'
+        'Debug mode is enabled but no Apex was executed.'
       );
     });
   });
@@ -2870,7 +2870,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(saveDialogMock).toHaveBeenCalled();
       expect(writeFileMock).toHaveBeenCalledWith(targetUri, expect.any(Uint8Array));
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Agentforce DX: Conversation saved')
+        expect.stringContaining('Conversation was saved to')
       );
     });
 
@@ -2880,9 +2880,7 @@ describe('AgentCombinedViewProvider', () => {
         data: { content: '', fileName: 'agent' }
       });
 
-      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Conversation could not be exported.'
-      );
+      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith("Conversation couldn't be exported.");
     });
 
     it('should do nothing when user cancels the save dialog', async () => {
@@ -2910,9 +2908,7 @@ describe('AgentCombinedViewProvider', () => {
         data: { content: '# Test Conversation', fileName: 'agent-convo.md' }
       });
 
-      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
-        'Agentforce DX: Failed to save conversation: disk full'
-      );
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Failed to save conversation: disk full');
     });
   });
 
@@ -3178,7 +3174,7 @@ describe('AgentCombinedViewProvider', () => {
         command: 'error',
         data: {
           message:
-            'This agent is currently deactivated and cannot be used for conversations. Please activate the agent first using the "Activate Agent" right click menu option or through the Salesforce Setup.'
+            'This agent is currently deactivated, so you can\'t converse with it. Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.'
         }
       });
     });
@@ -3199,7 +3195,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'error',
         data: {
-          message: 'The selected agent could not be found. It may have been deleted or you may not have access to it.'
+          message: "The selected agent couldn't be found. Either it's been deleted or you don't have access to it."
         }
       });
     });
@@ -3220,7 +3216,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'error',
         data: {
-          message: "You don't have permission to use this agent. Please check with your administrator."
+          message: "You don't have permission to use this agent. Consult your Salesforce administrator."
         }
       });
     });
@@ -3241,7 +3237,7 @@ describe('AgentCombinedViewProvider', () => {
       expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
         command: 'error',
         data: {
-          message: "You don't have permission to use this agent. Please check with your administrator."
+          message: "You don't have permission to use this agent. Consult your Salesforce administrator."
         }
       });
     });
@@ -4335,7 +4331,9 @@ describe('AgentCombinedViewProvider', () => {
       const result = await (provider as any).saveApexDebugLog({ Id: 'log123' });
 
       expect(result).toBeUndefined();
-      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('No workspace folder found to save apex debug logs.');
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+        'No workspace directory found to save the Apex debug logs.'
+      );
 
       (vscode.workspace as any).workspaceFolders = originalFolders;
     });
