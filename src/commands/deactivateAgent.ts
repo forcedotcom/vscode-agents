@@ -33,7 +33,7 @@ export const registerDeactivateAgentCommand = () => {
           !fileName.endsWith('.genAiPlannerBundle')
         ) {
           vscode.window.showErrorMessage(
-            'This command can only be used on bot, bot version, or genAiPlannerBundle files.'
+            'You can use this command on only bot, botVersion, or genAiPlannerBundle metadata files.'
           );
           return;
         }
@@ -45,7 +45,7 @@ export const registerDeactivateAgentCommand = () => {
           !targetPath.includes('genAiPlannerBundles')
         ) {
           vscode.window.showErrorMessage(
-            'This command can only be used on directories containing bot, bot version, or genAiPlannerBundle files.'
+            'You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.'
           );
           return;
         }
@@ -68,13 +68,13 @@ export const registerDeactivateAgentCommand = () => {
         return;
       }
 
-      channelService.appendLine(`Deactivating agent: ${agentName}`);
+      channelService.appendLine(`Deactivating agent ${agentName}...`);
       channelService.showChannelOutput();
 
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Deactivating agent: ${agentName}`,
+          title: `Deactivating agent: ${agentName}...`,
           cancellable: false
         },
         async () => {
@@ -93,8 +93,8 @@ export const registerDeactivateAgentCommand = () => {
 
           await agent.deactivate();
 
-          channelService.appendLine(`Successfully deactivated agent: ${agentName}`);
-          vscode.window.showInformationMessage(`Agent "${agentName}" has been deactivated successfully.`);
+          channelService.appendLine(`Successfully deactivated agent ${agentName}.`);
+          vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
         }
       );
     } catch (error) {

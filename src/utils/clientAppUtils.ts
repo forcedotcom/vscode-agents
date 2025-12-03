@@ -34,7 +34,7 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
         type: 'none',
         clientApps: [],
         error:
-          'No default target org configured. Please set your default target org using "sf config set target-org <username>"'
+          'No default target org configured. Set your default target org using either the "SFDX: Set a Default Org" VS Code command or the "sf config set target-org <username>" CLI command.'
       };
     }
 
@@ -45,7 +45,7 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
       return {
         type: 'none',
         clientApps: [],
-        error: `Could not resolve username for target org value: ${targetOrgAliasOrUsername}`
+        error: `Couldn't resolve the username for this target org value: ${targetOrgAliasOrUsername}`
       };
     }
 
@@ -58,7 +58,7 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
         type: 'none',
         clientApps: [],
         username: resolvedUsername,
-        error: `Authentication file not found for username: ${resolvedUsername}. Please authenticate using "sf org login jwt"`
+        error: `Authentication file not found for username: ${resolvedUsername}. Authorize an org using the "sf org login jwt" CLI command.`
       };
     }
 
@@ -103,7 +103,7 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
     return {
       type: 'none',
       clientApps: [],
-      error: `Error reading authentication: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: `Error reading authentication file: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }

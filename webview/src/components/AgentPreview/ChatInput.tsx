@@ -154,9 +154,9 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           placeholder={
             disabled
               ? isLiveMode
-                ? 'Start the live test to chat…'
-                : 'Start the simulation to chat…'
-              : 'Write something to start testing…'
+                ? 'Type something to start the live test...'
+                : 'Type something to start the simulation...'
+              : 'Type something to start testing...'
           }
           className="chat-input-field"
           disabled={disabled}

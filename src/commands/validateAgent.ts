@@ -33,7 +33,7 @@ export const registerValidateAgentCommand = () => {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'Validating Agent',
+        title: 'Validating agent...',
         cancellable: false
       },
       async progress => {
@@ -64,7 +64,7 @@ export const registerValidateAgentCommand = () => {
             // Also show in output channel
             channelService.showChannelOutput();
             channelService.clear();
-            channelService.appendLine('❌ Agent validation failed!');
+            channelService.appendLine('❌ Agent validation failed.');
             channelService.appendLine('────────────────────────────────────────────────────────────────────────');
             channelService.appendLine(`Found ${response.errors.length} error(s):\n`);
             response.errors.forEach((error: CompilationError, index: number) => {
@@ -73,7 +73,7 @@ export const registerValidateAgentCommand = () => {
             });
 
             // Update progress message to show failure
-            progress.report({ message: `Failed with ${response.errors.length} error(s)` });
+            progress.report({ message: `Failed with ${response.errors.length} error(s).` });
 
             // Wait a moment so user can see the failure message
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -85,7 +85,7 @@ export const registerValidateAgentCommand = () => {
             diagnosticCollection.clear();
 
             // Update progress message to show success
-            progress.report({ message: 'Successful! 🎉', increment: 100 });
+            progress.report({ message: 'Successful!', increment: 100 });
 
             // Keep the success message visible for a moment
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -98,9 +98,9 @@ export const registerValidateAgentCommand = () => {
           channelService.showChannelOutput();
           channelService.clear();
           // Show error details in output
-          channelService.appendLine('❌ Agent validation failed!');
+          channelService.appendLine('❌ Agent validation failed.');
           channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-          channelService.appendLine(error.message || 'Something went wrong');
+          channelService.appendLine(error.message || 'Something went wrong.');
 
           // Update progress to show error
           progress.report({ message: 'Failed' });

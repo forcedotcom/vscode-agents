@@ -1,0 +1,287 @@
+CATEGORY,CURRENT TEXT,TEXT LOCATION,HOW TO CHECK IT LIVE,SUGGESTED TEXT,NOTES
+,,,,,
+EXTENSION,,,,,
+Name,Agentforce DX,src/consts.ts:2,Extension display name constant,No change,Name of the extension in VS Code
+Metadata,Agentforce DX,package.json:3,VS Code Extension Marketplace → Display name of the extension,No change,Name of the extension in the marketplace
+Metadata,"Provides a suite of tools to build, preview, and test agents",package.json:4,Extension Marketplace → Short description shown in extension list,"Provides a suite of tools to iteratively build, preview, and test agents right in your IDE. ",
+Metadata,salesforce,package.json:6,Extension Marketplace → Publisher name shown under extension title,Salesforce,
+,,,,,
+COMMANDS,,,,,
+Commands,AFDX: Open Agent in Default Org,package.nls.json:2,"Open Command Palette (Cmd+Shift+P) → Type ""AFDX: Open Agent in Default Org"" → Select command",No change,
+Commands,AFDX: Activate Agent,package.nls.json:3,"Right-click on .bot or genAiPlannerBundle file in Explorer → Select ""AFDX: Activate Agent"" from context menu",No change,
+Commands,AFDX: Deactivate Agent,package.nls.json:4,"Right-click on .bot or genAiPlannerBundle file in Explorer → Select ""AFDX: Deactivate Agent"" from context menu",No change,
+Commands,AFDX: Run All Test Definitions,package.nls.json:6,"Open Agent Tests view in sidebar → Click ""Run All Tests"" button (▶ icon) at top of view",Run All Agent Tests,Keep it consistent with Apex tests by NOT including AFDX: 
+Commands,AFDX: Run Test Definition,package.nls.json:7,"Open Agent Tests view → Right-click specific test → Select ""Run Test Definition""",Run Agent Test,Ditto
+Commands,AFDX: Show Chat Trace,package.nls.json:11,"After sending a message in Agent Preview → Click ""Show Chat Trace"" button or use Command Palette",n/a,I couldn't find this command
+Commands,AFDX: Refresh Test Definitions,package.nls.json:12,Open Agent Tests view → Click refresh icon (⟳) at top of view,Refresh Agent Tests,
+Commands,AFDX: Open Chat with Agent,package.nls.json:13,"Click Agentforce DX icon in Activity Bar → Select agent → Click ""Open Chat with Agent"" button",n/a,This returned an error from the command palette
+Commands,AFDX: View Test Results,package.nls.json:14,"After running a test → Click ""View Test Results"" in notification or use Command Palette",n/a,couldn't find command
+Commands,AFDX: Collapse All Test Cases,package.nls.json:15,Open Agent Tests view → Click collapse icon at top of view to fold all test cases,Collapse All Agent Tests,"Remove AFDX, no need to make it ""official"" AFDX command"
+Commands,AFDX: Focus on Agentforce DX View,package.json:356,"Open Command Palette (Cmd+Shift+P) → Type ""AFDX: Focus on Agentforce DX View"" → Press Enter to open Agent Preview panel",AFDX: Focus on Agentforce DX Preview,
+Commands,AFDX: Focus on Agent Tests View,package.json:360,"Open Command Palette → Type ""AFDX: Focus on Agent Tests View"" → Press Enter to open Agent Tests panel",AFDX: Focus on Agent Tests View,
+Commands,Start Agent,package.json:364,"In Agentforce DX view → Select an agent from dropdown → Click ""Start Live Test"" or ""Start Simulation"" button",n/a,Didn't see this in the UI
+Commands,Select Agent,package.json:369,"In Agentforce DX view → Click agent dropdown → Choose agent from ""Agent Script"" or ""Published"" section",n/a,Didn't see this in the UI
+Commands,Stop Agent,package.json:373,"While agent session is running → Click ""Stop Live Test"" or ""Stop Simulation"" button in Agent Preview",n/a,Didn't see this in the UI
+Commands,Restart Agent,package.json:379,"Open Command Palette → Type ""Restart Agent"" → Confirm to restart current agent session",No change,
+Commands,Download Conversation,package.json:385,After having conversation with agent → Click download icon (⬇) in Agent Preview header → Conversation saved as markdown,No change,
+Commands,Refresh Agent List,package.json:390,In Agentforce DX view → Click refresh icon (⟳) next to agent dropdown to reload available agents,n/a,Didn't see this in the UI
+Commands,Reset Agent View,package.json:395,"Open Command Palette → Type ""Reset Agent View"" → Select agent to reset → Clears agent preview state",n/a,Didn't see this in the UI
+Commands,Start Debug Mode,package.json:400,"Open Command Palette → Type ""Start Debug Mode"" → Debug mode enables detailed logging",No change,
+Commands,Stop Debug Mode,package.json:406,"Open Command Palette → Type ""Stop Debug Mode"" → Stops debug logging",No change,
+Commands,AFDX: Preview This Agent,package.json:412,"Right-click .agent file in Explorer → Select ""AFDX: Preview This Agent"" → Opens Agent Preview with selected agent",No change,
+Commands,AFDX: Publish This Agent,package.json:416,"Right-click .agent file in Explorer → Select ""AFDX: Publish This Agent"" → Compiles and deploys agent to org",No change,
+Commands,Hide Generated Data Output,package.json:473,"In test results output panel → Click ""Hide Generated Data Output"" button to collapse generated data section",No change,
+Commands,Show Generated Data Output,package.json:482,"In test results output panel → Click ""Show Generated Data Output"" button to expand generated data section",No change,
+Commands,AFDX: Validate This Agent,package.json:491,"Right-click .agent file in Explorer → Select ""AFDX: Validate This Agent"" → Validates agent syntax and structure",No change,
+Commands,AFDX: Create AI Authoring Bundle,package.json:495,"Open Command Palette → Type ""AFDX: Create AI Authoring Bundle"" → Enter bundle name → Select spec file → Bundle created",AFDX: Generate Authoring Bundle,
+,,,,,
+UI ELEMENTS,,,,,
+UI - Header,Agentforce DX,webview/src/components/shared/Header.tsx:7,"Open Agentforce DX view in sidebar → Header shows ""Agentforce DX"" at top of panel",No change,
+UI - Tabs,Agent Preview,webview/src/components/shared/TabNavigation.tsx:100-101,"In Agentforce DX view → Click ""Agent Preview"" tab to view agent chat interface",No change,
+UI - Tabs,Agent Tracer,webview/src/components/shared/TabNavigation.tsx:112-113,"In Agentforce DX view → Click ""Agent Tracer"" tab to view step-by-step agent actions",No change,
+UI - Tabs,Close (aria-label),webview/src/components/shared/TabNavigation.tsx:130,"When a tab is active → Hover over X button → Screen reader announces ""Close""",n/a,Didn't see this in the UI
+UI - Button,Select Agent,webview/src/components/AgentPreview/PlaceholderContent.tsx:17,"Initial state with no agent selected → Center of Agent Preview shows ""Select Agent"" button",No change,
+UI - Button,Start Live Test,webview/src/components/AgentPreview/AgentPreviewPlaceholder.tsx:53,"After selecting agent → Click ""Start Live Test"" button to begin testing with real org",No change,
+UI - Button,Start Simulation,webview/src/components/AgentPreview/AgentPreviewPlaceholder.tsx:68,"After selecting agent → Click ""Start Simulation"" button to test without connecting to org",No change,
+UI - Button,Stop Live Test,webview/src/components/AgentPreview/AgentSelector.tsx:271,"While live test is running → Click ""Stop Live Test"" button to end session",No change,
+UI - Button,Stop Simulation,webview/src/components/AgentPreview/AgentSelector.tsx:282,"While simulation is running → Click ""Stop Simulation"" button to end session",No change,
+UI - Dropdown Label,Simulation,webview/src/components/AgentPreview/AgentSelector.tsx:292,"In agent mode dropdown → Shows ""Simulation"" option to test agent locally",No change,
+UI - Dropdown Label,Live Test,webview/src/components/AgentPreview/AgentSelector.tsx:293,"In agent mode dropdown → Shows ""Live Test"" option to test agent with real org connection",No change,
+UI - Dropdown,Loading...,webview/src/components/AgentPreview/AgentSelector.tsx:233,"While agents are being fetched → Dropdown shows ""Loading..."" placeholder",No change,Didn't see this in the UI
+UI - Dropdown,No agents available,webview/src/components/AgentPreview/AgentSelector.tsx:233,"When no agents exist in workspace → Dropdown shows ""No agents available"" message",No change,Didn't see this in the UI
+UI - Dropdown,Select agent...,webview/src/components/AgentPreview/AgentSelector.tsx:233,"When not loading and agents exist → Dropdown shows ""Select agent..."" placeholder",No change,Didn't see this in the UI
+UI - Dropdown,Agent Script (optgroup),webview/src/components/AgentPreview/AgentSelector.tsx:236,"In agent dropdown → ""Agent Script"" section header shows local .agent files",No change,
+UI - Dropdown,Published (optgroup),webview/src/components/AgentPreview/AgentSelector.tsx:245,"In agent dropdown → ""Published"" section header shows agents deployed to org",No change,
+UI - Dropdown,Choose a client app...,webview/src/components/AgentPreview/AgentPreview.tsx:553,"When starting session → Dropdown shows ""Choose a client app..."" to select connection endpoint",No change,Didn't see this in the UI
+UI - Help Text,Agentforce DX lets you build and test agents in your IDE so you can iterate quickly before deployment.,webview/src/components/AgentPreview/PlaceholderContent.tsx:15,Initial state with no agent selected → Descriptive text appears in center of Agent Preview panel,"Agentforce DX provides a suite of tools to iteratively build, preview, and test agents right in your IDE. ",
+UI - Help Text,Agent Preview lets you test an agent by having a conversation so you can see how it responds to user messages.,webview/src/components/AgentPreview/AgentPreviewPlaceholder.tsx:48,After selecting agent but before starting session → Help text explains what Agent Preview does,No change,
+UI - Help Text,Agent Tracer displays the step-by-step actions an Agent takes so you can understand what it does in detail.,webview/src/components/AgentTracer/TracerPlaceholder.tsx:63,In Agent Tracer tab before any messages → Help text explains what Agent Tracer shows,Agent Tracer displays the step-by-step actions that an agent takes during a conversation so you can understand the details of what just happened.,
+UI - Disclaimer,Agent preview does not provide strict adherence to connection endpoint configuration and escalation is not supported. To test escalation publish your agent then use the desired connection endpoint (e.g. Web Page SMS etc).,webview/src/components/AgentPreview/AgentPreview.tsx:35-36,At bottom of Agent Preview chat area → Disclaimer text shown in lighter color explaining preview limitations,Remove this note completely (okay'd with Vivek),IMPORTANT
+UI - Label,Select Client App:,webview/src/components/AgentPreview/AgentPreview.tsx:544,When selecting client app → Header label above dropdown,Select client app,
+UI - Button,Send a Message,webview/src/components/AgentTracer/TracerPlaceholder.tsx:74,"In Agent Tracer when session active → Shows ""Send a Message"" button to switch to Preview tab",Send a message,
+UI - Button,View Raw JSON,webview/src/components/AgentTracer/AgentTracer.tsx:411,In Agent Tracer after trace loads → Button to open raw JSON in external viewer,View raw JSON,
+UI - Button,Copy / Copied,webview/src/components/shared/CodeBlock.tsx:73/80,Code blocks in Tracer → Button to copy code to clipboard with state change,n/a,Didn't see this in UI
+UI - Button,Collapse All / Expand All,webview/src/components/AgentTracer/SessionInfo.tsx:43,Session details in Tracer → Toggle button to expand/collapse all sections,n/a,Didn't see this in UI
+UI - Label,Session ID,webview/src/components/AgentTracer/AgentTracer.tsx:386,Trace info table → Label for session ID row,No change,
+UI - Label,Plan ID,webview/src/components/AgentTracer/AgentTracer.tsx:390,Trace info table → Label for plan ID row,No change,
+UI - Label,Timestamp,webview/src/components/AgentTracer/AgentTracer.tsx:395,Trace info table → Label for timestamp row,No change,
+UI - Step Title,Action: {actionName},webview/src/components/AgentTracer/StepAction.tsx:25,Tracer timeline → Shows action invocation step,n/a,Didn't see this in the UI
+UI - Step Title,Reasoning: Action Selection,webview/src/components/AgentTracer/StepActionSelection.tsx:54,Tracer timeline → Shows action selection reasoning step,n/a,Didn't see this in the UI
+UI - Step Title,Agent Response,webview/src/components/AgentTracer/StepAgentResponse.tsx:19,Tracer timeline → Shows agent's response step,n/a,Didn't see this in the UI
+UI - Step Title,Reasoning: Response Validation,webview/src/components/AgentTracer/StepResponseValidation.tsx:26,Tracer timeline → Shows response validation reasoning step,n/a,Didn't see this in the UI
+UI - Step Title,Topic: {topicName},webview/src/components/AgentTracer/StepTopic.tsx:63,Tracer timeline → Shows topic activation step,n/a,Didn't see this in the UI
+UI - Step Title,Reasoning: Topic Selection,webview/src/components/AgentTracer/StepTopicSelection.tsx:61,Tracer timeline → Shows topic selection reasoning step,n/a,Didn't see this in the UI
+UI - Step Title,User Message,webview/src/components/AgentTracer/StepUserMessage.tsx:22,Tracer timeline → Shows user message step,n/a,Didn't see this in the UI
+UI - Section Header,Input,webview/src/components/AgentTracer/StepAction.tsx:40,Action step expanded → Shows input parameters section,n/a,Didn't see this in the UI
+UI - Section Header,Output,webview/src/components/AgentTracer/StepAction.tsx:48,Action step expanded → Shows output results section,n/a,Didn't see this in the UI
+UI - Section Header,Prompt Used,webview/src/components/AgentTracer/StepActionSelection.tsx:69,Reasoning steps expanded → Shows LLM prompt section,n/a,Didn't see this in the UI
+UI - Section Header,Instructions,webview/src/components/AgentTracer/StepTopic.tsx:77,Topic step expanded → Shows topic instructions section,n/a,Didn't see this in the UI
+UI - Section Header,Available Topics,webview/src/components/AgentTracer/StepTopic.tsx:82,Topic step expanded → Shows available topics list section,n/a,Didn't see this in the UI
+UI - Badge,{availableTopicsCount} available,webview/src/components/AgentTracer/StepTopic.tsx:82,Next to Available Topics header → Shows count of available topics,n/a,Didn't see this in the UI
+UI - Tab,JSON,webview/src/components/AgentTracer/AgentTracer.tsx:440,Tracer view → Tab label for raw JSON view,n/a,Didn't see this in the UI
+UI - Label,Step {index + 1},webview/src/components/AgentTracer/AgentTracer.tsx:141/144,Timeline steps → Fallback label when no specific step name,n/a,Didn't see this in the UI
+,,,,,
+PLACEHOLDERS,,,,,
+Placeholder - Input,Start the live test to chat…,webview/src/components/AgentPreview/ChatInput.tsx:157,"When live test not started → Chat input field shows ""Start the live test to chat…"" as placeholder",Type something to start the live test...,
+Placeholder - Input,Start the simulation to chat…,webview/src/components/AgentPreview/ChatInput.tsx:158,"When simulation not started → Chat input field shows ""Start the simulation to chat…"" as placeholder",Type something to start the simulation...,
+Placeholder - Input,Write something to start testing…,webview/src/components/AgentPreview/ChatInput.tsx:159,"When session is active → Chat input field shows ""Write something to start testing…"" as placeholder",Type something to start testing...,
+Placeholder - Input,Enter the name for the AI Authoring Bundle,src/commands/createAiAuthoringBundle.ts:39,"Execute ""Create AI Authoring Bundle"" command → Input box appears with this prompt text",Enter the name of the new authoring bundle.,
+Placeholder - Input,My Agent Bundle,src/commands/createAiAuthoringBundle.ts:40,"In bundle name input box → ""My Agent Bundle"" shows as example placeholder text",No change,
+Placeholder - Quick Pick,Agent name (type to search),src/commands/openAgentInOrg.ts:37,"Execute ""Open Agent in Default Org"" → Quick pick shows ""Agent name (type to search)"" as filter placeholder",No change,Didn't see this in UI
+Placeholder - Quick Pick,Select an agent to run,extension.ts:226,"When starting agent without selection → Quick pick shows ""Select an agent to run"" placeholder",No change,Didn't see this in UI
+Placeholder - Quick Pick,Select an agent to start,extension.ts:314,"Execute ""Start Agent"" command → Quick pick shows ""Select an agent to start"" placeholder",No change,Didn't see this in UI
+Placeholder - Quick Pick,Select a spec file to generate the agent from,src/commands/createAiAuthoringBundle.ts:79-81,In Create AI Authoring Bundle flow → Quick pick shows this text to choose YAML spec file,Select an agent spec YAML file to generate the authoring bundle from.,
+Placeholder - Quick Pick,Select a client app to access published agents,src/views/agentCombinedViewProvider.ts:688,When starting published agent → Quick pick for client app selection,No change,New placeholder
+,,,,,
+SUCCESS MESSAGES,,,,,
+Success,"Agent ""{agentName}"" has been activated successfully.",src/commands/activateAgent.ts:86,"Right-click agent file → Select ""Activate Agent"" → Wait for deployment → Success notification appears in bottom-right","Agent ""{agentName}"" was activated successfully. ",
+Success,"Agent ""{agentName}"" has been deactivated successfully.",src/commands/deactivateAgent.ts:97,"Right-click agent file → Select ""Deactivate Agent"" → Confirm in dialog → Success notification appears","Agent ""{agentName}"" was deactivated successfully.",
+Success,Agentforce DX: Open an Agent in the Default Org successfully ran.,src/commands/openAgentInOrg.ts:57,"Execute ""Open Agent in Default Org"" → Select agent → Browser opens → Success notification appears",Agent was opened successfully in the default org. ,Can we add the agent name like the other messages?
+Success,"Agent ""{fileName}"" has been published successfully.",src/commands/publishAgent.ts:103,"Right-click .agent file → Select ""Publish This Agent"" → Wait for compilation and deployment → Success notification","Agent ""{fileName}"" was published successfully. ","This is the agent name, right?  ""fileName"" makes me wonder..."
+Success,"AI Authoring Bundle ""{name}"" created successfully! 🎉",src/commands/createAiAuthoringBundle.ts:150,"Execute ""Create AI Authoring Bundle"" → Enter name → Select spec → Bundle created → Success notification with 🎉","Authoring bundle ""{name}"" was generated successfully. ",
+Success,Agentforce DX: Agent list refreshed,src/views/agentCombinedViewProvider.ts:385,Click refresh icon next to agent dropdown → Agent list reloads → Success notification appears,Agent list refreshed. ,
+Success,Agentforce DX: Agent preview reset,src/views/agentCombinedViewProvider.ts:400,"""Execute ""Reset Agent View"" → Select agent → Preview state cleared → Success notification appears",Agent preview reset. ,
+Success,Agentforce DX: Conversation saved to {filePath},src/views/agentCombinedViewProvider.ts:367,Click download icon in Agent Preview → Select save location → File saved → Success notification with file path,Conversation was saved to {filePath}.,
+Success,Successfully activated agent: {agentName},src/commands/activateAgent.ts:85,Right-click agent → Activate → Check Output panel (Agentforce DX channel) → Success message logged,"Agent ""{agentName}"" was activated successfully. ",Any reason why this message is different from #97?
+Success,Successfully published agent: {fileName},src/commands/publishAgent.ts:101,Right-click .agent file → Publish → Check Output panel → Success message logged after deployment,"Agent ""{fileName}"" was published successfully. ",
+Success,Metadata retrieved successfully.,src/commands/publishAgent.ts:88,During publish operation → Check Output panel → Shows when metadata sync completes,No change.,
+Success,Agentforce DX: Debug mode activated.,src/views/agentCombinedViewProvider.ts:185,Start debug mode → Success notification,Debug mode activated.,New message
+Success,Agentforce DX: Debug mode deactivated.,src/views/agentCombinedViewProvider.ts:185,Stop debug mode → Success notification,Debug mode deactivated.,New message
+Success,Agentforce DX: Client app selection cancelled. Showing Agent Script files only.,src/views/agentCombinedViewProvider.ts:692-693,Cancel client app selection → Information notification,Client app selection cancelled. Showing Agent Script files only.,New message
+,,,,,
+ERROR MESSAGES,,,,,
+Error - Validation,Bundle name is required,src/commands/createAiAuthoringBundle.ts:43,"Execute ""Create AI Authoring Bundle"" → Leave name field empty → Press Enter → Validation error shows",No change.,
+Error - Validation,Bundle name cannot be empty,src/commands/createAiAuthoringBundle.ts:46,Enter only spaces in bundle name field → Validation error appears in input box,Bundle name can't be empty. ,
+Error - Selection,No agent file or directory selected.,src/commands/activateAgent.ts:19,"Execute ""Activate Agent"" without selecting file → Error notification appears",No change.,
+Error - Selection,No agent file or directory selected.,src/commands/deactivateAgent.ts:19,"Execute ""Deactivate Agent"" without selecting file → Error notification appears",No change.,
+Error - Selection,No .agent file selected.,src/commands/validateAgent.ts:25,"Execute ""Validate This Agent"" without .agent file → Error notification in bottom-right",No change.,
+Error - Selection,No .agent file selected.,src/commands/previewAgent.ts:17,"Execute ""Preview This Agent"" without .agent file → Error notification appears",No change.,
+Error - Selection,No .agent file selected.,src/commands/publishAgent.ts:20,"Execute ""Publish This Agent"" without .agent file → Error notification appears",No change.,
+Error - File Type,This command can only be used on bot bot version or genAiPlannerBundle files.,src/commands/activateAgent.ts:35-36,"Right-click wrong file type → Select ""Activate Agent"" → Error notification explains valid file types","You can use this command on only bot, botVersion, or genAiPlannerBundle metadata files. ",
+Error - File Type,This command can only be used on directories containing bot bot version or genAiPlannerBundle files.,src/commands/activateAgent.ts:47-48,"Right-click directory without valid files → Select ""Activate Agent"" → Error notification appears","You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.",
+Error - File Type,Invalid file or directory selection.,src/commands/activateAgent.ts:53,"Select unsupported file/folder → Execute ""Activate Agent"" → Generic error notification",No change.,
+Error - File Type,This command can only be used on bot bot version or genAiPlannerBundle files.,src/commands/deactivateAgent.ts:35-36,"Right-click wrong file type → Select ""Deactivate Agent"" → Error notification appears","You can use this command on only bot, botVersion, or genAiPlannerBundle metadata files. ",
+Error - File Type,This command can only be used on directories containing bot bot version or genAiPlannerBundle files.,src/commands/deactivateAgent.ts:47-48,"Right-click directory without valid files → Select ""Deactivate Agent"" → Error notification","You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.",
+Error - File Type,Invalid file or directory selection.,src/commands/deactivateAgent.ts:53,"Select unsupported file/folder → Execute ""Deactivate Agent"" → Error notification",No change.,
+Error - File Type,This command can only be used on .agent files.,src/commands/publishAgent.ts:26,"Right-click non-.agent file → Select ""Publish This Agent"" → Error notification appears",You can use this command on only .agent files. ,
+Error - Operation,Failed to activate agent: {error.message},src/commands/activateAgent.ts:90,Activation fails (network org permissions) → Error notification shows with failure reason,No change.,
+Error - Operation,Failed to deactivate agent: {error.message},src/commands/deactivateAgent.ts:101,Deactivation fails (network org error) → Error notification shows with failure details,No change.,
+Error - Operation,Could not find agents in the current project.,src/commands/openAgentInOrg.ts:31,"Execute ""Open Agent in Default Org"" with no agents in workspace → Error notification appears",Couldn't find any agents in the current DX project.,
+Error - Operation,Unable to open agent: {stderr},src/commands/openAgentInOrg.ts:54,Command execution fails → Error notification shows CLI error output,No change.,
+Error - Operation,Agent validation failed: {error.message},src/commands/validateAgent.ts:110,Validation process crashes → Error notification shows exception message,No change.,
+Error - Operation,Failed to get Agent Preview provider.,src/commands/previewAgent.ts:25,Internal error getting preview provider → Error notification appears,No change.,What's an agent preview provider??
+Error - Operation,Failed to publish agent: {error.message},src/commands/publishAgent.ts:119/125,Publish operation fails → Error notification shows failure reason,No change.,
+Error - Operation,Agent compilation failed with {errors.length} error(s). Check the output channel for details.,src/commands/publishAgent.ts:69-70,Agent has syntax/validation errors → Error notification tells user to check Output panel,Agent compilation failed with {errors.length} error(s). Check the Output tab for details.,
+Error - Operation,No YAML spec files found in {specsDir}. Please add spec files to continue.,src/commands/createAiAuthoringBundle.ts:75,No .yaml files in specs directory → Error notification explains missing files,No agent spec YAML files found in {specsDir}. You must add at least one agent spec YAML file to continue. ,
+Error - Operation,Failed to create AI Authoring Bundle: {errorMessage},src/commands/createAiAuthoringBundle.ts:163,Bundle creation fails → Error notification shows specific error message,Failed to generate authoring bundle: {errorMessage},
+Error - Operation,No agents found.,extension.ts:220,Agent list returns empty → Error notification appears when trying to start agent,No change.,
+Error - Operation,Failed to list agents: {errorMessage},extension.ts:254,Agent listing command fails → Error notification shows CLI error,No change.,
+Error - Operation,No agent selected to restart.,extension.ts:366,"""Execute ""Restart Agent"" with no active agent → Error notification appears",No change.,
+Error - Operation,Agentforce DX: Unable to reset agent view: {errorMessage},extension.ts:403,"Reset operation fails → Error notification with """"Agentforce DX:"""" prefix",Unable to reset agent view: {errorMessage},
+Error - Operation,Agentforce DX: Unable to export conversation: {errorMessage},extension.ts:355,Export conversation fails → Error notification with prefix,Unable to export conversation: {errorMessage},
+Error - Test Results,You need to run the test first to see its results.,src/views/testRunner.ts:44/52,"""Click ""View Test Results"" without running test → Error notification appears",You must run the agent test first to see its results.,
+Error - Provider,Agentforce DX: Failed to save conversation: {errorMessage},src/views/agentCombinedViewProvider.ts:370,"""Download conversation fails → Error notification with ""Agentforce DX:"" prefix",Failed to save conversation: {errorMessage},
+Error - Provider,Error processing debug log: {errorMessage},src/views/agentCombinedViewProvider.ts:1029,Debug log processing fails → Error logged to console (visible in Developer Tools),No change.,
+Error - Provider,No workspace folder found to save apex debug logs.,src/views/agentCombinedViewProvider.ts:1429,Trying to save debug log without workspace → Error notification appears,No workspace directory found to save the Apex debug logs.,
+Error - Provider,No Apex debug log ID found.,src/views/agentCombinedViewProvider.ts:1435,Debug log ID missing from response → Error notification appears,No change.,
+Error - Provider,Error saving Apex debug log: {errorMessage},src/views/agentCombinedViewProvider.ts:1456,Debug log save fails → Error notification shows failure reason,No change.,
+Error - Provider,Unable to open trace JSON: Missing trace details.,src/views/agentCombinedViewProvider.ts:526,Trace data missing → Error notification,No change.,New error
+Error - Provider,Unable to open trace JSON: {errorMessage},src/views/agentCombinedViewProvider.ts:536,Trace JSON operation fails → Error notification,No change.,New error
+Error - Agent Status,"This agent is currently deactivated and cannot be used for conversations. Please activate the agent first using the ""Activate Agent"" right click menu option or through the Salesforce Setup.",src/views/agentCombinedViewProvider.ts:1323,Trying to use deactivated agent → Error notification explains activation needed,"This agent is currently deactivated, so you can't converse with it.  Activate the agent using either the ""AFDX: Activate Agent"" VS Code command or your org's Agentforce UI.  ",New error
+Error - Agent Status,The selected agent could not be found. It may have been deleted or you may not have access to it.,src/views/agentCombinedViewProvider.ts:1327-1328,Agent not found → Error notification,The selected agent couldn't be found. Either it's been deleted or you don't have access to it. ,New error
+Error - Agent Status,You don't have permission to use this agent. Please check with your administrator.,src/views/agentCombinedViewProvider.ts:1332,Permission denied → Error notification,You don't have permission to use this agent. Consult your Salesforce administrator.,New error
+Error - Authentication,"No default target org configured. Please set your default target org using ""sf config set target-org <username>""",src/utils/clientAppUtils.ts:36-37,No target org set → Error notification with instructions,"No default target org configured. Set your default target org using either the ""SFDX: Set a Default Org"" VS Code command or the ""sf config set target-org <username>"" CLI command. ",New error
+Error - Authentication,Could not resolve username for target org value: {targetOrgAliasOrUsername},src/utils/clientAppUtils.ts:48,Cannot resolve org username → Error notification,Couldn't resolve the username for this target org value: {targetOrgAliasOrUsername},New error
+Error - Authentication,"Authentication file not found for username: {resolvedUsername}. Please authenticate using ""sf org login jwt""",src/utils/clientAppUtils.ts:61,Auth file missing → Error notification with instructions,"Authentication file not found for username: {resolvedUsername}. Authorize an org using the ""sf org login jwt"" CLI command.","Question: is this error for only JWT?  Or does it apply to any authorization (i.e. org login web)?  I didn't know, so I left it as-is, but thought I'd mention it. "
+Error - Authentication,Error reading authentication: {error.message},src/utils/clientAppUtils.ts:106,Auth file read error → Error notification,Error reading authentication file: {error.message},New error
+Error - Extension,Invalid version format found for the Core Extension {actualVersion} < {minRequiredVersion},src/services/coreExtensionService.ts:105-106,Core extension version too old → Error in logs,No change.,New error
+Error - Extension,It looks you're running an older version of the Salesforce CLI Integration VSCode Extension. Update the Salesforce Extension pack and try again.,src/services/coreExtensionService.ts:76-77,Extension update needed → Error notification,It looks you're running an older version of the Salesforce CLI Integration VS Code Extension. Update the Salesforce Extension Pack and try again.,New error
+Error - Extension,Failed to validate sf CLI and plugin-agent. {err.message},extension.ts:45,CLI validation fails on startup → Error notification,Failed to validate Salesforce CLI and the plugin-agent. {err.message},New error
+Error - Webview,Unable to load trace data. Check the console for errors.,webview/src/components/AgentTracer/AgentTracer.tsx:426,Tracer data load fails → Error message in UI,No change.,New error
+Error - Webview,Failed to compile agent,webview/src/components/AgentPreview/AgentPreview.tsx:365,Agent compilation error → Error message in chat,Failed to compile the agent.,New error
+Error - Webview,Something went wrong,webview/src/components/AgentPreview/AgentPreview.tsx:419,Generic error → Error message in chat,Something went wrong. ,New error
+,,,,,
+WARNING MESSAGES,,,,,
+Warning,"Are you sure you want to deactivate agent ""{agentName}""?",src/commands/deactivateAgent.ts:61-62,"Right-click agent → Select ""Deactivate Agent"" → Confirmation dialog appears with this warning text",No change,
+Warning - Button,Deactivate,src/commands/deactivateAgent.ts:64,"""In deactivation confirmation dialog → ""Deactivate"" button appears as destructive action",No change,
+Warning,Agentforce DX: No conversation data available to export.,src/views/agentCombinedViewProvider.ts:334,Click download icon with no messages → Warning notification appears,No conversation data available to export.,
+Warning,Agentforce DX: Conversation could not be exported.,src/views/agentCombinedViewProvider.ts:1292,Export operation fails → Warning notification appears,Conversation couldn't be exported.,
+Warning,Agentforce DX: Debug mode is enabled but no Apex was executed.,src/views/agentCombinedViewProvider.ts:1041,Debug mode on but no Apex ran → Information notification,Debug mode is enabled but no Apex was executed.,New warning
+,,,,,
+PROGRESS MESSAGES,,,,,
+Progress,Activating agent: {agentName},src/commands/activateAgent.ts:66,During activation → Progress notification appears in bottom-right with spinning indicator,Activating agent: {agentName}...,
+Progress,Deactivating agent: {agentName},src/commands/deactivateAgent.ts:77,During deactivation → Progress notification shows in bottom-right with spinner,Deactivating agent: {agentName}...,
+Progress,Agentforce DX: Open an Agent in the Default Org.,src/commands/openAgentInOrg.ts:51,After selecting agent → Progress notification appears while command executes,Opening agent in the default org...,
+Progress,Validating Agent,src/commands/validateAgent.ts:36,During validation → Progress notification title in bottom-right,Validating agent...,
+Progress,Publishing agent: {fileName},src/commands/publishAgent.ts:40,During publish → Progress notification appears with agent file name,Publishing agent: {fileName}...,
+Progress,Compiling agent...,src/commands/publishAgent.ts:53,First step of publish → Progress notification updates to show compilation phase,No change,
+Progress,Compilation failed with {errors.length} error(s),src/commands/publishAgent.ts:67,Compilation fails → Progress updates with error count,Compilation failed with {errors.length} error(s).,New progress message
+Progress,Publishing agent...,src/commands/publishAgent.ts:76,After compilation → Progress notification updates to publishing phase,No change,
+Progress,Retrieving metadata...,src/commands/publishAgent.ts:82,During publish → Progress updates to show metadata retrieval from org,No change,
+Progress,Metadata retrieved successfully,src/commands/publishAgent.ts:87,Metadata sync completes → Progress updates,No change,New progress message
+Progress,Successfully published! 🎉,src/commands/publishAgent.ts:100,Publish completes → Progress shows success,Agent published successfully. ,New progress message
+Progress,Failed,src/commands/publishAgent.ts:117,Publish fails → Progress shows failure,No change,New progress message
+Progress,Creating AI Authoring Bundle: {apiName},src/commands/createAiAuthoringBundle.ts:98,During bundle creation → Progress notification shows bundle name,Generating authoring bundle: {apiName}...,
+Progress,Generating agent script...,src/commands/createAiAuthoringBundle.ts:103,First step → Progress notification updates to generation phase,Generating Agent Script file...,
+Progress,Creating bundle structure...,src/commands/createAiAuthoringBundle.ts:115,After generation → Progress updates to structure creation phase,Creating authoring bundle structure...,
+Progress,Complete!,src/commands/createAiAuthoringBundle.ts:141,"""Bundle creation finishes → Progress notification shows ""Complete!"" briefly before success",No change,
+Progress,Failed with {response.errors.length} error(s),src/commands/validateAgent.ts:76,Validation fails → Progress updates with error count,Failed with {response.errors.length} error(s).,New progress message
+Progress,Successful! 🎉,src/commands/validateAgent.ts:88,Validation succeeds → Progress shows success,Successful!,New progress message
+Progress,Failed,src/commands/validateAgent.ts:106,Validation fails → Progress shows failure,No change,New progress message
+Progress,Running {testName},src/views/testRunner.ts:137,During test execution → Progress notification shows test name with spinner,Running {testName}...,
+Progress,Status: In Progress,src/views/testRunner.ts:154,Test running → Progress notification detail shows current status,No change,
+Progress,Status: {status},src/views/testRunner.ts:158/162,Test completes → Progress notification updates with final status (Completed Failed Cancelled),No change,
+Progress,Starting session...,src/views/agentCombinedViewProvider.ts:778,Session starting → Progress in webview,No change,New progress message
+Progress,Compiling agent...,src/views/agentCombinedViewProvider.ts:852,Agent compiling → Progress in webview,No change,
+Progress,Starting live test...,src/views/agentCombinedViewProvider.ts:865-868,Live test starting → Progress in webview,No change,New progress message
+Progress,Starting simulation...,src/views/agentCombinedViewProvider.ts:865-868,Simulation starting → Progress in webview,No change,New progress message
+Progress,Sending message...,src/views/agentCombinedViewProvider.ts:991,Message being sent → Progress in webview,No change,New progress message
+,,,,,
+CHAT MESSAGES,,,,,
+Chat - System,Starting session...,webview/src/components/AgentPreview/AgentPreview.tsx:46,"""Click ""Start"" button → Initial system message appears in chat while connecting",No change,
+Chat - System,Hi! I'm ready to help. What can I do for you?,webview/src/components/AgentPreview/AgentPreview.tsx:300,Session successfully starts → Default welcome message from agent (if no custom welcome configured),No change,
+Chat - System,Failed to compile agent,webview/src/components/AgentPreview/AgentPreview.tsx:365,Compilation fails → Error message appears in red in chat area,Failed to compile agent.,
+Chat - System,Something went wrong,webview/src/components/AgentPreview/AgentPreview.tsx:419,Unexpected error during operation → Generic error message shown in chat,Something went wrong.,
+Chat - Loading,Loading...,webview/src/components/AgentPreview/AgentPreview.tsx:144,"""Various loading states → ""Loading..."" message appears with spinner",No change,
+Chat - Loading,Connecting to agent...,webview/src/components/AgentPreview/AgentPreview.tsx:341/479,Establishing connection → Loading message in chat area,No change,
+Chat - Loading,Loading agent...,webview/src/components/AgentPreview/AgentPreview.tsx:344,Fetching agent data → Loading message shown,No change,
+Chat - Loading,Compiling agent...,webview/src/components/AgentPreview/AgentPreview.tsx:354,Agent script being compiled → Loading message with compilation status,No change,
+Chat - Loading,Starting simulation...,webview/src/components/AgentPreview/AgentPreview.tsx:375,Simulation mode initializing → Loading message specific to simulation,No change,
+Chat - Loading,Agent is thinking...,webview/src/components/AgentPreview/AgentPreview.tsx:406,After sending message → Loading indicator while agent processes request,No change,
+,,,,,
+TRACER MESSAGES,,,,,
+Tracer - Loading,Loading trace data...,webview/src/components/AgentTracer/AgentTracer.tsx:344,Trace being fetched → Loading spinner with message,No change,New message
+Tracer - Error,Unable to load trace data. Check the console for errors.,webview/src/components/AgentTracer/AgentTracer.tsx:426,Trace load fails → Error message displayed,No change,New message
+,,,,,
+TEST RUNNER,,,,,
+Test,CASE #{testNumber} - {subjectName},src/views/testRunner.ts:62-67,Each test case → Header with test number and subject,No change,
+Test,"""{utterance}""",src/views/testRunner.ts:66,Test case input → User utterance in quotes,No change,
+Test,❯ {NAME}: {result} {✅/❌},src/views/testRunner.ts:74,Test assertion result → Name with pass/fail indicator,No change,
+Test,EXPECTED : {expectedValue},src/views/testRunner.ts:77,Failed assertion → Shows expected value,No change,
+Test,ACTUAL   : {actualValue},src/views/testRunner.ts:78,Failed assertion → Shows actual value received,No change,
+Test,SCORE    : {score},src/views/testRunner.ts:79,Assertion score → Numerical score value,No change,
+Test,❯ ACTION: INVOCATION ℹ️,src/views/testRunner.ts:88,Action invoked → Shows invocation occurred with info icon,No change,
+Test,❯ METRICS (Value/Threshold),src/views/testRunner.ts:99,Metrics section → Header for performance metrics,No change,
+Test,⏱️ : {NAME} ({score}ms)  : {explainability},src/views/testRunner.ts:104,Time metric → Shows duration with timer emoji,No change,
+Test,{✅/❌} : {NAME} ({score}/3)  : {explainability},src/views/testRunner.ts:109,Quality metric → Shows score out of 3 with pass/fail indicator,No change,
+Test,TEST CASE SUMMARY: {total} tests run | ✅ {passed} passed | ❌ {failed} failed,src/views/testRunner.ts:116-118,After all test cases → Summary line with totals,No change,
+Test,Starting {testName} tests: {timestamp},src/views/testRunner.ts:133,Test execution begins → Start message with timestamp,No change,
+Test,Error running test: {error.message},src/views/testRunner.ts:203,Test execution fails → Error message logged to output,No change,
+Test,Test Results,src/views/testRunner.ts:212,Results header → Section title in output channel,No change,
+Test,Passing: {count}/{total},src/views/testRunner.ts:215,Test summary → Count of passing tests,No change,
+Test,Failing: {count}/{total},src/views/testRunner.ts:218,Test summary → Count of failing tests,No change,
+Test,Select a test case in the Test View panel for more information,src/views/testRunner.ts:221,After summary → Help text directing user to Test View panel,No change,
+,,,,No change,
+OUTPUT,,,,,
+Output,No agents found.,extension.ts:221/309,Agent list empty → Error logged to output channel,No change.,
+Output,Failed to list agents: {errorMessage},extension.ts:255/330,Agent list command fails → Error logged to output channel,No change.,
+Output,SF_TEST_API = {process.env.SF_TEST_API},src/views/agentCombinedViewProvider.ts:847,Debug info → Environment variable status logged,No change.,New output message
+Output,Compilation end point called,src/views/agentCombinedViewProvider.ts:848,Debug info → Compilation endpoint invoked logged,Compilation end point called.,New output message
+Output,Simulation session started,src/views/agentCombinedViewProvider.ts:863,Session start → Logged to output channel,Simulation session started.,New output message
+Output,Simulation ended,src/views/agentCombinedViewProvider.ts:258,Session stop → Logged to output channel,Simulation ended.,New output message
+Output,---------------------,src/views/agentCombinedViewProvider.ts:259/974/1299,Separator → Visual divider in output,No change.,New output message
+Output,"Simulation message sent - ""{userMessage}""",src/views/agentCombinedViewProvider.ts:995,Message sent → Debug log of user message,No change.,New output message
+Output,"Simulation message received - ""{lastMessage?.message}""",src/views/agentCombinedViewProvider.ts:1009,Message received → Debug log of agent response,No change.,New output message
+Output,Error starting session: {err},src/views/agentCombinedViewProvider.ts:973,Session start fails → Error logged to output,No change.,New output message
+Output,Error: {errorMessage},src/views/agentCombinedViewProvider.ts:1298,Generic error → Error logged to output,No change.,New output message
+Output,"See ""Preview an Agent"" in the ""Agentforce Developer Guide"" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.",src/views/agentCombinedViewProvider.ts:1071,Documentation reference → Help link in output channel,No change.,New output message
+Output,Activating agent: {agentName},src/commands/activateAgent.ts:60,During activation → Message logged to Agentforce DX output channel,Activating agent {agentName}...,
+Output,Successfully activated agent: {agentName},src/commands/activateAgent.ts:85,Activation succeeds → Success logged to output channel,Successfully activated agent {agentName}.,
+Output,Failed to activate agent: {error.message},src/commands/activateAgent.ts:90/92,Activation fails → Error logged to output channel,No change.,
+Output,Deactivating agent: {agentName},src/commands/deactivateAgent.ts:71,During deactivation → Message logged to output channel,Deactivating agent {agentName}...,
+Output,Successfully deactivated agent: {agentName},src/commands/deactivateAgent.ts:96,Deactivation succeeds → Success logged to output channel,Successfully deactivated agent {agentName}.,
+Output,Failed to deactivate agent: {error.message},src/commands/deactivateAgent.ts:101/103,Deactivation fails → Error logged to output channel,No change.,
+Output,Could not find agents in the current project.,src/commands/openAgentInOrg.ts:32,No agents found → Error logged to output channel,Couldn't find any agents in the current DX project.,
+Output,Suggestion: retrieve your agents (Bot) metadata locally.,src/commands/openAgentInOrg.ts:33,"""After ""no agents"" error → Helpful suggestion logged to output channel","Suggestion: Retrieve your agent metadata to your DX project with the ""project retrieve start"" CLI command. ",
+Output,Publishing agent: {fileName},src/commands/publishAgent.ts:34,Publish starts → Initial message logged to output channel,Publishing agent {fileName}...,
+Output,Retrieving metadata from org...,src/commands/publishAgent.ts:83,During publish → Metadata retrieval phase logged to output channel,No change.,
+Output,Metadata retrieved successfully.,src/commands/publishAgent.ts:88,Metadata sync completes → Success logged to output channel,No change.,
+Output,Successfully published agent: {fileName},src/commands/publishAgent.ts:101,Publish completes → Final success logged to output channel,Successfully published agent {fileName}.,
+Output,No specs directory found at {specsDir},src/commands/createAiAuthoringBundle.ts:70,Specs directory missing → Error logged to output channel with path,No agent spec directory found at {specsDir}.,
+Output,❌ Agent validation failed!,src/commands/validateAgent.ts:67/101,Validation finds errors → Header logged to output channel in red,❌ Agent validation failed.,
+Output,❌ Agent compilation failed!,src/commands/publishAgent.ts:62,Compilation fails → Error header logged to output channel,❌ Agent compilation failed.,
+Output,❌ Agent publish failed!,src/commands/publishAgent.ts:106,Publish operation fails → Error header logged to output channel,❌ Agent publish failed.,
+Output,❌ Failed to create AI Authoring Bundle,src/commands/createAiAuthoringBundle.ts:154,Bundle creation fails → Error header logged to output channel,❌ Failed to generate authoring bundle. ,
+Output,❌ Error previewing .agent file!,src/commands/previewAgent.ts:56,Preview operation fails → Error header logged to output channel,❌ Error previewing the .agent file.,New output message
+Output,Found {errors.length} error(s):,src/commands/validateAgent.ts:69 / src/commands/publishAgent.ts:64,After validation/compilation fails → Error count summary in output channel,No change.,
+Output,{index + 1}. [{errorType}] Line {lineStart}:{colStart},src/commands/validateAgent.ts:71,For each validation error → Numbered error with type and location,No change.,
+Output,{error.description},src/commands/validateAgent.ts:72,Error detail line → Indented description of error,No change.,New output message
+Output,Something went wrong,src/commands/validateAgent.ts:103 / src/commands/previewAgent.ts:60,Unexpected error → Generic error message in output channel,Something went wrong. ,
+Output,Error Details:,src/commands/previewAgent.ts:58,Preview error occurs → Section header in output channel before error details,No change.,
+Output,Stack Trace:,src/commands/previewAgent.ts:64,After error details → Stack trace section in output channel for debugging,No change.,
+Output,Error: {error.message},src/commands/publishAgent.ts:108 / src/commands/createAiAuthoringBundle.ts:156,Operation fails → Error message in output channel,No change.,New output message
+,,,,,
+ARIA LABELS & TOOLTIPS,,,,,
+Aria Label,Close,webview/src/components/shared/TabNavigation.tsx:130,"Tab close button → Screen reader announces ""Close""",No change,
+Aria Label,Show options,webview/src/components/shared/SplitButton.tsx:174/webview/src/components/AgentPreview/AgentSelector.tsx:174,Split button trigger → Aria label for accessibility,No change,
+Aria Label,Copy code,webview/src/components/shared/CodeBlock.tsx:65,Copy button → Aria label for screen readers,No change,
+Aria Label,Trace history,webview/src/components/AgentTracer/AgentTracer.tsx:353,History select → Aria label for trace history dropdown,No change,New aria label
+Tooltip,Copied!,webview/src/components/shared/CodeBlock.tsx:66,After copying code → Tooltip shows confirmation,No change,
+Tooltip,Copy code,webview/src/components/shared/CodeBlock.tsx:66,Before copying → Tooltip on copy button,No change,
+Alt Text,User,webview/src/components/AgentPreview/ChatMessage.tsx:44,User icon → Alt text for image,No change,
+Alt Text,Agent,webview/src/components/AgentPreview/ChatMessage.tsx:44,Agent icon → Alt text for image,No change,
+Alt Text,Expand,webview/src/components/AgentTracer/*.tsx:23/31/35,Chevron icon → Alt text for expandable sections,No change,New alt text
+Alt Text,Action,webview/src/components/AgentTracer/StepAction.tsx:24,Bolt icon → Alt text for action indicator,No change,New alt text
+Alt Text,Clock,webview/src/components/AgentTracer/*.tsx:29/32/60/67,Clock icon → Alt text for timing indicator,No change,New alt text
+Alt Text,Sparkles,webview/src/components/AgentTracer/*.tsx:52/58/62,Sparkles icon → Alt text for reasoning indicator,No change,New alt text
+Alt Text,Book,webview/src/components/AgentTracer/StepTopic.tsx:62,Book icon → Alt text for topic indicator,No change,New alt text

@@ -327,7 +327,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         const errorMessage: Message = {
           id: Date.now().toString(),
           type: 'system',
-          content: data?.message || 'Failed to compile agent',
+          content: data?.message || 'Failed to compile the agent.',
           systemType: 'error',
           timestamp: new Date().toISOString()
         };
@@ -371,7 +371,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
         setMessages(prev => {
           const filteredMessages = pruneStartingSessionMessages(prev);
-          const errorMessage = createSystemMessage(data?.message || 'Something went wrong', 'error');
+          const errorMessage = createSystemMessage(data?.message || 'Something went wrong.', 'error');
           return errorMessage ? [...filteredMessages, errorMessage] : filteredMessages;
         });
 
@@ -496,7 +496,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
       return (
         <div className="agent-selection">
-          <h4>Select Client App:</h4>
+          <h4>Select client app</h4>
           <select
             className="agent-select"
             onChange={e => {

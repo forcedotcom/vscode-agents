@@ -182,7 +182,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
 
     const statusMessage = newDebugMode ? 'Debug mode activated.' : 'Debug mode deactivated.';
-    vscode.window.showInformationMessage(`Agentforce DX: ${statusMessage}`);
+    vscode.window.showInformationMessage(statusMessage);
   }
 
   /**
@@ -331,7 +331,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private async saveConversationExport(content: string, suggestedFileName?: string): Promise<void> {
     if (!content || content.trim() === '') {
-      vscode.window.showWarningMessage('Agentforce DX: No conversation data available to export.');
+      vscode.window.showWarningMessage('No conversation data available to export.');
       return;
     }
 
@@ -364,10 +364,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const encoder = new TextEncoder();
     try {
       await vscode.workspace.fs.writeFile(targetUri, encoder.encode(content));
-      vscode.window.showInformationMessage(`Agentforce DX: Conversation saved to ${targetUri.fsPath}`);
+      vscode.window.showInformationMessage(`Conversation was saved to ${targetUri.fsPath}.`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      vscode.window.showErrorMessage(`Agentforce DX: Failed to save conversation: ${errorMessage}`);
+      vscode.window.showErrorMessage(`Failed to save conversation: ${errorMessage}`);
     }
   }
 
@@ -695,7 +695,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
         if (!selection) {
           vscode.window.showInformationMessage(
-            'Agentforce DX: Client app selection cancelled. Showing Agent Script files only.'
+            'Client app selection cancelled. Showing Agent Script files only.'
           );
           return { status: 'handled' };
         }
@@ -1281,7 +1281,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           if (typeof markdown === 'string' && markdown.trim() !== '') {
             await this.saveConversationExport(markdown, fileName);
           } else {
-            vscode.window.showWarningMessage('Agentforce DX: Conversation could not be exported.');
+            vscode.window.showWarningMessage('Conversation couldn\'t be exported.');
           }
         }
       } catch (err) {
@@ -1312,16 +1312,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           errorMessage.includes('No valid version available')
         ) {
           errorMessage =
-            'This agent is currently deactivated and cannot be used for conversations. Please activate the agent first using the "Activate Agent" right click menu option or through the Salesforce Setup.';
+            'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
         }
         // Check for other common agent errors
         else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
           errorMessage =
-            'The selected agent could not be found. It may have been deleted or you may not have access to it.';
+            'The selected agent couldn\'t be found. Either it\'s been deleted or you don\'t have access to it.';
         }
         // Check for permission errors
         else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
-          errorMessage = "You don't have permission to use this agent. Please check with your administrator.";
+          errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
         }
 
         await this.postErrorMessage(webviewView, errorMessage);
@@ -1418,7 +1418,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         : await CoreExtensionService.getDefaultConnection();
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) {
-        vscode.window.showErrorMessage('No workspace folder found to save apex debug logs.');
+        vscode.window.showErrorMessage('No workspace directory found to save the Apex debug logs.');
         return undefined;
       }
 
