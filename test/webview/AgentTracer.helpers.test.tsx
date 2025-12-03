@@ -438,4 +438,165 @@ describe('AgentTracer helpers', () => {
     expect(items[0].label).toBe('Topic Selected');
     expect(items[0].description).toBe('new_topic');
   });
+
+  it('handles invalid timestamp in formatHistoryLabel', () => {
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      timestamp: 'invalid-date',
+      userMessage: 'Test message',
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+
+    const result = formatHistoryLabel(entry, 0);
+    expect(result).toBe('Test message');
+  });
+
+  it('handles invalid timestamp in formatHistoryParts', () => {
+    const entry: TraceHistoryEntry = {
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      timestamp: 'invalid-date',
+      userMessage: 'Test message',
+      trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+    };
+
+    const result = formatHistoryParts(entry, 0);
+    expect(result.time).toBeNull();
+    expect(result.message).toBe('Test message');
+  });
+
+  it('shows directive_context for SessionInitialStateStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'SessionInitialStateStep', data: { directive_context: 'Context info' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBe('Context info');
+  });
+
+  it('shows agent name for EnabledToolsStep without tools', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'EnabledToolsStep', data: { agent_name: 'test_agent' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBe('test_agent');
+  });
+
+  it('shows agent name for LLMStep without latency', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'LLMStep', data: { agent_name: 'test_agent' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBe('test_agent');
+  });
+
+  it('returns undefined for VariableUpdateStep without variable names', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'VariableUpdateStep', data: { variable_updates: [] } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBeUndefined();
+  });
+
+  it('returns undefined for TransitionStep without from/to agents', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'TransitionStep', data: { from_agent: 'agent1' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBeUndefined();
+  });
+
+  it('shows no description for BeforeReasoningStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'BeforeReasoningStep', data: { agent_name: 'test_agent' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBe('test_agent');
+  });
+
+  it('returns undefined for ReasoningStep without reason', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'ReasoningStep' }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBeUndefined();
+  });
+
+  it('returns undefined for PlannerResponseStep without message', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'PlannerResponseStep' }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBeUndefined();
+  });
+
+  it('uses step name as label when present without type', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ name: 'CustomStepName', data: { foo: 'bar' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('CustomStepName');
+  });
+
+  it('includes message property in step data', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ message: 'Test message', data: { foo: 'bar' } }]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"message"');
+    expect(result).toContain('Test message');
+  });
 });
