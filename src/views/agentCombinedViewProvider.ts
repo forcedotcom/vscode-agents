@@ -619,7 +619,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Returns published agents that have active versions
    */
   private async getActiveRemoteAgents(conn: Connection): Promise<AvailableAgent[]> {
-    const remoteAgents = await Agent.listRemote(conn as any);
+    const remoteAgents = await Agent.listRemote(conn);
     return remoteAgents
       ? remoteAgents
           .filter(bot => {
@@ -887,11 +887,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               });
 
               // Create AgentSimulate with just the file path
-              // Type cast needed due to local dependency setup with separate @salesforce/core instances
               // mockActions: true = simulate (mock actions), false = live test (real side effects)
               // The lifecycle listeners will automatically handle compilation progress messages
               const mockActions = !isLiveMode; // Simulate = true, Live Test = false
-              this.agentPreview = new AgentSimulate(conn as any, filePath, mockActions);
+              this.agentPreview = new AgentSimulate(conn, filePath, mockActions);
               this.currentAgentName = path.basename(filePath, '.agent');
               this.currentAgentId = agentId;
 
@@ -908,11 +907,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               await this.setLiveMode(true);
               ensureActive();
 
-              // Type cast needed due to local dependency setup with separate @salesforce/core instances
-              this.agentPreview = new AgentPreview(conn as any, agentId);
+              this.agentPreview = new AgentPreview(conn, agentId);
 
               // Get agent name for notifications
-              const remoteAgents = await Agent.listRemote(conn as any);
+              const remoteAgents = await Agent.listRemote(conn);
               ensureActive();
               const agent = remoteAgents?.find(bot => bot.Id === agentId);
               this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';

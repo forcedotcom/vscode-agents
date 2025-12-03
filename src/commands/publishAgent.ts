@@ -43,7 +43,7 @@ export const registerPublishAgentCommand = () => {
         async progress => {
           try {
             // Get connection to the org
-            const connection = CoreExtensionService.getDefaultConnection();
+            const connection = await CoreExtensionService.getDefaultConnection();
 
             // Read the agent file contents
             const fileUri = vscode.Uri.file(filePath);
@@ -51,7 +51,7 @@ export const registerPublishAgentCommand = () => {
 
             // Step 1: Compile the agent script
             progress.report({ message: 'Compiling agent...', increment: 0 });
-            const compileResponse = await Agent.compileAgentScript(connection as any, fileContents);
+            const compileResponse = await Agent.compileAgentScript(connection, fileContents);
 
             // Check if compilation failed
             if (compileResponse.status === 'failure') {
@@ -89,8 +89,7 @@ export const registerPublishAgentCommand = () => {
             });
 
             try {
-              // Type cast needed due to local dependency setup with separate @salesforce/core instances
-              await Agent.publishAgentJson(connection as any, project as any, compileResponse.compiledArtifact);
+              await Agent.publishAgentJson(connection, project, compileResponse.compiledArtifact);
             } finally {
               // Clean up event listeners
               lifecycle.removeAllListeners('scopedPreRetrieve');

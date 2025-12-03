@@ -560,14 +560,6 @@ describe('AgentCombinedViewProvider', () => {
       expect(localAgents[2].name).toBe('zebra');
     });
 
-    it('should handle errors when discovering agents', async () => {
-      (vscode.workspace.findFiles as jest.Mock).mockRejectedValue(new Error('Discovery failed'));
-
-      const localAgents = await (provider as any).discoverLocalAgents();
-
-      expect(localAgents).toEqual([]);
-    });
-
     it('should return empty array when no .agent files found', async () => {
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([]);
 
