@@ -291,4 +291,151 @@ describe('AgentTracer helpers', () => {
     expect(result).toContain('"reason"');
     expect(result).toContain('SMALL_TALK: Test reason');
   });
+
+  it('returns null when step does not exist at index', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ data: { foo: 'bar' } }]
+    };
+
+    expect(getStepData(trace, 999)).toBeNull();
+  });
+
+  it('includes topic in step data', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ topic: 'greeting', data: { foo: 'bar' } }]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"topic"');
+    expect(result).toContain('greeting');
+  });
+
+  it('includes responseType in step data', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ responseType: 'text', data: { foo: 'bar' } }]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"responseType"');
+    expect(result).toContain('text');
+  });
+
+  it('includes isContentSafe in step data', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ isContentSafe: true, data: { foo: 'bar' } }]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"isContentSafe"');
+    expect(result).toContain('true');
+  });
+
+  it('includes safetyScore in step data', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ safetyScore: 0.95, data: { foo: 'bar' } }]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"safetyScore"');
+    expect(result).toContain('0.95');
+  });
+
+  it('returns null when step has no displayable data', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'SomeStep' }]
+    };
+
+    expect(getStepData(trace, 0)).toBeNull();
+  });
+
+  it('uses fallback label for steps without type or name', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ data: { foo: 'bar' } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Step 1');
+  });
+
+  it('shows multiple variable updates count', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'VariableUpdateStep',
+          data: {
+            variable_updates: [{ variable_name: 'var1' }, { variable_name: 'var2' }, { variable_name: 'var3' }]
+          }
+        }
+      ]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBe('3 variables updated');
+  });
+
+  it('shows single tool for EnabledToolsStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'EnabledToolsStep', data: { agent_name: 'agent1', enabled_tools: ['tool1'] } }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBe('1 tool for agent1');
+  });
+
+  it('shows full reason text when no colon present', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'ReasoningStep', reason: 'This is a plain reason without category' }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].description).toBe('This is a plain reason without category');
+  });
+
+  it('shows topic for UpdateTopicStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [{ type: 'UpdateTopicStep', topic: 'new_topic' }]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Topic Selected');
+    expect(items[0].description).toBe('new_topic');
+  });
 });
