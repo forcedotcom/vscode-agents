@@ -86,6 +86,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  padding-right: 10px;
 }
 
 /* Status-specific styles */
