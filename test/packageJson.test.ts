@@ -38,7 +38,8 @@ describe('package.json', () => {
         expect(refreshAgentsCommand?.when).toContain('!agentforceDX:sessionActive');
         expect(refreshAgentsCommand?.when).toContain('!agentforceDX:sessionStarting');
         expect(refreshAgentsCommand?.when).toContain('!agentforceDX:canResetAgentView');
-        expect(refreshAgentsCommand?.when).toContain('agentforceDX:agentSelected');
+        // Reload button should be visible without requiring an agent to be selected
+        expect(refreshAgentsCommand?.when).not.toContain('agentforceDX:agentSelected');
       });
 
       it('should have export conversation command visible only when history is present', () => {
@@ -129,7 +130,7 @@ describe('package.json', () => {
         const focusTestViewCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.focusTestView');
 
         expect(focusViewCommand).toBeDefined();
-        expect(focusViewCommand?.title).toBe('AFDX: Focus on Agentforce DX View');
+        expect(focusViewCommand?.title).toBe('AFDX: Focus on Agentforce DX Preview');
 
         expect(focusTestViewCommand).toBeDefined();
         expect(focusTestViewCommand?.title).toBe('AFDX: Focus on Agent Tests View');

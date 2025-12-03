@@ -55,6 +55,7 @@
   gap: 2px;
   padding-bottom: 16px;
   flex: 1;
+  min-width: 0;
 }
 
 .vscode-timeline-item__link {
@@ -79,8 +80,13 @@
 .vscode-timeline-item__description {
   font-size: calc(var(--vscode-font-size) - 2px);
   line-height: 1.4;
-  color: var(--vscode-descriptionForeground);
-  opacity: 0.7;
+  color: var(--vscode-foreground);
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  padding-right: 10px;
 }
 
 /* Status-specific styles */

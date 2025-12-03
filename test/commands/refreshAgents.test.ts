@@ -45,13 +45,13 @@ describe('Refresh Agents Command', () => {
   it('should refresh the agent list and show toast', async () => {
     const refreshCommand = async () => {
       await mockProvider.refreshAvailableAgents();
-      vscode.window.showInformationMessage('Agentforce DX: Agent list refreshed');
+      vscode.window.showInformationMessage('Agent list refreshed.');
     };
 
     await refreshCommand();
 
     expect(mockProvider.refreshAvailableAgents).toHaveBeenCalled();
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Agent list refreshed');
+    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agent list refreshed.');
   });
 
   it('should reset the agent view when an agent is selected', async () => {
@@ -64,17 +64,17 @@ describe('Refresh Agents Command', () => {
 
       try {
         await mockProvider.resetCurrentAgentView();
-        vscode.window.showInformationMessage('Agentforce DX: Agent preview reset');
+        vscode.window.showInformationMessage('Agent preview reset.');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        vscode.window.showErrorMessage(`Agentforce DX: Unable to reset agent view: ${errorMessage}`);
+        vscode.window.showErrorMessage(`Unable to reset agent view: ${errorMessage}`);
       }
     };
 
     await resetCommand();
 
     expect(mockProvider.resetCurrentAgentView).toHaveBeenCalled();
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agentforce DX: Agent preview reset');
+    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agent preview reset.');
   });
 
   it('should show an error when no agent is selected', async () => {
@@ -107,18 +107,16 @@ describe('Refresh Agents Command', () => {
 
       try {
         await mockProvider.resetCurrentAgentView();
-        vscode.window.showInformationMessage('Agentforce DX: Agent preview reset');
+        vscode.window.showInformationMessage('Agent preview reset.');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        vscode.window.showErrorMessage(`Agentforce DX: Unable to reset agent view: ${errorMessage}`);
+        vscode.window.showErrorMessage(`Unable to reset agent view: ${errorMessage}`);
       }
     };
 
     await resetCommand();
 
     expect(mockProvider.resetCurrentAgentView).toHaveBeenCalled();
-    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
-      'Agentforce DX: Unable to reset agent view: reset failed'
-    );
+    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Unable to reset agent view: reset failed');
   });
 });

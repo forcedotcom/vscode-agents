@@ -117,6 +117,107 @@ export const applyHistorySelection = (
   };
 };
 
+// Map step types to user-friendly display names
+const STEP_DISPLAY_NAMES: Record<string, string> = {
+  UserInputStep: 'User Input',
+  SessionInitialStateStep: 'Session Initialized',
+  NodeEntryStateStep: 'Entered Topic',
+  EnabledToolsStep: 'Tools Enabled',
+  LLMStep: 'Reasoning',
+  VariableUpdateStep: 'Variable Update',
+  TransitionStep: 'Topic Transition',
+  BeforeReasoningStep: 'Before Reasoning',
+  ReasoningStep: 'Output Evaluation',
+  PlannerResponseStep: 'Agent Response',
+  UpdateTopicStep: 'Topic Selected'
+};
+
+// Get the description/subtitle for a step based on its type
+const getStepDescription = (step: any): string | undefined => {
+  const stepType = step.type || step.stepType || '';
+
+  switch (stepType) {
+    case 'UserInputStep':
+      return step.message || undefined;
+
+    case 'SessionInitialStateStep':
+      return step.data?.directive_context || undefined;
+
+    case 'NodeEntryStateStep':
+      return step.data?.agent_name || undefined;
+
+    case 'EnabledToolsStep': {
+      const tools = step.data?.enabled_tools;
+      if (Array.isArray(tools) && tools.length > 0) {
+        return `${tools.length} tool${tools.length > 1 ? 's' : ''} for ${step.data?.agent_name || 'agent'}`;
+      }
+      return step.data?.agent_name || undefined;
+    }
+
+    case 'LLMStep': {
+      const agentName = step.data?.agent_name;
+      const latency = step.data?.execution_latency;
+      if (agentName && latency) {
+        return `${agentName} (${latency}ms)`;
+      }
+      return agentName || undefined;
+    }
+
+    case 'VariableUpdateStep': {
+      const updates = step.data?.variable_updates;
+      if (Array.isArray(updates) && updates.length > 0) {
+        const varNames = updates.map((u: any) => u.variable_name).filter(Boolean);
+        if (varNames.length === 1) {
+          return varNames[0];
+        }
+        if (varNames.length > 1) {
+          return `${varNames.length} variables updated`;
+        }
+      }
+      return undefined;
+    }
+
+    case 'TransitionStep': {
+      const from = step.data?.from_agent;
+      const to = step.data?.to_agent;
+      if (from && to) {
+        return `${from} → ${to}`;
+      }
+      return undefined;
+    }
+
+    case 'BeforeReasoningStep':
+      return step.data?.agent_name || undefined;
+
+    case 'ReasoningStep': {
+      const reason = step.reason;
+      if (reason) {
+        // Extract the category (text before the colon)
+        const colonIndex = reason.indexOf(':');
+        if (colonIndex > 0 && colonIndex < 30) {
+          return reason.substring(0, colonIndex);
+        }
+        return reason;
+      }
+      return undefined;
+    }
+
+    case 'PlannerResponseStep': {
+      const message = step.message;
+      if (message) {
+        return message;
+      }
+      return undefined;
+    }
+
+    case 'UpdateTopicStep':
+      return step.topic || undefined;
+
+    default:
+      return undefined;
+  }
+};
+
 export const buildTimelineItems = (
   traceData: PlanSuccessResponse | null,
   onSelect: (index: number) => void
@@ -130,19 +231,22 @@ export const buildTimelineItems = (
     const stepType = step.type || step.stepType || '';
     const stepName = step.name || step.label || step.description || '';
 
+    // Get user-friendly display name
+    const displayType = STEP_DISPLAY_NAMES[stepType] || stepType;
+
     let label: string;
     if (stepType && stepName) {
-      label = `${stepType}: ${stepName}`;
+      label = `${displayType}: ${stepName}`;
     } else if (stepType) {
-      label = stepType;
+      label = displayType;
     } else if (stepName) {
       label = stepName;
     } else {
       label = `Step ${index + 1}`;
     }
 
-    const description = `Step ${index + 1}`;
-    const hasData = step && step.data;
+    const description = getStepDescription(step);
+    const hasData = step && (step.data || step.message || step.reason);
 
     return {
       status,
@@ -159,8 +263,37 @@ export const getStepData = (traceData: PlanSuccessResponse | null, selectedStepI
   }
 
   const step = traceData.plan[selectedStepIndex];
-  if (step && step.data) {
-    return JSON.stringify(step.data, null, 2);
+  if (!step) {
+    return null;
+  }
+
+  // Build a display object with relevant step properties
+  const displayData: Record<string, any> = {};
+
+  if (step.data) {
+    Object.assign(displayData, step.data);
+  }
+  if (step.message) {
+    displayData.message = step.message;
+  }
+  if (step.reason) {
+    displayData.reason = step.reason;
+  }
+  if (step.topic) {
+    displayData.topic = step.topic;
+  }
+  if (step.responseType) {
+    displayData.responseType = step.responseType;
+  }
+  if (step.isContentSafe !== undefined) {
+    displayData.isContentSafe = step.isContentSafe;
+  }
+  if (step.safetyScore) {
+    displayData.safetyScore = step.safetyScore;
+  }
+
+  if (Object.keys(displayData).length > 0) {
+    return JSON.stringify(displayData, null, 2);
   }
 
   return null;
@@ -408,7 +541,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
               {currentHistoryEntry && (
                 <div className="tracer-json-link">
                   <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
-                    View Raw JSON
+                    View raw JSON
                   </button>
                 </div>
               )}

@@ -23,7 +23,7 @@ export const registerPublishAgentCommand = () => {
 
     // Validate that this is a .agent file
     if (!filePath.endsWith('.agent')) {
-      vscode.window.showErrorMessage('This command can only be used on .agent files.');
+      vscode.window.showErrorMessage('You can use this command on only .agent files.');
       return;
     }
 
@@ -31,13 +31,13 @@ export const registerPublishAgentCommand = () => {
       const project = SfProject.getInstance();
       const fileName = path.basename(filePath, '.agent');
 
-      channelService.appendLine(`Publishing agent: ${fileName}`);
+      channelService.appendLine(`Publishing agent ${fileName}...`);
       channelService.showChannelOutput();
 
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Publishing agent: ${fileName}`,
+          title: `Publishing agent: ${fileName}...`,
           cancellable: false
         },
         async progress => {
@@ -64,10 +64,10 @@ export const registerPublishAgentCommand = () => {
               channelService.appendLine(`Found ${compileResponse.errors.length} error(s):`);
               channelService.appendLine(errorMessages);
 
-              progress.report({ message: `Compilation failed with ${compileResponse.errors.length} error(s)` });
+              progress.report({ message: `Compilation failed with ${compileResponse.errors.length} error(s).` });
 
               vscode.window.showErrorMessage(
-                `Agent compilation failed with ${compileResponse.errors.length} error(s). Check the output channel for details.`
+                `Agent compilation failed with ${compileResponse.errors.length} error(s). Check the Output tab for details.`
               );
               return;
             }
@@ -96,10 +96,10 @@ export const registerPublishAgentCommand = () => {
               lifecycle.removeAllListeners('scopedPostRetrieve');
             }
 
-            progress.report({ message: 'Successfully published! 🎉', increment: 100 });
-            channelService.appendLine(`Successfully published agent: ${fileName}`);
+            progress.report({ message: 'Agent published successfully.', increment: 100 });
+            channelService.appendLine(`Successfully published agent ${fileName}.`);
 
-            vscode.window.showInformationMessage(`Agent "${fileName}" has been published successfully.`);
+            vscode.window.showInformationMessage(`Agent "${fileName}" was published successfully.`);
           } catch (publishError) {
             const error = SfError.wrap(publishError);
             channelService.appendLine('❌ Agent publish failed!');

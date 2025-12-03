@@ -41,7 +41,7 @@ export class AgentTestRunner {
         channelService.appendLine(`Job Id: ${result.id}`);
         this.printTestSummary(result!);
       } else {
-        vscode.window.showErrorMessage('You need to run the test first to see its results.');
+        vscode.window.showErrorMessage('You must run the agent test first to see its results.');
       }
 
       return;
@@ -134,7 +134,7 @@ export class AgentTestRunner {
       vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Running ${test.name}`
+          title: `Running ${test.name}...`
         },
         async progress => {
           return new Promise((resolve, reject) => {

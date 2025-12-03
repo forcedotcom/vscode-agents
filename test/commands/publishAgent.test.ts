@@ -137,7 +137,7 @@ describe('publishAgent', () => {
       registerPublishAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      expect(errorMessageSpy).toHaveBeenCalledWith('This command can only be used on .agent files.');
+      expect(errorMessageSpy).toHaveBeenCalledWith('You can use this command on only .agent files.');
       expect(progressSpy).not.toHaveBeenCalled();
     });
 
@@ -165,16 +165,16 @@ describe('publishAgent', () => {
 
       expect(compileAgentScriptSpy).toHaveBeenCalledWith(expect.anything(), 'agent TestAgent { }');
       expect(publishAgentJsonSpy).toHaveBeenCalledWith(expect.anything(), fakeProject, mockCompiledArtifact);
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Publishing agent: TestAgent');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Publishing agent TestAgent...');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Retrieving metadata from org...');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Metadata retrieved successfully.');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Successfully published agent: TestAgent');
-      expect(infoMessageSpy).toHaveBeenCalledWith('Agent "TestAgent" has been published successfully.');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Successfully published agent TestAgent.');
+      expect(infoMessageSpy).toHaveBeenCalledWith('Agent "TestAgent" was published successfully.');
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Compiling agent...', increment: 0 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Publishing agent...', increment: 50 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata...', increment: 70 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved successfully', increment: 90 });
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Successfully published! 🎉', increment: 100 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Agent published successfully.', increment: 100 });
       expect(lifecycleMock.removeAllListeners).toHaveBeenCalledWith('scopedPreRetrieve');
       expect(lifecycleMock.removeAllListeners).toHaveBeenCalledWith('scopedPostRetrieve');
       expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.publishAgent);
@@ -218,10 +218,10 @@ describe('publishAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent compilation failed!');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s):'));
       expect(progressReportSpy).toHaveBeenCalledWith({
-        message: 'Compilation failed with 2 error(s)'
+        message: 'Compilation failed with 2 error(s).'
       });
       expect(errorMessageSpy).toHaveBeenCalledWith(
-        'Agent compilation failed with 2 error(s). Check the output channel for details.'
+        'Agent compilation failed with 2 error(s). Check the Output tab for details.'
       );
     });
 

@@ -162,4 +162,240 @@ describe('AgentTracer', () => {
       data: { entry: historyEntries[0] }
     });
   });
+
+  it('handles NaN in history selector', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'test' } }]
+    };
+    const historyEntries = [
+      {
+        storageKey: 'agent',
+        agentId: 'agent',
+        planId: 'plan-1',
+        sessionId: 'session-1',
+        timestamp: '2024-01-01T00:00:00.000Z',
+        trace
+      }
+    ];
+
+    dispatchMessage('traceHistory', { entries: historyEntries });
+
+    const selector = screen.getByLabelText(/trace history/i);
+    fireEvent.change(selector, { target: { value: 'invalid' } });
+
+    expect(selector).toHaveValue('0');
+  });
+
+  it('handles invalid index in history selector', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'test' } }]
+    };
+    const historyEntries = [
+      {
+        storageKey: 'agent',
+        agentId: 'agent',
+        planId: 'plan-1',
+        sessionId: 'session-1',
+        timestamp: '2024-01-01T00:00:00.000Z',
+        trace
+      }
+    ];
+
+    dispatchMessage('traceHistory', { entries: historyEntries });
+
+    const selector = screen.getByLabelText(/trace history/i);
+    fireEvent.change(selector, { target: { value: '999' } });
+
+    expect(selector).toHaveValue('0');
+  });
+
+  it('closes step data panel when close button is clicked', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'test' } }]
+    };
+
+    dispatchMessage('traceHistory', { entries: [{ storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', trace }] });
+
+    const stepButton = screen.getByText('User Input');
+    fireEvent.click(stepButton);
+
+    expect(screen.getByText(/"content"/)).toBeInTheDocument();
+
+    const closeButton = screen.getByLabelText(/close/i);
+    fireEvent.click(closeButton);
+
+    expect(screen.queryByText(/"content"/)).not.toBeInTheDocument();
+  });
+
+  it('requests trace data when messageSent event occurs', () => {
+    jest.useFakeTimers();
+    render(<AgentTracer isVisible />);
+
+    const postMessageSpy = jest.spyOn((window as any).vscode, 'postMessage');
+
+    dispatchMessage('messageSent', {});
+
+    jest.advanceTimersByTime(200);
+
+    expect(postMessageSpy).toHaveBeenCalledWith({
+      command: 'getTraceData'
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('handles panel resize', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'test' } }]
+    };
+
+    dispatchMessage('traceHistory', { entries: [{ storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', trace }] });
+
+    const stepButton = screen.getByText('User Input');
+    fireEvent.click(stepButton);
+
+    const resizeHandle = document.querySelector('.tracer-step-data-panel__resize-handle');
+    expect(resizeHandle).toBeInTheDocument();
+
+    fireEvent.mouseDown(resizeHandle!);
+
+    const mouseMoveEvent = new MouseEvent('mousemove', {
+      clientY: 300,
+      bubbles: true
+    });
+    document.dispatchEvent(mouseMoveEvent);
+
+    const mouseUpEvent = new MouseEvent('mouseup', {
+      bubbles: true
+    });
+    document.dispatchEvent(mouseUpEvent);
+
+    expect(resizeHandle).toBeInTheDocument();
+  });
+
+  it('returns last entry when selectedHistoryIndex is out of bounds', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace1 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'first' } }]
+    };
+
+    const trace2 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-2',
+      sessionId: 'session-2',
+      plan: [{ type: 'UserInputStep', data: { content: 'second' } }]
+    };
+
+    const historyEntries = [
+      { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', trace: trace1 },
+      { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', trace: trace2 }
+    ];
+
+    dispatchMessage('traceData', trace2);
+    dispatchMessage('traceHistory', { entries: historyEntries });
+
+    // Should show last entry by default
+    expect(screen.getByText('session-2')).toBeInTheDocument();
+  });
+
+  it('does not open trace json when no current history entry', () => {
+    render(<AgentTracer isVisible />);
+
+    dispatchMessage('traceHistory', { entries: [] });
+
+    // Button should not be rendered when there's no data
+    expect(screen.queryByRole('button', { name: /view raw json/i })).not.toBeInTheDocument();
+  });
+
+
+  it('does not change trace when history change returns null', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'test' } }]
+    };
+
+    const historyEntries = [
+      { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', trace }
+    ];
+
+    dispatchMessage('traceHistory', { entries: historyEntries });
+
+    expect(screen.getByText('session-1')).toBeInTheDocument();
+
+    const selector = screen.getByLabelText(/trace history/i);
+
+    // Try to select an out of bounds index (already tested in 'handles invalid index')
+    // This ensures line 440 is covered
+    fireEvent.change(selector, { target: { value: '999' } });
+
+    // Should still show the original session
+    expect(screen.getByText('session-1')).toBeInTheDocument();
+  });
+
+  it('uses last history entry when index is null', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace1 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'first' } }]
+    };
+
+    const trace2 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-2',
+      sessionId: 'session-2',
+      plan: [{ type: 'UserInputStep', data: { content: 'last' } }]
+    };
+
+    const historyEntries = [
+      { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', trace: trace1 },
+      { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', trace: trace2 }
+    ];
+
+    // Send trace history without preselecting
+    dispatchMessage('traceHistory', { entries: historyEntries });
+
+    // Should automatically show the last entry
+    expect(screen.getByText('session-2')).toBeInTheDocument();
+  });
+
+  it('handles click on open trace json when no data', () => {
+    render(<AgentTracer isVisible />);
+
+    dispatchMessage('traceHistory', { entries: [] });
+
+    // When there's no data, button shouldn't exist
+    const button = screen.queryByRole('button', { name: /view raw json/i });
+    expect(button).not.toBeInTheDocument();
+  });
 });

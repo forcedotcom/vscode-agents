@@ -36,14 +36,14 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
       // Prompt for bundle name (regular name)
       const name = await vscode.window.showInputBox({
-        prompt: 'Enter the name for the AI Authoring Bundle',
+        prompt: 'Enter the name of the new authoring bundle.',
         placeHolder: 'My Agent Bundle',
         validateInput: value => {
           if (!value) {
             return 'Bundle name is required';
           }
           if (value.trim().length === 0) {
-            return 'Bundle name cannot be empty';
+            return "Bundle name can't be empty.";
           }
           return null;
         }
@@ -67,17 +67,17 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           .filter(([name, type]) => type === vscode.FileType.File && (name.endsWith('.yaml') || name.endsWith('.yml')))
           .map(([name]) => name);
       } catch (error) {
-        channelService.appendLine(`No specs directory found at ${specsDir}`);
+        channelService.appendLine(`No agent spec directory found at ${specsDir}`);
       }
 
       // Show dropdown with available spec files
       if (specFiles.length === 0) {
-        vscode.window.showErrorMessage(`No YAML spec files found in ${specsDir}. Please add spec files to continue.`);
+        vscode.window.showErrorMessage(`No agent spec YAML files found in ${specsDir}. You must add at least one agent spec YAML file to continue.`);
         return;
       }
 
       const selectedSpec = await vscode.window.showQuickPick(specFiles, {
-        placeHolder: 'Select a spec file to generate the agent from',
+        placeHolder: 'Select an agent spec YAML file to generate the authoring bundle from.',
         title: 'Choose Agent Spec'
       });
 
@@ -95,12 +95,12 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Creating AI Authoring Bundle: ${apiName}`,
+          title: `Generating authoring bundle: ${apiName}...`,
           cancellable: false
         },
         async progress => {
           try {
-            progress.report({ message: 'Generating agent script...' });
+            progress.report({ message: 'Generating Agent Script file...' });
 
             // Create the agent script using the spec
             const agentScript = await Agent.createAgentScript(await CoreExtensionService.getDefaultConnection(), {
@@ -112,7 +112,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
               throw new Error('Failed to generate agent script');
             }
 
-            progress.report({ message: 'Creating bundle structure...', increment: 50 });
+            progress.report({ message: 'Creating authoring bundle structure...', increment: 50 });
 
             // Create the bundle directory
             const bundleDir = path.join(targetDir, apiName);
@@ -147,11 +147,11 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             const doc = await vscode.workspace.openTextDocument(agentFilePath);
             await vscode.window.showTextDocument(doc);
 
-            vscode.window.showInformationMessage(`AI Authoring Bundle "${name}" created successfully! 🎉`);
+            vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             channelService.showChannelOutput();
-            channelService.appendLine('❌ Failed to create AI Authoring Bundle');
+            channelService.appendLine('❌ Failed to generate authoring bundle.');
             channelService.appendLine('────────────────────────────────────────────────────────────────────────');
             channelService.appendLine(errorMessage || 'Something went wrong');
             throw error;
@@ -160,7 +160,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      vscode.window.showErrorMessage(`Failed to create AI Authoring Bundle: ${errorMessage}`);
+      vscode.window.showErrorMessage(`Failed to generate authoring bundle: ${errorMessage}`);
     }
   });
 };

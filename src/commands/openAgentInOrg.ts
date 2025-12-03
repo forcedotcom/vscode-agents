@@ -28,9 +28,9 @@ export const registerOpenAgentInOrgCommand = () => {
       const project = SfProject.getInstance();
       const agents = await Agent.list(project);
       if (agents.length === 0) {
-        vscode.window.showErrorMessage(`Could not find agents in the current project.`);
-        channelService.appendLine('Could not find agents in the current project.');
-        channelService.appendLine('Suggestion: retrieve your agents (Bot) metadata locally.');
+        vscode.window.showErrorMessage(`Couldn't find any agents in the current DX project.`);
+        channelService.appendLine("Couldn't find any agents in the current DX project.");
+        channelService.appendLine('Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.');
         return;
       }
       // we need to prompt the user which agent to open
@@ -48,13 +48,13 @@ export const registerOpenAgentInOrgCommand = () => {
         cancellable: true
       },
       async progress => {
-        progress.report({ message: 'Agentforce DX: Open an Agent in the Default Org.' });
+        progress.report({ message: 'Opening agent in the default org...' });
         const result = sync('sf', ['org', 'open', 'agent', '--name', agentName]);
         if (result.status !== 0) {
           vscode.window.showErrorMessage(`Unable to open agent: ${result.stderr.toString()}`);
           telemetryService.sendException('sf_command_failed', `stderr: ${result.stderr.toString()}`);
         } else {
-          vscode.window.showInformationMessage('Agentforce DX: Open an Agent in the Default Org successfully ran.');
+          vscode.window.showInformationMessage('Agent was opened successfully in the default org.');
         }
       }
     );

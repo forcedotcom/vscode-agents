@@ -22,7 +22,7 @@ const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
   // Determine button text based on session state and mode
   const getButtonText = () => {
     if (isSessionActive) {
-      return 'Send a Message';
+      return 'Send a message';
     }
     return isLiveMode ? 'Start Live Test' : 'Start Simulation';
   };
@@ -60,7 +60,7 @@ const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
     <div className="tracer-placeholder">
       <div className="tracer-placeholder-icon"></div>
       <p>
-        Agent Tracer displays the step-by-step actions an Agent takes, so you can understand what it does in detail.
+        Agent Tracer displays the step-by-step actions that an agent takes during a conversation so you can understand the details of what just happened.
       </p>
       {onGoToPreview &&
         (isSessionActive ? (
@@ -71,7 +71,7 @@ const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
             startIcon={sendIcon}
             className="tracer-send-icon"
           >
-            Send a Message
+            Send a message
           </Button>
         ) : isPublishedAgent ? (
           <Button appearance="primary" size="small" onClick={onGoToPreview} startIcon={playIcon}>

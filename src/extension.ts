@@ -42,7 +42,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Validate CLI installation in the background
     validateCLI().catch((err: Error) => {
       console.error('CLI validation failed:', err.message);
-      vscode.window.showErrorMessage(`Failed to validate sf CLI and plugin-agent. ${err.message}`);
+      vscode.window.showErrorMessage(`Failed to validate Salesforce CLI and the plugin-agent. ${err.message}`);
     });
 
     // Initialize diagnostic collection for agent validation
@@ -352,7 +352,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         await provider.exportConversation();
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        vscode.window.showErrorMessage(`Agentforce DX: Unable to export conversation: ${errorMessage}`);
+        vscode.window.showErrorMessage(`Unable to export conversation: ${errorMessage}`);
       }
     })
   );
@@ -382,7 +382,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async () => {
       await provider.refreshAvailableAgents();
-      vscode.window.showInformationMessage('Agentforce DX: Agent list refreshed');
+      vscode.window.showInformationMessage('Agent list refreshed.');
     })
   );
 
@@ -397,10 +397,10 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
       try {
         await provider.resetCurrentAgentView();
-        vscode.window.showInformationMessage('Agentforce DX: Agent preview reset');
+        vscode.window.showInformationMessage('Agent preview reset.');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        vscode.window.showErrorMessage(`Agentforce DX: Unable to reset agent view: ${errorMessage}`);
+        vscode.window.showErrorMessage(`Unable to reset agent view: ${errorMessage}`);
       }
     })
   );

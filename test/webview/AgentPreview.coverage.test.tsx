@@ -308,7 +308,7 @@ describe('AgentPreview - Coverage Tests', () => {
       renderComponent();
 
       // The textarea should be disabled when agent is not connected
-      const textarea = screen.getByPlaceholderText(/Start the simulation to chat/i);
+      const textarea = screen.getByPlaceholderText(/Type something to start the simulation/i);
       expect(textarea).toBeDisabled();
 
       // Message should not be sent since agent is not connected
@@ -327,7 +327,7 @@ describe('AgentPreview - Coverage Tests', () => {
       });
 
       // Now find the textarea - it should be enabled and send a message
-      const textarea = screen.getByPlaceholderText(/Write something to start testing/i);
+      const textarea = screen.getByPlaceholderText(/Type something to start testing/i);
       expect(textarea).not.toBeDisabled();
 
       await user.type(textarea, 'Test message');
@@ -348,7 +348,7 @@ describe('AgentPreview - Coverage Tests', () => {
         ]
       });
 
-      expect(screen.getByText('Select Client App:')).toBeInTheDocument();
+      expect(screen.getByText('Select client app')).toBeInTheDocument();
       expect(screen.getByText('App 1')).toBeInTheDocument();
       expect(screen.getByText('App 2')).toBeInTheDocument();
     });
@@ -390,7 +390,7 @@ describe('AgentPreview - Coverage Tests', () => {
         availableClientApps: []
       });
 
-      expect(screen.getByText(/Agentforce DX lets you build/i)).toBeInTheDocument();
+      expect(screen.getByText(/Agentforce DX provides a suite of tools/i)).toBeInTheDocument();
     });
   });
 
@@ -451,7 +451,7 @@ describe('AgentPreview - Coverage Tests', () => {
     it('should render PlaceholderContent when selectedAgentId is empty', () => {
       renderComponent({ selectedAgentId: '' });
 
-      expect(screen.getByText(/Agentforce DX lets you build/i)).toBeInTheDocument();
+      expect(screen.getByText(/Agentforce DX provides a suite of tools/i)).toBeInTheDocument();
     });
 
     it('should return early in selectedAgentId effect when agent unchanged', async () => {
@@ -620,7 +620,7 @@ describe('AgentPreview - Coverage Tests', () => {
       );
 
       // The component renders properly with empty selectedAgentId during transition
-      expect(screen.getByText(/Agentforce DX lets you build/i)).toBeInTheDocument();
+      expect(screen.getByText(/Agentforce DX provides a suite of tools/i)).toBeInTheDocument();
     });
   });
 
@@ -645,7 +645,7 @@ describe('AgentPreview - Coverage Tests', () => {
       });
 
       // Now the textarea should be enabled
-      const textarea = screen.getByPlaceholderText(/Write something to start testing/i);
+      const textarea = screen.getByPlaceholderText(/Type something to start testing/i);
       expect(textarea).not.toBeDisabled();
 
       // Type and send a message

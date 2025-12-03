@@ -1,9 +1,9 @@
 {
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
-  "description": "Provides a suite of tools to build, preview, and test agents",
+  "description": "Provides a suite of tools to iteratively build, preview, and test agents right in your IDE.",
   "version": "1.3.0",
-  "publisher": "salesforce",
+  "publisher": "Salesforce",
   "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
   "enableO11y": "true",
   "repository": {
@@ -140,7 +140,7 @@
         },
         {
           "command": "sf.agent.combined.view.refreshAgents",
-          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && !agentforceDX:canResetAgentView",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView",
           "group": "navigation@0"
         },
         {
@@ -353,7 +353,7 @@
     "commands": [
       {
         "command": "sf.agent.focusView",
-        "title": "AFDX: Focus on Agentforce DX View"
+        "title": "AFDX: Focus on Agentforce DX Preview"
       },
       {
         "command": "sf.agent.focusTestView",
@@ -492,7 +492,7 @@
       },
       {
         "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
-        "title": "AFDX: Create AI Authoring Bundle"
+        "title": "AFDX: Generate Authoring Bundle"
       }
     ]
   }

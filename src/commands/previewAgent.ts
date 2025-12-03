@@ -53,11 +53,11 @@ export const registerPreviewAgentCommand = () => {
       }, 500);
     } catch (e) {
       const error = SfError.wrap(e);
-      channelService.appendLine('❌ Error previewing .agent file!');
+      channelService.appendLine('❌ Error previewing the .agent file.');
       channelService.appendLine('');
       channelService.appendLine('Error Details:');
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-      channelService.appendLine(error.message || 'Something went wrong');
+      channelService.appendLine(error.message || 'Something went wrong.');
 
       if (error.stack) {
         channelService.appendLine('');
