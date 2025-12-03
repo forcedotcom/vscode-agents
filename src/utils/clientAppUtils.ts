@@ -69,7 +69,7 @@ export async function getAvailableClientApps(): Promise<ClientAppResult> {
     const clientApps: ClientApp[] = [];
     if (authData.clientApps && typeof authData.clientApps === 'object' && !Array.isArray(authData.clientApps)) {
       for (const [appName, appData] of Object.entries(authData.clientApps)) {
-        const app = appData as any;
+        const app = appData as { clientId: string };
         if (app && app.clientId) {
           clientApps.push({
             name: appName,
