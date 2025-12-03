@@ -255,7 +255,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.pendingStartAgentId = undefined;
     this.pendingStartAgentSource = undefined;
 
-    this.channelService.appendLine(`Simulation ended`);
+    this.channelService.appendLine(`Simulation ended.`);
     this.channelService.appendLine('---------------------');
   }
 
@@ -850,7 +850,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   });
                 } else {
                   this.channelService.appendLine(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
-                  this.channelService.appendLine(`Compilation end point called`);
+                  this.channelService.appendLine(`Compilation end point called.`);
 
                   webviewView.webview.postMessage({
                     command: 'compilationStarting',
@@ -865,7 +865,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   return;
                 }
 
-                this.channelService.appendLine(`Simulation session started`);
+                this.channelService.appendLine(`Simulation session started.`);
 
                 const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
                 webviewView.webview.postMessage({
@@ -1030,7 +1030,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             }
           } else if (this.isApexDebuggingEnabled && !response.apexDebugLog) {
             // Debug mode is enabled but no debug log was returned
-            vscode.window.showInformationMessage('Agentforce DX: Debug mode is enabled, but no Apex was executed.');
+            vscode.window.showInformationMessage('Debug mode is enabled but no Apex was executed.');
           }
         } else if (message.command === 'endSession') {
           await this.endSession();
