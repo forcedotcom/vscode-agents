@@ -38,7 +38,7 @@ describe('PlaceholderContent', () => {
     it('should render placeholder content', () => {
       render(<PlaceholderContent />);
 
-      expect(screen.getByText(/Agentforce DX lets you build and test agents/i)).toBeInTheDocument();
+      expect(screen.getByText(/Agentforce DX provides a suite of tools/i)).toBeInTheDocument();
     });
 
     it('should render select agent button', () => {

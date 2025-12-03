@@ -93,10 +93,10 @@ describe('registerOpenAgentInOrgCommand', () => {
     registerOpenAgentInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
-    expect(errorMessageSpy).toHaveBeenCalledWith('Could not find agents in the current project.');
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Could not find agents in the current project.');
+    expect(errorMessageSpy).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      'Suggestion: retrieve your agents (Bot) metadata locally.'
+      'Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.'
     );
     expect(progressSpy).not.toHaveBeenCalled(); // Should not proceed
   });

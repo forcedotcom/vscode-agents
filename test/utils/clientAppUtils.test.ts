@@ -74,7 +74,7 @@ describe('clientAppUtils', () => {
         type: 'none',
         clientApps: [],
         error:
-          'No default target org configured. Please set your default target org using "sf config set target-org <username>"'
+          'No default target org configured. Set your default target org using either the "SFDX: Set a Default Org" VS Code command or the "sf config set target-org <username>" CLI command.'
       });
     });
 
@@ -95,7 +95,7 @@ describe('clientAppUtils', () => {
       expect(result).toEqual({
         type: 'none',
         clientApps: [],
-        error: 'Could not resolve username for target org value: my-org'
+        error: "Couldn't resolve the username for this target org value: my-org"
       });
     });
 
@@ -120,7 +120,7 @@ describe('clientAppUtils', () => {
         clientApps: [],
         username: 'test@example.com',
         error:
-          'Authentication file not found for username: test@example.com. Please authenticate using "sf org login jwt"'
+          'Authentication file not found for username: test@example.com. Authorize an org using the "sf org login jwt" CLI command.'
       });
       expect(mockFs.existsSync).toHaveBeenCalledWith('/home/testuser/.sfdx/test@example.com.json');
     });
@@ -347,7 +347,7 @@ describe('clientAppUtils', () => {
       expect(result).toEqual({
         type: 'none',
         clientApps: [],
-        error: 'Error reading authentication: Failed to create org'
+        error: 'Error reading authentication file: Failed to create org'
       });
       expect(consoleErrorSpy).toHaveBeenCalled();
 
@@ -370,7 +370,7 @@ describe('clientAppUtils', () => {
       expect(result).toEqual({
         type: 'none',
         clientApps: [],
-        error: 'Error reading authentication: Unknown error'
+        error: 'Error reading authentication file: Unknown error'
       });
 
       consoleErrorSpy.mockRestore();

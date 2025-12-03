@@ -206,7 +206,7 @@ describe('validateAgent', () => {
 
       expect(fakeChannelService.showChannelOutput).toHaveBeenCalled();
       expect(fakeChannelService.clear).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed.');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s):'));
 
       expect(diagnosticCollectionMock.clear).not.toHaveBeenCalled();
@@ -221,7 +221,7 @@ describe('validateAgent', () => {
         ])
       );
 
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed with 2 error(s)' });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed with 2 error(s).' });
       expect(executeCommandSpy).toHaveBeenCalledWith('workbench.action.problems.focus');
       expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.validateAgent);
     });
@@ -239,7 +239,7 @@ describe('validateAgent', () => {
       await commandSpy.mock.calls[0][1](mockUri);
 
       expect(diagnosticCollectionMock.clear).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed.');
       expect(errorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Agent validation failed'));
     });
 
@@ -270,7 +270,7 @@ describe('validateAgent', () => {
       await commandSpy.mock.calls[0][1](mockUri);
 
       // Verify fallback message is displayed
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Something went wrong');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Something went wrong.');
     });
 
     it('converts API line numbers to VS Code format', () => {

@@ -130,7 +130,7 @@ describe('package.json', () => {
         const focusTestViewCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.focusTestView');
 
         expect(focusViewCommand).toBeDefined();
-        expect(focusViewCommand?.title).toBe('AFDX: Focus on Agentforce DX View');
+        expect(focusViewCommand?.title).toBe('AFDX: Focus on Agentforce DX Preview');
 
         expect(focusTestViewCommand).toBeDefined();
         expect(focusTestViewCommand?.title).toBe('AFDX: Focus on Agent Tests View');

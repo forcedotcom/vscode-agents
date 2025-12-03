@@ -104,7 +104,7 @@ describe('activateAgent command', () => {
     const uri = { fsPath: '/tmp/foo.txt' } as vscodeTypes.Uri;
     await handler(uri);
     expect(errorSpy).toHaveBeenCalledWith(
-      'This command can only be used on bot, bot version, or genAiPlannerBundle files.'
+      'You can use this command on only bot, botVersion, or genAiPlannerBundle metadata files.'
     );
   });
 
@@ -114,7 +114,7 @@ describe('activateAgent command', () => {
     const uri = { fsPath: '/tmp/random-folder' } as vscodeTypes.Uri;
     await handler(uri);
     expect(errorSpy).toHaveBeenCalledWith(
-      'This command can only be used on directories containing bot, bot version, or genAiPlannerBundle files.'
+      'You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.'
     );
   });
 
@@ -146,6 +146,6 @@ describe('activateAgent command', () => {
       nameOrId: 'SampleAgent'
     });
     expect(activateMock).toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledWith('Agent "SampleAgent" has been activated successfully.');
+    expect(infoSpy).toHaveBeenCalledWith('Agent "SampleAgent" was activated successfully.');
   });
 });
