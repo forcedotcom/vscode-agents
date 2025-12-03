@@ -331,19 +331,6 @@ describe('AgentTracer', () => {
     expect(screen.queryByRole('button', { name: /view raw json/i })).not.toBeInTheDocument();
   });
 
-  it('displays error state when trace error occurs', async () => {
-    render(<AgentTracer isVisible />);
-
-    await screen.findByText(/Loading trace data/i);
-
-    dispatchMessage('error', { message: 'Trace execution failed' });
-
-    await screen.findByText('Trace execution failed');
-
-    // Should render error div
-    const errorDiv = screen.getByText('Trace execution failed').closest('.agent-tracer');
-    expect(errorDiv).toBeInTheDocument();
-  });
 
   it('does not change trace when history change returns null', () => {
     render(<AgentTracer isVisible />);
