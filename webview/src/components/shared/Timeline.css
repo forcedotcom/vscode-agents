@@ -55,6 +55,7 @@
   gap: 2px;
   padding-bottom: 16px;
   flex: 1;
+  min-width: 0;
 }
 
 .vscode-timeline-item__link {
