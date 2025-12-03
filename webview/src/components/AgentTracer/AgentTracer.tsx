@@ -192,12 +192,12 @@ const getStepDescription = (step: any): string | undefined => {
     case 'ReasoningStep': {
       const reason = step.reason;
       if (reason) {
-        // Extract the category (text before the colon) or truncate
+        // Extract the category (text before the colon)
         const colonIndex = reason.indexOf(':');
         if (colonIndex > 0 && colonIndex < 30) {
           return reason.substring(0, colonIndex);
         }
-        return reason.length > 50 ? reason.substring(0, 50) + '...' : reason;
+        return reason;
       }
       return undefined;
     }
@@ -205,7 +205,7 @@ const getStepDescription = (step: any): string | undefined => {
     case 'PlannerResponseStep': {
       const message = step.message;
       if (message) {
-        return message.length > 60 ? message.substring(0, 60) + '...' : message;
+        return message;
       }
       return undefined;
     }

@@ -81,6 +81,9 @@
   line-height: 1.4;
   color: var(--vscode-foreground);
   opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Status-specific styles */
