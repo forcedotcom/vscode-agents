@@ -33,7 +33,7 @@ export const registerActivateAgentCommand = () => {
           !fileName.endsWith('.genAiPlannerBundle')
         ) {
           vscode.window.showErrorMessage(
-            'This command can only be used on bot, bot version, or genAiPlannerBundle files.'
+            'You can use this command on only bot, botVersion, or genAiPlannerBundle metadata files.'
           );
           return;
         }
@@ -45,7 +45,7 @@ export const registerActivateAgentCommand = () => {
           !targetPath.includes('genAiPlannerBundles')
         ) {
           vscode.window.showErrorMessage(
-            'This command can only be used on directories containing bot, bot version, or genAiPlannerBundle files.'
+            'You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.'
           );
           return;
         }
@@ -57,13 +57,13 @@ export const registerActivateAgentCommand = () => {
       const project = SfProject.getInstance();
       const agentName = await getAgentNameFromPath(targetPath);
 
-      channelService.appendLine(`Activating agent: ${agentName}`);
+      channelService.appendLine(`Activating agent ${agentName}...`);
       channelService.showChannelOutput();
 
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Activating agent: ${agentName}`,
+          title: `Activating agent: ${agentName}...`,
           cancellable: false
         },
         async () => {
@@ -82,8 +82,8 @@ export const registerActivateAgentCommand = () => {
 
           await agent.activate();
 
-          channelService.appendLine(`Successfully activated agent: ${agentName}`);
-          vscode.window.showInformationMessage(`Agent "${agentName}" has been activated successfully.`);
+          channelService.appendLine(`Successfully activated agent ${agentName}.`);
+          vscode.window.showInformationMessage(`Agent "${agentName}" was activated successfully.`);
         }
       );
     } catch (error) {

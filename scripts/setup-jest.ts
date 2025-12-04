@@ -97,10 +97,21 @@ const getMockVSCode = () => {
     Uri: {
       parse: jest.fn(),
       file: jest.fn(),
-      joinPath: jest.fn()
+      joinPath: jest.fn((...args) => {
+        const pathParts = args.slice(1);
+        const joined = pathParts.join('/');
+        return {
+          fsPath: joined,
+          path: joined,
+          scheme: 'file'
+        };
+      })
     },
     Position: jest.fn((line, character) => {
       return new MockPosition(line, character);
+    }),
+    Location: jest.fn((uri, range) => {
+      return { uri, range };
     }),
     ProgressLocation: {
       SourceControl: 1,

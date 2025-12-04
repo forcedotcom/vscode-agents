@@ -74,7 +74,7 @@ export class CoreExtensionService {
     const coreExtensionVersion = CoreExtensionService.getCoreExtensionVersion();
     if (!CoreExtensionService.isAboveMinimumRequiredVersion('60.13.0', coreExtensionVersion)) {
       throw new Error(
-        "It looks you're running an older version of the Salesforce CLI Integration VSCode Extension. Update the Salesforce Extension pack and try again."
+        "It looks you're running an older version of the Salesforce CLI Integration VS Code Extension. Update the Salesforce Extension Pack and try again."
       );
     }
     return coreExtension.exports;

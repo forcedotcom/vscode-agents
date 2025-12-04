@@ -1,0 +1,44 @@
+.chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+
+.chat-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background-image: url('../../assets/spinner-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  animation: spinner-rotate 1s linear infinite;
+  flex-shrink: 0;
+}
+
+.loading-text {
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground);
+}
+
+body.vscode-dark .loading-spinner,
+body.vscode-high-contrast .loading-spinner {
+  background-image: url('../../assets/spinner-dark.svg');
+}
+
+@keyframes spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "vscode://schemas/icon-theme",
+  "iconDefinitions": {
+    "agentFile": {
+      "iconPath": "./icons/agent-file-dark.svg"
+    },
+    "agentFile_light": {
+      "iconPath": "./icons/agent-file-light.svg"
+    }
+  },
+  "fileExtensions": {
+    "agent": "agentFile"
+  },
+  "light": {
+    "fileExtensions": {
+      "agent": "agentFile_light"
+    }
+  }
+}
+

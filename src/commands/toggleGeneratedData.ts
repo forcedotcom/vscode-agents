@@ -22,7 +22,7 @@ import * as vscode from 'vscode';
  * Updates the generated data visibility setting and triggers a configuration change event
  */
 async function updateGeneratedDataSetting(value: boolean): Promise<void> {
-  const config = vscode.workspace.getConfiguration('agentforceDX');
+  const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
   await config.update('showGeneratedData', value, vscode.ConfigurationTarget.Global);
 }
 

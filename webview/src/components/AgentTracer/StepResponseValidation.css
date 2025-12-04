@@ -1,0 +1,86 @@
+.step-response-validation {
+  border-radius: 8px;
+  border: 1px solid var(--vscode-input-border);
+  margin-top: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.step-response-validation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--vscode-input-background);
+  height: 35px;
+  border-bottom: 1px solid var(--vscode-input-border);
+}
+
+.step-response-validation-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.step-response-validation-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+.step-response-validation-timing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vscode-foreground);
+  font-size: 12px;
+}
+
+.step-response-validation-timing-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.8;
+}
+
+.step-response-validation-content {
+  padding: 16px;
+}
+
+.step-response-validation-content p {
+  margin: 0;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.step-response-validation-code-block {
+  background-color: var(--vscode-textCodeBlock-background);
+  border-radius: 4px;
+  border: 1px solid var(--vscode-input-border);
+  overflow: hidden;
+}
+
+.step-response-validation-code-block-header {
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vscode-input-border);
+  font-weight: 500;
+}
+
+.step-response-validation-code-block-content pre {
+  color: var(--vscode-foreground);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-x: auto;
+  padding: 12px;
+}

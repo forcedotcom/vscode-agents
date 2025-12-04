@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import * as vscode from 'vscode';
+import * as path from 'path';
 import * as commands from './commands';
 import { Commands } from './enums/commands';
 import { CoreExtensionService } from './services/coreExtensionService';
@@ -23,6 +24,7 @@ import { AgentCombinedViewProvider } from './views/agentCombinedViewProvider';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
+import { initializeDiagnosticCollection } from './commands/validateAgent';
 
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -40,14 +42,39 @@ export async function activate(context: vscode.ExtensionContext) {
     // Validate CLI installation in the background
     validateCLI().catch((err: Error) => {
       console.error('CLI validation failed:', err.message);
-      vscode.window.showErrorMessage(`Failed to validate sf CLI and plugin-agent. ${err.message}`);
+      vscode.window.showErrorMessage(`Failed to validate Salesforce CLI and the plugin-agent. ${err.message}`);
     });
+
+    // Initialize diagnostic collection for agent validation
+    initializeDiagnosticCollection(context);
+
+    // Initialize and watch SF_TEST_API setting
+    const updateTestApiEnv = () => {
+      const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+      process.env.SF_TEST_API = config.get<boolean>('useTestApi', false) ? 'true' : 'false';
+    };
+
+    // Set initial value
+    updateTestApiEnv();
+
+    // Watch for configuration changes
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('salesforce.agentforceDX.useTestApi')) {
+          updateTestApiEnv();
+        }
+      })
+    );
 
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
     disposables.push(commands.registerOpenAgentInOrgCommand());
     disposables.push(commands.registerActivateAgentCommand());
     disposables.push(commands.registerDeactivateAgentCommand());
+    disposables.push(commands.registerValidateAgentCommand());
+    disposables.push(commands.registerPreviewAgentCommand());
+    disposables.push(commands.registerPublishAgentCommand());
+    disposables.push(commands.registerCreateAiAuthoringBundleCommand());
     context.subscriptions.push(await registerTestView());
     context.subscriptions.push(registerAgentCombinedView(context));
 
@@ -114,6 +141,13 @@ const registerTestView = async (): Promise<vscode.Disposable> => {
     })
   );
 
+  // Register focus test view alias command
+  testViewItems.push(
+    vscode.commands.registerCommand('sf.agent.focusTestView', async () => {
+      await vscode.commands.executeCommand('sf.agent.test.view.focus');
+    })
+  );
+
   return vscode.Disposable.from(...testViewItems);
 };
 
@@ -140,24 +174,248 @@ const validateCLI = async () => {
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation
   const provider = new AgentCombinedViewProvider(context);
+  const disposables: vscode.Disposable[] = [];
 
-  // Update mock file when configuration changes
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('salesforce.agentforceDX.mockFile')) {
-        const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-        const newMockFile = mockConfig.get<string>('mockFile');
-        provider.updateMockFile(newMockFile);
+  // Register the webview provider
+  disposables.push(
+    vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
+      webviewOptions: { retainContextWhenHidden: true }
+    })
+  );
+
+  // Shared function for selecting and running an agent
+  const selectAndRunAgent = async () => {
+    const channelService = CoreExtensionService.getChannelService();
+
+    try {
+      const availableAgents = await provider.getAgentsForCommandPalette();
+      const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
+      const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
+
+      const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> =
+        [];
+
+      if (scriptAgents.length > 0) {
+        allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
+        allAgents.push(
+          ...scriptAgents.map(agent => ({
+            label: agent.name,
+            description: agent.filePath ? path.basename(agent.filePath) : undefined,
+            id: agent.id
+          }))
+        );
+      }
+
+      if (publishedAgents.length > 0) {
+        allAgents.push({ label: 'Published', kind: vscode.QuickPickItemKind.Separator });
+        allAgents.push(
+          ...publishedAgents.map(agent => ({
+            label: agent.name,
+            id: agent.id
+          }))
+        );
+      }
+
+      if (allAgents.length === 0) {
+        vscode.window.showErrorMessage('No agents found.');
+        channelService.appendLine('No agents found.');
+        return;
+      }
+
+      const selectedAgent = await vscode.window.showQuickPick(allAgents, {
+        placeHolder: 'Select an agent to run'
+      });
+
+      if (selectedAgent && selectedAgent.id) {
+        // Store the preference so the dropdown adopts the selection if the webview refreshes
+        provider.setAgentId(selectedAgent.id);
+
+        // Reveal the Agentforce DX panel
+        await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+
+        const postSelectionMessage = () => {
+          if (provider.webviewView?.webview) {
+            provider.webviewView.webview.postMessage({
+              command: 'selectAgent',
+              data: { agentId: selectedAgent.id }
+            });
+          }
+        };
+
+        // If the webview already exists, update it immediately; otherwise try shortly after focus
+        if (provider.webviewView?.webview) {
+          postSelectionMessage();
+        } else {
+          setTimeout(postSelectionMessage, 300);
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to list agents: ${errorMessage}`);
+      channelService.appendLine(`Failed to list agents: ${errorMessage}`);
+    }
+  };
+
+  // Register toolbar commands
+  disposables.push(vscode.commands.registerCommand('sf.agent.selectAndRun', selectAndRunAgent));
+
+  // Register start agent alias command
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.startAgent', async () => {
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (currentAgentId) {
+        // If agent is already selected, start it
+        provider.selectAndStartAgent(currentAgentId);
+      } else {
+        // If no agent selected, show picker and then start the selected agent
+        const channelService = CoreExtensionService.getChannelService();
+
+        try {
+          const availableAgents = await provider.getAgentsForCommandPalette();
+          const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
+          const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
+
+          const allAgents: Array<{
+            label: string;
+            description?: string;
+            id?: string;
+            kind?: vscode.QuickPickItemKind;
+          }> = [];
+
+          if (scriptAgents.length > 0) {
+            allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
+            allAgents.push(
+              ...scriptAgents.map(agent => ({
+                label: agent.name,
+                description: agent.filePath ? path.basename(agent.filePath) : undefined,
+                id: agent.id
+              }))
+            );
+          }
+
+          if (publishedAgents.length > 0) {
+            allAgents.push({ label: 'Published', kind: vscode.QuickPickItemKind.Separator });
+            allAgents.push(
+              ...publishedAgents.map(agent => ({
+                label: agent.name,
+                id: agent.id
+              }))
+            );
+          }
+
+          if (allAgents.length === 0) {
+            vscode.window.showErrorMessage('No agents found.');
+            channelService.appendLine('No agents found.');
+            return;
+          }
+
+          const selectedAgent = await vscode.window.showQuickPick(allAgents, {
+            placeHolder: 'Select an agent to start'
+          });
+
+          if (selectedAgent && selectedAgent.id) {
+            // Store the preference so the dropdown adopts the selection if the webview refreshes
+            provider.setAgentId(selectedAgent.id);
+
+            // Reveal the Agentforce DX panel
+            await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+
+            // Start the selected agent
+            provider.selectAndStartAgent(selectedAgent.id);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(`Failed to list agents: ${errorMessage}`);
+          channelService.appendLine(`Failed to list agents: ${errorMessage}`);
+        }
       }
     })
   );
 
-  // Set initial mock file
-  const mockConfig = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-  const mockFile = mockConfig.get<string>('mockFile');
-  provider.updateMockFile(mockFile);
+  // Register focus view alias command
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.focusView', async () => {
+      await vscode.commands.executeCommand('sf.agent.combined.view.focus');
+    })
+  );
 
-  return vscode.window.registerWebviewViewProvider(AgentCombinedViewProvider.viewType, provider, {
-    webviewOptions: { retainContextWhenHidden: true }
-  });
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.stop', async () => {
+      await provider.endSession();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.exportConversation', async () => {
+      try {
+        await provider.exportConversation();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Unable to export conversation: ${errorMessage}`);
+      }
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.refresh', async () => {
+      // Get the current agent ID before ending the session
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('No agent selected to restart.');
+        return;
+      }
+
+      // Set sessionStarting immediately to prevent button flicker
+      // This ensures no gap between hiding "Restart Agent" and showing it again
+      await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', true);
+
+      // End the current session
+      await provider.endSession();
+
+      // Restart the agent session (this will handle sessionStarting state)
+      provider.selectAndStartAgent(currentAgentId);
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async () => {
+      await provider.refreshAvailableAgents();
+      vscode.window.showInformationMessage('Agent list refreshed.');
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.resetAgentView', async () => {
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('Agentforce DX: Select an agent to reset.');
+        return;
+      }
+
+      try {
+        await provider.resetCurrentAgentView();
+        vscode.window.showInformationMessage('Agent preview reset.');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Unable to reset agent view: ${errorMessage}`);
+      }
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.debug', async () => {
+      await provider.toggleDebugMode();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.debugStop', async () => {
+      await provider.toggleDebugMode();
+    })
+  );
+
+  return vscode.Disposable.from(...disposables);
 };

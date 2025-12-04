@@ -4,14 +4,15 @@
 {
   "compilerOptions": {
     "module": "Node16",
-    "target": "ES2021",
+    "target": "ES2022",
     "outDir": "lib",
-    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "sourceMap": true,
     "rootDir": ".",
     "strict": true,
     "moduleResolution": "Node16",
     "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
     /* Additional Checks */
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": true,
@@ -19,5 +20,5 @@
     "jsx": "preserve",
     "resolveJsonModule": true
   },
-  "exclude": ["test/**/*.test.ts", "node_modules", "scripts", "agent-chat-and-trace"]
+  "exclude": ["test/**/*.test.ts", "test/**/*.test.tsx", "node_modules", "scripts", "webview"]
 }
