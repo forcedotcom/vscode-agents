@@ -259,6 +259,27 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.channelService.appendLine('---------------------');
   }
 
+  /**
+   * Clears the conversation without ending the agent session
+   * This provides a lightweight restart that doesn't require recompilation
+   */
+  public async clearConversation(): Promise<void> {
+    // Reset conversation state but keep the agent session running
+    this.currentPlanId = undefined;
+    this.currentUserMessage = undefined;
+    await this.setConversationDataAvailable(false);
+
+    // Clear the conversation UI in the webview
+    if (this.webviewView) {
+      this.webviewView.webview.postMessage({
+        command: 'clearMessages'
+      });
+    }
+
+    this.channelService.appendLine('Conversation cleared.');
+    this.channelService.appendLine('---------------------');
+  }
+
   public setAgentId(agentId: string) {
     this.currentAgentId = agentId;
   }
