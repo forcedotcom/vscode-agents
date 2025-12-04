@@ -359,7 +359,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refresh', async () => {
-      // Lightweight restart - just clear conversation without recompiling
+      // Lightweight restart - restart session without recompiling
       const currentAgentId = provider.getCurrentAgentId();
 
       if (!currentAgentId) {
@@ -367,8 +367,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         return;
       }
 
-      // Clear the conversation in the webview without ending the session
-      await provider.clearConversation();
+      // Restart the session without recompilation (reuses existing agentPreview instance)
+      await provider.restartWithoutCompilation();
     })
   );
 
