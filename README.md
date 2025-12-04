@@ -23,7 +23,6 @@ Here are the high-level features of this extension.
 - [Preview Agents](README.md#preview-agents)
 - [Trace Agent Conversations](README.md#trace-agent-conversations)
 - [Test Agents](README.md#test-agents)
-- [Open an Agent in Agent Builder and Easily (De)Activate It](README.md#open-an-agent-in-agent-builder-and-easily-deactivate-it)
 
 ### Preview Agents
 
@@ -55,16 +54,6 @@ Use the tracer to troubleshoot unexpected behavior, optimize agent performance, 
 Run and manage your agent test suites from the Agent Testing Panel. View test definitions and individual test cases, run tests with a single click, and get detailed results for each test execution. The testing panel integrates with VS Code's native testing UI, providing a familiar experience for running and debugging agent tests.
 
 ![Agent Testing Panel showing test results](images/afdx-test.png)
-
-### Open an Agent in Agent Builder and Easily (De)Activate It
-
-Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
-
-- Bot (file extension `.bot-meta.xml`)
-- BotVersion (file extension `.botVersion-meta.xml`)
-- GenAiPlannerBundle (file extension `.genAiPlannerBundle`)
-
-Similarly, activate or deactivate an agent in your org by running the **SFDX: Activate Agent** or **SFDX: Deactivate Agent** commands from the command palette or by right-clicking the agent's metadata files.
 
 ## Documentation
 
