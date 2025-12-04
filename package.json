@@ -85,6 +85,13 @@
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "submenus": [
+      {
+        "id": "sf.agent.combined.view.restartMenu",
+        "label": "Restart Options",
+        "icon": "$(debug-rerun)"
+      }
+    ],
     "iconThemes": [
       {
         "id": "afdx-agent-icons",
@@ -139,6 +146,14 @@
       ]
     },
     "menus": {
+      "sf.agent.combined.view.restartMenu": [
+        {
+          "command": "sf.agent.combined.view.restart"
+        },
+        {
+          "command": "sf.agent.combined.view.recompileAndRestart"
+        }
+      ],
       "view/title": [
         {
           "command": "sf.agent.combined.view.exportConversation",
@@ -156,7 +171,7 @@
           "group": "navigation@0"
         },
         {
-          "command": "sf.agent.combined.view.refresh",
+          "submenu": "sf.agent.combined.view.restartMenu",
           "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected",
           "group": "navigation@0"
         },
@@ -382,9 +397,14 @@
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
-        "command": "sf.agent.combined.view.refresh",
-        "title": "Restart Agent",
+        "command": "sf.agent.combined.view.restart",
+        "title": "Restart Only",
         "icon": "$(debug-rerun)",
+        "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
+      },
+      {
+        "command": "sf.agent.combined.view.recompileAndRestart",
+        "title": "Compile & Restart",
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {

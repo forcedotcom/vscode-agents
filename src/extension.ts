@@ -358,8 +358,23 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.refresh', async () => {
-      // Get the current agent ID before ending the session
+    vscode.commands.registerCommand('sf.agent.combined.view.restart', async () => {
+      // Lightweight restart - restart session without recompiling
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('No agent selected to restart.');
+        return;
+      }
+
+      // Restart the session without recompilation (reuses existing agentPreview instance)
+      await provider.restartWithoutCompilation();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.recompileAndRestart', async () => {
+      // Full restart with recompilation - end session and start fresh
       const currentAgentId = provider.getCurrentAgentId();
 
       if (!currentAgentId) {
@@ -368,13 +383,12 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
       }
 
       // Set sessionStarting immediately to prevent button flicker
-      // This ensures no gap between hiding "Restart Agent" and showing it again
       await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', true);
 
-      // End the current session
+      // End the current session (this will trigger compilation on restart)
       await provider.endSession();
 
-      // Restart the agent session (this will handle sessionStarting state)
+      // Restart the agent session (this will handle sessionStarting state and compilation)
       provider.selectAndStartAgent(currentAgentId);
     })
   );

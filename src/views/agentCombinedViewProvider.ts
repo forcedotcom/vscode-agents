@@ -265,6 +265,85 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.channelService.appendLine('---------------------');
   }
 
+  /**
+   * Restarts the agent session without recompilation
+   * This provides a lightweight restart by reusing the existing agentPreview instance
+   */
+  public async restartWithoutCompilation(): Promise<void> {
+    if (!this.agentPreview || !this.webviewView) {
+      return;
+    }
+
+    try {
+      // Set sessionStarting to show loading state
+      await this.setSessionStarting(true);
+
+      // End the current session but keep the agentPreview instance
+      if (this.agentPreview instanceof AgentSimulate) {
+        await this.agentPreview.end();
+      } else {
+        await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+      }
+
+      // Clear conversation state
+      this.currentPlanId = undefined;
+      this.currentUserMessage = undefined;
+      await this.setConversationDataAvailable(false);
+
+      // Clear the UI
+      this.webviewView.webview.postMessage({
+        command: 'clearMessages'
+      });
+
+      // Show "Starting live test..." message
+      const isLiveMode = this.isLiveMode;
+      const modeMessage = isLiveMode ? 'Starting live test...' : 'Starting simulation...';
+      this.webviewView.webview.postMessage({
+        command: 'simulationStarting',
+        data: { message: modeMessage }
+      });
+
+      this.channelService.appendLine('Restarting agent session...');
+
+      // Start a new session on the existing agentPreview (should skip compilation)
+      const session = await this.agentPreview.start();
+      this.sessionId = session.sessionId;
+
+      // Load trace history if available
+      if (this.currentAgentId && this.currentAgentSource) {
+        const storageKey = this.getAgentStorageKey(this.currentAgentId, this.currentAgentSource);
+        await clearTraceHistory(storageKey);
+        await this.loadAndSendTraceHistory(this.currentAgentId, this.currentAgentSource, this.webviewView);
+      }
+
+      await this.setSessionActive(true);
+      await this.setSessionStarting(false);
+
+      // Send session started message with welcome message
+      const agentMessage = session.messages.find(msg => msg.type === 'Inform');
+      this.webviewView.webview.postMessage({
+        command: 'sessionStarted',
+        data: agentMessage?.message
+      });
+
+      await this.setConversationDataAvailable(true);
+
+      this.channelService.appendLine('Agent session restarted.');
+      this.channelService.appendLine('---------------------');
+    } catch (error) {
+      await this.setSessionStarting(false);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.channelService.appendLine(`Failed to restart session: ${errorMessage}`);
+
+      if (this.webviewView) {
+        this.webviewView.webview.postMessage({
+          command: 'error',
+          data: { message: `Failed to restart: ${errorMessage}` }
+        });
+      }
+    }
+  }
+
   public setAgentId(agentId: string) {
     this.currentAgentId = agentId;
   }
