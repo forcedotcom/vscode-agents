@@ -85,6 +85,13 @@
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "iconThemes": [
+      {
+        "id": "afdx-agent-icons",
+        "label": "AFDX Agent Icons",
+        "path": "./resources/agent-icon-theme.json"
+      }
+    ],
     "configuration": {
       "title": "Salesforce",
       "properties": {
