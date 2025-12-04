@@ -148,10 +148,10 @@
     "menus": {
       "sf.agent.combined.view.restartMenu": [
         {
-          "command": "sf.agent.combined.view.refresh"
+          "command": "sf.agent.combined.view.recompileAndRestart"
         },
         {
-          "command": "sf.agent.combined.view.recompileAndRestart"
+          "command": "sf.agent.combined.view.refresh"
         }
       ],
       "view/title": [
