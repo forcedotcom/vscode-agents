@@ -128,7 +128,7 @@ describe('package.json', () => {
         const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.restart');
 
         expect(restartCommand).toBeDefined();
-        expect(restartCommand?.title).toBe('Restart');
+        expect(restartCommand?.title).toBe('Restart Only');
         expect(restartCommand?.icon).toBe('$(debug-rerun)');
       });
 
