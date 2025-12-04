@@ -358,7 +358,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.refresh', async () => {
+    vscode.commands.registerCommand('sf.agent.combined.view.restart', async () => {
       // Lightweight restart - restart session without recompiling
       const currentAgentId = provider.getCurrentAgentId();
 

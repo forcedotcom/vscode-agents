@@ -148,7 +148,7 @@
     "menus": {
       "sf.agent.combined.view.restartMenu": [
         {
-          "command": "sf.agent.combined.view.refresh"
+          "command": "sf.agent.combined.view.restart"
         },
         {
           "command": "sf.agent.combined.view.recompileAndRestart"
@@ -397,7 +397,7 @@
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
-        "command": "sf.agent.combined.view.refresh",
+        "command": "sf.agent.combined.view.restart",
         "title": "Restart",
         "icon": "$(debug-rerun)",
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"

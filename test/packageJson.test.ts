@@ -100,7 +100,7 @@ describe('package.json', () => {
 
       it('should have restart command as the first option', () => {
         const restartOption = restartSubmenu[0];
-        expect(restartOption.command).toBe('sf.agent.combined.view.refresh');
+        expect(restartOption.command).toBe('sf.agent.combined.view.restart');
       });
 
       it('should have compile & restart command as the second option', () => {
@@ -125,7 +125,7 @@ describe('package.json', () => {
       const commands = packageJson.contributes.commands;
 
       it('should have restart command defined', () => {
-        const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.refresh');
+        const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.restart');
 
         expect(restartCommand).toBeDefined();
         expect(restartCommand?.title).toBe('Restart');
@@ -206,7 +206,7 @@ describe('package.json', () => {
 
       it('should ensure start and restart commands are mutually exclusive', () => {
         const startCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.startAgent');
-        const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.refresh');
+        const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.restart');
 
         expect(startCommand).toBeDefined();
         expect(restartCommand).toBeDefined();
