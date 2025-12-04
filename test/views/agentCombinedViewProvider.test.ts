@@ -879,7 +879,8 @@ describe('AgentCombinedViewProvider', () => {
       expect((provider as any).currentAgentName).toBeUndefined();
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionActive', false);
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionStarting', false);
-      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
+      // Debug mode should persist across session ends, so it should NOT be reset to false
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
     });
 
     it('should handle endSession when webviewView is null', async () => {
