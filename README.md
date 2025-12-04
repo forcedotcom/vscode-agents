@@ -18,7 +18,7 @@ Agentforce DX brings powerful agent development capabilities directly into Visua
 
 ## How to Use this Extension
 
-Here are the high-level features of this extension.
+Here are the high-level features of this extension:
 
 - [Preview Agents](README.md#preview-agents)
 - [Trace Agent Conversations](README.md#trace-agent-conversations)
