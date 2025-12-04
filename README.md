@@ -1,6 +1,11 @@
 # Agentforce DX for Visual Studio Code
 
-Agentforce DX is a suite of tools to build, preview, and test agents. This extension provides integrated VS Code commands to easily open an agent in your org's Agent Builder UI, run the tests associated with an agent in the Agent Testing Panel, and have a preview conversation with an active agent.
+Agentforce DX brings powerful agent development capabilities directly into Visual Studio Code. Build, test, and debug Salesforce agents with an integrated development experience that includes:
+
+- **Interactive Preview**: Chat with your agents in real-time to test their responses and behavior
+- **Conversation Tracer**: Deep-dive into how your agent processes requests, makes decisions, and executes actions
+- **Integrated Testing**: Run and manage agent test suites with full visibility into test results
+- **Agent Management**: Open agents in Agent Builder and activate/deactivate them directly from VS Code
 
 ## Prerequisites
 
@@ -13,42 +18,42 @@ Agentforce DX is a suite of tools to build, preview, and test agents. This exten
 
 ## How to Use this Extension
 
-Here are the high-level features of this extension.
+Here are the high-level features of this extension:
 
+- [Preview Agents](README.md#preview-agents)
+- [Trace Agent Conversations](README.md#trace-agent-conversations)
 - [Test Agents](README.md#test-agents)
-- [Preview An Agent and Debug the Conversation](README.md#preview-an-agent-and-debug-the-conversation)
-- [Open an Agent in Agent Builder and Easily (De)Activate It](README.md#open-an-agent-in-agent-builder-and-easily-deactivate-it)
+
+### Preview Agents
+
+Chat with your agents directly in VS Code to test how they respond to user inputs. The Agent Preview panel lets you have interactive conversations with any active agent in your org, helping you validate behavior before deployment.
+
+1. Complete the [prerequisites](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html#prerequisites) in the org that contains your agent. Prerequisites include creating a new connected app and locally reauthorizing the org to link the new connected app.
+2. In VS Code, click the Agentforce DX icon in the Activity Bar to open the Agent Preview pane.
+3. Select an agent from the dropdown (only active agents are listed).
+4. Enable **Debug Mode** to integrate with the Apex Replay Debugger when agent actions invoke Apex classes.
+5. Start chatting with your agent in the conversation window.
+
+![Agent preview panel showing the chat interface](images/afdx-preview.png)
+
+### Trace Agent Conversations
+
+Understand exactly how your agent processes each conversation with the built-in Conversation Tracer. The tracer provides a detailed, step-by-step view of the agent's decision-making process, including:
+
+- How the agent interprets user utterances
+- Which actions the agent selects and why
+- API calls and data transformations
+- Response generation and output formatting
+
+Use the tracer to troubleshoot unexpected behavior, optimize agent performance, and gain insights into your agent's reasoning.
+
+![Conversation tracer showing detailed agent execution steps](images/afdx-tracer.png)
 
 ### Test Agents
 
-Run agent tests by viewing them in the Agent Testing Panel. Click on either a test definition or test case to get more information about it.
+Run and manage your agent test suites from the Agent Testing Panel. View test definitions and individual test cases, run tests with a single click, and get detailed results for each test execution. The testing panel integrates with VS Code's native testing UI, providing a familiar experience for running and debugging agent tests.
 
-![Run agent tests from the VS Code testing panel](images/afdx-test-panel.gif)
-
-### Preview An Agent and Debug the Conversation
-
-Preview an agent by chatting with it to to see how it responds to your statements, questions, and commands (also known as _utterances_). These conversation previews serve as interactive tests to make sure the agent behaves as expected. If an agent action that's implemented with an Apex class doesn't seem to be working correctly, you can chat in Debug Mode, which enables easy integration with the Apex Replay Debugger. Here's an overview of the steps.
-
-1. Complete the [prerequisites](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html#prerequisites) in the org that contains your agent. Prerequisites include creating a new connected app and locally reauthorizing the org to link the new connected app.
-2. In VS Code, in the Activity Bar, click the Agentforce DX icon. The Agent Preview pane opens.
-3. In the `Select an agent..` drop-down, select the agent you want to converse with. Only active agents are listed.
-4. If you want to use the Apex Reply Debugger to debug issues with Apex classes, enable `Debug Mode`.
-5. In the chat window, start chatting with your agent.
-6. To invoke the Apex Reply Debugger, set a breakpoint in the Apex class you want to debug. Then start chatting again. As soon as an agent action invokes that Apex class, the Apex Replay Debugger automatically starts, and you can debug as usual. See [Apex Replay Debugger](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/replay-debugger.html) for details.
-
-![Agent preview panel with these items highlighted: Agentforce DX in Activity Bar, Agent Preview tab, drop-down to select an agent, debug mode, and chat window.](images/afdx-agent-preview.png)
-
-### Open an Agent in Agent Builder and Easily (De)Activate It
-
-Open an agent in the Agent Builder UI of your org by running the **SFDX: Open Agent in Default Org** command from the command palette. You can also run the same command by right-clicking any of these metadata components in your DX project package directory:
-
-- Bot (file extension `.bot-meta.xml`)
-- BotVersion (file extension `.botVersion-meta.xml`)
-- GenAiPlannerBundle (file extension `.genAiPlannerBundle`)
-
-Similarly, activate or deactivate an agent in your org by running the **SFDX: Activate Agent** or **SFDX: Deactivate Agent** commands from the command palette or by right-clicking the agent's metadata files.
-
-![Open an agent in an org using a VS Code command](images/afdx-open-org.gif)
+![Agent Testing Panel showing test results](images/afdx-test.png)
 
 ## Documentation
 
