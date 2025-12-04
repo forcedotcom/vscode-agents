@@ -398,7 +398,7 @@
       },
       {
         "command": "sf.agent.combined.view.refresh",
-        "title": "Restart Agent",
+        "title": "Restart",
         "icon": "$(debug-rerun)",
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
