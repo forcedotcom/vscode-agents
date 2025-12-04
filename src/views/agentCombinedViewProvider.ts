@@ -234,7 +234,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
-      await this.setDebugMode(false);
+      // Note: Don't reset debug mode here - it should persist across sessions like live mode
 
       if (this.webviewView) {
         this.webviewView.webview.postMessage({
@@ -284,7 +284,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setAgentSelected(false);
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
-      await this.setDebugMode(false);
+      // Note: Don't reset debug mode here - it should persist like live mode
       await this.setResetAgentViewAvailable(false);
       this.pendingStartAgentId = undefined;
       this.pendingStartAgentSource = undefined;
@@ -1308,7 +1308,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           this.currentPlanId = undefined;
           await this.setSessionActive(false);
           await this.setSessionStarting(false);
-          await this.setDebugMode(false);
+          // Note: Don't reset debug mode here - it should persist across errors
         }
 
         // Check for specific agent deactivation error

@@ -4943,9 +4943,10 @@ describe('AgentCombinedViewProvider', () => {
 
       await provider.endSession();
 
-      // Debug mode should be reset to false when session ends (as per current behavior)
-      expect((provider as any).isApexDebuggingEnabled).toBe(false);
-      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
+      // Debug mode should persist when session ends (like live mode)
+      expect((provider as any).isApexDebuggingEnabled).toBe(true);
+      // setContext should not be called to change debug mode during endSession
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
     });
   });
 
