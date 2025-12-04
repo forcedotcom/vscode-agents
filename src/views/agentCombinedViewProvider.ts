@@ -70,16 +70,20 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private readonly channelService: ChannelService;
 
   private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
+  private static readonly DEBUG_MODE_KEY = 'agentforceDX.lastDebugMode';
 
   constructor(private readonly context: vscode.ExtensionContext) {
     AgentCombinedViewProvider.instance = this;
     // Load the last selected mode from storage
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
+    this.isApexDebuggingEnabled = this.context.globalState.get<boolean>(AgentCombinedViewProvider.DEBUG_MODE_KEY, false);
     this.channelService = CoreExtensionService.getChannelService();
 
     void this.setResetAgentViewAvailable(false);
     void this.setSessionErrorState(false);
     void this.setConversationDataAvailable(false);
+    // Set initial debug mode context without persisting again
+    void vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', this.isApexDebuggingEnabled);
   }
 
   public static getInstance(): AgentCombinedViewProvider {
@@ -145,6 +149,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async setDebugMode(enabled: boolean): Promise<void> {
     this.isApexDebuggingEnabled = enabled;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', enabled);
+    // Persist the debug mode selection for next session
+    await this.context.globalState.update(AgentCombinedViewProvider.DEBUG_MODE_KEY, enabled);
   }
 
   /**
@@ -228,7 +234,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       // Note: Don't clear currentAgentId here - it tracks the dropdown selection, not session state
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
-      await this.setDebugMode(false);
+      // Note: Don't reset debug mode here - it should persist across sessions like live mode
 
       if (this.webviewView) {
         this.webviewView.webview.postMessage({
@@ -278,7 +284,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setAgentSelected(false);
       await this.setSessionActive(false);
       await this.setSessionStarting(false);
-      await this.setDebugMode(false);
+      // Note: Don't reset debug mode here - it should persist like live mode
       await this.setResetAgentViewAvailable(false);
       this.pendingStartAgentId = undefined;
       this.pendingStartAgentSource = undefined;
@@ -1302,7 +1308,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           this.currentPlanId = undefined;
           await this.setSessionActive(false);
           await this.setSessionStarting(false);
-          await this.setDebugMode(false);
+          // Note: Don't reset debug mode here - it should persist across errors
         }
 
         // Check for specific agent deactivation error

@@ -879,7 +879,8 @@ describe('AgentCombinedViewProvider', () => {
       expect((provider as any).currentAgentName).toBeUndefined();
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionActive', false);
       expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionStarting', false);
-      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
+      // Debug mode should persist across session ends, so it should NOT be reset to false
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
     });
 
     it('should handle endSession when webviewView is null', async () => {
@@ -4816,6 +4817,137 @@ describe('AgentCombinedViewProvider', () => {
 
       expect((provider as any).isLiveMode).toBe(true);
       expect(mockContext.globalState.update).not.toHaveBeenCalledWith('agentforceDX.lastLiveMode', false);
+    });
+  });
+
+  describe('Debug Mode Persistence', () => {
+    it('should load debug mode from globalState on initialization', () => {
+      const mockContextWithDebugMode = {
+        subscriptions: [],
+        extensionPath: '/test/path',
+        globalState: {
+          get: jest.fn((key: string, defaultValue?: any) => {
+            if (key === 'agentforceDX.lastDebugMode') {
+              return true;
+            }
+            return defaultValue ?? false;
+          }),
+          update: jest.fn().mockResolvedValue(undefined),
+          keys: jest.fn().mockReturnValue([]),
+          setKeysForSync: jest.fn()
+        }
+      } as any;
+
+      // Ensure getChannelService is set up before creating provider
+      (CoreExtensionService.getChannelService as jest.Mock).mockReturnValue(mockChannelServiceInstance);
+      const newProvider = new AgentCombinedViewProvider(mockContextWithDebugMode);
+
+      expect(mockContextWithDebugMode.globalState.get).toHaveBeenCalledWith('agentforceDX.lastDebugMode', false);
+      expect((newProvider as any).isApexDebuggingEnabled).toBe(true);
+    });
+
+    it('should default to debug mode disabled when no saved preference exists', () => {
+      expect((provider as any).isApexDebuggingEnabled).toBe(false);
+    });
+
+    it('should persist debug mode when changed via setApexDebugging', async () => {
+      jest.spyOn(provider as any, 'getHtmlForWebview').mockReturnValue('<html><body>Test</body></html>');
+
+      let messageHandler: (message: any) => Promise<void>;
+      const testWebviewView = {
+        webview: {
+          postMessage: jest.fn(),
+          onDidReceiveMessage: jest.fn(handler => {
+            messageHandler = handler;
+            return { dispose: jest.fn() };
+          }),
+          options: {},
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
+
+      provider.resolveWebviewView(testWebviewView, {} as any, {} as vscode.CancellationToken);
+      jest.clearAllMocks();
+
+      // Send setApexDebugging message from webview
+      await messageHandler!({ command: 'setApexDebugging', data: true });
+
+      // Should update globalState
+      expect(mockContext.globalState.update).toHaveBeenCalledWith('agentforceDX.lastDebugMode', true);
+
+      // Should update internal state
+      expect((provider as any).isApexDebuggingEnabled).toBe(true);
+
+      // Should update context
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', true);
+    });
+
+    it('should persist debug mode when toggled via toggleDebugMode', async () => {
+      jest.clearAllMocks();
+
+      // Toggle debug mode on
+      await provider.toggleDebugMode();
+
+      // Should update globalState
+      expect(mockContext.globalState.update).toHaveBeenCalledWith('agentforceDX.lastDebugMode', true);
+
+      // Should update internal state
+      expect((provider as any).isApexDebuggingEnabled).toBe(true);
+
+      // Should update context
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', true);
+
+      jest.clearAllMocks();
+
+      // Toggle debug mode off
+      await provider.toggleDebugMode();
+
+      // Should update globalState
+      expect(mockContext.globalState.update).toHaveBeenCalledWith('agentforceDX.lastDebugMode', false);
+
+      // Should update internal state
+      expect((provider as any).isApexDebuggingEnabled).toBe(false);
+
+      // Should update context
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
+    });
+
+    it('should set debug mode context on initialization', () => {
+      const mockContextForInit = {
+        subscriptions: [],
+        extensionPath: '/test/path',
+        globalState: {
+          get: jest.fn().mockReturnValue(false),
+          update: jest.fn().mockResolvedValue(undefined),
+          keys: jest.fn().mockReturnValue([]),
+          setKeysForSync: jest.fn()
+        }
+      } as any;
+
+      jest.clearAllMocks();
+      (CoreExtensionService.getChannelService as jest.Mock).mockReturnValue(mockChannelServiceInstance);
+
+      // Create a new provider instance
+      const newProvider = new AgentCombinedViewProvider(mockContextForInit);
+
+      // Check that executeCommand was called during construction to set initial context
+      expect(vscode.commands.executeCommand).toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
+    });
+
+    it('should maintain debug mode state when session ends', async () => {
+      // Set debug mode to true
+      (provider as any).isApexDebuggingEnabled = true;
+      (provider as any).agentPreview = { end: jest.fn() };
+
+      jest.clearAllMocks();
+
+      await provider.endSession();
+
+      // Debug mode should persist when session ends (like live mode)
+      expect((provider as any).isApexDebuggingEnabled).toBe(true);
+      // setContext should not be called to change debug mode during endSession
+      expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith('setContext', 'agentforceDX:debugMode', false);
     });
   });
 
