@@ -21,12 +21,12 @@ describe('package.json', () => {
     describe('view/title menus', () => {
       const viewTitleMenus = packageJson.contributes.menus['view/title'];
 
-      it('should have restart agent command visible only when session is active and not starting', () => {
-        const restartCommand = viewTitleMenus.find((menu: any) => menu.command === 'sf.agent.combined.view.refresh');
+      it('should have restart submenu visible only when session is active and not starting', () => {
+        const restartSubmenu = viewTitleMenus.find((menu: any) => menu.submenu === 'sf.agent.combined.view.restartMenu');
 
-        expect(restartCommand).toBeDefined();
-        expect(restartCommand?.when).toContain('agentforceDX:sessionActive');
-        expect(restartCommand?.when).toContain('!agentforceDX:sessionStarting');
+        expect(restartSubmenu).toBeDefined();
+        expect(restartSubmenu?.when).toContain('agentforceDX:sessionActive');
+        expect(restartSubmenu?.when).toContain('!agentforceDX:sessionStarting');
       });
 
       it('should have refresh agents command visible only when session is not active or starting', () => {
@@ -65,22 +65,22 @@ describe('package.json', () => {
       });
 
       it('should ensure restart and refresh agent commands are mutually exclusive', () => {
-        const restartCommand = viewTitleMenus.find((menu: any) => menu.command === 'sf.agent.combined.view.refresh');
+        const restartSubmenu = viewTitleMenus.find((menu: any) => menu.submenu === 'sf.agent.combined.view.restartMenu');
         const refreshAgentsCommand = viewTitleMenus.find(
           (menu: any) => menu.command === 'sf.agent.combined.view.refreshAgents'
         );
 
-        expect(restartCommand).toBeDefined();
+        expect(restartSubmenu).toBeDefined();
         expect(refreshAgentsCommand).toBeDefined();
 
-        // Restart should only show when session is active
-        expect(restartCommand?.when).toContain('agentforceDX:sessionActive');
+        // Restart submenu should only show when session is active
+        expect(restartSubmenu?.when).toContain('agentforceDX:sessionActive');
 
         // Refresh agents should only show when session is NOT active
         expect(refreshAgentsCommand?.when).toContain('!agentforceDX:sessionActive');
 
         // They should be mutually exclusive
-        const restartWhen = restartCommand?.when;
+        const restartWhen = restartSubmenu?.when;
         const refreshWhen = refreshAgentsCommand?.when;
 
         // If sessionActive is true, restart shows (contains sessionActive)
@@ -90,15 +90,54 @@ describe('package.json', () => {
       });
     });
 
+    describe('restart submenu', () => {
+      const restartSubmenu = packageJson.contributes.menus['sf.agent.combined.view.restartMenu'];
+
+      it('should define the restart submenu with two options', () => {
+        expect(restartSubmenu).toBeDefined();
+        expect(restartSubmenu).toHaveLength(2);
+      });
+
+      it('should have restart command as the first option', () => {
+        const restartOption = restartSubmenu[0];
+        expect(restartOption.command).toBe('sf.agent.combined.view.refresh');
+      });
+
+      it('should have compile & restart command as the second option', () => {
+        const recompileOption = restartSubmenu[1];
+        expect(recompileOption.command).toBe('sf.agent.combined.view.recompileAndRestart');
+      });
+    });
+
+    describe('submenu definitions', () => {
+      const submenus = packageJson.contributes.submenus;
+
+      it('should define restart options submenu', () => {
+        const restartSubmenu = submenus.find((submenu: any) => submenu.id === 'sf.agent.combined.view.restartMenu');
+
+        expect(restartSubmenu).toBeDefined();
+        expect(restartSubmenu?.label).toBe('Restart Options');
+        expect(restartSubmenu?.icon).toBe('$(debug-rerun)');
+      });
+    });
+
     describe('command definitions', () => {
       const commands = packageJson.contributes.commands;
 
-      it('should have restart agent command defined', () => {
+      it('should have restart command defined', () => {
         const restartCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.refresh');
 
         expect(restartCommand).toBeDefined();
-        expect(restartCommand?.title).toBe('Restart Agent');
+        expect(restartCommand?.title).toBe('Restart');
         expect(restartCommand?.icon).toBe('$(debug-rerun)');
+      });
+
+      it('should have compile & restart command defined', () => {
+        const recompileCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.recompileAndRestart');
+
+        expect(recompileCommand).toBeDefined();
+        expect(recompileCommand?.title).toBe('Compile & Restart');
+        expect(recompileCommand?.enablement).toContain('agentforceDX:sessionActive');
       });
 
       it('should have refresh agents command defined', () => {

@@ -4930,4 +4930,155 @@ describe('AgentCombinedViewProvider', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith('Unable to open trace JSON file:', expect.any(Error));
     });
   });
+
+  describe('restartWithoutCompilation', () => {
+    let mockAgentPreview: any;
+    let mockWebviewView: any;
+
+    beforeEach(() => {
+      mockAgentPreview = {
+        end: jest.fn().mockResolvedValue(undefined),
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'new-session-123',
+          messages: [{ type: 'Inform', message: 'Welcome back!' }]
+        })
+      };
+
+      mockWebviewView = {
+        webview: {
+          postMessage: jest.fn()
+        }
+      };
+
+      (provider as any).agentPreview = mockAgentPreview;
+      (provider as any).webviewView = mockWebviewView;
+      (provider as any).sessionId = 'old-session-123';
+      (provider as any).currentAgentId = 'test-agent';
+      (provider as any).currentAgentSource = AgentSource.SCRIPT;
+      (provider as any).isLiveMode = true;
+    });
+
+    it('should restart the agent session without recompiling', async () => {
+      await provider.restartWithoutCompilation();
+
+      // Should end the current session
+      expect(mockAgentPreview.end).toHaveBeenCalled();
+
+      // Should clear the UI
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clearMessages'
+      });
+
+      // Should show "Starting live test..." message
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'simulationStarting',
+        data: { message: 'Starting live test...' }
+      });
+
+      // Should start a new session (without recompilation)
+      expect(mockAgentPreview.start).toHaveBeenCalled();
+
+      // Should send session started message
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'sessionStarted',
+        data: 'Welcome back!'
+      });
+
+      // Should update session ID
+      expect((provider as any).sessionId).toBe('new-session-123');
+    });
+
+    it('should show "Starting simulation..." message when not in live mode', async () => {
+      (provider as any).isLiveMode = false;
+
+      await provider.restartWithoutCompilation();
+
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'simulationStarting',
+        data: { message: 'Starting simulation...' }
+      });
+    });
+
+    it('should handle AgentSimulate instances correctly', async () => {
+      mockAgentPreview = {
+        end: jest.fn().mockResolvedValue(undefined),
+        start: jest.fn().mockResolvedValue({
+          sessionId: 'sim-session-123',
+          messages: []
+        })
+      };
+
+      Object.setPrototypeOf(mockAgentPreview, AgentSimulate.prototype);
+      (provider as any).agentPreview = mockAgentPreview;
+
+      await provider.restartWithoutCompilation();
+
+      // Should call end() without parameters for AgentSimulate
+      expect(mockAgentPreview.end).toHaveBeenCalledWith();
+      expect(mockAgentPreview.start).toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockAgentPreview.start.mockRejectedValue(new Error('Connection failed'));
+
+      await provider.restartWithoutCompilation();
+
+      // Should show error message in webview
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'error',
+        data: { message: 'Failed to restart: Connection failed' }
+      });
+
+      // Should log error
+      expect(mockChannelServiceInstance.appendLine).toHaveBeenCalledWith(
+        'Failed to restart session: Connection failed'
+      );
+    });
+
+    it('should do nothing if agentPreview is not available', async () => {
+      (provider as any).agentPreview = undefined;
+
+      await provider.restartWithoutCompilation();
+
+      // Should not attempt to restart
+      expect(mockWebviewView.webview.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing if webviewView is not available', async () => {
+      (provider as any).webviewView = undefined;
+
+      await provider.restartWithoutCompilation();
+
+      // Should not attempt to restart
+      expect(mockAgentPreview.end).not.toHaveBeenCalled();
+      expect(mockAgentPreview.start).not.toHaveBeenCalled();
+    });
+
+    it('should clear conversation state', async () => {
+      (provider as any).currentPlanId = 'plan-123';
+      (provider as any).currentUserMessage = 'test message';
+
+      await provider.restartWithoutCompilation();
+
+      // Should clear conversation state
+      expect((provider as any).currentPlanId).toBeUndefined();
+      expect((provider as any).currentUserMessage).toBeUndefined();
+    });
+
+    it('should update session active and starting states correctly', async () => {
+      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
+      executeCommandMock.mockClear();
+
+      await provider.restartWithoutCompilation();
+
+      // Should set sessionStarting to true at the start
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionStarting', true);
+
+      // Should set sessionActive to true after restart
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionActive', true);
+
+      // Should set sessionStarting to false after restart
+      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:sessionStarting', false);
+    });
+  });
 });
