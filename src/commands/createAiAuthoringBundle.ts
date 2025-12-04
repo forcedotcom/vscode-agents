@@ -14,7 +14,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
     try {
       // Get the project root
-      const project = await SfProject.getInstance();
+      const project = SfProject.getInstance();
       const projectRoot = project.getPath();
 
       // Determine the target directory
@@ -72,7 +72,9 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
       // Show dropdown with available spec files
       if (specFiles.length === 0) {
-        vscode.window.showErrorMessage(`No agent spec YAML files found in ${specsDir}. You must add at least one agent spec YAML file to continue.`);
+        vscode.window.showErrorMessage(
+          `No agent spec YAML files found in ${specsDir}. You must add at least one agent spec YAML file to continue.`
+        );
         return;
       }
 
@@ -100,53 +102,26 @@ export const registerCreateAiAuthoringBundleCommand = () => {
         },
         async progress => {
           try {
+            progress.report({ message: 'Creating authoring bundle structure...', increment: 50 });
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             progress.report({ message: 'Generating Agent Script file...' });
 
             // Create the agent script using the spec
-            const agentScript = await Agent.createAgentScript(await CoreExtensionService.getDefaultConnection(), {
-              ...specData,
-              ...{ name, developerName: apiName }
+            await Agent.createAuthoringBundle({
+              connection: await CoreExtensionService.getDefaultConnection(),
+              agentSpec: { ...specData, ...{ name, developerName: apiName } },
+              project,
+              bundleApiName: apiName
             });
-
-            if (!agentScript) {
-              throw new Error('Failed to generate agent script');
-            }
-
-            progress.report({ message: 'Creating authoring bundle structure...', increment: 50 });
-
-            // Create the bundle directory
-            const bundleDir = path.join(targetDir, apiName);
-            const bundleDirUri = vscode.Uri.file(bundleDir);
-            await vscode.workspace.fs.createDirectory(bundleDirUri);
-
-            // Create the .bundle-meta.xml file
-            const metaXml = `<?xml version="1.0" encoding="UTF-8"?>
-<aiAuthoringBundle>
-  <Label>${name}</Label>
-  <BundleType>customer</BundleType>
-  <VersionTag>Spring2026</VersionTag>
-  <VersionDescription>Initial release for ${name}</VersionDescription>
-  <SourceBundleVersion></SourceBundleVersion>
-  <Target>${apiName}</Target>
-</aiAuthoringBundle>
-`;
-
-            const metaXmlPath = path.join(bundleDir, `${apiName}.bundle-meta.xml`);
-            await vscode.workspace.fs.writeFile(vscode.Uri.file(metaXmlPath), Buffer.from(metaXml, 'utf-8'));
-
-            // Create the .agent file
-            const agentFilePath = path.join(bundleDir, `${apiName}.agent`);
-            await vscode.workspace.fs.writeFile(vscode.Uri.file(agentFilePath), Buffer.from(agentScript, 'utf-8'));
 
             progress.report({ message: 'Complete!', increment: 100 });
 
+            // Open the agent file
+            const doc = await vscode.workspace.openTextDocument(path.join(targetDir, apiName, `${apiName}.agent`));
+            await vscode.window.showTextDocument(doc);
             // Wait a moment to show success
             await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Open the agent file
-            const doc = await vscode.workspace.openTextDocument(agentFilePath);
-            await vscode.window.showTextDocument(doc);
-
             vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);

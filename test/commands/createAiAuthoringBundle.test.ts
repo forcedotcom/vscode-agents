@@ -103,7 +103,7 @@ describe('createAiAuthoringBundle', () => {
     );
 
     // Mock Agent.createAgentScript
-    createAgentScriptSpy = jest.spyOn(Agent, 'createAgentScript');
+    createAgentScriptSpy = jest.spyOn(Agent, 'createAuthoringBundle');
   });
 
   afterEach(() => {
