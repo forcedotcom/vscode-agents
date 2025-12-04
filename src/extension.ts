@@ -380,6 +380,96 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.recompileAndRestart', async () => {
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('No agent selected to restart.');
+        return;
+      }
+
+      // Check if this is a local script agent
+      const isScriptAgent = currentAgentId.startsWith('local:');
+
+      if (isScriptAgent) {
+        // For script agents, compile first before restarting
+        const filePath = currentAgentId.replace('local:', '');
+        const channelService = CoreExtensionService.getChannelService();
+
+        try {
+          // Read the agent file contents
+          const fileUri = vscode.Uri.file(filePath);
+          const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
+
+          // Get connection to validate compilation
+          const connection = await CoreExtensionService.getDefaultConnection();
+
+          // Import Agent class dynamically to avoid circular dependencies
+          const { Agent } = await import('@salesforce/agents');
+
+          // Show progress notification
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: 'Compiling agent...',
+              cancellable: false
+            },
+            async progress => {
+              // Compile the agent script
+              const compileResponse = await Agent.compileAgentScript(connection, fileContents);
+
+              // Check if compilation failed
+              if (compileResponse.status === 'failure') {
+                const errorMessages = compileResponse.errors
+                  .map(
+                    error =>
+                      `[${error.errorType}] Line ${error.lineStart}:${error.colStart} - ${error.description}`
+                  )
+                  .join('\n');
+
+                channelService.appendLine('❌ Agent compilation failed!');
+                channelService.appendLine('────────────────────────────────────────────────────────────────────────');
+                channelService.appendLine(`Found ${compileResponse.errors.length} error(s):`);
+                channelService.appendLine(errorMessages);
+                channelService.showChannelOutput();
+
+                vscode.window.showErrorMessage(
+                  `Agent compilation failed with ${compileResponse.errors.length} error(s). Check the Output tab for details.`
+                );
+                return;
+              }
+
+              // Compilation succeeded, proceed with restart
+              channelService.appendLine('✓ Agent compiled successfully. Restarting...');
+
+              progress.report({ message: 'Restarting agent...' });
+
+              // Set sessionStarting immediately to prevent button flicker
+              await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', true);
+
+              // End the current session
+              await provider.endSession();
+
+              // Restart the agent session
+              provider.selectAndStartAgent(currentAgentId);
+            }
+          );
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(`Failed to compile agent: ${errorMessage}`);
+          channelService.appendLine(`❌ Failed to compile agent: ${errorMessage}`);
+          channelService.showChannelOutput();
+        }
+      } else {
+        // For published agents, just do a regular restart (they're already compiled on the server)
+        await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', true);
+        await provider.endSession();
+        provider.selectAndStartAgent(currentAgentId);
+      }
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async () => {
       await provider.refreshAvailableAgents();
       vscode.window.showInformationMessage('Agent list refreshed.');
