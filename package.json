@@ -148,10 +148,10 @@
     "menus": {
       "sf.agent.combined.view.restartMenu": [
         {
-          "command": "sf.agent.combined.view.recompileAndRestart"
+          "command": "sf.agent.combined.view.refresh"
         },
         {
-          "command": "sf.agent.combined.view.refresh"
+          "command": "sf.agent.combined.view.recompileAndRestart"
         }
       ],
       "view/title": [
@@ -404,7 +404,7 @@
       },
       {
         "command": "sf.agent.combined.view.recompileAndRestart",
-        "title": "Recompile & Restart Agent",
+        "title": "Compile & Restart",
         "enablement": "agentforceDX:sessionActive || agentforceDX:sessionStarting"
       },
       {
