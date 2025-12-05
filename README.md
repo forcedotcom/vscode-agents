@@ -2,8 +2,8 @@
 
 Agentforce DX brings powerful agent development capabilities directly into Visual Studio Code. Build, preview, test, and debug Salesforce agents with an integrated development experience that includes:
 
-- **Interactive Preview**: Chat with your agents to test their responses and behavior.
-- **Conversation Tracer**: Deep-dive into how your agent processes requests, makes decisions, and executes actions. 
+- **Interactive Preview (Beta)**: Chat with your agents to test their responses and behavior.
+- **Conversation Tracer (Beta)**: Deep-dive into how your agent processes requests, makes decisions, and executes actions. 
 - **Integrated Testing**: Run and manage agent test suites with full visibility into test results. 
 - **Agent Management**: Open agents in Agent Builder and activate/deactivate them directly from VS Code. 
 
@@ -20,11 +20,11 @@ Agentforce DX brings powerful agent development capabilities directly into Visua
 
 Here are the high-level features of this extension:
 
-- [Preview Agents](README.md#preview-agents)
-- [Trace Agent Conversations](README.md#trace-agent-conversations)
+- [Preview Agents (Beta)](README.md#preview-agents-beta)
+- [Trace Agent Conversations (Beta)](README.md#trace-agent-conversations-beta)
 - [Test Agents](README.md#test-agents)
 
-### Preview Agents
+### Preview Agents (Beta)
 
 Chat with your agents directly in VS Code to test how they respond to user inputs. The Agent Preview panel lets you have interactive conversations with agents using their Agent Script file or with active agents in your org. Previewing agents helps you validate their behavior before deployment.
 
@@ -37,7 +37,7 @@ See [Preview and Debug an Agent](https://developer.salesforce.com/docs/einstein/
 
 ![Agent preview panel showing the chat interface](images/afdx-preview.png)
 
-### Trace Agent Conversations
+### Trace Agent Conversations (Beta) 
 
 Understand exactly how your agent processes each conversation with the built-in Conversation Tracer. The tracer provides a detailed, step-by-step view of the agent's decision-making process, including:
 
