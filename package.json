@@ -114,11 +114,6 @@
           "default": true,
           "description": "Show generated data in test results output"
         },
-        "salesforce.agentforceDX.tracerPayload": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "URI or file path to mock JSON payload for tracer. When set, this file will be loaded instead of fetching real trace data from the server."
-        },
         "salesforce.agentforceDX.useTestApi": {
           "type": "boolean",
           "default": false,
@@ -126,18 +121,6 @@
         }
       }
     },
-    "languages": [
-      {
-        "id": "agent",
-        "extensions": [
-          ".agent"
-        ],
-        "icon": {
-          "light": "./resources/file-icons/light/agent-file-light.svg",
-          "dark": "./resources/file-icons/dark/agent-file-dark.svg"
-        }
-      }
-    ],
     "views": {
       "test": [
         {

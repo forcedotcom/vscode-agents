@@ -245,4 +245,29 @@ describe('CoreExtensionService', () => {
     expect(validateSpy).toHaveBeenCalledTimes(1); // Still only called once
     expect(CoreExtensionService.isInitialized).toBe(true);
   });
+
+  it('should throw error when getting onOrgChange event before initialization', () => {
+    expect(() => CoreExtensionService.getOnOrgChangeEvent()).toThrow(NOT_INITIALIZED_ERROR);
+  });
+
+  it('should return onOrgChange event when initialized', async () => {
+    const mockOnOrgChange = jest.fn();
+    const mockWorkspaceContext = {
+      onOrgChange: mockOnOrgChange,
+      getConnection: jest.fn().mockResolvedValue({})
+    };
+    workspaceContextInstance.getInstance = jest.fn().mockReturnValue(mockWorkspaceContext);
+
+    jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+
+    await CoreExtensionService.loadDependencies(mockContext);
+    const event = CoreExtensionService.getOnOrgChangeEvent();
+    expect(event).toBe(mockOnOrgChange);
+  });
 });
