@@ -121,18 +121,6 @@
         }
       }
     },
-    "languages": [
-      {
-        "id": "agent",
-        "extensions": [
-          ".agent"
-        ],
-        "icon": {
-          "light": "./resources/file-icons/light/agent-file-light.svg",
-          "dark": "./resources/file-icons/dark/agent-file-dark.svg"
-        }
-      }
-    ],
     "views": {
       "test": [
         {
