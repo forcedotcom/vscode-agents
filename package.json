@@ -2,7 +2,7 @@
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
   "description": "Provides a suite of tools to iteratively build, preview, and test agents right in your IDE.",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "publisher": "Salesforce",
   "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
   "enableO11y": "true",
@@ -15,12 +15,12 @@
     "vscode": "^1.90.0"
   },
   "categories": [
-    "Other"
-  ],
+    "Extension Packs"
+    ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "0.19.6",
-    "@salesforce/core": "^8.23.4",
+    "@salesforce/agents": "0.19.8",
+    "@salesforce/core": "^8.24.0",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",
     "cross-spawn": "^7.0.6",
@@ -31,23 +31,30 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/cross-spawn": "^6.0.6",
+    "@types/glob": "^8.1.0",
     "@types/jest": "^30.0.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^24.7.2",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",
     "@types/semver": "^7.7.1",
     "@types/shelljs": "^0.8.17",
     "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.0",
     "esbuild": "^0.25.12",
+    "glob": "^13.0.0",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "jest-junit": "^16.0.0",
+    "mocha": "^11.7.5",
+    "playwright": "^1.57.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "ts-jest": "^29.4.5",
@@ -69,6 +76,8 @@
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "jest --coverage",
     "test:frontend": "jest --config jest.config.webview.js --coverage",
+    "test:integration": "npm run build && npm run compile:integration && node ./test/integration/out/runTest.js",
+    "compile:integration": "tsc -p ./test/integration/tsconfig.json",
     "bundle:extension": "node ./esbuild.config.js",
     "vscode:package": "npm run compile && npm run bundle:extension & npx vsce package",
     "vscode:prepublish_disabled": "npm run update-for-packaging",
@@ -85,18 +94,16 @@
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "extensionPack": [
+      "salesforce.salesforcedx-vscode-core",
+      "salesforce.salesforcedx-vscode-apex-replay-debugger",
+      "salesforce.agent-script-language-client"
+    ],
     "submenus": [
       {
         "id": "sf.agent.combined.view.restartMenu",
         "label": "Restart Options",
         "icon": "$(debug-rerun)"
-      }
-    ],
-    "iconThemes": [
-      {
-        "id": "afdx-agent-icons",
-        "label": "AFDX Agent Icons",
-        "path": "./resources/agent-icon-theme.json"
       }
     ],
     "configuration": {
@@ -119,6 +126,16 @@
         }
       }
     },
+    "languages": [
+      {
+        "id": "agent",
+        "extensions": [".agent"],
+        "icon": {
+          "light": "./resources/file-icons/light/agent-file-light.svg",
+          "dark": "./resources/file-icons/dark/agent-file-dark.svg"
+        }
+      }
+    ],
     "views": {
       "test": [
         {
