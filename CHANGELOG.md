@@ -3,9 +3,8 @@
 ### Features
 
 - **Interactive Preview (Beta)**: Chat with your agents to test their responses and behavior.
-- **Conversation Tracer (Beta)**: Deep-dive into how your agent processes requests, makes decisions, and executes actions. 
+- **Conversation Tracer (Beta)**: Deep-dive into how your agent processes requests, makes decisions, and executes actions.
 - **Agent Validation (Beta)**: Ensure you have valid agentscript.
-
 
 ### Performance Improvements
 
