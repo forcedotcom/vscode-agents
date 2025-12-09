@@ -6,11 +6,10 @@
 - **Conversation Tracer (Beta)**: Deep-dive into how your agent processes requests, makes decisions, and executes actions. 
 - **Agent Validation (Beta)**: Ensure you have valid agentscript.
 
+
 ### Performance Improvements
 
-* optimize test timeouts to reduce test execution time ([262ed94](https://github.com/salesforcecli/vsode-agents/commit/262ed94a5d6a067a4f6b3e6c6e337133df07f616))
-
-
+- optimize test timeouts to reduce test execution time ([262ed94](https://github.com/salesforcecli/vsode-agents/commit/262ed94a5d6a067a4f6b3e6c6e337133df07f616))
 
 # [1.2.0](https://github.com/salesforcecli/vsode-agents/compare/v1.1.3...v1.2.0) (2025-08-20)
 
