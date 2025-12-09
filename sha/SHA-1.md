@@ -16,10 +16,3 @@ shasum -a 256 <location_of_the_downloaded_file>
 
 3. Confirm that the SHA in your output matches the value in this list of SHAs.
 
-e64e10afa8ec521352c7739039d1938b8cc4ab50946c9dc2a2c335ecb37d57d2 ./extensions/salesforcedx-vscode-agents-1.4.0.vsix 4. Change the filename extension for the file that you downloaded from .zip to
-.vsix.
-
-5. In Visual Studio Code, from the Extensions view, select ... > Install from
-   VSIX.
-
-6. Install the verified VSIX file.
