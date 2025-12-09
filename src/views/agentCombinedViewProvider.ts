@@ -76,7 +76,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     AgentCombinedViewProvider.instance = this;
     // Load the last selected mode from storage
     this.isLiveMode = this.context.globalState.get<boolean>(AgentCombinedViewProvider.LIVE_MODE_KEY, false);
-    this.isApexDebuggingEnabled = this.context.globalState.get<boolean>(AgentCombinedViewProvider.DEBUG_MODE_KEY, false);
+    this.isApexDebuggingEnabled = this.context.globalState.get<boolean>(
+      AgentCombinedViewProvider.DEBUG_MODE_KEY,
+      false
+    );
     this.channelService = CoreExtensionService.getChannelService();
 
     void this.setResetAgentViewAvailable(false);
@@ -781,9 +784,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         });
 
         if (!selection) {
-          vscode.window.showInformationMessage(
-            'Client app selection cancelled. Showing Agent Script files only.'
-          );
+          vscode.window.showInformationMessage('Client app selection cancelled. Showing Agent Script files only.');
           return { status: 'handled' };
         }
 
@@ -959,7 +960,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
                   command: 'simulationStarting',
                   data: { message: data.message || modeMessage }
                 });
-
               });
 
               // Create AgentSimulate with just the file path
@@ -1207,36 +1207,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         } else if (message.command === 'getTraceData') {
           try {
             const emptyTraceData = { plan: [], planId: '', sessionId: '' };
-            // Check for mock payload URI setting first
-            const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
-            const mockPayloadUri = config.get<string>('tracerPayload')?.trim();
 
-            if (mockPayloadUri) {
-              try {
-                // Parse the URI and load the file
-                const fileUri = vscode.Uri.file(mockPayloadUri);
-                const fileContent = await vscode.workspace.fs.readFile(fileUri);
-                const parsedMockData = JSON.parse(fileContent.toString());
-
-                await this.persistTraceHistory(parsedMockData);
-
-                // Send the mock data to the webview
-                webviewView.webview.postMessage({
-                  command: 'traceData',
-                  data: parsedMockData
-                });
-              } catch (fileError) {
-                // If mock file can't be loaded, log error and surface to user
-                console.error('Error loading mock payload from URI:', fileError);
-                await this.postErrorMessage(
-                  webviewView,
-                  `Error loading mock payload: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
-                );
-              }
-              return;
-            }
-
-            // Normal flow: If no agent preview or session, return empty data instead of throwing error
+            // If no agent preview or session, return empty data instead of throwing error
             if (!this.agentPreview || !this.sessionId) {
               const restored = await this.sendLastStoredTraceData(webviewView);
               if (!restored) {
@@ -1368,7 +1340,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           if (typeof markdown === 'string' && markdown.trim() !== '') {
             await this.saveConversationExport(markdown, fileName);
           } else {
-            vscode.window.showWarningMessage('Conversation couldn\'t be exported.');
+            vscode.window.showWarningMessage("Conversation couldn't be exported.");
           }
         }
       } catch (err) {
@@ -1404,7 +1376,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         // Check for other common agent errors
         else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
           errorMessage =
-            'The selected agent couldn\'t be found. Either it\'s been deleted or you don\'t have access to it.';
+            "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
         }
         // Check for permission errors
         else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {

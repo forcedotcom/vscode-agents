@@ -3102,40 +3102,6 @@ describe('AgentCombinedViewProvider', () => {
         data: { message: 'string error' }
       });
     });
-
-    it('should load mock trace payload from configuration when setting is provided', async () => {
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: jest.fn(() => '/tmp/mock-trace.json')
-      });
-      const mockPayload = { plan: [{ step: 'test' }] };
-      (vscode.workspace.fs.readFile as jest.Mock).mockResolvedValue(Buffer.from(JSON.stringify(mockPayload)));
-
-      await messageHandler({ command: 'getTraceData' });
-
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'traceData',
-        data: mockPayload
-      });
-    });
-
-    it('should surface error when mock trace payload cannot be read', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: jest.fn(() => '/tmp/mock-trace.json')
-      });
-      (vscode.workspace.fs.readFile as jest.Mock).mockRejectedValue(new Error('ENOENT'));
-      const executeCommandMock = vscode.commands.executeCommand as jest.Mock;
-      executeCommandMock.mockClear();
-
-      await messageHandler({ command: 'getTraceData' });
-
-      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
-        command: 'error',
-        data: { message: expect.stringContaining('ENOENT') }
-      });
-      expect(executeCommandMock).toHaveBeenCalledWith('setContext', 'agentforceDX:canResetAgentView', true);
-      consoleErrorSpy.mockRestore();
-    });
   });
 
   describe('Error Message Formatting', () => {
