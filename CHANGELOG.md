@@ -1,11 +1,8 @@
 # [1.5.0](https://github.com/salesforcecli/vsode-agents/compare/v1.4.0...v1.5.0) (2025-12-09)
 
-
 ### Features
 
-* reset agent view and reload agents when SFDX org changes ([68ffa6e](https://github.com/salesforcecli/vsode-agents/commit/68ffa6eb10c9fe1c5a329a27bb9915d7c5c4152c))
-
-
+- reset agent view and reload agents when SFDX org changes ([68ffa6e](https://github.com/salesforcecli/vsode-agents/commit/68ffa6eb10c9fe1c5a329a27bb9915d7c5c4152c))
 
 # [1.4.0](https://github.com/salesforcecli/vsode-agents/compare/v1.2.0...v1.4.0) (2025-12-09)
 
