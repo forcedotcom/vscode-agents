@@ -15,8 +15,8 @@
     "vscode": "^1.90.0"
   },
   "categories": [
-    "Other"
-  ],
+    "Extension Packs"
+    ],
   "main": "lib/src/extension.js",
   "dependencies": {
     "@salesforce/agents": "0.19.8",
@@ -88,13 +88,17 @@
   },
   "extensionDependencies": [
     "salesforce.salesforcedx-vscode-core",
-    "salesforce.salesforcedx-vscode-apex-replay-debugger",
-    "salesforce.agent-script-language-client"
+    "salesforce.salesforcedx-vscode-apex-replay-debugger"
   ],
   "activationEvents": [
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "extensionPack": [
+      "salesforce.salesforcedx-vscode-core",
+      "salesforce.salesforcedx-vscode-apex-replay-debugger",
+      "salesforce.agent-script-language-client"
+    ],
     "submenus": [
       {
         "id": "sf.agent.combined.view.restartMenu",
