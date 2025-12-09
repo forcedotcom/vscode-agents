@@ -355,6 +355,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public async refreshAvailableAgents(): Promise<void> {
     await this.endSession();
     this.currentAgentId = undefined;
+    // Clear the selected client app since it's tied to the org
+    this.selectedClientApp = undefined;
 
     if (this.webviewView) {
       // Clear the current agent selection

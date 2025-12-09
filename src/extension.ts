@@ -183,6 +183,26 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
     })
   );
 
+  // Listen for org changes and reset the agent view when org changes
+  // This is done asynchronously since CoreExtensionService loads in the background
+  CoreExtensionService.loadDependencies(context)
+    .then(() => {
+      const onOrgChange = CoreExtensionService.getOnOrgChangeEvent();
+      disposables.push(
+        onOrgChange(async event => {
+          const channelService = CoreExtensionService.getChannelService();
+          channelService.appendLine(`Org changed to: ${event.alias || event.username || 'unknown'}`);
+          channelService.appendLine('Resetting agent preview...');
+
+          // Reset the agent view and reload the agent list for the new org
+          await provider.refreshAvailableAgents();
+        })
+      );
+    })
+    .catch((err: Error) => {
+      console.error('Could not set up org change listener:', err.message);
+    });
+
   // Shared function for selecting and running an agent
   const selectAndRunAgent = async () => {
     const channelService = CoreExtensionService.getChannelService();

@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 import { satisfies, valid } from 'semver';
-import { ExtensionContext, extensions, window } from 'vscode';
+import { Event, ExtensionContext, extensions, window } from 'vscode';
 import { EXTENSION_NAME } from '../consts';
 import { ChannelService } from '../types';
 import { TelemetryService } from '../types/TelemetryService';
 import { CoreExtensionApi } from '../types/CoreExtension';
 import { WorkspaceContext } from '../types/WorkspaceContext';
 import { Connection } from '@salesforce/core';
+
+export interface OrgChangeEvent {
+  username?: string;
+  alias?: string;
+}
 
 const CORE_EXTENSION_ID = 'salesforce.salesforcedx-vscode-core';
 export const NOT_INITIALIZED_ERROR = 'CoreExtensionService not initialized';
@@ -126,6 +131,13 @@ export class CoreExtensionService {
   static getTelemetryService(): TelemetryService {
     if (CoreExtensionService.initialized) {
       return CoreExtensionService.telemetryService;
+    }
+    throw new Error(NOT_INITIALIZED_ERROR);
+  }
+
+  static getOnOrgChangeEvent(): Event<OrgChangeEvent> {
+    if (CoreExtensionService.initialized) {
+      return CoreExtensionService.workspaceContext.onOrgChange;
     }
     throw new Error(NOT_INITIALIZED_ERROR);
   }

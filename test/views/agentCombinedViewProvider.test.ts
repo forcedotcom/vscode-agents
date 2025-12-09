@@ -1196,6 +1196,16 @@ describe('AgentCombinedViewProvider', () => {
       endSessionSpy.mockRestore();
     });
 
+    it('should clear selectedClientApp when refreshing agents (for org change)', async () => {
+      (provider as any).selectedClientApp = 'PreviousApp';
+      const endSessionSpy = jest.spyOn(provider, 'endSession').mockResolvedValue();
+
+      await provider.refreshAvailableAgents();
+
+      expect((provider as any).selectedClientApp).toBeUndefined();
+      endSessionSpy.mockRestore();
+    });
+
     it('should send refresh commands to webview', async () => {
       const postMessageMock = mockWebviewView.webview.postMessage as jest.Mock;
       postMessageMock.mockClear();
