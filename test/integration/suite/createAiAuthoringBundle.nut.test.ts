@@ -30,6 +30,7 @@ suite('Create AI Authoring Bundle Integration Test', () => {
   let testWorkspacePath: string;
   let specsDir: string;
   let specFilePath: string;
+  let expectedBundleDir: string;
 
   suiteSetup(async function () {
     this.timeout(60000); // 1 minute for setup
@@ -57,6 +58,38 @@ tools: []`;
 
     specFilePath = path.join(specsDir, 'test-agent-spec.yaml');
     fs.writeFileSync(specFilePath, specContent, 'utf8');
+  });
+
+  suiteTeardown(async function () {
+    // Restore test workspace to initial state after all tests complete
+    // This removes all test artifacts so the next test run starts clean
+    // The fixtures directory represents the committed initial state
+    console.log('Cleaning up test artifacts and restoring workspace to initial state...');
+    
+    // Remove any test-generated bundles (keep the aiAuthoringBundles directory structure)
+    const aiAuthoringBundlesDir = path.join(testWorkspacePath, 'force-app', 'main', 'default', 'aiAuthoringBundles');
+    if (fs.existsSync(aiAuthoringBundlesDir)) {
+      const entries = fs.readdirSync(aiAuthoringBundlesDir);
+      for (const entry of entries) {
+        const entryPath = path.join(aiAuthoringBundlesDir, entry);
+        try {
+          const stat = fs.statSync(entryPath);
+          if (stat.isDirectory() || stat.isFile()) {
+            // Remove any bundle directories or files created during tests
+            fs.rmSync(entryPath, { recursive: true, force: true });
+            console.log(`Removed test artifact: ${entryPath}`);
+          }
+        } catch (error) {
+          // Ignore errors if file/directory doesn't exist or can't be accessed
+          console.warn(`Warning: Could not remove ${entryPath}: ${error}`);
+        }
+      }
+    }
+    
+    // Remove any other test-generated files/directories as needed
+    // (Add more cleanup here as new test artifacts are created in future tests)
+    
+    console.log('Workspace restored to initial state');
   });
 
   test('Should create AI authoring bundle using createAiAuthoringBundle command', async function () {
@@ -100,7 +133,7 @@ tools: []`;
     });
 
     const targetUri = vscode.Uri.file(aiAuthoringBundlesDir);
-    const expectedBundleDir = path.join(aiAuthoringBundlesDir, 'WillieTestBundle');
+    expectedBundleDir = path.join(aiAuthoringBundlesDir, 'WillieTestBundle');
     const expectedAgentFile = path.join(expectedBundleDir, 'WillieTestBundle.agent');
 
     // Clean up any existing bundle
@@ -137,6 +170,7 @@ tools: []`;
     } finally {
       // Always restore original functions
       mockedUI.restore();
+      // Note: Bundle cleanup happens in suiteTeardown after all tests complete
     }
   });
 });
