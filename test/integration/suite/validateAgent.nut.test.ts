@@ -227,16 +227,22 @@ start_agent topic_selector:
       const fileUri = vscode.Uri.file(agentFile);
       const fileDiagnostics = allDiagnostics.find(([uri]) => uri.fsPath === fileUri.fsPath)?.[1] || [];
       
+      // Filter to only Agent Validation diagnostics (ignore YAML, TypeScript, etc.)
+      const agentValidationDiagnostics = fileDiagnostics.filter(
+        diagnostic => diagnostic.source === 'Agent Validation'
+      );
+      
       if (shouldSucceed) {
-        assert.strictEqual(fileDiagnostics.length, 0, 'Valid agent file should have no diagnostics');
+        assert.strictEqual(agentValidationDiagnostics.length, 0, 'Valid agent file should have no Agent Validation diagnostics');
       } else {
-        assert.ok(fileDiagnostics.length > 0, 'Invalid agent file should have diagnostics');
+        assert.ok(agentValidationDiagnostics.length > 0, 'Invalid agent file should have Agent Validation diagnostics');
         
         // Verify diagnostics have correct properties
-        fileDiagnostics.forEach((diagnostic, index) => {
+        agentValidationDiagnostics.forEach((diagnostic, index) => {
           assert.ok(diagnostic.message, `Diagnostic ${index} should have a message`);
           assert.strictEqual(diagnostic.severity, vscode.DiagnosticSeverity.Error, `Diagnostic ${index} should be an error`);
-          assert.ok(diagnostic.source === 'Agent Validation', `Diagnostic ${index} should have source "Agent Validation"`);
+          assert.strictEqual(diagnostic.source, 'Agent Validation', `Diagnostic ${index} should have source "Agent Validation"`);
+          assert.ok(diagnostic.code, `Diagnostic ${index} should have an error code`);
         });
       }
     } finally {
@@ -244,7 +250,23 @@ start_agent topic_selector:
     }
   }
 
-  test('Should validate agent file via context menu (right-click on .agent file)', async function () {
+  test('Should validate agent file via editor context menu (right-click in editor)', async function () {
+    this.timeout(120000);
+
+    await waitForExtensionActivation(60000);
+    await authenticateDevHub();
+    await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
+    assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
+
+    const doc = await vscode.workspace.openTextDocument(validAgentFile);
+    await vscode.window.showTextDocument(doc);
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const targetUri = vscode.Uri.file(validAgentFile);
+    await executeAndVerifyValidation(validAgentFile, true, targetUri);
+  });
+
+  test('Should validate agent file via explorer context menu (right-click in file explorer)', async function () {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -267,7 +289,22 @@ start_agent topic_selector:
     await executeAndVerifyValidation(validAgentFile, true);
   });
 
-  test('Should show validation errors for invalid agent file', async function () {
+  test('Should validate agent file via command palette with explicit title', async function () {
+    this.timeout(120000);
+
+    await waitForExtensionActivation(60000);
+    await authenticateDevHub();
+    await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
+    assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
+
+    const doc = await vscode.workspace.openTextDocument(validAgentFile);
+    await vscode.window.showTextDocument(doc);
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    await executeAndVerifyValidation(validAgentFile, true);
+  });
+
+  test('Should show validation errors for invalid agent file via context menu', async function () {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -277,6 +314,21 @@ start_agent topic_selector:
 
     const targetUri = vscode.Uri.file(invalidAgentFile);
     await executeAndVerifyValidation(invalidAgentFile, false, targetUri);
+  });
+
+  test('Should show validation errors for invalid agent file via command palette', async function () {
+    this.timeout(120000);
+
+    await waitForExtensionActivation(60000);
+    await authenticateDevHub();
+    await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
+    assert.ok(fs.existsSync(invalidAgentFile), 'Invalid agent file should exist');
+
+    const doc = await vscode.workspace.openTextDocument(invalidAgentFile);
+    await vscode.window.showTextDocument(doc);
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    await executeAndVerifyValidation(invalidAgentFile, false);
   });
 });
 
