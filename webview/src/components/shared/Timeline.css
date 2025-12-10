@@ -103,14 +103,14 @@
 
 /* All other states use muted colors */
 
-/* Error state - failed with cross - uses same color as success */
+/* Error state - failed with cross - uses error color for visibility */
 .vscode-timeline-item--error .vscode-timeline-item__icon {
-  color: var(--vscode-button-foreground);
-  background-color: var(--vscode-button-background);
+  color: var(--vscode-editor-background);
+  background-color: var(--vscode-errorForeground);
 }
 
 .vscode-timeline-item--error .vscode-timeline-item__line {
-  background-color: var(--vscode-button-secondaryBackground);
+  background-color: var(--vscode-button-background);
 }
 
 /* Pending state - dot with button color, but muted line since not progressed */

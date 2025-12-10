@@ -599,4 +599,99 @@ describe('AgentTracer helpers', () => {
     expect(result).toContain('"message"');
     expect(result).toContain('Test message');
   });
+
+  it('shows function name for successful FunctionStep with output', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'FunctionStep',
+          function: {
+            name: 'check_weather',
+            input: { dateToCheck: '2024-06-17' },
+            output: { maxTemperature: 13.9, minTemperature: 12 }
+          }
+        }
+      ]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Action Executed');
+    expect(items[0].description).toBe('check_weather');
+    expect(items[0].status).toBe('success');
+  });
+
+  it('shows error status for FunctionStep without output', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'FunctionStep',
+          function: {
+            name: 'check_weather',
+            input: { dateToCheck: '2024-06-17' }
+          }
+        }
+      ]
+    };
+
+    const items = buildTimelineItems(trace, () => {});
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Action Executed');
+    expect(items[0].description).toBe('check_weather');
+    expect(items[0].status).toBe('error');
+  });
+
+  it('includes function data in step data for FunctionStep', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'FunctionStep',
+          function: {
+            name: 'check_weather',
+            input: { dateToCheck: '2024-06-17' },
+            output: { maxTemperature: 13.9 }
+          }
+        }
+      ]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"function"');
+    expect(result).toContain('check_weather');
+    expect(result).toContain('"input"');
+    expect(result).toContain('"output"');
+  });
+
+  it('makes FunctionStep clickable when function data exists', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'FunctionStep',
+          function: {
+            name: 'check_weather',
+            input: { dateToCheck: '2024-06-17' }
+          }
+        }
+      ]
+    };
+
+    const indices: number[] = [];
+    const items = buildTimelineItems(trace, index => indices.push(index));
+    expect(items).toHaveLength(1);
+    expect(items[0].onClick).toBeDefined();
+    items[0].onClick?.();
+    expect(indices).toEqual([0]);
+  });
 });
