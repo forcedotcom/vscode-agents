@@ -129,7 +129,8 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   BeforeReasoningStep: 'Before Reasoning',
   ReasoningStep: 'Output Evaluation',
   PlannerResponseStep: 'Agent Response',
-  UpdateTopicStep: 'Topic Selected'
+  UpdateTopicStep: 'Topic Selected',
+  FunctionStep: 'Action Executed'
 };
 
 // Get the description/subtitle for a step based on its type
@@ -213,6 +214,9 @@ const getStepDescription = (step: any): string | undefined => {
     case 'UpdateTopicStep':
       return step.topic || undefined;
 
+    case 'FunctionStep':
+      return step.function?.name || undefined;
+
     default:
       return undefined;
   }
@@ -227,9 +231,14 @@ export const buildTimelineItems = (
   }
 
   return traceData.plan.map((step: any, index: number) => {
-    const status: 'success' | 'error' | 'pending' | 'incomplete' = 'success';
     const stepType = step.type || step.stepType || '';
     const stepName = step.name || step.label || step.description || '';
+
+    // Determine status - FunctionStep without output indicates an error
+    let status: 'success' | 'error' | 'pending' | 'incomplete' = 'success';
+    if (stepType === 'FunctionStep' && step.function && !step.function.output) {
+      status = 'error';
+    }
 
     // Get user-friendly display name
     const displayType = STEP_DISPLAY_NAMES[stepType] || stepType;
@@ -246,7 +255,7 @@ export const buildTimelineItems = (
     }
 
     const description = getStepDescription(step);
-    const hasData = step && (step.data || step.message || step.reason);
+    const hasData = step && (step.data || step.message || step.reason || step.function);
 
     return {
       status,
@@ -290,6 +299,9 @@ export const getStepData = (traceData: PlanSuccessResponse | null, selectedStepI
   }
   if (step.safetyScore) {
     displayData.safetyScore = step.safetyScore;
+  }
+  if (step.function) {
+    displayData.function = step.function;
   }
 
   if (Object.keys(displayData).length > 0) {
