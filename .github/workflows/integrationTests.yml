@@ -38,6 +38,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Install Xvfb (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+      
       - name: Install Salesforce CLI (Linux/Mac)
         if: matrix.os != 'windows-latest'
         shell: bash
@@ -102,7 +108,16 @@ jobs:
             Write-Host "Integration tests may fail if authentication is required"
           }
       
-      - name: Run integration tests
+      - name: Run integration tests (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
+          TESTKIT_ORG_USERNAME: ${{ secrets.TESTKIT_ORG_USERNAME }}
+        run: xvfb-run -a npm run test:integration
+        continue-on-error: false
+      
+      - name: Run integration tests (Windows)
+        if: matrix.os == 'windows-latest'
         env:
           TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
           TESTKIT_ORG_USERNAME: ${{ secrets.TESTKIT_ORG_USERNAME }}

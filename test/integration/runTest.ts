@@ -92,7 +92,11 @@ async function main(): Promise<void> {
           // Disable other extensions that might interfere
           '--disable-extension=ms-vscode.vscode-typescript-next',
           // Disable VS Code telemetry
-          '--disable-telemetry'
+          '--disable-telemetry',
+          // Headless/CI flags for running without display
+          '--no-sandbox',
+          '--disable-gpu',
+          '--disable-dev-shm-usage'
         ],
         // Give extension time to activate and disable telemetry
         extensionTestsEnv: {
