@@ -8,7 +8,11 @@ module.exports = {
     '/node_modules/',
     '/lib/', // Add this line to ignore the lib directory
     '/extension/',
-    '/test/webview/' // Ignore webview tests (they use a separate config)
+    '/test/webview/', // Ignore webview tests (they use a separate config)
+    '/.vscode-test/' // Ignore VS Code test installations
+  ],
+  modulePathIgnorePatterns: [
+    '/.vscode-test/' // Ignore VS Code test installations in module resolution
   ],
   reporters: ['default', ['jest-junit', { outputName: 'junit-custom-unitTests.xml' }]],
   coverageReporters: ['lcov', 'text'],

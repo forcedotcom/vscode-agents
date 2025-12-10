@@ -31,7 +31,7 @@ suite('Preview Agent Integration Test', () => {
   let testWorkspacePath: string;
   let validAgentFile: string;
 
-  suiteSetup(async function () {
+  suiteSetup(async function (this: Mocha.Context) {
     this.timeout(60000);
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
@@ -220,7 +220,7 @@ topic ambiguous_question:
     }
   }
 
-  test('Should preview agent, start simulated session, send message, and receive response', async function () {
+  test('Should preview agent, start simulated session, send message, and receive response', async function (this: Mocha.Context) {
     this.timeout(180000); // 3 minutes for compilation and agent response
 
     await waitForExtensionActivation(60000);

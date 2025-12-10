@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+        node_version: [lts/*]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -29,7 +30,7 @@ jobs:
       
       - uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version: ${{ matrix.node_version }}
           cache: npm
       
       - name: Configure Git for private repo access

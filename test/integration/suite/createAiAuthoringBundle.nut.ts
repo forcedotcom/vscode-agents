@@ -32,7 +32,7 @@ suite('Create AI Authoring Bundle Integration Test', () => {
   let specFilePath: string;
   let expectedBundleDir: string;
 
-  suiteSetup(async function () {
+  suiteSetup(async function (this: Mocha.Context) {
     this.timeout(60000);
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
@@ -117,7 +117,7 @@ tools: []`;
     }
   }
 
-  test('Should create AI authoring bundle via context menu (right-click on aiAuthoringBundles folder)', async function () {
+  test('Should create AI authoring bundle via context menu (right-click on aiAuthoringBundles folder)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -130,7 +130,7 @@ tools: []`;
     await executeAndVerifyBundle('contextmenu', targetUri);
   });
 
-  test('Should create AI authoring bundle via command palette (without URI, uses default path)', async function () {
+  test('Should create AI authoring bundle via command palette (without URI, uses default path)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -141,7 +141,7 @@ tools: []`;
     await executeAndVerifyBundle('commandpalette');
   });
 
-  test('Should create AI authoring bundle via command palette with explicit title', async function () {
+  test('Should create AI authoring bundle via command palette with explicit title', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);

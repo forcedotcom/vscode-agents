@@ -31,7 +31,7 @@ suite('Validate Agent Integration Test', () => {
   let validAgentFile: string;
   let invalidAgentFile: string;
 
-  suiteSetup(async function () {
+  suiteSetup(async function (this: Mocha.Context) {
     this.timeout(60000);
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
@@ -250,7 +250,7 @@ start_agent topic_selector:
     }
   }
 
-  test('Should validate agent file via editor context menu (right-click in editor)', async function () {
+  test('Should validate agent file via editor context menu (right-click in editor)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -266,7 +266,7 @@ start_agent topic_selector:
     await executeAndVerifyValidation(validAgentFile, true, targetUri);
   });
 
-  test('Should validate agent file via explorer context menu (right-click in file explorer)', async function () {
+  test('Should validate agent file via explorer context menu (right-click in file explorer)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -278,7 +278,7 @@ start_agent topic_selector:
     await executeAndVerifyValidation(validAgentFile, true, targetUri);
   });
 
-  test('Should validate agent file via command palette (with active .agent file)', async function () {
+  test('Should validate agent file via command palette (with active .agent file)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -289,7 +289,7 @@ start_agent topic_selector:
     await executeAndVerifyValidation(validAgentFile, true);
   });
 
-  test('Should validate agent file via command palette with explicit title', async function () {
+  test('Should validate agent file via command palette with explicit title', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -304,7 +304,7 @@ start_agent topic_selector:
     await executeAndVerifyValidation(validAgentFile, true);
   });
 
-  test('Should show validation errors for invalid agent file via context menu', async function () {
+  test('Should show validation errors for invalid agent file via context menu', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);
@@ -316,7 +316,7 @@ start_agent topic_selector:
     await executeAndVerifyValidation(invalidAgentFile, false, targetUri);
   });
 
-  test('Should show validation errors for invalid agent file via command palette', async function () {
+  test('Should show validation errors for invalid agent file via command palette', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForExtensionActivation(60000);

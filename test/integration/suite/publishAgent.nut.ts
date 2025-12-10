@@ -31,7 +31,7 @@ suite.skip('Publish Agent Integration Test', () => {
   let testWorkspacePath: string;
   let validAgentFile: string;
 
-  suiteSetup(async function () {
+  suiteSetup(async function (this: Mocha.Context) {
     this.timeout(60000);
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
@@ -195,7 +195,7 @@ topic ambiguous_question:
     }
   });
 
-  test('Should publish agent successfully', async function () {
+  test('Should publish agent successfully', async function (this: Mocha.Context) {
     this.timeout(300000); // 5 minutes for compilation and publishing
 
     await waitForExtensionActivation(60000);
