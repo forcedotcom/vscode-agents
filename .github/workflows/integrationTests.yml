@@ -6,12 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  unit-tests:
-    uses: ./.github/workflows/unitTests.yml
-    secrets: inherit
-  
   integration-tests:
-    needs: unit-tests
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
