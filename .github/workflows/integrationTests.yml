@@ -34,6 +34,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Install jq (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+      
       - name: Install Xvfb (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -79,6 +86,15 @@ jobs:
               --set-default
             rm /tmp/auth-url.txt
             echo "Authentication successful"
+            
+            # Get the authenticated org username and set it as an environment variable
+            ORG_USERNAME=$(sf org display --json | jq -r '.result.username // empty')
+            if [ -n "$ORG_USERNAME" ]; then
+              echo "TESTKIT_ORG_USERNAME=$ORG_USERNAME" >> $GITHUB_ENV
+              echo "Set TESTKIT_ORG_USERNAME=$ORG_USERNAME"
+            else
+              echo "⚠️ Could not determine org username from CLI"
+            fi
           else
             echo "⚠️ TESTKIT_AUTH_URL not configured"
             echo "Integration tests may fail if authentication is required"
@@ -99,6 +115,21 @@ jobs:
               --set-default
             Remove-Item "$env:TEMP\auth-url.txt" -ErrorAction SilentlyContinue
             Write-Host "Authentication successful"
+            
+            # Get the authenticated org username and set it as an environment variable
+            $orgJson = sf org display --json
+            if (Get-Command jq -ErrorAction SilentlyContinue) {
+              $orgUsername = $orgJson | jq -r '.result.username // empty'
+            } else {
+              $orgDisplay = $orgJson | ConvertFrom-Json
+              $orgUsername = $orgDisplay.result.username
+            }
+            if ($orgUsername) {
+              Write-Host "TESTKIT_ORG_USERNAME=$orgUsername" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+              Write-Host "Set TESTKIT_ORG_USERNAME=$orgUsername"
+            } else {
+              Write-Host "⚠️ Could not determine org username from CLI"
+            }
           } else {
             Write-Host "⚠️ TESTKIT_AUTH_URL not configured"
             Write-Host "Integration tests may fail if authentication is required"

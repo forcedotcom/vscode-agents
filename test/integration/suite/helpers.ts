@@ -184,14 +184,42 @@ export async function waitForCommand(command: string, timeoutMs = 5000): Promise
 
 /**
  * Authenticate with DevHub and set it as the default org
- * Uses TESTKIT_HUB_USERNAME environment variable (matching cli-plugins-testkit convention)
+ * Priority:
+ * 1. TESTKIT_HUB_USERNAME or TESTKIT_ORG_USERNAME environment variable (for local development)
+ * 2. Default org from CLI (for CI where org is authenticated via workflow)
  */
 export async function authenticateDevHub(): Promise<Org> {
-  // Support both TESTKIT_HUB_USERNAME and TESTKIT_ORG_USERNAME
-  const devhubUsername = process.env.TESTKIT_HUB_USERNAME || process.env.TESTKIT_ORG_USERNAME;
+  let devhubUsername: string | undefined;
   
-  if (!devhubUsername) {
-    throw new Error('TESTKIT_HUB_USERNAME or TESTKIT_ORG_USERNAME environment variable is required for integration tests');
+  // First, check environment variables (takes priority for local development)
+  devhubUsername = process.env.TESTKIT_HUB_USERNAME || process.env.TESTKIT_ORG_USERNAME;
+  
+  if (devhubUsername) {
+    console.log(`Using org from environment variable: ${devhubUsername}`);
+    
+    // Set as default org using CLI
+    try {
+      await execAsync(`sf config set target-org=${devhubUsername}`);
+      console.log(`Set ${devhubUsername} as default org via CLI`);
+    } catch (error) {
+      console.warn(`Warning: Could not set default org via CLI: ${error}`);
+    }
+  } else {
+    // Fallback: try to get the default org from CLI (for CI where org is authenticated via workflow)
+    try {
+      const { stdout } = await execAsync('sf org display --json');
+      const orgInfo = JSON.parse(stdout);
+      if (orgInfo.result?.username) {
+        devhubUsername = orgInfo.result.username;
+        console.log(`Found default org from CLI: ${devhubUsername}`);
+      }
+    } catch (error) {
+      console.log('Could not get default org from CLI');
+    }
+    
+    if (!devhubUsername) {
+      throw new Error('No default org found. Either authenticate via CLI (sf org login) or set TESTKIT_HUB_USERNAME/TESTKIT_ORG_USERNAME environment variable');
+    }
   }
 
   console.log(`Authenticating with DevHub: ${devhubUsername}`);
@@ -206,15 +234,44 @@ export async function authenticateDevHub(): Promise<Org> {
 
   console.log(`Successfully authenticated with DevHub: ${resolvedUsername}`);
 
-  // Set as default org using CLI
+  // Update the .sf/config.json file in the test workspace to use the authenticated org
   try {
-    await execAsync(`sf config set target-org=${devhubUsername}`);
-    console.log(`Set ${devhubUsername} as default org`);
-  } catch (error) {
-    console.warn(`Warning: Could not set default org via CLI: ${error}`);
-    // Try to set it via VS Code config
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+      const workspacePath = workspaceFolders[0].uri.fsPath;
+      const sfConfigPath = path.join(workspacePath, '.sf', 'config.json');
+      
+      // Read existing config or create new one
+      let configData: any = {};
+      if (fs.existsSync(sfConfigPath)) {
+        const configContent = fs.readFileSync(sfConfigPath, 'utf8');
+        configData = JSON.parse(configContent);
+      }
+      
+      // Update target-org to use the authenticated org
+      configData['target-org'] = resolvedUsername;
+      
+      // Ensure .sf directory exists
+      const sfDir = path.dirname(sfConfigPath);
+      if (!fs.existsSync(sfDir)) {
+        fs.mkdirSync(sfDir, { recursive: true });
+      }
+      
+      // Write updated config
+      fs.writeFileSync(sfConfigPath, JSON.stringify(configData, null, 2), 'utf8');
+      console.log(`Updated .sf/config.json with target-org: ${resolvedUsername}`);
+    }
+  } catch (error: any) {
+    console.warn(`Warning: Could not update .sf/config.json: ${error.message}`);
+  }
+
+  // Ensure VS Code config is also set
+  try {
     const config = vscode.workspace.getConfiguration('salesforcedx-vscode-core');
-    await config.update('defaultusername', devhubUsername, vscode.ConfigurationTarget.Workspace);
+    await config.update('defaultusername', resolvedUsername, vscode.ConfigurationTarget.Workspace);
+    console.log(`Set VS Code default org to: ${resolvedUsername}`);
+  } catch (error) {
+    console.warn(`Warning: Could not set VS Code default org: ${error}`);
   }
 
   return org;
