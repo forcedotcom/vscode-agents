@@ -61,33 +61,8 @@ export const registerCreateAiAuthoringBundleCommand = () => {
         return; // User cancelled
       }
 
-      // Convert name to camelCase for developer_name
-      // e.g., "contextmenu" -> "contextMenu", "commandpalette" -> "commandPalette"
-      const toCamelCase = (str: string): string => {
-        // Handle specific test cases and common patterns
-        if (str === 'contextmenu') return 'contextMenu';
-        if (str === 'commandpalette') return 'commandPalette';
-        if (str === 'commandpalettetitle') return 'commandPaletteTitle';
-        
-        // Generic conversion: try to detect word boundaries
-        // Capitalize after common prefixes
-        if (str.startsWith('context') && str.length > 7) {
-          return 'context' + str.substring(7, 8).toUpperCase() + str.substring(8);
-        }
-        if (str.startsWith('command') && str.length > 7) {
-          const rest = str.substring(7);
-          // Handle "palette" -> "Palette", "palettetitle" -> "PaletteTitle"
-          if (rest.startsWith('palette')) {
-            return 'command' + 'Palette' + (rest.length > 7 ? rest.substring(7, 8).toUpperCase() + rest.substring(8) : '');
-          }
-          return 'command' + rest.substring(0, 1).toUpperCase() + rest.substring(1);
-        }
-        return str;
-      };
-
-      const camelCaseName = toCamelCase(name);
-      // Generate API name from the camelCase name
-      const apiName = generateApiName(camelCaseName);
+      // Generate API name from the regular name
+      const apiName = generateApiName(name);
 
       // Look for spec files in the specs directory (at project root)
       const specsDir = path.join(projectRoot, 'specs');

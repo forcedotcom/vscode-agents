@@ -74,26 +74,6 @@ tools: []`;
     }
   });
 
-  function toCamelCase(str: string): string {
-    // Convert "contextmenu" -> "contextMenu", "commandpalette" -> "commandPalette", etc.
-    // This converts lowercase strings to camelCase by capitalizing after word boundaries
-    // For simple cases like "contextmenu", we need to detect word boundaries
-    // Since we control the test names, we can use a simple approach:
-    // "contextmenu" -> "contextMenu" (capitalize after "context")
-    // "commandpalette" -> "commandPalette" (capitalize after "command")
-    // "commandpalettetitle" -> "commandPaletteTitle" (capitalize after "command" and "palette")
-    
-    // For now, handle the specific test cases we have
-    if (str === 'contextmenu') return 'contextMenu';
-    if (str === 'commandpalette') return 'commandPalette';
-    if (str === 'commandpalettetitle') return 'commandPaletteTitle';
-    
-    // Generic fallback: try to detect word boundaries by common patterns
-    return str.replace(/([a-z])([a-z]*)/g, (match, first, rest) => {
-      // This is a simple heuristic - may need refinement
-      return first + rest;
-    });
-  }
 
   async function executeAndVerifyBundle(
     bundleName: string,
@@ -128,11 +108,9 @@ tools: []`;
       const agentFileContent = fs.readFileSync(expectedAgentFile, 'utf8');
       assert.ok(agentFileContent.length > 0, 'Agent file should have content');
       
-      // Verify developer_name is in camelCase format (e.g., "contextMenu" not "contextmenu")
-      const expectedDeveloperName = toCamelCase(bundleName);
       assert.ok(
-        agentFileContent.includes(`developer_name: "${expectedDeveloperName}"`),
-        `Agent file should contain developer_name: "${expectedDeveloperName}"`
+        agentFileContent.includes(`agent_label: "${bundleName}"`),
+        `Agent file should contain agent_label: "${bundleName}"`
       );
     } finally {
       mockedUI.restore();
