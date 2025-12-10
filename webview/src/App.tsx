@@ -138,6 +138,12 @@ const App: React.FC = () => {
       vscodeApi.getTraceData();
     });
 
+    const disposeTestSwitchTab = vscodeApi.onMessage('testSwitchTab', (data: { tab: 'preview' | 'tracer' }) => {
+      const tab = data?.tab || 'preview';
+      console.log('[Webview Test] testSwitchTab received:', tab);
+      setActiveTab(tab);
+    });
+
     // Request initial live mode state from extension
     vscodeApi.getInitialLiveMode();
 
@@ -149,6 +155,7 @@ const App: React.FC = () => {
       disposeTestSendMessage();
       disposeTestEndSession();
       disposeTestGetTrace();
+      disposeTestSwitchTab();
     };
   }, []);
 
