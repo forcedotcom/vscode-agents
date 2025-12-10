@@ -27,7 +27,7 @@ import * as fs from 'fs';
 import { waitForExtensionActivation, waitForCommand, authenticateDevHub } from './helpers';
 import { mockHeadlessUI } from './headlessUiHelpers';
 
-suite.only('Preview Agent Integration Test', () => {
+suite('Preview Agent Integration Test', () => {
   let testWorkspacePath: string;
   let validAgentFile: string;
 
