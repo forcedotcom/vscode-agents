@@ -16,6 +16,9 @@ lib/
 node_modules
 out/
 
+# VS Code test artifacts (downloaded VS Code, extensions, user data)
+.vscode-test/
+
 # Test result files
 junit-*.xml
 *-tests.xml

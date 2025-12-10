@@ -18,18 +18,26 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       const projectRoot = project.getPath();
 
       // Determine the target directory
+      // Agent.createAuthoringBundle appends 'aiAuthoringBundles' to outputDir,
+      // so we need to pass the parent directory (main/default) not the full path
       let targetDir: string;
       if (uri?.fsPath) {
-        targetDir = uri.fsPath;
+        // If uri points to aiAuthoringBundles, go up one level
+        if (uri.fsPath.endsWith('aiAuthoringBundles')) {
+          targetDir = path.dirname(uri.fsPath);
+        } else {
+          targetDir = uri.fsPath;
+        }
       } else {
-        // Default to the proper metadata directory structure
+        // Default to the proper metadata directory structure (main/default, not including aiAuthoringBundles)
         const defaultPackagePath = project.getDefaultPackage().fullPath;
-        targetDir = path.join(defaultPackagePath, 'main', 'default', 'aiAuthoringBundles');
+        targetDir = path.join(defaultPackagePath, 'main', 'default');
       }
 
       // Create the aiAuthoringBundles directory if it doesn't exist
+      const aiAuthoringBundlesDir = path.join(targetDir, 'aiAuthoringBundles');
       try {
-        await vscode.workspace.fs.createDirectory(vscode.Uri.file(targetDir));
+        await vscode.workspace.fs.createDirectory(vscode.Uri.file(aiAuthoringBundlesDir));
       } catch (error) {
         // Directory might already exist, which is fine
       }
@@ -112,13 +120,16 @@ export const registerCreateAiAuthoringBundleCommand = () => {
               connection: await CoreExtensionService.getDefaultConnection(),
               agentSpec: { ...specData, ...{ name, developerName: apiName } },
               project,
-              bundleApiName: apiName
+              bundleApiName: apiName,
+              outputDir: targetDir // Specify where to create the bundle
             });
 
             progress.report({ message: 'Complete!', increment: 100 });
 
             // Open the agent file
-            const doc = await vscode.workspace.openTextDocument(path.join(targetDir, apiName, `${apiName}.agent`));
+            // Agent.createAuthoringBundle creates the file at outputDir/aiAuthoringBundles/bundleApiName/bundleApiName.agent
+            const agentFilePath = path.join(targetDir, 'aiAuthoringBundles', apiName, `${apiName}.agent`);
+            const doc = await vscode.workspace.openTextDocument(agentFilePath);
             await vscode.window.showTextDocument(doc);
             // Wait a moment to show success
             await new Promise(resolve => setTimeout(resolve, 1000));

@@ -1,0 +1,13 @@
+{
+  "packageDirectories": [
+    {
+      "path": "force-app",
+      "default": true
+    }
+  ],
+  "name": "test-project",
+  "version": "1.0.0",
+  "sourceApiVersion": "58.0",
+  "sfdcLoginUrl": "https://login.salesforce.com"
+}
+
