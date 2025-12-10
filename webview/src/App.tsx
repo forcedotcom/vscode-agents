@@ -95,6 +95,49 @@ const App: React.FC = () => {
       }
     });
 
+    // Test command handlers for integration tests
+    const disposeTestStartSession = vscodeApi.onMessage('testStartSession', (data: { agentId?: string; isLiveMode?: boolean }) => {
+      const agentId = data?.agentId || desiredAgentIdRef.current;
+      const liveMode = data?.isLiveMode !== undefined ? data.isLiveMode : isLiveMode;
+      
+      if (agentId) {
+        console.log('[Webview Test] testStartSession received:', { agentId, isLiveMode: liveMode });
+        // Set live mode if provided
+        if (data?.isLiveMode !== undefined) {
+          setIsLiveMode(liveMode);
+        }
+        // Trigger session start by setting desired agent and forcing restart
+        setDesiredAgentId(agentId);
+        forceRestartRef.current = true;
+        setRestartTrigger(prev => prev + 1);
+      } else {
+        console.warn('[Webview Test] testStartSession: No agentId provided');
+      }
+    });
+
+    const disposeTestSendMessage = vscodeApi.onMessage('testSendMessage', (data: { message: string }) => {
+      const message = data?.message;
+      if (message && agentPreviewRef.current) {
+        console.log('[Webview Test] testSendMessage received:', message);
+        // Use the ref to send message - we need to expose a method on AgentPreviewRef
+        // For now, we'll trigger it through the component's handleSendMessage
+        // We'll need to add a method to AgentPreviewRef for this
+        agentPreviewRef.current.sendMessage?.(message);
+      } else {
+        console.warn('[Webview Test] testSendMessage: No message or agentPreviewRef not available');
+      }
+    });
+
+    const disposeTestEndSession = vscodeApi.onMessage('testEndSession', () => {
+      console.log('[Webview Test] testEndSession received');
+      vscodeApi.endSession();
+    });
+
+    const disposeTestGetTrace = vscodeApi.onMessage('testGetTrace', () => {
+      console.log('[Webview Test] testGetTrace received');
+      vscodeApi.getTraceData();
+    });
+
     // Request initial live mode state from extension
     vscodeApi.getInitialLiveMode();
 
@@ -102,6 +145,10 @@ const App: React.FC = () => {
       disposeSelectAgent();
       disposeRefreshAgents();
       disposeSetLiveMode();
+      disposeTestStartSession();
+      disposeTestSendMessage();
+      disposeTestEndSession();
+      disposeTestGetTrace();
     };
   }, []);
 

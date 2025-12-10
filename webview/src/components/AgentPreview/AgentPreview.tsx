@@ -30,6 +30,7 @@ interface AgentPreviewProps {
 
 export interface AgentPreviewRef {
   focusInput: () => void;
+  sendMessage?: (message: string) => void;
 }
 
 
@@ -157,6 +158,9 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     useImperativeHandle(ref, () => ({
       focusInput: () => {
         chatInputRef.current?.focus();
+      },
+      sendMessage: (message: string) => {
+        handleSendMessage(message);
       }
     }));
 
