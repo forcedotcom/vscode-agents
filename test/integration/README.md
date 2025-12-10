@@ -30,7 +30,7 @@ This will:
 
 ### Running a specific test:
 
-The test runner will automatically discover and run all `.nut.test.ts` files in the `suite/` directory (compiled to `.nut.test.js`).
+The test runner will automatically discover and run all `.nut.ts` files in the `suite/` directory (compiled to `.nut.js`).
 
 ## Test Structure
 
@@ -42,9 +42,9 @@ The test runner will automatically discover and run all `.nut.test.ts` files in 
   - Scratch org creation/deletion
   - Command availability checks
   - Diagnostic waiting
-- `suite/*.nut.test.ts` - Individual NUT (Non-Unit Test) files
-  - Uses `.nut.test.ts` extension to distinguish from unit tests (following CLI plugin convention)
-  - Compiled to `.nut.test.js` in the `out` directory
+- `suite/*.nut.ts` - Individual NUT (Non-Unit Test) files
+  - Uses `.nut.ts` extension to distinguish from unit tests (following CLI plugin convention)
+  - Compiled to `.nut.js` in the `out` directory
   - **All NUTs must be headless CI/CD friendly** - use `headlessUiHelpers.ts` to mock UI interactions
 - `suite/headlessUiHelpers.ts` - Helper utilities for mocking VS Code UI in headless environments
   - Automatically handles `showInputBox`, `showQuickPick`, `showInformationMessage`, etc.

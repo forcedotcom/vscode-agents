@@ -79,7 +79,7 @@ async function main(): Promise<void> {
     console.log('Running integration tests...');
     
     // Run the integration tests with the downloaded VS Code
-    // This will run ALL .nut.test.js files found in the suite directory
+    // This will run ALL .nut.js files found in the suite directory
     try {
       await runTests({
         vscodeExecutablePath,

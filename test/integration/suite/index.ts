@@ -74,9 +74,9 @@ export async function run(): Promise<void> {
       console.warn('Warning: No workspace folders found. Extension may not activate.');
     }
 
-    // Look for compiled .nut.test.js files (NUT = Non-Unit Tests, following CLI plugin convention)
+    // Look for compiled .nut.js files (NUT = Non-Unit Tests, following CLI plugin convention)
     // Since we're running from the compiled out directory, we look for .js files
-    const files = await glob('**/**.nut.test.js', { cwd: testsRoot });
+    const files = await glob('**/**.nut.js', { cwd: testsRoot });
     
     // Add files to the test suite
     files.forEach((f) => mocha.addFile(path.resolve(testsRoot, f)));
