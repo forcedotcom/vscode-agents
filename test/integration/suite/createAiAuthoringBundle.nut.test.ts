@@ -33,24 +33,20 @@ suite('Create AI Authoring Bundle Integration Test', () => {
   let expectedBundleDir: string;
 
   suiteSetup(async function () {
-    this.timeout(60000); // 1 minute for setup
+    this.timeout(60000);
 
-    // __dirname is test/integration/out/suite, so go up 2 levels to reach test/integration
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
 
-    // Ensure force-app directory exists (required by sfdx-project.json)
     const forceAppDir = path.join(testWorkspacePath, 'force-app');
     if (!fs.existsSync(forceAppDir)) {
       fs.mkdirSync(forceAppDir, { recursive: true });
     }
 
-    // Create specs directory and a sample spec file
     specsDir = path.join(testWorkspacePath, 'specs');
     if (!fs.existsSync(specsDir)) {
       fs.mkdirSync(specsDir, { recursive: true });
     }
 
-    // Create a simple agent spec file
     const specContent = `name: WillieTestAgent
 description: A test agent for integration testing
 instructions: You are a helpful test assistant.
@@ -61,12 +57,6 @@ tools: []`;
   });
 
   suiteTeardown(async function () {
-    // Restore test workspace to initial state after all tests complete
-    // This removes all test artifacts so the next test run starts clean
-    // The fixtures directory represents the committed initial state
-    console.log('Cleaning up test artifacts and restoring workspace to initial state...');
-    
-    // Remove any test-generated bundles (keep the aiAuthoringBundles directory structure)
     const aiAuthoringBundlesDir = path.join(testWorkspacePath, 'force-app', 'main', 'default', 'aiAuthoringBundles');
     if (fs.existsSync(aiAuthoringBundlesDir)) {
       const entries = fs.readdirSync(aiAuthoringBundlesDir);
@@ -75,165 +65,112 @@ tools: []`;
         try {
           const stat = fs.statSync(entryPath);
           if (stat.isDirectory() || stat.isFile()) {
-            // Remove any bundle directories or files created during tests
             fs.rmSync(entryPath, { recursive: true, force: true });
-            console.log(`Removed test artifact: ${entryPath}`);
           }
         } catch (error) {
-          // Ignore errors if file/directory doesn't exist or can't be accessed
-          console.warn(`Warning: Could not remove ${entryPath}: ${error}`);
+          // Ignore cleanup errors
         }
       }
     }
-    
-    // Remove any other test-generated files/directories as needed
-    // (Add more cleanup here as new test artifacts are created in future tests)
-    
-    console.log('Workspace restored to initial state');
   });
 
-  // Helper function to execute the command and verify bundle creation
+  function toCamelCase(str: string): string {
+    // Convert "contextmenu" -> "contextMenu", "commandpalette" -> "commandPalette", etc.
+    // This converts lowercase strings to camelCase by capitalizing after word boundaries
+    // For simple cases like "contextmenu", we need to detect word boundaries
+    // Since we control the test names, we can use a simple approach:
+    // "contextmenu" -> "contextMenu" (capitalize after "context")
+    // "commandpalette" -> "commandPalette" (capitalize after "command")
+    // "commandpalettetitle" -> "commandPaletteTitle" (capitalize after "command" and "palette")
+    
+    // For now, handle the specific test cases we have
+    if (str === 'contextmenu') return 'contextMenu';
+    if (str === 'commandpalette') return 'commandPalette';
+    if (str === 'commandpalettetitle') return 'commandPaletteTitle';
+    
+    // Generic fallback: try to detect word boundaries by common patterns
+    return str.replace(/([a-z])([a-z]*)/g, (match, first, rest) => {
+      // This is a simple heuristic - may need refinement
+      return first + rest;
+    });
+  }
+
   async function executeAndVerifyBundle(
     bundleName: string,
-    targetUri?: vscode.Uri,
-    description: string = 'bundle'
-  ): Promise<string> {
+    targetUri?: vscode.Uri
+  ): Promise<void> {
     const aiAuthoringBundlesDir = path.join(testWorkspacePath, 'force-app', 'main', 'default', 'aiAuthoringBundles');
     const expectedBundleDir = path.join(aiAuthoringBundlesDir, bundleName);
     const expectedAgentFile = path.join(expectedBundleDir, `${bundleName}.agent`);
 
-    // Clean up any existing bundle
     if (fs.existsSync(expectedBundleDir)) {
       fs.rmSync(expectedBundleDir, { recursive: true, force: true });
     }
 
-    // For headless CI/CD, mock all UI interactions
     const specFileName = 'test-agent-spec.yaml';
     const mockedUI = mockHeadlessUI({
-      inputBoxResponses: [bundleName], // Bundle name
-      quickPickResponses: [specFileName] // Spec file selection
+      inputBoxResponses: [bundleName],
+      quickPickResponses: [specFileName]
     });
 
     try {
-      console.log(`Executing createAiAuthoringBundle command via ${description}...`);
-
-      // Execute the command - with or without URI depending on invocation method
       if (targetUri) {
         await vscode.commands.executeCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', targetUri);
       } else {
         await vscode.commands.executeCommand('salesforcedx-vscode-agents.createAiAuthoringBundle');
       }
 
-      // Wait for the command to complete (it shows progress, so we wait a bit)
-      console.log('Waiting for bundle creation to complete...');
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait up to 10 seconds
+      await new Promise(resolve => setTimeout(resolve, 10000));
 
-      // Verify the bundle was created
-      console.log(`Checking for bundle at: ${expectedBundleDir}`);
       assert.ok(fs.existsSync(expectedBundleDir), `Expected bundle directory not found: ${expectedBundleDir}`);
       assert.ok(fs.existsSync(expectedAgentFile), `Expected agent file not found: ${expectedAgentFile}`);
 
-      // Success! Bundle was created
       const agentFileContent = fs.readFileSync(expectedAgentFile, 'utf8');
       assert.ok(agentFileContent.length > 0, 'Agent file should have content');
-      // The generated file contains the bundle name, not the agent spec name
-      assert.ok(agentFileContent.includes(bundleName), `generated AAB contains bundle name: ${bundleName}`);
-      // Verify it's a valid agent file structure
+      
+      // Verify developer_name is in camelCase format (e.g., "contextMenu" not "contextmenu")
+      const expectedDeveloperName = toCamelCase(bundleName);
       assert.ok(
-        agentFileContent.includes('developer_name') || agentFileContent.includes('agent_label'),
-        'generated AAB has agent structure'
+        agentFileContent.includes(`developer_name: "${expectedDeveloperName}"`),
+        `Agent file should contain developer_name: "${expectedDeveloperName}"`
       );
-
-      console.log(`Successfully created bundle via ${description}: ${expectedBundleDir}`);
-      return expectedBundleDir;
-    } catch (error: any) {
-      console.error(`Error executing command via ${description}:`, error);
-      throw error;
     } finally {
-      // Always restore original functions
       mockedUI.restore();
     }
   }
 
   test('Should create AI authoring bundle via context menu (right-click on aiAuthoringBundles folder)', async function () {
-    this.timeout(120000); // 2 minutes for the test
+    this.timeout(120000);
 
-    // Wait for extension to activate first
-    console.log('Waiting for extension activation...');
-    await waitForExtensionActivation(60000); // Wait up to 60 seconds
-
-    // Authenticate with DevHub/Org (required for the command to work)
-    console.log('Authenticating with org for command execution...');
+    await waitForExtensionActivation(60000);
     await authenticateDevHub();
-
-    // Wait for createAiAuthoringBundle command to be available
-    console.log('Waiting for createAiAuthoringBundle command...');
     await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
-    console.log('CreateAiAuthoringBundle command is available');
-
-    // Verify the spec file exists
     assert.ok(fs.existsSync(specFilePath), 'Spec file should exist');
-    console.log(`Spec file exists: ${specFilePath}`);
 
-    // Get the aiAuthoringBundles directory path
     const aiAuthoringBundlesDir = path.join(testWorkspacePath, 'force-app', 'main', 'default', 'aiAuthoringBundles');
-    
-    // Ensure the directory exists
-    if (!fs.existsSync(aiAuthoringBundlesDir)) {
-      fs.mkdirSync(aiAuthoringBundlesDir, { recursive: true });
-    }
-
-    // Execute via context menu (with URI pointing to aiAuthoringBundles folder)
     const targetUri = vscode.Uri.file(aiAuthoringBundlesDir);
-    await executeAndVerifyBundle('ContextMenuBundle', targetUri, 'context menu (right-click)');
+    await executeAndVerifyBundle('contextmenu', targetUri);
   });
 
   test('Should create AI authoring bundle via command palette (without URI, uses default path)', async function () {
-    this.timeout(120000); // 2 minutes for the test
+    this.timeout(120000);
 
-    // Wait for extension to activate first
-    console.log('Waiting for extension activation...');
-    await waitForExtensionActivation(60000); // Wait up to 60 seconds
-
-    // Authenticate with DevHub/Org (required for the command to work)
-    console.log('Authenticating with org for command execution...');
+    await waitForExtensionActivation(60000);
     await authenticateDevHub();
-
-    // Wait for createAiAuthoringBundle command to be available
-    console.log('Waiting for createAiAuthoringBundle command...');
     await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
-    console.log('CreateAiAuthoringBundle command is available');
-
-    // Verify the spec file exists
     assert.ok(fs.existsSync(specFilePath), 'Spec file should exist');
-    console.log(`Spec file exists: ${specFilePath}`);
 
-    // Execute via command palette (without URI - uses default path)
-    await executeAndVerifyBundle('CommandPaletteBundle', undefined, 'command palette (default path)');
+    await executeAndVerifyBundle('commandpalette');
   });
 
   test('Should create AI authoring bundle via command palette with explicit title', async function () {
-    this.timeout(120000); // 2 minutes for the test
+    this.timeout(120000);
 
-    // Wait for extension to activate first
-    console.log('Waiting for extension activation...');
-    await waitForExtensionActivation(60000); // Wait up to 60 seconds
-
-    // Authenticate with DevHub/Org (required for the command to work)
-    console.log('Authenticating with org for command execution...');
+    await waitForExtensionActivation(60000);
     await authenticateDevHub();
-
-    // Wait for createAiAuthoringBundle command to be available
-    console.log('Waiting for createAiAuthoringBundle command...');
     await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
-    console.log('CreateAiAuthoringBundle command is available');
-
-    // Verify the spec file exists
     assert.ok(fs.existsSync(specFilePath), 'Spec file should exist');
-    console.log(`Spec file exists: ${specFilePath}`);
 
-    // Execute via command palette with explicit title "AFDX: Generate Authoring Bundle"
-    // This is the same command, just invoked via the command palette with a title
-    await executeAndVerifyBundle('CommandPaletteTitleBundle', undefined, 'command palette (with title)');
+    await executeAndVerifyBundle('commandpalettetitle');
   });
 });
