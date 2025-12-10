@@ -189,7 +189,6 @@ start_agent topic_selector:
     const mockedUI = mockHeadlessUI({});
 
     try {
-      // Open the file in the editor if not using URI (for activeTextEditor path)
       if (!targetUri) {
         const doc = await vscode.workspace.openTextDocument(agentFile);
         await vscode.window.showTextDocument(doc);
@@ -202,11 +201,28 @@ start_agent topic_selector:
         await vscode.commands.executeCommand('salesforcedx-vscode-agents.validateAgent');
       }
 
-      // Wait for validation to complete
       await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // Check diagnostics from the agentValidation collection
-      // The validateAgent command uses a specific diagnostic collection
+      // Verify progress messages
+      const progressTitles = mockedUI.progressTitles();
+      const progressReports = mockedUI.progressReports();
+      
+      assert.ok(progressTitles.length > 0, 'Progress should have been shown');
+      assert.ok(progressTitles.some(title => title.includes('Validating agent')), 'Progress title should include "Validating agent"');
+
+      if (shouldSucceed) {
+        assert.ok(
+          progressReports.some(report => report.message?.includes('Successful')),
+          'Progress should show success message'
+        );
+      } else {
+        assert.ok(
+          progressReports.some(report => report.message?.includes('Failed') || report.message?.includes('error')),
+          'Progress should show failure message'
+        );
+      }
+
+      // Verify diagnostics match Problems panel
       const allDiagnostics = vscode.languages.getDiagnostics();
       const fileUri = vscode.Uri.file(agentFile);
       const fileDiagnostics = allDiagnostics.find(([uri]) => uri.fsPath === fileUri.fsPath)?.[1] || [];
@@ -215,6 +231,13 @@ start_agent topic_selector:
         assert.strictEqual(fileDiagnostics.length, 0, 'Valid agent file should have no diagnostics');
       } else {
         assert.ok(fileDiagnostics.length > 0, 'Invalid agent file should have diagnostics');
+        
+        // Verify diagnostics have correct properties
+        fileDiagnostics.forEach((diagnostic, index) => {
+          assert.ok(diagnostic.message, `Diagnostic ${index} should have a message`);
+          assert.strictEqual(diagnostic.severity, vscode.DiagnosticSeverity.Error, `Diagnostic ${index} should be an error`);
+          assert.ok(diagnostic.source === 'Agent Validation', `Diagnostic ${index} should have source "Agent Validation"`);
+        });
       }
     } finally {
       mockedUI.restore();

@@ -24,12 +24,19 @@
 
 import * as vscode from 'vscode';
 
+export interface ProgressReport {
+  message?: string;
+  increment?: number;
+}
+
 export interface MockedUI {
   restore: () => void;
   inputBoxCalls: () => number;
   quickPickCalls: () => number;
   informationMessageCalls: () => number;
   errorMessageCalls: () => number;
+  progressReports: () => ProgressReport[];
+  progressTitles: () => string[];
 }
 
 /**
@@ -58,11 +65,14 @@ export function mockHeadlessUI(options: {
   const originalShowInformationMessage = vscode.window.showInformationMessage;
   const originalShowErrorMessage = vscode.window.showErrorMessage;
   const originalShowWarningMessage = vscode.window.showWarningMessage;
+  const originalWithProgress = vscode.window.withProgress;
 
   let inputBoxCallCount = 0;
   let quickPickCallCount = 0;
   let informationMessageCallCount = 0;
   let errorMessageCallCount = 0;
+  const progressReports: ProgressReport[] = [];
+  const progressTitles: string[] = [];
 
   // Mock showInputBox
   (vscode.window as any).showInputBox = async (
@@ -151,6 +161,22 @@ export function mockHeadlessUI(options: {
     return items.length > 0 ? items[0] : undefined;
   };
 
+  // Mock withProgress to track progress messages
+  (vscode.window as any).withProgress = async <T>(
+    options: vscode.ProgressOptions,
+    task: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Thenable<T>
+  ): Promise<T> => {
+    progressTitles.push(options.title || '');
+    
+    const mockProgress: vscode.Progress<{ message?: string; increment?: number }> = {
+      report: (value: { message?: string; increment?: number }) => {
+        progressReports.push({ message: value.message, increment: value.increment });
+      }
+    };
+
+    return task(mockProgress);
+  };
+
   // Restore function
   const restore = () => {
     vscode.window.showInputBox = originalShowInputBox;
@@ -158,6 +184,7 @@ export function mockHeadlessUI(options: {
     vscode.window.showInformationMessage = originalShowInformationMessage;
     vscode.window.showErrorMessage = originalShowErrorMessage;
     vscode.window.showWarningMessage = originalShowWarningMessage;
+    vscode.window.withProgress = originalWithProgress;
     console.log('[Headless UI] Restored original UI functions');
   };
 
@@ -166,7 +193,9 @@ export function mockHeadlessUI(options: {
     inputBoxCalls: () => inputBoxCallCount,
     quickPickCalls: () => quickPickCallCount,
     informationMessageCalls: () => informationMessageCallCount,
-    errorMessageCalls: () => errorMessageCallCount
+    errorMessageCalls: () => errorMessageCallCount,
+    progressReports: () => [...progressReports],
+    progressTitles: () => [...progressTitles]
   };
 }
 
