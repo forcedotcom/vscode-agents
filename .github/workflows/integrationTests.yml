@@ -87,17 +87,20 @@ jobs:
             rm /tmp/auth-url.txt
             echo "Authentication successful"
             
-            # Get the authenticated org username and set it as an environment variable
+            # Get the authenticated org username and set it as TESTKIT_ORG_USERNAME
+            # This will be used by the integration tests to set the org in config.json
             ORG_USERNAME=$(sf org display --json | jq -r '.result.username // empty')
             if [ -n "$ORG_USERNAME" ]; then
               echo "TESTKIT_ORG_USERNAME=$ORG_USERNAME" >> $GITHUB_ENV
-              echo "Set TESTKIT_ORG_USERNAME=$ORG_USERNAME"
+              echo "Set TESTKIT_ORG_USERNAME=$ORG_USERNAME (from authenticated org)"
             else
               echo "⚠️ Could not determine org username from CLI"
+              exit 1
             fi
           else
             echo "⚠️ TESTKIT_AUTH_URL not configured"
             echo "Integration tests may fail if authentication is required"
+            exit 1
           fi
       
       - name: Authenticate with Salesforce CLI (Windows)
@@ -116,7 +119,8 @@ jobs:
             Remove-Item "$env:TEMP\auth-url.txt" -ErrorAction SilentlyContinue
             Write-Host "Authentication successful"
             
-            # Get the authenticated org username and set it as an environment variable
+            # Get the authenticated org username and set it as TESTKIT_ORG_USERNAME
+            # This will be used by the integration tests to set the org in config.json
             $orgJson = sf org display --json
             if (Get-Command jq -ErrorAction SilentlyContinue) {
               $orgUsername = $orgJson | jq -r '.result.username // empty'
@@ -126,28 +130,32 @@ jobs:
             }
             if ($orgUsername) {
               Write-Host "TESTKIT_ORG_USERNAME=$orgUsername" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-              Write-Host "Set TESTKIT_ORG_USERNAME=$orgUsername"
+              Write-Host "Set TESTKIT_ORG_USERNAME=$orgUsername (from authenticated org)"
             } else {
               Write-Host "⚠️ Could not determine org username from CLI"
+              exit 1
             }
           } else {
             Write-Host "⚠️ TESTKIT_AUTH_URL not configured"
             Write-Host "Integration tests may fail if authentication is required"
+            exit 1
           }
       
       - name: Run integration tests (Linux)
         if: matrix.os == 'ubuntu-latest'
         env:
+          # TESTKIT_ORG_USERNAME is set from CLI authentication in previous step
+          # TESTKIT_HUB_USERNAME can be set from secrets if needed for local dev
           TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
-          TESTKIT_ORG_USERNAME: ${{ secrets.TESTKIT_ORG_USERNAME }}
         run: xvfb-run -a npm run test:integration
         continue-on-error: false
       
       - name: Run integration tests (Windows)
         if: matrix.os == 'windows-latest'
         env:
+          # TESTKIT_ORG_USERNAME is set from CLI authentication in previous step
+          # TESTKIT_HUB_USERNAME can be set from secrets if needed for local dev
           TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
-          TESTKIT_ORG_USERNAME: ${{ secrets.TESTKIT_ORG_USERNAME }}
         run: npm run test:integration
         continue-on-error: false
 
