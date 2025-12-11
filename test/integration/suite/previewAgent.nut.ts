@@ -390,22 +390,37 @@ topic ambiguous_question:
       let sessionStarted = false;
       const sessionStartTimeout = 120000; // 2 minutes for compilation
       const sessionStartTime = Date.now();
+      let lastStatus = '';
       
       while (Date.now() - sessionStartTime < sessionStartTimeout) {
         try {
           const providerAny = provider as any;
-          if (providerAny.isSessionActive === true && !providerAny.isSessionStarting) {
+          const isActive = providerAny.isSessionActive === true;
+          const isStarting = providerAny.isSessionStarting === true;
+          const hasAgentPreview = !!providerAny.agentPreview;
+          const hasSessionId = !!providerAny.sessionId;
+          
+          const status = `isSessionActive: ${isActive}, isSessionStarting: ${isStarting}, hasAgentPreview: ${hasAgentPreview}, hasSessionId: ${hasSessionId}`;
+          if (status !== lastStatus) {
+            console.log(`Session status: ${status}`);
+            lastStatus = status;
+          }
+          
+          if (isActive && !isStarting) {
             sessionStarted = true;
+            console.log('Session started (isSessionActive=true)');
             break;
           }
           
           // Also check if we have an agentPreview instance, which indicates session is ready
-          if (providerAny.agentPreview && providerAny.sessionId) {
+          if (hasAgentPreview && hasSessionId) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             sessionStarted = true;
+            console.log('Session started (has agentPreview and sessionId)');
             break;
           }
-        } catch (error) {
+        } catch (error: any) {
+          console.warn(`Error checking session status: ${error.message}`);
           // Continue checking
         }
         
@@ -414,17 +429,29 @@ topic ambiguous_question:
 
       // If we still haven't detected session start, wait a bit more for compilation
       if (!sessionStarted) {
+        console.log('Session not started yet, waiting additional 30 seconds...');
         await new Promise(resolve => setTimeout(resolve, 30000));
         try {
           const providerAny = provider as any;
-          if (providerAny.agentPreview && providerAny.sessionId) {
+          const isActive = providerAny.isSessionActive === true;
+          const hasAgentPreview = !!providerAny.agentPreview;
+          const hasSessionId = !!providerAny.sessionId;
+          console.log(`Final check - isSessionActive: ${isActive}, hasAgentPreview: ${hasAgentPreview}, hasSessionId: ${hasSessionId}`);
+          
+          if (hasAgentPreview && hasSessionId) {
             sessionStarted = true;
+            console.log('Session started after additional wait');
           }
-        } catch (error) {
-          // Continue
+        } catch (error: any) {
+          console.error(`Error in final session check: ${error.message}`);
         }
       }
 
+      if (!sessionStarted) {
+        const providerAny = provider as any;
+        const finalStatus = `Final status - isSessionActive: ${providerAny.isSessionActive}, isSessionStarting: ${providerAny.isSessionStarting}, hasAgentPreview: ${!!providerAny.agentPreview}, hasSessionId: ${!!providerAny.sessionId}`;
+        console.error(`Session did not start. ${finalStatus}`);
+      }
       assert.ok(sessionStarted, 'Session should have started');
 
       // Wait additional time for the text input field to become available
