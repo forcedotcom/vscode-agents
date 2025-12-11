@@ -189,9 +189,16 @@ topic ambiguous_question:
 
   /**
    * Get the AgentCombinedViewProvider instance from the extension
+   * Retries with timeout to handle slow initialization on Windows
    */
-  function getAgentCombinedViewProvider(): any {
-    // Get the extension - try both possible IDs (case-insensitive for Windows compatibility)
+  async function getAgentCombinedViewProvider(timeoutMs = 30000): Promise<any> {
+    const startTime = Date.now();
+    const retryInterval = 1000; // Retry every second
+    let lastError: Error | null = null;
+    
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        // Get the extension - try both possible IDs (case-insensitive for Windows compatibility)
     let extension = vscode.extensions.getExtension('salesforce.salesforcedx-vscode-agents');
     if (!extension) {
       extension = vscode.extensions.getExtension('Salesforce.salesforcedx-vscode-agents');
@@ -204,35 +211,65 @@ topic ambiguous_question:
       );
     }
     
-    if (!extension) {
-      throw new Error('Could not find salesforcedx-vscode-agents extension');
-    }
+        if (!extension) {
+          throw new Error('Could not find salesforcedx-vscode-agents extension');
+        }
 
-    // Try to access via extension exports first
-    if (extension.exports && (extension.exports as any).AgentCombinedViewProvider) {
-      return (extension.exports as any).AgentCombinedViewProvider.getInstance();
-    }
+        // Try to access via extension exports first
+        if (extension.exports && (extension.exports as any).AgentCombinedViewProvider) {
+          try {
+            const provider = (extension.exports as any).AgentCombinedViewProvider.getInstance();
+            if (provider) {
+              console.log('Successfully got provider from extension exports');
+              return provider;
+            }
+          } catch (exportError: any) {
+            // Continue to fallback
+          }
+        }
 
-    // Fallback: require from the extension's path
-    // The extensionPath should point to the project root when running in development mode
-    // Normalize path for cross-platform compatibility (handles Windows backslashes, etc.)
-    const extensionPath = path.normalize(extension.extensionPath);
-    const providerPath = path.normalize(path.join(extensionPath, 'lib', 'src', 'views', 'agentCombinedViewProvider.js'));
-    
-    if (!fs.existsSync(providerPath)) {
-      throw new Error(`Provider module not found at: ${providerPath}. Extension path: ${extensionPath}`);
-    }
+        // Fallback: require from the extension's path
+        const extensionPath = path.normalize(extension.extensionPath);
+        const providerPath = path.normalize(path.join(extensionPath, 'lib', 'src', 'views', 'agentCombinedViewProvider.js'));
+        
+        if (!fs.existsSync(providerPath)) {
+          // On Windows, try with different path separators
+          if (process.platform === 'win32') {
+            const altPath = providerPath.replace(/\\/g, '/');
+            if (fs.existsSync(altPath)) {
+              try {
+                const providerModule = require(altPath);
+                if (providerModule && providerModule.AgentCombinedViewProvider) {
+                  console.log('Successfully got provider from alternative path');
+                  return providerModule.AgentCombinedViewProvider.getInstance();
+                }
+              } catch (altError: any) {
+                // Continue to retry
+              }
+            }
+          }
+          throw new Error(`Provider module not found at: ${providerPath}`);
+        }
 
-    try {
-      // Use the normalized path for require (Node.js handles cross-platform paths)
-      const providerModule = require(providerPath);
-      if (providerModule && providerModule.AgentCombinedViewProvider) {
-        return providerModule.AgentCombinedViewProvider.getInstance();
+        // Use the normalized path for require
+        const requirePath = process.platform === 'win32' ? providerPath.replace(/\\/g, '/') : providerPath;
+        const providerModule = require(requirePath);
+        if (providerModule && providerModule.AgentCombinedViewProvider) {
+          console.log('Successfully got provider from require');
+          return providerModule.AgentCombinedViewProvider.getInstance();
+        }
+        throw new Error('AgentCombinedViewProvider not found in module');
+      } catch (error: any) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        console.log(`Provider not available yet (${elapsed}s elapsed), retrying in ${retryInterval}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryInterval));
+        continue; // Retry
       }
-      throw new Error('AgentCombinedViewProvider not found in module');
-    } catch (error: any) {
-      throw new Error(`Failed to require provider module: ${error.message}. Path: ${providerPath}`);
     }
+    
+    // If we get here, we've exhausted all retries
+    throw new Error(`Provider not available after ${timeoutMs}ms timeout. Last error: ${lastError?.message || 'unknown'}`);
   }
 
   test('Should preview agent, start simulated session, send message, and receive response', async function (this: Mocha.Context) {
@@ -244,8 +281,16 @@ topic ambiguous_question:
     const mockedUI = mockHeadlessUI({});
 
     try {
-      // Get the webview provider instance
-      const provider = getAgentCombinedViewProvider();
+      // Get the webview provider instance (with retry logic for Windows)
+      const providerTimeout = process.platform === 'win32' ? 60000 : 30000; // Longer timeout on Windows
+      let provider: any;
+      try {
+        provider = await getAgentCombinedViewProvider(providerTimeout);
+      } catch (providerError: any) {
+        console.error(`Failed to get provider: ${providerError.message}`);
+        console.error(`Provider error stack: ${providerError.stack}`);
+        throw providerError;
+      }
       assert.ok(provider, 'Provider should be available');
 
       // Execute previewAgent command via right-click menu (with URI)
