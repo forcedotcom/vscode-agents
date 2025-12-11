@@ -317,6 +317,11 @@ topic ambiguous_question:
   }
 
   test('Should preview agent, start simulated session, send message, and receive response', async function (this: Mocha.Context) {
+    // Skip on Windows due to module loading issues preventing provider instance access
+    if ((process.platform as string) === 'win32') {
+      this.skip();
+    }
+
     this.timeout(180000); // 3 minutes for compilation and agent response
 
     await waitForCommand('salesforcedx-vscode-agents.previewAgent', 15000);
