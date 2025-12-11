@@ -100,8 +100,10 @@ export class CoreExtensionService {
       throw new Error(TELEMETRY_SERVICE_NOT_FOUND);
     }
     const { aiKey, name, version } = context.extension.packageJSON;
-    CoreExtensionService.telemetryService = telemetryService.getInstance(name);
-    void CoreExtensionService.telemetryService.initializeService(context, name, aiKey, version);
+    // Use "AgentforceDX" as the extension name for telemetry
+    const extensionName = 'AgentforceDX';
+    CoreExtensionService.telemetryService = telemetryService.getInstance(extensionName);
+    void CoreExtensionService.telemetryService.initializeService(context, extensionName, aiKey, version);
   }
 
   public static isAboveMinimumRequiredVersion(minRequiredVersion: string, actualVersion: string): boolean {

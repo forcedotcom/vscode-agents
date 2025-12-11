@@ -199,18 +199,18 @@ topic ambiguous_question:
     while (Date.now() - startTime < timeoutMs) {
       try {
         // Get the extension - try both possible IDs (case-insensitive for Windows compatibility)
-    let extension = vscode.extensions.getExtension('salesforce.salesforcedx-vscode-agents');
-    if (!extension) {
-      extension = vscode.extensions.getExtension('Salesforce.salesforcedx-vscode-agents');
-    }
-    // Also try finding by filtering (for case-insensitive matching on Windows)
-    if (!extension) {
-      const allExtensions = vscode.extensions.all;
-      extension = allExtensions.find(ext => 
-        ext.id.toLowerCase() === 'salesforce.salesforcedx-vscode-agents'
-      );
-    }
-    
+        let extension = vscode.extensions.getExtension('salesforce.salesforcedx-vscode-agents');
+        if (!extension) {
+          extension = vscode.extensions.getExtension('Salesforce.salesforcedx-vscode-agents');
+        }
+        // Also try finding by filtering (for case-insensitive matching on Windows)
+        if (!extension) {
+          const allExtensions = vscode.extensions.all;
+          extension = allExtensions.find(ext => 
+            ext.id.toLowerCase() === 'salesforce.salesforcedx-vscode-agents'
+          );
+        }
+        
         if (!extension) {
           throw new Error('Could not find salesforcedx-vscode-agents extension');
         }
@@ -222,8 +222,11 @@ topic ambiguous_question:
             if (provider) {
               console.log('Successfully got provider from extension exports');
               return provider;
+            } else {
+              console.warn('getInstance() from exports returned null/undefined');
             }
           } catch (exportError: any) {
+            console.warn(`Failed to get provider from exports: ${exportError.message}`);
             // Continue to fallback
           }
         }
@@ -240,10 +243,16 @@ topic ambiguous_question:
               try {
                 const providerModule = require(altPath);
                 if (providerModule && providerModule.AgentCombinedViewProvider) {
-                  console.log('Successfully got provider from alternative path');
-                  return providerModule.AgentCombinedViewProvider.getInstance();
+                  const providerInstance = providerModule.AgentCombinedViewProvider.getInstance();
+                  if (providerInstance) {
+                    console.log('Successfully got provider from alternative path');
+                    return providerInstance;
+                  } else {
+                    console.warn('getInstance() from alternative path returned null/undefined - instance may not be initialized yet');
+                  }
                 }
               } catch (altError: any) {
+                console.warn(`Alternative path require failed: ${altError.message}`);
                 // Continue to retry
               }
             }
@@ -255,14 +264,28 @@ topic ambiguous_question:
         const requirePath = process.platform === 'win32' ? providerPath.replace(/\\/g, '/') : providerPath;
         const providerModule = require(requirePath);
         if (providerModule && providerModule.AgentCombinedViewProvider) {
-          console.log('Successfully got provider from require');
-          return providerModule.AgentCombinedViewProvider.getInstance();
+          console.log('Successfully got provider module from require');
+          const providerInstance = providerModule.AgentCombinedViewProvider.getInstance();
+          if (!providerInstance) {
+            // On Windows, the instance might not be initialized yet - this is expected
+            // The provider is created during extension activation, but getInstance() might
+            // return undefined if the static instance hasn't been set yet
+            console.warn('getInstance() returned null/undefined - instance may not be initialized yet, will retry');
+            throw new Error('getInstance() returned null or undefined - instance not initialized');
+          }
+          console.log('Successfully got provider instance');
+          return providerInstance;
         }
         throw new Error('AgentCombinedViewProvider not found in module');
       } catch (error: any) {
         lastError = error instanceof Error ? error : new Error(String(error));
         const elapsed = Math.round((Date.now() - startTime) / 1000);
-        console.log(`Provider not available yet (${elapsed}s elapsed), retrying in ${retryInterval}ms...`);
+        // Only log retry messages if it's the "instance not initialized" error
+        if (error.message && error.message.includes('instance not initialized')) {
+          console.log(`Provider instance not initialized yet (${elapsed}s elapsed), retrying in ${retryInterval}ms...`);
+        } else {
+          console.log(`Provider not available yet (${elapsed}s elapsed), retrying in ${retryInterval}ms...`);
+        }
         await new Promise(resolve => setTimeout(resolve, retryInterval));
         continue; // Retry
       }
@@ -281,21 +304,29 @@ topic ambiguous_question:
     const mockedUI = mockHeadlessUI({});
 
     try {
-      // Get the webview provider instance (with retry logic for Windows)
+      // Execute previewAgent command first - this will trigger the webview to be created
+      // which initializes the provider instance
+      const targetUri = vscode.Uri.file(validAgentFile);
+      await vscode.commands.executeCommand('salesforcedx-vscode-agents.previewAgent', targetUri);
+      
+      // Wait a bit for the webview to be created and provider to be initialized
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Now get the webview provider instance (with retry logic for Windows)
       const providerTimeout = process.platform === 'win32' ? 60000 : 30000; // Longer timeout on Windows
       let provider: any;
       try {
         provider = await getAgentCombinedViewProvider(providerTimeout);
+        console.log(`Provider retrieved: ${provider ? 'valid' : 'null/undefined'}`);
+        if (provider) {
+          console.log(`Provider type: ${typeof provider}, has webviewView: ${!!provider.webviewView}`);
+        }
       } catch (providerError: any) {
         console.error(`Failed to get provider: ${providerError.message}`);
         console.error(`Provider error stack: ${providerError.stack}`);
         throw providerError;
       }
       assert.ok(provider, 'Provider should be available');
-
-      // Execute previewAgent command via right-click menu (with URI)
-      const targetUri = vscode.Uri.file(validAgentFile);
-      await vscode.commands.executeCommand('salesforcedx-vscode-agents.previewAgent', targetUri);
 
       // Wait for the webview to be created and shown
       let webviewReady = false;
