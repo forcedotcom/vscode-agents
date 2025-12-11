@@ -77,7 +77,8 @@ async function main(): Promise<void> {
       if (result.error) {
         console.warn(`Warning: Failed to install ${extensionId}:`, result.error.message);
         // On Windows, try alternative approach if spawnSync fails
-        if (isWindows && (result.error.code === 'EINVAL' || result.error.code === 'ENOENT')) {
+        const errorCode = (result.error as NodeJS.ErrnoException).code;
+        if (isWindows && (errorCode === 'EINVAL' || errorCode === 'ENOENT')) {
           console.log(`Attempting alternative installation method for ${extensionId} on Windows...`);
           try {
             // On Windows, use execSync with proper quoting
