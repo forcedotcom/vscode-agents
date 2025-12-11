@@ -216,14 +216,27 @@ topic ambiguous_question:
         }
 
         // Try to access via extension exports first
-        if (extension.exports && (extension.exports as any).AgentCombinedViewProvider) {
+        // On Windows, the extension might export the provider class directly
+        if (extension.exports) {
           try {
-            const provider = (extension.exports as any).AgentCombinedViewProvider.getInstance();
-            if (provider) {
-              console.log('Successfully got provider from extension exports');
-              return provider;
-            } else {
-              console.warn('getInstance() from exports returned null/undefined');
+            // Try accessing the provider class from exports
+            const ProviderClass = (extension.exports as any).AgentCombinedViewProvider;
+            if (ProviderClass && typeof ProviderClass.getInstance === 'function') {
+              const provider = ProviderClass.getInstance();
+              if (provider) {
+                console.log('Successfully got provider from extension exports');
+                return provider;
+              } else {
+                console.warn('getInstance() from exports returned null/undefined');
+              }
+            }
+            // Also try accessing a direct provider instance if exported
+            if ((extension.exports as any).agentCombinedViewProvider) {
+              const provider = (extension.exports as any).agentCombinedViewProvider;
+              if (provider) {
+                console.log('Successfully got provider instance from extension exports');
+                return provider;
+              }
             }
           } catch (exportError: any) {
             console.warn(`Failed to get provider from exports: ${exportError.message}`);
@@ -304,15 +317,16 @@ topic ambiguous_question:
     const mockedUI = mockHeadlessUI({});
 
     try {
-      // Execute previewAgent command first - this will trigger the webview to be created
-      // which initializes the provider instance
+      // Execute previewAgent command first - this will trigger webview creation
+      // which is necessary on Windows for the provider instance to be accessible
       const targetUri = vscode.Uri.file(validAgentFile);
       await vscode.commands.executeCommand('salesforcedx-vscode-agents.previewAgent', targetUri);
       
-      // Wait a bit for the webview to be created and provider to be initialized
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Now get the webview provider instance (with retry logic for Windows)
+      // Wait for webview to be created and provider to be initialized
+      // On Windows, this can take longer due to module loading differences
+      await new Promise(resolve => setTimeout(resolve, process.platform === 'win32' ? 5000 : 2000));
+
+      // Now try to get the webview provider instance
       const providerTimeout = process.platform === 'win32' ? 60000 : 30000; // Longer timeout on Windows
       let provider: any;
       try {
@@ -322,8 +336,7 @@ topic ambiguous_question:
           console.log(`Provider type: ${typeof provider}, has webviewView: ${!!provider.webviewView}`);
         }
       } catch (providerError: any) {
-        console.error(`Failed to get provider: ${providerError.message}`);
-        console.error(`Provider error stack: ${providerError.stack}`);
+        console.error(`Failed to get provider after previewAgent: ${providerError.message}`);
         throw providerError;
       }
       assert.ok(provider, 'Provider should be available');
@@ -349,8 +362,10 @@ topic ambiguous_question:
       }
       assert.ok(webviewReady, 'Webview should be ready');
 
-      // Wait for the selectAgent message to be processed and webview to initialize
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for the selectAgent message from previewAgent command to be processed
+      // The previewAgent command already posts a selectAgent message, which triggers
+      // compilation and session start, so we don't need to post testStartSession
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Set up message listener to capture messages from webview
       const receivedMessages: any[] = [];
@@ -362,23 +377,13 @@ topic ambiguous_question:
         throw new Error('Webview became unavailable after setup');
       }
 
-      // Ensure webview is visible before posting message
+      // Ensure webview is visible
       if (provider.webviewView && !provider.webviewView.visible) {
         provider.webviewView.show?.(true);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Wait for webview React app to be fully loaded
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Post the test command to trigger session start
-      const localAgentId = `local:${validAgentFile}`;
-      provider.webviewView!.webview.postMessage({
-        command: 'testStartSession',
-        data: { agentId: localAgentId, isLiveMode: false }
-      });
-      
-      // Wait a moment for the webview to process the command
+      // Wait for webview React app to be fully loaded and selectAgent message to be processed
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Wait for session to start (compilation + session start)
