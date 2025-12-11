@@ -36,7 +36,15 @@ const execAsync = promisify(exec);
 /**
  * Wait for the extension to be activated by checking if a known command is available
  */
+// Global flags to ensure setup only happens once across all test suites
+let extensionActivated = false;
+let devHubAuthenticated = false;
+
 export async function waitForExtensionActivation(timeoutMs = 30000): Promise<boolean> {
+  // If already activated, return immediately
+  if (extensionActivated) {
+    return true;
+  }
   const startTime = Date.now();
   const checkInterval = 500; // Check every 500ms
 
@@ -135,6 +143,7 @@ export async function waitForExtensionActivation(timeoutMs = 30000): Promise<boo
     const foundCommand = expectedCommands.find(cmd => commands.includes(cmd));
     if (foundCommand) {
       console.log(`Extension activated (found command: ${foundCommand})`);
+      extensionActivated = true;
       return true;
     }
     
@@ -153,6 +162,7 @@ export async function waitForExtensionActivation(timeoutMs = 30000): Promise<boo
           const foundAfterActivation = expectedCommands.find(cmd => commandsAfterActivation.includes(cmd));
           if (foundAfterActivation) {
             console.log(`Extension activated after manual activation (found command: ${foundAfterActivation})`);
+            extensionActivated = true;
             return true;
           }
         }
@@ -234,6 +244,27 @@ export async function waitForCommand(command: string, timeoutMs = 5000): Promise
  * 2. Default org from CLI (for CI where org is authenticated via workflow)
  */
 export async function authenticateDevHub(): Promise<Org> {
+  // If already authenticated, return a cached org instance
+  if (devHubAuthenticated) {
+    // Return the org that was already authenticated
+    let devhubUsername: string | undefined;
+    devhubUsername = process.env.TESTKIT_HUB_USERNAME || process.env.TESTKIT_ORG_USERNAME;
+    if (!devhubUsername) {
+      try {
+        const { stdout } = await execAsync('sf org display --json');
+        const orgInfo = JSON.parse(stdout);
+        if (orgInfo.result?.username) {
+          devhubUsername = orgInfo.result.username;
+        }
+      } catch (error) {
+        // Ignore
+      }
+    }
+    if (devhubUsername) {
+      return await Org.create({ aliasOrUsername: devhubUsername });
+    }
+  }
+
   let devhubUsername: string | undefined;
   
   // First, check environment variables (takes priority for local development)
@@ -319,6 +350,9 @@ export async function authenticateDevHub(): Promise<Org> {
   } catch (error) {
     console.warn(`Warning: Could not set VS Code default org: ${error}`);
   }
+
+  // Mark as authenticated
+  devHubAuthenticated = true;
 
   return org;
 }

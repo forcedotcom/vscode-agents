@@ -223,7 +223,6 @@ topic ambiguous_question:
             if (typeof (extension.exports as any).getAgentCombinedViewProviderInstance === 'function') {
               const provider = (extension.exports as any).getAgentCombinedViewProviderInstance();
               if (provider) {
-                console.log('Successfully got provider from extension exports (getAgentCombinedViewProviderInstance)');
                 return provider;
               }
             }
@@ -232,22 +231,17 @@ topic ambiguous_question:
             if (ProviderClass && typeof ProviderClass.getInstance === 'function') {
               const provider = ProviderClass.getInstance();
               if (provider) {
-                console.log('Successfully got provider from extension exports (getInstance)');
                 return provider;
-              } else {
-                console.warn('getInstance() from exports returned null/undefined');
               }
             }
             // Also try accessing a direct provider instance if exported
             if ((extension.exports as any).agentCombinedViewProvider) {
               const provider = (extension.exports as any).agentCombinedViewProvider;
               if (provider) {
-                console.log('Successfully got provider instance from extension exports');
                 return provider;
               }
             }
           } catch (exportError: any) {
-            console.warn(`Failed to get provider from exports: ${exportError.message}`);
             // Continue to fallback
           }
         }
@@ -266,14 +260,10 @@ topic ambiguous_question:
                 if (providerModule && providerModule.AgentCombinedViewProvider) {
                   const providerInstance = providerModule.AgentCombinedViewProvider.getInstance();
                   if (providerInstance) {
-                    console.log('Successfully got provider from alternative path');
                     return providerInstance;
-                  } else {
-                    console.warn('getInstance() from alternative path returned null/undefined - instance may not be initialized yet');
                   }
                 }
               } catch (altError: any) {
-                console.warn(`Alternative path require failed: ${altError.message}`);
                 // Continue to retry
               }
             }
@@ -285,28 +275,15 @@ topic ambiguous_question:
         const requirePath = process.platform === 'win32' ? providerPath.replace(/\\/g, '/') : providerPath;
         const providerModule = require(requirePath);
         if (providerModule && providerModule.AgentCombinedViewProvider) {
-          console.log('Successfully got provider module from require');
           const providerInstance = providerModule.AgentCombinedViewProvider.getInstance();
           if (!providerInstance) {
-            // On Windows, the instance might not be initialized yet - this is expected
-            // The provider is created during extension activation, but getInstance() might
-            // return undefined if the static instance hasn't been set yet
-            console.warn('getInstance() returned null/undefined - instance may not be initialized yet, will retry');
             throw new Error('getInstance() returned null or undefined - instance not initialized');
           }
-          console.log('Successfully got provider instance');
           return providerInstance;
         }
         throw new Error('AgentCombinedViewProvider not found in module');
       } catch (error: any) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        // Only log retry messages if it's the "instance not initialized" error
-        if (error.message && error.message.includes('instance not initialized')) {
-          console.log(`Provider instance not initialized yet (${elapsed}s elapsed), retrying in ${retryInterval}ms...`);
-        } else {
-          console.log(`Provider not available yet (${elapsed}s elapsed), retrying in ${retryInterval}ms...`);
-        }
         await new Promise(resolve => setTimeout(resolve, retryInterval));
         continue; // Retry
       }
@@ -344,12 +321,7 @@ topic ambiguous_question:
       let provider: any;
       try {
         provider = await getAgentCombinedViewProvider(providerTimeout);
-        console.log(`Provider retrieved: ${provider ? 'valid' : 'null/undefined'}`);
-        if (provider) {
-          console.log(`Provider type: ${typeof provider}, has webviewView: ${!!provider.webviewView}`);
-        }
       } catch (providerError: any) {
-        console.error(`Failed to get provider after previewAgent: ${providerError.message}`);
         throw providerError;
       }
       assert.ok(provider, 'Provider should be available');
@@ -402,7 +374,6 @@ topic ambiguous_question:
       // The selectAgent message from previewAgent only selects the agent, it doesn't start the session.
       // We need to manually trigger session start using testStartSession.
       const localAgentId = `local:${validAgentFile}`;
-      console.log(`Posting testStartSession for agent: ${localAgentId}`);
       provider.webviewView!.webview.postMessage({
         command: 'testStartSession',
         data: { agentId: localAgentId, isLiveMode: false }
@@ -415,37 +386,22 @@ topic ambiguous_question:
       let sessionStarted = false;
       const sessionStartTimeout = 120000; // 2 minutes for compilation
       const sessionStartTime = Date.now();
-      let lastStatus = '';
       
       while (Date.now() - sessionStartTime < sessionStartTimeout) {
         try {
           const providerAny = provider as any;
-          const isActive = providerAny.isSessionActive === true;
-          const isStarting = providerAny.isSessionStarting === true;
-          const hasAgentPreview = !!providerAny.agentPreview;
-          const hasSessionId = !!providerAny.sessionId;
-          
-          const status = `isSessionActive: ${isActive}, isSessionStarting: ${isStarting}, hasAgentPreview: ${hasAgentPreview}, hasSessionId: ${hasSessionId}`;
-          if (status !== lastStatus) {
-            console.log(`Session status: ${status}`);
-            lastStatus = status;
-          }
-          
-          if (isActive && !isStarting) {
+          if (providerAny.isSessionActive === true && !providerAny.isSessionStarting) {
             sessionStarted = true;
-            console.log('Session started (isSessionActive=true)');
             break;
           }
           
           // Also check if we have an agentPreview instance, which indicates session is ready
-          if (hasAgentPreview && hasSessionId) {
+          if (providerAny.agentPreview && providerAny.sessionId) {
             await new Promise(resolve => setTimeout(resolve, 2000));
             sessionStarted = true;
-            console.log('Session started (has agentPreview and sessionId)');
             break;
           }
-        } catch (error: any) {
-          console.warn(`Error checking session status: ${error.message}`);
+        } catch (error) {
           // Continue checking
         }
         
@@ -454,28 +410,15 @@ topic ambiguous_question:
 
       // If we still haven't detected session start, wait a bit more for compilation
       if (!sessionStarted) {
-        console.log('Session not started yet, waiting additional 30 seconds...');
         await new Promise(resolve => setTimeout(resolve, 30000));
         try {
           const providerAny = provider as any;
-          const isActive = providerAny.isSessionActive === true;
-          const hasAgentPreview = !!providerAny.agentPreview;
-          const hasSessionId = !!providerAny.sessionId;
-          console.log(`Final check - isSessionActive: ${isActive}, hasAgentPreview: ${hasAgentPreview}, hasSessionId: ${hasSessionId}`);
-          
-          if (hasAgentPreview && hasSessionId) {
+          if (providerAny.agentPreview && providerAny.sessionId) {
             sessionStarted = true;
-            console.log('Session started after additional wait');
           }
-        } catch (error: any) {
-          console.error(`Error in final session check: ${error.message}`);
+        } catch (error) {
+          // Continue
         }
-      }
-
-      if (!sessionStarted) {
-        const providerAny = provider as any;
-        const finalStatus = `Final status - isSessionActive: ${providerAny.isSessionActive}, isSessionStarting: ${providerAny.isSessionStarting}, hasAgentPreview: ${!!providerAny.agentPreview}, hasSessionId: ${!!providerAny.sessionId}`;
-        console.error(`Session did not start. ${finalStatus}`);
       }
       assert.ok(sessionStarted, 'Session should have started');
 
@@ -523,7 +466,6 @@ topic ambiguous_question:
       assert.ok(providerAny.isSessionActive === true, 'Session should still be active after sending message (indicates successful processing)');
 
       // Switch to tracer tab to verify trace history and data
-      console.log('🧪 [Test] Switching to tracer tab...');
       provider.webviewView!.webview.postMessage({
         command: 'testSwitchTab',
         data: { tab: 'tracer' }
@@ -533,7 +475,6 @@ topic ambiguous_question:
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Request trace data to populate the tracer
-      console.log('🧪 [Test] Requesting trace data...');
       provider.webviewView!.webview.postMessage({
         command: 'testGetTrace'
       });
@@ -545,7 +486,6 @@ topic ambiguous_question:
       const traceHistoryTimeout = 30000; // 30 seconds
       const traceHistoryStartTime = Date.now();
 
-      console.log('🧪 [Test] Waiting for trace history...');
       while (Date.now() - traceHistoryStartTime < traceHistoryTimeout) {
         // Check if we received testTraceHistoryReceived message from webview
         const traceHistoryResponse = receivedMessages.find(msg => msg.command === 'testTraceHistoryReceived');
@@ -553,7 +493,6 @@ topic ambiguous_question:
           traceHistoryEntries = traceHistoryResponse.data.entries;
           if (traceHistoryEntries.length > 0) {
             traceHistoryReceived = true;
-            console.log(`🧪 [Test] Trace history received with ${traceHistoryEntries.length} entries`);
             break;
           }
         }
@@ -569,7 +508,6 @@ topic ambiguous_question:
         entry.userMessage && entry.userMessage.includes('Hi, this is a test message')
       );
       assert.ok(hasOurMessage, 'Trace history should contain our test message');
-      console.log('🧪 [Test] ✓ Trace history contains our test message');
 
       // Wait for trace data to be populated
       // The tracer will send 'testTraceDataReceived' when it receives trace data
@@ -578,7 +516,6 @@ topic ambiguous_question:
       const traceDataTimeout = 30000;
       const traceDataStartTime = Date.now();
 
-      console.log('🧪 [Test] Waiting for trace data...');
       while (Date.now() - traceDataStartTime < traceDataTimeout) {
         const traceDataResponse = receivedMessages.find(msg => msg.command === 'testTraceDataReceived');
         if (traceDataResponse && traceDataResponse.data) {
@@ -590,7 +527,6 @@ topic ambiguous_question:
           if (traceData?.plan) {
             assert.ok(Array.isArray(traceData.plan), 'Trace data plan should be an array');
             assert.ok(traceData.plan.length > 0, 'Trace data plan should have steps');
-            console.log(`🧪 [Test] ✓ Trace data received with ${traceData.plan.length} plan steps`);
           }
           break;
         }
@@ -599,7 +535,75 @@ topic ambiguous_question:
       }
 
       assert.ok(traceDataReceived, 'Trace data should be received and populated');
-      console.log('🧪 [Test] ✓ All tracer verifications passed');
+
+      // Verify that trace content is actually rendered in the webview
+      // Wait a bit for React to render the content
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check the webview HTML for rendered trace content
+      const webviewHtml = provider.webviewView?.webview?.html || '';
+      assert.ok(webviewHtml.length > 0, 'Webview HTML should be available');
+      
+      // Verify that trace-related text is present in the rendered HTML
+      // The tracer should show plan steps with display names like "User Input", "Reasoning", "Agent Response", etc.
+      const stepDisplayNames = [
+        'User Input',
+        'Reasoning',
+        'Agent Response',
+        'Action Executed',
+        'Tools Enabled',
+        'Topic Selected',
+        'Variable Update'
+      ];
+      
+      // Check for common trace-related CSS classes or text that should be rendered
+      const hasTraceStructure = 
+        webviewHtml.includes('timeline') || 
+        webviewHtml.includes('tracer') ||
+        webviewHtml.includes('trace-history');
+      
+      // If we have trace data with plan steps, verify specific step content is rendered
+      if (traceData?.plan && traceData.plan.length > 0) {
+        // Check for step display names that should be rendered
+        const hasStepDisplayName = stepDisplayNames.some(displayName => 
+          webviewHtml.includes(displayName)
+        );
+        
+        // Check for step types in the HTML (they might be rendered as data attributes or text)
+        const stepTypes = traceData.plan
+          .map((step: any) => step.type || step.stepType)
+          .filter(Boolean);
+        const hasStepType = stepTypes.some((stepType: string) => 
+          webviewHtml.includes(stepType) || webviewHtml.toLowerCase().includes(stepType.toLowerCase())
+        );
+        
+        // Check for step names/labels/descriptions that should be visible
+        const stepLabels = traceData.plan
+          .map((step: any) => {
+            const stepType = step.type || step.stepType || '';
+            const stepName = step.name || step.label || step.description || '';
+            // Common step display patterns
+            if (stepType === 'UserInputStep') return step.message || stepName;
+            if (stepType === 'PlannerResponseStep') return step.message || stepName;
+            if (stepType === 'FunctionStep') return step.function?.name || stepName;
+            return stepName;
+          })
+          .filter(Boolean);
+        const hasStepLabel = stepLabels.some((label: string) => 
+          label.length > 0 && webviewHtml.includes(label)
+        );
+        
+        assert.ok(
+          hasTraceStructure && (hasStepDisplayName || hasStepType || hasStepLabel),
+          `Trace content should be rendered in the webview HTML. Found structure: ${hasTraceStructure}, step display names: ${hasStepDisplayName}, step types: ${hasStepType}, step labels: ${hasStepLabel}. HTML length: ${webviewHtml.length}`
+        );
+      } else {
+        // Even without plan steps, we should have trace structure
+        assert.ok(
+          hasTraceStructure,
+          'Trace structure should be rendered in the webview HTML'
+        );
+      }
 
       // Clean up message listener
       messageListener.dispose();
