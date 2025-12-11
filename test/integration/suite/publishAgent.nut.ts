@@ -32,9 +32,13 @@ suite.skip('Publish Agent Integration Test', () => {
   let validAgentFile: string;
 
   suiteSetup(async function (this: Mocha.Context) {
-    this.timeout(60000);
+    this.timeout(120000); // Increased timeout for extension activation and authentication
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
+    
+    // Wait for extension activation and authenticate once for the entire suite
+    await waitForExtensionActivation(60000);
+    await authenticateDevHub();
 
     // Create a valid .agent file for testing
     const validAgentContent = `system:
@@ -198,8 +202,6 @@ topic ambiguous_question:
   test('Should publish agent successfully', async function (this: Mocha.Context) {
     this.timeout(300000); // 5 minutes for compilation and publishing
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.publishAgent', 15000);
     assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
 

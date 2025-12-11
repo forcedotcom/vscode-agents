@@ -33,9 +33,13 @@ suite('Create AI Authoring Bundle Integration Test', () => {
   let expectedBundleDir: string;
 
   suiteSetup(async function (this: Mocha.Context) {
-    this.timeout(60000);
+    this.timeout(120000); // Increased timeout for extension activation and authentication
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
+    
+    // Wait for extension activation and authenticate once for the entire suite
+    await waitForExtensionActivation(60000);
+    await authenticateDevHub();
 
     const forceAppDir = path.join(testWorkspacePath, 'force-app');
     if (!fs.existsSync(forceAppDir)) {
@@ -120,8 +124,6 @@ tools: []`;
   test('Should create AI authoring bundle via context menu (right-click on aiAuthoringBundles folder)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
     assert.ok(fs.existsSync(specFilePath), 'Spec file should exist');
 
@@ -133,8 +135,6 @@ tools: []`;
   test('Should create AI authoring bundle via command palette (without URI, uses default path)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
     assert.ok(fs.existsSync(specFilePath), 'Spec file should exist');
 
@@ -144,8 +144,6 @@ tools: []`;
   test('Should create AI authoring bundle via command palette with explicit title', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
     assert.ok(fs.existsSync(specFilePath), 'Spec file should exist');
 

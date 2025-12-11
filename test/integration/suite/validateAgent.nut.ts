@@ -32,9 +32,13 @@ suite('Validate Agent Integration Test', () => {
   let invalidAgentFile: string;
 
   suiteSetup(async function (this: Mocha.Context) {
-    this.timeout(60000);
+    this.timeout(120000); // Increased timeout for extension activation and authentication
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
+    
+    // Wait for extension activation and authenticate once for the entire suite
+    await waitForExtensionActivation(60000);
+    await authenticateDevHub();
 
     // Create a valid .agent file for testing
     const validAgentContent = `system:
@@ -253,8 +257,6 @@ start_agent topic_selector:
   test('Should validate agent file via editor context menu (right-click in editor)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
     assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
 
@@ -269,8 +271,6 @@ start_agent topic_selector:
   test('Should validate agent file via explorer context menu (right-click in file explorer)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
     assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
 
@@ -281,8 +281,6 @@ start_agent topic_selector:
   test('Should validate agent file via command palette (with active .agent file)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
     assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
 
@@ -292,8 +290,6 @@ start_agent topic_selector:
   test('Should validate agent file via command palette with explicit title', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
     assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
 
@@ -307,8 +303,6 @@ start_agent topic_selector:
   test('Should show validation errors for invalid agent file via context menu', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
     assert.ok(fs.existsSync(invalidAgentFile), 'Invalid agent file should exist');
 
@@ -319,8 +313,6 @@ start_agent topic_selector:
   test('Should show validation errors for invalid agent file via command palette', async function (this: Mocha.Context) {
     this.timeout(120000);
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.validateAgent', 15000);
     assert.ok(fs.existsSync(invalidAgentFile), 'Invalid agent file should exist');
 

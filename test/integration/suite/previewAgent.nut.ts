@@ -32,9 +32,13 @@ suite('Preview Agent Integration Test', () => {
   let validAgentFile: string;
 
   suiteSetup(async function (this: Mocha.Context) {
-    this.timeout(60000);
+    this.timeout(120000); // Increased timeout for extension activation and authentication
 
     testWorkspacePath = path.resolve(__dirname, '../../fixtures/test-workspace');
+    
+    // Wait for extension activation and authenticate once for the entire suite
+    await waitForExtensionActivation(60000);
+    await authenticateDevHub();
 
     // Create a valid .agent file for testing
     const validAgentContent = `system:
@@ -234,8 +238,6 @@ topic ambiguous_question:
   test('Should preview agent, start simulated session, send message, and receive response', async function (this: Mocha.Context) {
     this.timeout(180000); // 3 minutes for compilation and agent response
 
-    await waitForExtensionActivation(60000);
-    await authenticateDevHub();
     await waitForCommand('salesforcedx-vscode-agents.previewAgent', 15000);
     assert.ok(fs.existsSync(validAgentFile), 'Valid agent file should exist');
 
