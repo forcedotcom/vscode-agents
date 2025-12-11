@@ -1,17 +1,13 @@
 # [1.6.0](https://github.com/salesforcecli/vsode-agents/compare/v1.5.1...v1.6.0) (2025-12-11)
 
-
 ### Bug Fixes
 
-* use consistent line color for error state in timeline ([667028f](https://github.com/salesforcecli/vsode-agents/commit/667028fcec76e02bd95b99d4471d62415e7000f7))
-* use error color for timeline error icon background ([1390638](https://github.com/salesforcecli/vsode-agents/commit/139063818fe1148918f81f0c6737f0687419dd42))
-
+- use consistent line color for error state in timeline ([667028f](https://github.com/salesforcecli/vsode-agents/commit/667028fcec76e02bd95b99d4471d62415e7000f7))
+- use error color for timeline error icon background ([1390638](https://github.com/salesforcecli/vsode-agents/commit/139063818fe1148918f81f0c6737f0687419dd42))
 
 ### Features
 
-* render FunctionStep as Action Executed with error handling ([e808764](https://github.com/salesforcecli/vsode-agents/commit/e80876422cd50faabf5b845a45fe09de31b83155))
-
-
+- render FunctionStep as Action Executed with error handling ([e808764](https://github.com/salesforcecli/vsode-agents/commit/e80876422cd50faabf5b845a45fe09de31b83155))
 
 ## [1.5.1](https://github.com/salesforcecli/vsode-agents/compare/v1.5.0...v1.5.1) (2025-12-09)
 
