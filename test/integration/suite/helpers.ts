@@ -84,11 +84,32 @@ export async function waitForExtensionActivation(timeoutMs = 30000): Promise<boo
       if (!extension.isActive) {
         console.log('Extension is not active, attempting to activate...');
         try {
-          await extension.activate();
+          const activationResult = await extension.activate();
           console.log(`Extension activation attempted, now active: ${extension.isActive}`);
+          console.log(`Activation result: ${activationResult ? 'success' : 'no result'}`);
         } catch (activateError: any) {
           console.error(`Error activating extension: ${activateError.message}`);
           console.error(`Activation error stack: ${activateError.stack}`);
+          // On Windows, activation errors might be more common, log more details
+          if (process.platform === 'win32') {
+            console.error(`Windows-specific activation error details:`, activateError);
+          }
+        }
+      } else {
+        // Extension is active, but let's verify commands are registered
+        console.log('Extension is active, checking if commands are registered...');
+        const activeCommands = await vscode.commands.getCommands();
+        const expectedCommands = [
+          'salesforcedx-vscode-agents.previewAgent',
+          'salesforcedx-vscode-agents.createAiAuthoringBundle',
+          'salesforcedx-vscode-agents.validateAgent'
+        ];
+        const registeredCommands = expectedCommands.filter(cmd => activeCommands.includes(cmd));
+        if (registeredCommands.length === 0) {
+          console.warn('⚠️ Extension is active but no commands are registered!');
+          console.warn('This might indicate a dependency issue or activation error');
+        } else {
+          console.log(`✓ Found ${registeredCommands.length} registered commands: ${registeredCommands.join(', ')}`);
         }
       }
     } else {
@@ -115,6 +136,29 @@ export async function waitForExtensionActivation(timeoutMs = 30000): Promise<boo
     if (foundCommand) {
       console.log(`Extension activated (found command: ${foundCommand})`);
       return true;
+    }
+    
+    // On Windows, extension activation can be slower, so try to manually trigger it
+    if (process.platform === 'win32' && Date.now() - startTime > 5000) {
+      try {
+        const extension = vscode.extensions.getExtension('salesforce.salesforcedx-vscode-agents') ||
+                          vscode.extensions.getExtension('Salesforce.salesforcedx-vscode-agents');
+        if (extension && !extension.isActive) {
+          console.log('Attempting to manually activate extension on Windows...');
+          await extension.activate();
+          // Wait a bit for commands to register
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Check commands again
+          const commandsAfterActivation = await vscode.commands.getCommands();
+          const foundAfterActivation = expectedCommands.find(cmd => commandsAfterActivation.includes(cmd));
+          if (foundAfterActivation) {
+            console.log(`Extension activated after manual activation (found command: ${foundAfterActivation})`);
+            return true;
+          }
+        }
+      } catch (activationError: any) {
+        console.warn(`Manual activation attempt failed: ${activationError.message}`);
+      }
     }
     
     // Log available commands for debugging (first check only)

@@ -58,15 +58,42 @@ async function main(): Promise<void> {
     const [cliPath, ...args] = resolveCliArgsFromVSCodeExecutablePath(vscodeExecutablePath);
     
     // Install required extension dependencies
+    // On Windows, we need to handle the CLI path differently
+    const isWindows = process.platform === 'win32';
+    
     for (const extensionId of extensionDependencies) {
       console.log(`Installing ${extensionId}...`);
-      const result = cp.spawnSync(cliPath, [...args, '--install-extension', extensionId], {
+      
+      // On Windows, use shell: true and handle paths differently
+      const installArgs = [...args, '--install-extension', extensionId];
+      const spawnOptions: cp.SpawnSyncOptionsWithStringEncoding = {
         encoding: 'utf-8',
-        stdio: 'inherit'
-      });
+        stdio: 'inherit',
+        shell: isWindows // Use shell on Windows to handle .cmd files properly
+      };
+      
+      const result = cp.spawnSync(cliPath, installArgs, spawnOptions);
       
       if (result.error) {
         console.warn(`Warning: Failed to install ${extensionId}:`, result.error.message);
+        // On Windows, try alternative approach if spawnSync fails
+        if (isWindows && (result.error.code === 'EINVAL' || result.error.code === 'ENOENT')) {
+          console.log(`Attempting alternative installation method for ${extensionId} on Windows...`);
+          try {
+            // On Windows, use execSync with proper quoting
+            const exec = require('child_process').execSync;
+            // Properly quote the CLI path and arguments for Windows
+            const quotedCliPath = `"${cliPath}"`;
+            const quotedArgs = args.map(arg => `"${arg}"`).join(' ');
+            const command = `${quotedCliPath} ${quotedArgs} --install-extension ${extensionId}`;
+            exec(command, { stdio: 'inherit', shell: true, encoding: 'utf-8' });
+            console.log(`Successfully installed ${extensionId} (using alternative method)`);
+            continue;
+          } catch (altError: any) {
+            console.warn(`Alternative installation also failed: ${altError.message}`);
+            // Don't fail the test - extensions might already be installed or might not be critical
+          }
+        }
         // Continue anyway - the extension might already be installed or might not be critical
       } else if (result.status !== 0) {
         console.warn(`Warning: Installation of ${extensionId} returned non-zero exit code: ${result.status}`);
@@ -96,7 +123,9 @@ async function main(): Promise<void> {
           // Headless/CI flags for running without display
           '--no-sandbox',
           '--disable-gpu',
-          '--disable-dev-shm-usage'
+          '--disable-dev-shm-usage',
+          // Windows-specific: disable hardware acceleration
+          ...(isWindows ? ['--disable-software-rasterizer'] : [])
         ],
         // Give extension time to activate and disable telemetry
         extensionTestsEnv: {
