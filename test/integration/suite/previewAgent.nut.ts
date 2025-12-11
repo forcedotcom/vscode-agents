@@ -216,15 +216,23 @@ topic ambiguous_question:
         }
 
         // Try to access via extension exports first
-        // On Windows, the extension might export the provider class directly
+        // On Windows, module loading differences mean we need to access via extension exports
         if (extension.exports) {
           try {
-            // Try accessing the provider class from exports
+            // Try accessing the provider instance via the exported function (preferred method)
+            if (typeof (extension.exports as any).getAgentCombinedViewProviderInstance === 'function') {
+              const provider = (extension.exports as any).getAgentCombinedViewProviderInstance();
+              if (provider) {
+                console.log('Successfully got provider from extension exports (getAgentCombinedViewProviderInstance)');
+                return provider;
+              }
+            }
+            // Fallback: try accessing the provider class from exports
             const ProviderClass = (extension.exports as any).AgentCombinedViewProvider;
             if (ProviderClass && typeof ProviderClass.getInstance === 'function') {
               const provider = ProviderClass.getInstance();
               if (provider) {
-                console.log('Successfully got provider from extension exports');
+                console.log('Successfully got provider from extension exports (getInstance)');
                 return provider;
               } else {
                 console.warn('getInstance() from exports returned null/undefined');

@@ -26,6 +26,9 @@ import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
 import { initializeDiagnosticCollection } from './commands/validateAgent';
 
+// Export the provider instance for testing purposes
+let agentCombinedViewProviderInstance: AgentCombinedViewProvider | undefined;
+
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
   const extensionHRStart = process.hrtime();
@@ -76,7 +79,8 @@ export async function activate(context: vscode.ExtensionContext) {
     disposables.push(commands.registerPublishAgentCommand());
     disposables.push(commands.registerCreateAiAuthoringBundleCommand());
     context.subscriptions.push(await registerTestView());
-    context.subscriptions.push(registerAgentCombinedView(context));
+    const agentCombinedViewDisposable = registerAgentCombinedView(context);
+    context.subscriptions.push(agentCombinedViewDisposable);
 
     // Update the test view without blocking activation
     setTimeout(() => {
@@ -88,6 +92,11 @@ export async function activate(context: vscode.ExtensionContext) {
   } catch (err: unknown) {
     throw new Error(`Failed to initialize: ${(err as Error).message}`);
   }
+}
+
+// Export function to get the provider instance for testing
+export function getAgentCombinedViewProviderInstance(): AgentCombinedViewProvider | undefined {
+  return agentCombinedViewProviderInstance || AgentCombinedViewProvider.getInstance();
 }
 
 const registerTestView = async (): Promise<vscode.Disposable> => {
@@ -174,6 +183,8 @@ const validateCLI = async () => {
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation
   const provider = new AgentCombinedViewProvider(context);
+  // Store the provider instance for testing purposes
+  agentCombinedViewProviderInstance = provider;
   const disposables: vscode.Disposable[] = [];
 
   // Register the webview provider
