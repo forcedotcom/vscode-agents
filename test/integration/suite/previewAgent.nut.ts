@@ -363,8 +363,8 @@ topic ambiguous_question:
       assert.ok(webviewReady, 'Webview should be ready');
 
       // Wait for the selectAgent message from previewAgent command to be processed
-      // The previewAgent command already posts a selectAgent message, which triggers
-      // compilation and session start, so we don't need to post testStartSession
+      // The previewAgent command posts a selectAgent message, which selects the agent
+      // but doesn't automatically start the session. We need to manually trigger session start.
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Set up message listener to capture messages from webview
@@ -384,6 +384,18 @@ topic ambiguous_question:
       }
 
       // Wait for webview React app to be fully loaded and selectAgent message to be processed
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // The selectAgent message from previewAgent only selects the agent, it doesn't start the session.
+      // We need to manually trigger session start using testStartSession.
+      const localAgentId = `local:${validAgentFile}`;
+      console.log(`Posting testStartSession for agent: ${localAgentId}`);
+      provider.webviewView!.webview.postMessage({
+        command: 'testStartSession',
+        data: { agentId: localAgentId, isLiveMode: false }
+      });
+      
+      // Wait a moment for the webview to process the command
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Wait for session to start (compilation + session start)
