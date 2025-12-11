@@ -422,16 +422,54 @@ topic ambiguous_question:
       }
       assert.ok(sessionStarted, 'Session should have started');
 
-      // Wait additional time for the text input field to become available
-      // The user mentioned that after starting a session, it first compiles,
-      // then starts the session, then the text input becomes available
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Wait for session to be fully ready before sending messages
+      // After starting a session, it first compiles, then starts the session,
+      // then the text input becomes available. We need to ensure all of this is complete.
+      console.log('[Test] Session started, waiting for session to be fully ready...');
+      
+      // Poll to ensure session is truly ready and not in a transitional state
+      let sessionReady = false;
+      const sessionReadyTimeout = 30000; // 30 seconds max wait
+      const sessionReadyStartTime = Date.now();
+      const readyCheckInterval = 1000; // Check every second
+      
+      while (Date.now() - sessionReadyStartTime < sessionReadyTimeout) {
+        try {
+          const providerAny = provider as any;
+          
+          // Check that session is active and not starting
+          const isActive = providerAny.isSessionActive === true;
+          const isNotStarting = !providerAny.isSessionStarting;
+          const hasAgentPreview = !!providerAny.agentPreview;
+          const hasSessionId = !!providerAny.sessionId;
+          
+          // All conditions must be met for session to be ready
+          if (isActive && isNotStarting && hasAgentPreview && hasSessionId) {
+            // Additional wait to ensure webview has processed everything
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            sessionReady = true;
+            console.log('[Test] Session is fully ready, proceeding to send message');
+            break;
+          }
+        } catch (error) {
+          // Continue checking
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, readyCheckInterval));
+      }
+      
+      if (!sessionReady) {
+        console.warn('[Test] Session ready check timed out, but proceeding anyway');
+        // Still wait a bit more as a safety buffer
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
 
       // Clear previous messages to track only the response to our test message
       receivedMessages.length = 0;
 
       // Send the test message using the test command
       const testMessage = "Hi, this is a test message";
+      console.log('[Test] Sending test message:', testMessage);
       provider.webviewView!.webview.postMessage({
         command: 'testSendMessage',
         data: { message: testMessage }
