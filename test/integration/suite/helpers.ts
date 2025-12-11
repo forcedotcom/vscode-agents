@@ -55,7 +55,8 @@ export async function waitForExtensionActivation(timeoutMs = 30000): Promise<boo
   // Check if sfdx-project.json exists
   const fs = require('fs');
   const path = require('path');
-  const sfdxProjectPath = path.join(workspacePath, 'sfdx-project.json');
+  // Normalize path for cross-platform compatibility
+  const sfdxProjectPath = path.normalize(path.join(workspacePath, 'sfdx-project.json'));
   if (!fs.existsSync(sfdxProjectPath)) {
     console.error(`sfdx-project.json not found at: ${sfdxProjectPath}`);
     return false;
@@ -239,7 +240,8 @@ export async function authenticateDevHub(): Promise<Org> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (workspaceFolders && workspaceFolders.length > 0) {
       const workspacePath = workspaceFolders[0].uri.fsPath;
-      const sfConfigPath = path.join(workspacePath, '.sf', 'config.json');
+      // Normalize path for cross-platform compatibility
+      const sfConfigPath = path.normalize(path.join(workspacePath, '.sf', 'config.json'));
       
       // Read existing config or create new one
       let configData: any = {};

@@ -187,9 +187,18 @@ topic ambiguous_question:
    * Get the AgentCombinedViewProvider instance from the extension
    */
   function getAgentCombinedViewProvider(): any {
-    // Get the extension - try both possible IDs
-    const extension = vscode.extensions.getExtension('salesforce.salesforcedx-vscode-agents') || 
-                      vscode.extensions.getExtension('Salesforce.salesforcedx-vscode-agents');
+    // Get the extension - try both possible IDs (case-insensitive for Windows compatibility)
+    let extension = vscode.extensions.getExtension('salesforce.salesforcedx-vscode-agents');
+    if (!extension) {
+      extension = vscode.extensions.getExtension('Salesforce.salesforcedx-vscode-agents');
+    }
+    // Also try finding by filtering (for case-insensitive matching on Windows)
+    if (!extension) {
+      const allExtensions = vscode.extensions.all;
+      extension = allExtensions.find(ext => 
+        ext.id.toLowerCase() === 'salesforce.salesforcedx-vscode-agents'
+      );
+    }
     
     if (!extension) {
       throw new Error('Could not find salesforcedx-vscode-agents extension');
@@ -202,21 +211,23 @@ topic ambiguous_question:
 
     // Fallback: require from the extension's path
     // The extensionPath should point to the project root when running in development mode
-    const extensionPath = extension.extensionPath;
-    const providerPath = path.join(extensionPath, 'lib', 'src', 'views', 'agentCombinedViewProvider.js');
+    // Normalize path for cross-platform compatibility (handles Windows backslashes, etc.)
+    const extensionPath = path.normalize(extension.extensionPath);
+    const providerPath = path.normalize(path.join(extensionPath, 'lib', 'src', 'views', 'agentCombinedViewProvider.js'));
     
     if (!fs.existsSync(providerPath)) {
       throw new Error(`Provider module not found at: ${providerPath}. Extension path: ${extensionPath}`);
     }
 
     try {
+      // Use the normalized path for require (Node.js handles cross-platform paths)
       const providerModule = require(providerPath);
       if (providerModule && providerModule.AgentCombinedViewProvider) {
         return providerModule.AgentCombinedViewProvider.getInstance();
       }
       throw new Error('AgentCombinedViewProvider not found in module');
     } catch (error: any) {
-      throw new Error(`Failed to require provider module: ${error.message}`);
+      throw new Error(`Failed to require provider module: ${error.message}. Path: ${providerPath}`);
     }
   }
 
