@@ -9,7 +9,7 @@ on:
         type: string
 
 jobs:
-  linux-unit-tests:
+  linux-tests:
     strategy:
       matrix:
         node_version: [lts/-1, lts/*]
@@ -19,7 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch-name }}
           token: ${{ secrets.IDEE_GH_TOKEN }}
       - uses: actions/setup-node@v4
         with:

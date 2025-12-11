@@ -1,0 +1,161 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+
+jobs:
+  integration-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node_version: [lts/*]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Configure Git (Windows)
+        if: matrix.os == 'windows-latest'
+        run: git config --global core.autocrlf false
+      
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.IDEE_GH_TOKEN }}
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: npm
+      
+      - name: Configure Git for private repo access
+        run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install jq (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+      
+      - name: Install Xvfb (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+      
+      - name: Install Salesforce CLI (Linux/Mac)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          if ! command -v sf &> /dev/null; then
+            echo "Salesforce CLI not found, installing..."
+            npm install -g @salesforce/cli
+          else
+            echo "Salesforce CLI already installed"
+            sf version
+          fi
+      
+      - name: Install Salesforce CLI (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command sf -ErrorAction SilentlyContinue)) {
+            Write-Host "Salesforce CLI not found, installing..."
+            npm install -g @salesforce/cli
+          } else {
+            Write-Host "Salesforce CLI already installed"
+            sf version
+          }
+      
+      - name: Authenticate with Salesforce CLI (Linux/Mac)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        env:
+          TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
+        run: |
+          if [ -n "$TESTKIT_AUTH_URL" ]; then
+            echo "Authenticating with Salesforce CLI using auth URL..."
+            echo "$TESTKIT_AUTH_URL" > /tmp/auth-url.txt
+            sf org login sfdx-url \
+              --sfdx-url-file /tmp/auth-url.txt \
+              --alias devhub \
+              --set-default
+            rm /tmp/auth-url.txt
+            echo "Authentication successful"
+            
+            # Get the authenticated org username and set it as TESTKIT_ORG_USERNAME
+            # This will be used by the integration tests to set the org in config.json
+            ORG_USERNAME=$(sf org display --json | jq -r '.result.username // empty')
+            if [ -n "$ORG_USERNAME" ]; then
+              echo "TESTKIT_ORG_USERNAME=$ORG_USERNAME" >> $GITHUB_ENV
+              echo "Set TESTKIT_ORG_USERNAME=$ORG_USERNAME (from authenticated org)"
+            else
+              echo "⚠️ Could not determine org username from CLI"
+              exit 1
+            fi
+          else
+            echo "⚠️ TESTKIT_AUTH_URL not configured"
+            echo "Integration tests may fail if authentication is required"
+            exit 1
+          fi
+      
+      - name: Authenticate with Salesforce CLI (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          TESTKIT_AUTH_URL: ${{ secrets.TESTKIT_AUTH_URL }}
+        run: |
+          if ($env:TESTKIT_AUTH_URL) {
+            Write-Host "Authenticating with Salesforce CLI using auth URL..."
+            $env:TESTKIT_AUTH_URL | Out-File -FilePath "$env:TEMP\auth-url.txt" -Encoding utf8 -NoNewline
+            sf org login sfdx-url `
+              --sfdx-url-file "$env:TEMP\auth-url.txt" `
+              --alias devhub `
+              --set-default
+            Remove-Item "$env:TEMP\auth-url.txt" -ErrorAction SilentlyContinue
+            Write-Host "Authentication successful"
+            
+            # Get the authenticated org username and set it as TESTKIT_ORG_USERNAME
+            # This will be used by the integration tests to set the org in config.json
+            $orgJson = sf org display --json
+            if (Get-Command jq -ErrorAction SilentlyContinue) {
+              $orgUsername = $orgJson | jq -r '.result.username // empty'
+            } else {
+              $orgDisplay = $orgJson | ConvertFrom-Json
+              $orgUsername = $orgDisplay.result.username
+            }
+            if ($orgUsername) {
+              Write-Host "TESTKIT_ORG_USERNAME=$orgUsername" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+              Write-Host "Set TESTKIT_ORG_USERNAME=$orgUsername (from authenticated org)"
+            } else {
+              Write-Host "⚠️ Could not determine org username from CLI"
+              exit 1
+            }
+          } else {
+            Write-Host "⚠️ TESTKIT_AUTH_URL not configured"
+            Write-Host "Integration tests may fail if authentication is required"
+            exit 1
+          }
+      
+      - name: Run integration tests (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          # TESTKIT_ORG_USERNAME is set from CLI authentication in previous step
+          # TESTKIT_HUB_USERNAME can be set from secrets if needed for local dev
+          TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
+        run: xvfb-run -a npm run test:integration
+        continue-on-error: false
+      
+      - name: Run integration tests (Windows)
+        if: matrix.os == 'windows-latest'
+        env:
+          # TESTKIT_ORG_USERNAME is set from CLI authentication in previous step
+          # TESTKIT_HUB_USERNAME can be set from secrets if needed for local dev
+          TESTKIT_HUB_USERNAME: ${{ secrets.TESTKIT_HUB_USERNAME }}
+        run: npm run test:integration
+        continue-on-error: false
+

@@ -364,6 +364,14 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       setTraceData(data);
       setLoading(false);
       setError(null);
+
+      // Send test response when trace data is received (for integration tests)
+      vscodeApi.postTestMessage('testTraceDataReceived', { 
+        hasPlanId: !!data?.planId,
+        hasSessionId: !!data?.sessionId,
+        planStepCount: data?.plan?.length || 0,
+        traceData: data
+      });
     });
 
     // Listen for errors
@@ -391,6 +399,9 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       const entries = Array.isArray(data?.entries) ? data.entries : [];
       setTraceHistory(entries);
       setLoading(false);
+
+      // Send test response when trace history is received (for integration tests)
+      vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: entries.length, entries });
 
       if (entries.length === 0) {
         updateSelectedHistoryIndex(null);

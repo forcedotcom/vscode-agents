@@ -118,7 +118,7 @@ describe('CoreExtensionService', () => {
     await CoreExtensionService.loadDependencies(mockContext);
 
     expect(channelSpy).toHaveBeenCalledWith('Agentforce DX');
-    expect(telemetrySpy).toHaveBeenCalledWith('test-extension');
+    expect(telemetrySpy).toHaveBeenCalledWith('AgentforceDX');
     expect(workspaceSpy).toHaveBeenCalledWith(false);
   });
 

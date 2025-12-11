@@ -174,6 +174,11 @@ class VSCodeApiService {
   openTraceJson(entry: TraceHistoryMessageEntry) {
     this.postMessage('openTraceJson', { entry });
   }
+
+  // Test support - send test response messages
+  postTestMessage(command: string, data?: any) {
+    this.postMessage(command, data);
+  }
 }
 
 export const vscodeApi = new VSCodeApiService();

@@ -1,0 +1,4 @@
+name: WillieTestAgent
+description: A test agent for integration testing
+instructions: You are a helpful test assistant.
+tools: []
