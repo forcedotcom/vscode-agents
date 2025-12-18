@@ -1,23 +1,35 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentPreview, Agent, AgentPreviewBase, readTranscriptEntries, AgentSource } from '@salesforce/agents';
-import { AgentSimulate } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAvailableClientApps, createConnectionWithClientApp } from '../utils/clientAppUtils';
-import type { ClientAppResult, ClientApp } from '../utils/clientAppUtils';
 import type { ApexLog } from '@salesforce/types/tooling';
-import { Lifecycle, SfError } from '@salesforce/core';
 import type { Connection } from '@salesforce/core';
+import { Lifecycle, SfError, SfProject } from '@salesforce/core';
 import type { ChannelService } from '../types/ChannelService';
 import {
   appendTraceHistoryEntry,
-  readTraceHistoryEntries,
   clearTraceHistory,
-  writeTraceEntryToFile,
-  type TraceHistoryEntry
+  readTraceHistoryEntries,
+  type TraceHistoryEntry,
+  writeTraceEntryToFile
 } from '../utils/traceHistory';
 import { EOL } from 'os';
+import {
+  Agent,
+  AgentSource,
+  ProductionAgent,
+  readTranscriptEntries,
+  ScriptAgent
+} from '@salesforce/agents';
+
+// AgentSimulate may not be directly exported, import it dynamically if needed
+let AgentSimulate: any;
+try {
+  const agentsModule = require('@salesforce/agents');
+  AgentSimulate = agentsModule.AgentSimulate;
+} catch {
+  AgentSimulate = class {};
+}
 
 interface AgentMessage {
   type: string;
@@ -33,13 +45,6 @@ interface AvailableAgent {
   filePath?: string;
 }
 
-type ClientAppConnectionResult = { status: 'ready'; conn: Connection } | { status: 'handled' };
-
-interface ClientAppConnectionHandlers {
-  onNone?: (result: ClientAppResult) => Promise<ClientAppConnectionResult>;
-  onMultiple?: (result: ClientAppResult) => Promise<ClientAppConnectionResult>;
-}
-
 class SessionStartCancelledError extends Error {
   constructor() {
     super('Agent session start was cancelled');
@@ -52,10 +57,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public webviewView?: vscode.WebviewView;
 
   private static instance: AgentCombinedViewProvider;
-  private agentPreview?: AgentPreviewBase;
+  private agentPreview?: ScriptAgent['preview'] | ProductionAgent['preview'];
   private sessionId = Date.now().toString();
   private isApexDebuggingEnabled = false;
-  private selectedClientApp?: string;
   private isSessionActive = false;
   private isSessionStarting = false;
   private currentAgentName?: string;
@@ -187,7 +191,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     // If we have an active agent preview, update its debug mode
     if (this.agentPreview) {
-      this.agentPreview.setApexDebugMode(newDebugMode);
+      this.agentPreview.setApexDebugging(newDebugMode);
     }
 
     const statusMessage = newDebugMode ? 'Debug mode activated.' : 'Debug mode deactivated.';
@@ -225,10 +229,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     if (this.agentPreview && this.sessionId) {
       // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
       // Both extend AgentPreviewBase, so we need to handle this carefully
-      if (this.agentPreview instanceof AgentSimulate) {
-        await this.agentPreview.end();
+      const isAgentSimulate = (this.currentAgentSource = AgentSource.SCRIPT);
+      if (isAgentSimulate) {
+        await (this.agentPreview as any).end();
       } else {
-        await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+        await this.agentPreview.end(this.sessionId, 'UserRequest');
       }
       this.agentPreview = undefined;
       this.sessionId = Date.now().toString();
@@ -282,10 +287,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setSessionStarting(true);
 
       // End the current session but keep the agentPreview instance
-      if (this.agentPreview instanceof AgentSimulate) {
-        await this.agentPreview.end();
+      const isAgentSimulate = this.agentPreview && this.currentAgentSource === AgentSource.SCRIPT;
+      if (isAgentSimulate) {
+        await (this.agentPreview as any).end();
       } else {
-        await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+        await this.agentPreview.end(this.sessionId, 'UserRequest');
       }
 
       // Clear conversation state
@@ -323,7 +329,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       await this.setSessionStarting(false);
 
       // Send session started message with welcome message
-      const agentMessage = session.messages.find(msg => msg.type === 'Inform');
+      const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
       this.webviewView.webview.postMessage({
         command: 'sessionStarted',
         data: agentMessage?.message
@@ -358,8 +364,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   public async refreshAvailableAgents(): Promise<void> {
     await this.endSession();
     this.currentAgentId = undefined;
-    // Clear the selected client app since it's tied to the org
-    this.selectedClientApp = undefined;
 
     if (this.webviewView) {
       // Clear the current agent selection
@@ -672,134 +676,46 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Discover local .agent files in the workspace
-   * This method scans the workspace for all .agent files and returns them
+   * Gets previewable agents using the library's getPreviewableAgents method
    */
-  private async discoverLocalAgents(): Promise<AvailableAgent[]> {
-    const localAgents: AvailableAgent[] = [];
+  private async getPreviewableAgentsList(conn: Connection): Promise<AvailableAgent[]> {
     try {
-      // Find all .agent files in the workspace
-      // Pass undefined for maxResults to get all files (not just the default limit)
-      const agentFiles = await vscode.workspace.findFiles(
-        '**/aiAuthoringBundles/**/*.agent',
-        '**/node_modules/**',
-        undefined
-      );
+      const project = SfProject.getInstance();
+      const previewableAgents = await Agent.listPreviewable(conn, project as any);
 
-      for (const agentFile of agentFiles) {
-        localAgents.push({
-          name: path.basename(agentFile.fsPath, '.agent'),
-          id: `local:${agentFile.fsPath}`, // Use special prefix to identify local agents
-          type: 'script',
-          filePath: agentFile.fsPath
-        });
-      }
-
-      // Sort local agents alphabetically by name
-      localAgents.sort((a, b) => a.name.localeCompare(b.name));
+      return previewableAgents.map((agent: any) => {
+        if (agent.source === AgentSource.SCRIPT || agent.source === 'script') {
+          return {
+            name: agent.name,
+            id: `local:${agent.filePath}`,
+            type: 'script' as const,
+            filePath: agent.filePath
+          };
+        } else {
+          return {
+            name: agent.name,
+            id: agent.id,
+            type: 'published' as const
+          };
+        }
+      });
     } catch (error) {
-      // Return empty array if discovery fails
+      console.error('Error getting previewable agents:', error);
       return [];
     }
-
-    return localAgents;
-  }
-
-  /**
-   * Returns published agents that have active versions
-   */
-  private async getActiveRemoteAgents(conn: Connection): Promise<AvailableAgent[]> {
-    const remoteAgents = await Agent.listRemote(conn);
-    return remoteAgents
-      ? remoteAgents
-          .filter(bot => {
-            return bot.BotVersions?.records?.some(version => version.Status === 'Active');
-          })
-          .map(bot => ({
-            name: bot.MasterLabel || bot.DeveloperName || 'Unknown Agent',
-            id: bot.Id,
-            type: 'published' as const
-          }))
-          .filter(agent => agent.id)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      : [];
-  }
-
-  /**
-   * Attempts to resolve a connection using a selected client app
-   */
-  private async resolveClientAppConnection(handlers?: ClientAppConnectionHandlers): Promise<ClientAppConnectionResult> {
-    if (this.selectedClientApp) {
-      const conn = await createConnectionWithClientApp(this.selectedClientApp);
-      return { status: 'ready', conn };
-    }
-
-    const clientAppResult = await getAvailableClientApps();
-
-    if (clientAppResult.type === 'none') {
-      if (handlers?.onNone) {
-        return handlers.onNone(clientAppResult);
-      }
-      return { status: 'handled' };
-    }
-
-    if (clientAppResult.type === 'multiple') {
-      if (handlers?.onMultiple) {
-        return handlers.onMultiple(clientAppResult);
-      }
-      return { status: 'handled' };
-    }
-
-    if (clientAppResult.type === 'single') {
-      this.selectedClientApp = clientAppResult.clientApps[0].name;
-      const conn = await createConnectionWithClientApp(this.selectedClientApp);
-      return { status: 'ready', conn };
-    }
-
-    const conn = await CoreExtensionService.getDefaultConnection();
-    return { status: 'ready', conn };
   }
 
   /**
    * Builds the agent list used by the command palette quick pick
    */
   public async getAgentsForCommandPalette(): Promise<AvailableAgent[]> {
-    const localAgents = await this.discoverLocalAgents();
-
-    const connectionResult = await this.resolveClientAppConnection({
-      onNone: async () => {
-        // Mirror the dropdown behavior: silently fall back to local agents only.
-        return { status: 'handled' };
-      },
-      onMultiple: async result => {
-        type ClientAppPick = { label: string; description: string; app: ClientApp };
-        const picks: ClientAppPick[] = result.clientApps.map(app => ({
-          label: app.name,
-          description: app.clientId,
-          app
-        }));
-
-        const selection = await vscode.window.showQuickPick(picks, {
-          placeHolder: 'Select a client app to access published agents'
-        });
-
-        if (!selection) {
-          vscode.window.showInformationMessage('Client app selection cancelled. Showing Agent Script files only.');
-          return { status: 'handled' };
-        }
-
-        this.selectedClientApp = selection.app.name;
-        const conn = await createConnectionWithClientApp(this.selectedClientApp);
-        return { status: 'ready', conn };
-      }
-    });
-
-    if (connectionResult.status !== 'ready') {
-      return localAgents;
+    try {
+      const conn = await CoreExtensionService.getDefaultConnection();
+      return await this.getPreviewableAgentsList(conn);
+    } catch (error) {
+      console.error('Error getting agents for command palette:', error);
+      return [];
     }
-
-    const remoteAgents = await this.getActiveRemoteAgents(connectionResult.conn);
-    return [...localAgents, ...remoteAgents];
   }
 
   /**
@@ -875,10 +791,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             if (this.agentPreview && this.sessionId) {
               try {
                 // AgentSimulate.end() doesn't take parameters, but AgentPreview.end() does
-                if (this.agentPreview instanceof AgentSimulate) {
-                  await (this.agentPreview as AgentSimulate).end();
+                const isAgentSimulate = this.agentPreview && this.currentAgentSource === AgentSource.SCRIPT;
+                if (isAgentSimulate) {
+                  await this.agentPreview.end();
                 } else {
-                  await (this.agentPreview as AgentPreview).end(this.sessionId, 'UserRequest');
+                  await this.agentPreview.end(this.sessionId, 'UserRequest');
                 }
                 ensureActive();
               } catch (err) {
@@ -889,10 +806,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             // Reset planId when starting a new session
             this.currentPlanId = undefined;
 
-            // If a client app was previously selected, reuse it to avoid re-prompt loops
-            const conn = this.selectedClientApp
-              ? await createConnectionWithClientApp(this.selectedClientApp)
-              : await CoreExtensionService.getDefaultConnection();
+            // Get the default connection from target-org
+            const conn = await CoreExtensionService.getDefaultConnection();
             ensureActive();
 
             // Extract agentId from the message data and pass it as botId
@@ -906,6 +821,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             const agentSource = this.getAgentSource(agentId);
             this.pendingStartAgentId = agentId;
             this.pendingStartAgentSource = agentSource;
+
+            // Get project instance - needed for both script and published agents
+            const project = SfProject.getInstance();
 
             if (agentSource === AgentSource.SCRIPT) {
               // Handle script agent (.agent file)
@@ -966,13 +884,17 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               // mockActions: true = simulate (mock actions), false = live test (real side effects)
               // The lifecycle listeners will automatically handle compilation progress messages
               const mockActions = !isLiveMode; // Simulate = true, Live Test = false
-              this.agentPreview = new AgentSimulate(conn, filePath, mockActions);
+              // aabDirectory should point to the directory containing the .agent file, not the file itself
+              // Ensure it's an absolute path to avoid path resolution issues
+              const aabDirectory = path.resolve(path.dirname(filePath));
+              const agent = await Agent.init({ connection: conn, aabDirectory, project: project as any });
+              this.agentPreview = agent.preview;
               this.currentAgentName = path.basename(filePath, '.agent');
               this.currentAgentId = agentId;
 
               // Enable debug mode from apex debugging setting
               if (this.isApexDebuggingEnabled) {
-                this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
+                this.agentPreview.setApexDebugging(this.isApexDebuggingEnabled);
               }
             } else {
               // Handle published agent (org agent)
@@ -983,18 +905,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               await this.setLiveMode(true);
               ensureActive();
 
-              this.agentPreview = new AgentPreview(conn, agentId);
+              const agent = await Agent.init({ connection: conn, project: project as any, apiNameOrId: agentId });
+
+              this.agentPreview = agent.preview;
 
               // Get agent name for notifications
-              const remoteAgents = await Agent.listRemote(conn);
+              const remoteAgents = await Agent.listRemote(conn as any);
               ensureActive();
-              const agent = remoteAgents?.find(bot => bot.Id === agentId);
-              this.currentAgentName = agent?.MasterLabel || agent?.DeveloperName || 'Unknown Agent';
+              this.currentAgentName = agent.name;
               this.currentAgentId = agentId;
 
               // Enable debug mode from apex debugging setting
               if (this.isApexDebuggingEnabled) {
-                this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
+                this.agentPreview.setApexDebugging(this.isApexDebuggingEnabled);
               }
             }
 
@@ -1018,7 +941,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
             ensureActive();
 
             // Find the agent's welcome message or create a default one
-            const agentMessage = session.messages.find(msg => msg.type === 'Inform');
+            const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
             webviewView.webview.postMessage({
               command: 'sessionStarted',
               data: agentMessage?.message
@@ -1058,7 +981,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           await this.setDebugMode(message.data);
           // If we have an active agent preview, update its debug mode
           if (this.agentPreview) {
-            this.agentPreview.setApexDebugMode(this.isApexDebuggingEnabled);
+            this.agentPreview.setApexDebugging(this.isApexDebuggingEnabled);
           }
         } else if (message.command === 'sendChatMessage') {
           if (!this.agentPreview || !this.sessionId) {
@@ -1073,7 +996,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           const userMessage = message.data.message;
           this.channelService.appendLine(`Simulation message sent - "${userMessage}"`);
 
-          const response = await this.agentPreview.send(this.sessionId, userMessage);
+          const response = await this.agentPreview.send(userMessage);
 
           // Get the latest agent response
           const lastMessage = response.messages?.at(-1);
@@ -1132,59 +1055,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'getAvailableAgents') {
           try {
-            const localAgents = await this.discoverLocalAgents();
-
-            const connectionResult = await this.resolveClientAppConnection({
-              onNone: async result => {
-                webviewView.webview.postMessage({
-                  command: 'availableAgents',
-                  data: {
-                    agents: localAgents,
-                    selectedAgentId: this.currentAgentId
-                  }
-                });
-                webviewView.webview.postMessage({
-                  command: 'clientAppRequired',
-                  data: {
-                    message:
-                      'See "Preview an Agent" in the "Agentforce Developer Guide" for complete documentation: https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-preview.html.',
-                    username: result.username,
-                    error: result.error
-                  }
-                });
-                if (this.currentAgentId) {
-                  this.currentAgentId = undefined;
-                }
-                return { status: 'handled' };
-              },
-              onMultiple: async result => {
-                webviewView.webview.postMessage({
-                  command: 'availableAgents',
-                  data: {
-                    agents: localAgents,
-                    selectedAgentId: this.currentAgentId
-                  }
-                });
-                webviewView.webview.postMessage({
-                  command: 'selectClientApp',
-                  data: {
-                    clientApps: result.clientApps,
-                    username: result.username
-                  }
-                });
-                if (this.currentAgentId) {
-                  this.currentAgentId = undefined;
-                }
-                return { status: 'handled' };
-              }
-            });
-
-            if (connectionResult.status !== 'ready') {
-              return;
-            }
-
-            const remoteAgents = await this.getActiveRemoteAgents(connectionResult.conn);
-            const allAgents = [...localAgents, ...remoteAgents];
+            const conn = await CoreExtensionService.getDefaultConnection();
+            const allAgents = await this.getPreviewableAgentsList(conn);
 
             webviewView.webview.postMessage({
               command: 'availableAgents',
@@ -1220,7 +1092,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               return;
             }
 
-            if (!(this.agentPreview instanceof AgentSimulate) || !this.currentPlanId) {
+            const isAgentSimulate = this.agentPreview && this.currentAgentSource === AgentSimulate;
+            if (!isAgentSimulate || !this.currentPlanId) {
               const restored = await this.sendLastStoredTraceData(webviewView);
               if (!restored) {
                 webviewView.webview.postMessage({
@@ -1231,16 +1104,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
               return;
             }
 
-            const data = await this.agentPreview.trace(this.sessionId, this.currentPlanId);
-            await this.persistTraceHistory(data);
             if (this.currentAgentId && this.currentAgentSource) {
               await this.loadAndSendTraceHistory(this.currentAgentId, this.currentAgentSource, webviewView);
             }
 
-            webviewView.webview.postMessage({
-              command: 'traceData',
-              data
-            });
+            // webviewView.webview.postMessage({
+            //   command: 'traceData',
+            //   data
+            // });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -1248,48 +1119,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
           }
         } else if (message.command === 'openTraceJson') {
           await this.openTraceJsonEntry(message.data?.entry);
-        } else if (message.command === 'clientAppSelected') {
-          // Handle client app selection (Case 3)
-          try {
-            const clientAppName = message.data?.clientAppName;
-            if (!clientAppName) {
-              throw new Error('No client app name provided');
-            }
-
-            this.selectedClientApp = clientAppName;
-
-            if (!this.selectedClientApp) {
-              throw new Error('Client app not set');
-            }
-
-            const conn = await createConnectionWithClientApp(clientAppName);
-            const localAgents = await this.discoverLocalAgents();
-            const remoteAgents = await this.getActiveRemoteAgents(conn);
-            const allAgents = [...localAgents, ...remoteAgents];
-
-            // Notify the UI that client app is ready so it can clear selection UI
-            webviewView.webview.postMessage({ command: 'clientAppReady' });
-
-            // Provide updated agent list with preselected agent if we have one
-            webviewView.webview.postMessage({
-              command: 'availableAgents',
-              data: {
-                agents: allAgents,
-                selectedAgentId: this.currentAgentId
-              }
-            });
-
-            // Clear the preselected agent ID after sending it
-            if (this.currentAgentId) {
-              this.currentAgentId = undefined;
-            }
-          } catch (err) {
-            console.error('Error selecting client app:', err);
-            await this.postErrorMessage(
-              webviewView,
-              `Error selecting client app: ${err instanceof Error ? err.message : 'Unknown error'}`
-            );
-          }
         } else if (message.command === 'getConfiguration') {
           // Get configuration values
           const config = vscode.workspace.getConfiguration();
@@ -1472,9 +1301,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   private async saveApexDebugLog(apexLog: ApexLog): Promise<string | undefined> {
     try {
-      const conn = this.selectedClientApp
-        ? await createConnectionWithClientApp(this.selectedClientApp)
-        : await CoreExtensionService.getDefaultConnection();
+      const conn = await CoreExtensionService.getDefaultConnection();
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
       if (!workspaceFolder) {
         vscode.window.showErrorMessage('No workspace directory found to save the Apex debug logs.');

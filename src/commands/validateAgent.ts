@@ -1,8 +1,19 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
-import { Agent, type CompilationError } from '@salesforce/agents';
+import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { SfError } from '@salesforce/core';
+import { SfError, SfProject } from '@salesforce/core';
+import * as path from 'path';
+
+// Type declarations for new library API
+interface CompilationError {
+  errorType: string;
+  lineStart: number;
+  colStart: number;
+  lineEnd: number;
+  colEnd: number;
+  description: string;
+}
 
 // Diagnostic collection for agent validation errors
 let diagnosticCollection: vscode.DiagnosticCollection;
@@ -38,13 +49,24 @@ export const registerValidateAgentCommand = () => {
       },
       async progress => {
         try {
-          const response = await Agent.compileAgentScript(
-            await CoreExtensionService.getDefaultConnection(),
-            fileContents
-          );
+          const connection = await CoreExtensionService.getDefaultConnection();
+          const project = SfProject.getInstance();
+
+          // Initialize agent instance using Agent.init()
+          // aabDirectory should point to the directory containing the .agent file, not the file itself
+          // Ensure it's an absolute path to avoid path resolution issues
+          const aabDirectory = path.resolve(path.dirname(filePath));
+          const agent = await Agent.init({
+            connection,
+            project,
+            aabDirectory
+          });
+
+          // Validate the agent
+          const response = await agent.compile();
 
           // Type guard to check if response has errors (compilation failure)
-          if (response.status === 'failure') {
+          if (response.status === 'failure' && response.errors) {
             // Parse and display compilation errors in Problems panel
             const diagnostics: vscode.Diagnostic[] = response.errors.map((error: CompilationError) => {
               const range = new vscode.Range(

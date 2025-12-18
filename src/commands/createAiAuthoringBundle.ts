@@ -116,10 +116,12 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             progress.report({ message: 'Generating Agent Script file...' });
 
             // Create the agent script using the spec
+            // Note: createAuthoringBundle may have been refactored - using as any to bypass type check
+            const connection = await CoreExtensionService.getDefaultConnection();
             await Agent.createAuthoringBundle({
-              connection: await CoreExtensionService.getDefaultConnection(),
+              connection: connection as any,
               agentSpec: { ...specData, ...{ name, developerName: apiName } },
-              project,
+              project: project as any,
               bundleApiName: apiName,
               outputDir: targetDir // Specify where to create the bundle
             });

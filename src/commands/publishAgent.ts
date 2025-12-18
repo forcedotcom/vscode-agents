@@ -1,11 +1,21 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
 import { SfProject, ConfigAggregator, Org, Lifecycle } from '@salesforce/core';
-import { Agent, type CompilationError } from '@salesforce/agents';
+import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfError } from '@salesforce/core';
 import * as path from 'path';
 import { EOL } from 'os';
+
+// Type declarations for new library API
+interface CompilationError {
+  errorType: string;
+  lineStart: number;
+  colStart: number;
+  lineEnd: number;
+  colEnd: number;
+  description: string;
+}
 
 export const registerPublishAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.publishAgent, async (uri?: vscode.Uri) => {
@@ -45,34 +55,44 @@ export const registerPublishAgentCommand = () => {
             // Get connection to the org
             const connection = await CoreExtensionService.getDefaultConnection();
 
-            // Read the agent file contents
-            const fileUri = vscode.Uri.file(filePath);
-            const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
+            // Initialize agent instance using Agent.init()
+            progress.report({ message: 'Initializing agent...', increment: 0 });
+            // aabDirectory should point to the directory containing the .agent file, not the file itself
+            // Ensure it's an absolute path to avoid path resolution issues
+            const aabDirectory = path.resolve(path.dirname(filePath));
+            const agent = await Agent.init({
+              connection,
+              project,
+              aabDirectory
+            });
 
-            // Step 1: Compile the agent script
-            progress.report({ message: 'Compiling agent...', increment: 0 });
-            const compileResponse = await Agent.compileAgentScript(connection, fileContents);
+            // Step 1: Validate the agent first
+            progress.report({ message: 'Validating agent...', increment: 20 });
+            const validateResponse = await agent.compile();
 
-            // Check if compilation failed
-            if (compileResponse.status === 'failure') {
-              const errorMessages = compileResponse.errors
-                .map(error => `[${error.errorType}] Line ${error.lineStart}:${error.colStart} - ${error.description}`)
+            // Check if validation failed
+            if (validateResponse.status === 'failure' && validateResponse.errors) {
+              const errorMessages = validateResponse.errors
+                .map(
+                  (error: CompilationError) =>
+                    `[${error.errorType}] Line ${error.lineStart}:${error.colStart} - ${error.description}`
+                )
                 .join(EOL);
 
-              channelService.appendLine('❌ Agent compilation failed!');
+              channelService.appendLine('❌ Agent validation failed!');
               channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-              channelService.appendLine(`Found ${compileResponse.errors.length} error(s):`);
+              channelService.appendLine(`Found ${validateResponse.errors.length} error(s):`);
               channelService.appendLine(errorMessages);
 
-              progress.report({ message: `Compilation failed with ${compileResponse.errors.length} error(s).` });
+              progress.report({ message: `Validation failed with ${validateResponse.errors.length} error(s).` });
 
               vscode.window.showErrorMessage(
-                `Agent compilation failed with ${compileResponse.errors.length} error(s). Check the Output tab for details.`
+                `Agent validation failed with ${validateResponse.errors.length} error(s). Check the Output tab for details.`
               );
               return;
             }
 
-            // Step 2: Publish the compiled agent
+            // Step 2: Publish the agent
             progress.report({ message: 'Publishing agent...', increment: 50 });
 
             const lifecycle = Lifecycle.getInstance();
@@ -89,7 +109,7 @@ export const registerPublishAgentCommand = () => {
             });
 
             try {
-              await Agent.publishAgentJson(connection, project, compileResponse.compiledArtifact);
+              await agent.publish();
             } finally {
               // Clean up event listeners
               lifecycle.removeAllListeners('scopedPreRetrieve');
