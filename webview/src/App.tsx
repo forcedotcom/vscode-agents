@@ -6,11 +6,6 @@ import TabNavigation from './components/shared/TabNavigation.js';
 import { vscodeApi, AgentInfo } from './services/vscodeApi.js';
 import './App.css';
 
-interface ClientApp {
-  name: string;
-  clientId: string;
-}
-
 interface SelectAgentMessage {
   agentId: string;
   forceRestart?: boolean;
@@ -32,8 +27,6 @@ const App: React.FC = () => {
   const [displayedAgentId, setDisplayedAgentIdState] = useState('');
   const [desiredAgentId, setDesiredAgentId] = useState('');
   const [restartTrigger, setRestartTrigger] = useState(0);
-  const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
-  const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionStarting, setIsSessionStarting] = useState(false);
@@ -182,15 +175,6 @@ const App: React.FC = () => {
       agentPreviewRef.current?.focusInput();
     }, 100);
   }, [isSessionActive, isSessionStarting, desiredAgentId]);
-
-  const handleClientAppRequired = useCallback((_data: any) => {
-    setClientAppState('required');
-  }, []);
-
-  const handleClientAppSelection = useCallback((data: any) => {
-    setClientAppState('selecting');
-    setAvailableClientApps(data.clientApps || []);
-  }, []);
 
   const handleAgentChange = useCallback((agentId: string) => {
     setDesiredAgentId(agentId);
@@ -356,8 +340,6 @@ const App: React.FC = () => {
     <div className="app">
       <div className="app-menu">
         <AgentSelector
-          onClientAppRequired={handleClientAppRequired}
-          onClientAppSelection={handleClientAppSelection}
           selectedAgent={desiredAgentId}
           onAgentChange={handleAgentChange}
           isSessionActive={isSessionActive}
@@ -375,10 +357,6 @@ const App: React.FC = () => {
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview
             ref={agentPreviewRef}
-            clientAppState={clientAppState}
-            availableClientApps={availableClientApps}
-            onClientAppStateChange={setClientAppState}
-            onAvailableClientAppsChange={setAvailableClientApps}
             isSessionTransitioning={isSessionTransitioning}
             onSessionTransitionSettled={handleSessionTransitionSettled}
             selectedAgentId={previewAgentId}

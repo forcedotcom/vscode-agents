@@ -48,6 +48,7 @@ export const registerValidateAgentCommand = () => {
         cancellable: false
       },
       async progress => {
+        let agent: any = undefined;
         try {
           const connection = await CoreExtensionService.getDefaultConnection();
           const project = SfProject.getInstance();
@@ -56,7 +57,7 @@ export const registerValidateAgentCommand = () => {
           // aabDirectory should point to the directory containing the .agent file, not the file itself
           // Ensure it's an absolute path to avoid path resolution issues
           const aabDirectory = path.resolve(path.dirname(filePath));
-          const agent = await Agent.init({
+          agent = await Agent.init({
             connection,
             project,
             aabDirectory
@@ -64,6 +65,13 @@ export const registerValidateAgentCommand = () => {
 
           // Validate the agent
           const response = await agent.compile();
+
+          // Restore connection after agent interaction
+          try {
+            await agent.restoreConnection();
+          } catch (error) {
+            console.warn('Error restoring connection:', error);
+          }
 
           // Type guard to check if response has errors (compilation failure)
           if (response.status === 'failure' && response.errors) {
@@ -114,6 +122,12 @@ export const registerValidateAgentCommand = () => {
           }
         } catch (compileError) {
           const error = SfError.wrap(compileError);
+          // Restore connection even on error
+          try {
+            await agent.restoreConnection();
+          } catch (restoreError) {
+            console.warn('Error restoring connection:', restoreError);
+          }
           // Clear diagnostics for unexpected errors
           diagnosticCollection.clear();
           // Show the output channel

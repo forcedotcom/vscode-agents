@@ -132,16 +132,6 @@ class VSCodeApiService {
     this.postMessage('getConfiguration', { section });
   }
 
-  // Client app selection
-  selectClientApp(clientAppName: string) {
-    this.postMessage('clientAppSelected', { clientAppName });
-  }
-
-  // Informational message when client app is ready
-  onClientAppReady(handler: () => void): () => void {
-    return this.onMessage('clientAppReady', handler);
-  }
-
   // Execute a VSCode command
   executeCommand(commandId: string) {
     this.postMessage('executeCommand', { commandId });

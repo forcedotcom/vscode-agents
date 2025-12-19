@@ -83,6 +83,13 @@ export const registerActivateAgentCommand = () => {
 
           await agent.activate();
 
+          // Restore connection after agent interaction
+          try {
+            await agent.restoreConnection();
+          } catch (error) {
+            console.warn('Error restoring connection:', error);
+          }
+
           channelService.appendLine(`Successfully activated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was activated successfully.`);
         }

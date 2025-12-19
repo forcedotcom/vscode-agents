@@ -114,6 +114,12 @@ export const registerPublishAgentCommand = () => {
               // Clean up event listeners
               lifecycle.removeAllListeners('scopedPreRetrieve');
               lifecycle.removeAllListeners('scopedPostRetrieve');
+              // Restore connection after agent interaction
+              try {
+                await agent.restoreConnection();
+              } catch (error) {
+                console.warn('Error restoring connection:', error);
+              }
             }
 
             progress.report({ message: 'Agent published successfully.', increment: 100 });

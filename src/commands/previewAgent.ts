@@ -26,11 +26,12 @@ export const registerPreviewAgentCommand = () => {
         return;
       }
 
-      // Use the unified local agent ID format: "local:<filepath>"
-      const localAgentId = `local:${filePath}`;
+      // Use the file path directly as the agent ID (no 'local:' prefix)
+      // The agent source will be determined from the PreviewableAgent list
+      const agentId = filePath;
 
       // Set the preselected agent ID (this will be picked up when the session starts)
-      provider.setAgentId(localAgentId);
+      provider.setAgentId(agentId);
 
       // Open the Agentforce DX view
       await vscode.commands.executeCommand('workbench.view.extension.agentforce-dx');
@@ -42,12 +43,12 @@ export const registerPreviewAgentCommand = () => {
       }
 
       // Wait for the webview to be ready, then trigger the agent selection
-      // The startSession handler will detect the "local:" prefix and handle compilation
+      // The startSession handler will determine the agent source from the PreviewableAgent list
       setTimeout(() => {
         if (provider.webviewView?.webview) {
           provider.webviewView.webview.postMessage({
             command: 'selectAgent',
-            data: { agentId: localAgentId }
+            data: { agentId: agentId }
           });
         }
       }, 500);
