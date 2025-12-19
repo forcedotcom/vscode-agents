@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
+import { vscodeApi, AgentInfo, AgentSource } from '../../services/vscodeApi.js';
 import { SplitButton } from '../shared/SplitButton.js';
 import { Button } from '../shared/Button.js';
 import './AgentSelector.css';
@@ -153,7 +153,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     if (agentId && agentId !== '') {
       const selectedAgent = agents.find(agent => agent.id === agentId);
 
-      if (selectedAgent?.type === 'published') {
+      if (selectedAgent?.type === AgentSource.PUBLISHED) {
         // Auto-enable live mode for published agents
         setIsLiveMode(true);
       }
@@ -167,16 +167,16 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   };
 
   // Group agents by type
-  const publishedAgents = agents.filter(agent => agent.type === 'published');
-  const scriptAgents = agents.filter(agent => agent.type === 'script');
+  const publishedAgents = agents.filter(agent => agent.type === AgentSource.PUBLISHED);
+  const scriptAgents = agents.filter(agent => agent.type === AgentSource.SCRIPT);
 
   // Get the selected agent's details for custom display
   // This will update when agents list loads or selectedAgent changes
   const selectedAgentInfo = selectedAgent ? agents.find(agent => agent.id === selectedAgent) : undefined;
   const selectedAgentType =
-    selectedAgentInfo?.type === 'script'
+    selectedAgentInfo?.type === AgentSource.SCRIPT
       ? 'Agent Script'
-      : selectedAgentInfo?.type === 'published'
+      : selectedAgentInfo?.type === AgentSource.PUBLISHED
         ? 'Published'
         : null;
 
@@ -252,7 +252,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         )}
       </div>
       {selectedAgent &&
-        (selectedAgentInfo?.type === 'published' ? (
+        (selectedAgentInfo?.type === AgentSource.PUBLISHED ? (
           <Button
             appearance="primary"
             size="small"

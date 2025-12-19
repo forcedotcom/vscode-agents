@@ -21,7 +21,7 @@ import { CoreExtensionService } from './services/coreExtensionService';
 import type { AgentTestGroupNode, TestNode } from './types';
 import type { TelemetryService } from './types/TelemetryService';
 import { AgentCombinedViewProvider } from './views/agentCombinedViewProvider';
-import { Agent } from '@salesforce/agents';
+import { Agent, AgentSource } from '@salesforce/agents';
 import { SfProject } from '@salesforce/core';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
@@ -222,14 +222,14 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
     try {
       const availableAgents = await provider.getAgentsForCommandPalette();
-      const scriptAgents = availableAgents.filter(agent => agent.source === 'script');
-      const publishedAgents = availableAgents.filter(agent => agent.source === 'org');
+      const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT);
+      const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED);
 
       const allAgents: Array<{
         label: string;
         description?: string;
         id?: string;
-        source?: 'org' | 'script';
+        source?: AgentSource;
         kind?: vscode.QuickPickItemKind;
       }> = [];
 
@@ -291,7 +291,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
               const mappedAgents = allAgents.map(agent => ({
                 name: agent.name,
                 id: agent.id,
-                type: agent.source === 'org' ? 'published' : 'script'
+                type: agent.source
               }));
 
               provider.webviewView.webview.postMessage({
@@ -338,14 +338,14 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
         try {
           const availableAgents = await provider.getAgentsForCommandPalette();
-          const scriptAgents = availableAgents.filter(agent => agent.source === 'script');
-          const publishedAgents = availableAgents.filter(agent => agent.source === 'org');
+          const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT);
+          const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED);
 
           const allAgents: Array<{
             label: string;
             description?: string;
             id?: string;
-            source?: 'org' | 'script';
+            source?: AgentSource;
             kind?: vscode.QuickPickItemKind;
           }> = [];
 
