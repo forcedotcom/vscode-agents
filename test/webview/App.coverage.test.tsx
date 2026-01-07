@@ -99,10 +99,7 @@ describe('App Coverage Tests', () => {
       return () => messageHandlers.delete(command);
     });
 
-    mockVscodeApi.onClientAppReady.mockImplementation((handler: Function) => {
-      messageHandlers.set('clientAppReady', handler);
-      return () => messageHandlers.delete('clientAppReady');
-    });
+    // onClientAppReady removed - functionality was removed
   });
 
   afterEach(() => {

@@ -31,8 +31,6 @@ const mockVscodeApi = {
   clearChat: jest.fn(),
   clearMessages: jest.fn(),
   getConfiguration: jest.fn(),
-  selectClientApp: jest.fn(),
-  onClientAppReady: jest.fn(),
   executeCommand: jest.fn(),
   setSelectedAgentId: jest.fn(),
   loadAgentHistory: jest.fn(),
@@ -85,7 +83,7 @@ jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
 });
 
 jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
-  return function MockAgentSelector({ selectedAgent, onAgentChange, onClientAppRequired, onClientAppSelection }: any) {
+  return function MockAgentSelector({ selectedAgent, onAgentChange }: any) {
     return (
       <div data-testid="agent-selector">
         <select data-testid="agent-select" value={selectedAgent} onChange={e => onAgentChange(e.target.value)}>
@@ -93,15 +91,6 @@ jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
           <option value="agent1">Agent 1</option>
           <option value="agent2">Agent 2</option>
         </select>
-        <button data-testid="trigger-client-app-required" onClick={() => onClientAppRequired({})}>
-          Require Client App
-        </button>
-        <button
-          data-testid="trigger-client-app-selection"
-          onClick={() => onClientAppSelection({ clientApps: [{ name: 'App1', clientId: '123' }] })}
-        >
-          Select Client App
-        </button>
       </div>
     );
   };
@@ -149,10 +138,7 @@ describe('App', () => {
       return () => messageHandlers.delete(command);
     });
 
-    mockVscodeApi.onClientAppReady.mockImplementation((handler: Function) => {
-      messageHandlers.set('clientAppReady', handler);
-      return () => messageHandlers.delete('clientAppReady');
-    });
+    // onClientAppReady removed - functionality was removed
   });
 
   afterEach(() => {
@@ -375,27 +361,7 @@ describe('App', () => {
     });
   });
 
-  describe('Client App State', () => {
-    it('should handle client app required state', async () => {
-      render(<App />);
-
-      const button = screen.getByTestId('trigger-client-app-required');
-      fireEvent.click(button);
-
-      // Client app state is passed to AgentPreview
-      expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
-    });
-
-    it('should handle client app selection', async () => {
-      render(<App />);
-
-      const button = screen.getByTestId('trigger-client-app-selection');
-      fireEvent.click(button);
-
-      // Client app list is passed to AgentPreview
-      expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
-    });
-  });
+  // Client App State tests removed - functionality was removed
 
   describe('Session Transition State', () => {
     it('should clear displayed agent when no target agent', async () => {

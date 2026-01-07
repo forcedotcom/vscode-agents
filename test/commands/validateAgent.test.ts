@@ -3,7 +3,7 @@ const vscode = require('vscode') as typeof import('vscode');
 import { Commands } from '../../src/enums/commands';
 import { Agent, type CompilationError } from '@salesforce/agents';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
-import { SfError } from '@salesforce/core';
+import { SfError, SfProject } from '@salesforce/core';
 
 vscode.DiagnosticSeverity = {
   Error: 0,
@@ -39,7 +39,8 @@ describe('validateAgent', () => {
   let errorMessageSpy: jest.SpyInstance;
   let executeCommandSpy: jest.SpyInstance;
   let readFileSpy: jest.SpyInstance;
-  let compileAgentScriptSpy: jest.SpyInstance;
+  let mockAgentInstance: any;
+  let agentInitSpy: jest.SpyInstance;
   let diagnosticCollectionMock: any;
 
   const fakeTelemetryInstance: any = {
@@ -64,6 +65,9 @@ describe('validateAgent', () => {
     jest.spyOn(CoreExtensionService, 'getTelemetryService').mockReturnValue(fakeTelemetryInstance);
     jest.spyOn(CoreExtensionService, 'getChannelService').mockReturnValue(fakeChannelService);
     jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue(fakeConnection);
+    
+    // Mock SfProject
+    jest.spyOn(SfProject, 'getInstance').mockReturnValue({ getPath: () => '/test' } as any);
 
     // Mock diagnostic collection
     diagnosticCollectionMock = {
@@ -110,8 +114,12 @@ describe('validateAgent', () => {
         }) as any
     );
 
-    // Mock Agent.compileAgentScript
-    compileAgentScriptSpy = jest.spyOn(Agent, 'compileAgentScript');
+    // Mock Agent.init to return an agent instance with compile() method
+    mockAgentInstance = {
+      compile: jest.fn(),
+      restoreConnection: jest.fn().mockResolvedValue(undefined)
+    };
+    agentInitSpy = jest.spyOn(Agent, 'init').mockResolvedValue(mockAgentInstance as any);
 
     // Initialize diagnostic collection once for all tests
     const mockContext = {
@@ -153,7 +161,7 @@ describe('validateAgent', () => {
 
     it('validates successfully and clears diagnostics', async () => {
       // Mock successful compilation
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'success',
         compiledArtifact: {},
         errors: [],
@@ -166,7 +174,8 @@ describe('validateAgent', () => {
       registerValidateAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      expect(compileAgentScriptSpy).toHaveBeenCalledWith(fakeConnection, 'agent Test { }');
+      expect(Agent.init).toHaveBeenCalled();
+      expect(mockAgentInstance.compile).toHaveBeenCalled();
       expect(diagnosticCollectionMock.clear).toHaveBeenCalled();
       expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.validateAgent);
     });
@@ -191,7 +200,7 @@ describe('validateAgent', () => {
         }
       ];
 
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'failure',
         errors: mockDiagnostics,
         compiledArtifact: undefined,
@@ -231,7 +240,7 @@ describe('validateAgent', () => {
 
     it('handles unexpected errors', async () => {
       // Mock unexpected error
-      compileAgentScriptSpy.mockRejectedValue(new Error('Connection failed'));
+      mockAgentInstance.compile.mockRejectedValue(new Error('Connection failed'));
 
       const mockUri = vscode.Uri.file('/test/agent.agent');
 
@@ -245,7 +254,7 @@ describe('validateAgent', () => {
 
     it('displays error message without "Error:" prefix', async () => {
       // Mock unexpected error
-      compileAgentScriptSpy.mockRejectedValue(new Error('Connection failed'));
+      mockAgentInstance.compile.mockRejectedValue(new Error('Connection failed'));
 
       const mockUri = vscode.Uri.file('/test/agent.agent');
 
@@ -262,7 +271,7 @@ describe('validateAgent', () => {
     it('displays "Something went wrong" for empty error message', async () => {
       // Mock error with empty message
       const emptyError = new Error('');
-      compileAgentScriptSpy.mockRejectedValue(emptyError);
+      mockAgentInstance.compile.mockRejectedValue(emptyError);
 
       const mockUri = vscode.Uri.file('/test/agent.agent');
 
@@ -297,7 +306,7 @@ describe('validateAgent', () => {
 
     it('uses active text editor when no URI is provided', async () => {
       // Mock successful compilation
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'success',
         compiledArtifact: {},
         errors: [],
@@ -320,7 +329,8 @@ describe('validateAgent', () => {
 
       expect(progressSpy).toHaveBeenCalled();
       expect(readFileSpy).toHaveBeenCalled();
-      expect(compileAgentScriptSpy).toHaveBeenCalled();
+      expect(Agent.init).toHaveBeenCalled();
+      expect(mockAgentInstance.compile).toHaveBeenCalled();
     });
   });
 });

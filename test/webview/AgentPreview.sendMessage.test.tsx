@@ -9,8 +9,6 @@ const mockVscodeApi = {
   endSession: jest.fn(),
   sendChatMessage: jest.fn(),
   clearMessages: jest.fn(),
-  selectClientApp: jest.fn(),
-  onClientAppReady: jest.fn(),
   executeCommand: jest.fn(),
   sendConversationExport: jest.fn()
 };
@@ -44,7 +42,6 @@ describe('AgentPreview send message guard', () => {
       return () => messageHandlers.delete(command);
     });
 
-    mockVscodeApi.onClientAppReady.mockImplementation(() => () => {});
   });
 
   const renderPreview = () =>
@@ -52,10 +49,6 @@ describe('AgentPreview send message guard', () => {
       <AgentPreview
         selectedAgentId="agent-one"
         pendingAgentId={null}
-        clientAppState="none"
-        availableClientApps={[]}
-        onClientAppStateChange={jest.fn()}
-        onAvailableClientAppsChange={jest.fn()}
         isSessionTransitioning={false}
         onSessionTransitionSettled={jest.fn()}
         isLiveMode={false}

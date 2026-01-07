@@ -131,21 +131,23 @@ describe('activateAgent command', () => {
       getConnection: () => fakeConnection
     });
     const activateMock = jest.fn().mockResolvedValue(undefined);
-    const AgentMock = Agent as unknown as jest.Mock;
-    AgentMock.mockImplementation(() => ({
-      activate: activateMock
-    }));
+    const restoreConnectionMock = jest.fn().mockResolvedValue(undefined);
+    (Agent.init as jest.Mock) = jest.fn().mockResolvedValue({
+      activate: activateMock,
+      restoreConnection: restoreConnectionMock
+    });
 
     await handler(uri);
 
     expect(channelMock.showChannelOutput).toHaveBeenCalled();
     expect(withProgressSpy).toHaveBeenCalled();
-    expect(Agent).toHaveBeenCalledWith({
+    expect(Agent.init).toHaveBeenCalledWith({
       connection: fakeConnection,
       project: { project: 'test' },
-      nameOrId: 'SampleAgent'
+      apiNameOrId: 'SampleAgent'
     });
     expect(activateMock).toHaveBeenCalled();
+    expect(restoreConnectionMock).toHaveBeenCalled();
     expect(infoSpy).toHaveBeenCalledWith('Agent "SampleAgent" was activated successfully.');
   });
 });
