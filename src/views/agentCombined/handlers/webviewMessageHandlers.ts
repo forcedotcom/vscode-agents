@@ -57,7 +57,18 @@ export class WebviewMessageHandlers {
       setSelectedAgentId: async msg => await this.handleSetSelectedAgentId(msg),
       setLiveMode: async msg => await this.handleSetLiveMode(msg),
       getInitialLiveMode: async () => await this.handleGetInitialLiveMode(),
-      conversationExportReady: async msg => await this.handleConversationExportReady(msg)
+      conversationExportReady: async msg => await this.handleConversationExportReady(msg),
+      // Test-specific commands for integration tests
+      clearMessages: async () => {
+        // Clear messages in the webview - no-op on extension side
+        this.messageSender.sendClearMessages();
+      },
+      testTraceDataReceived: async () => {
+        // Test command - no-op
+      },
+      testTraceHistoryReceived: async () => {
+        // Test command - no-op
+      }
     };
 
     const handler = commandHandlers[command];

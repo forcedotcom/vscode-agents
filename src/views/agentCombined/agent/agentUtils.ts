@@ -63,9 +63,11 @@ export async function getAgentSource(agentId: string, agents?: PreviewableAgent[
   }
 
   // If not found, check if agentId is a file path that exists
-  if (agentId.includes(path.sep) || agentId.endsWith('.agent')) {
+  // Strip "local:" prefix if present
+  const normalizedAgentId = agentId.startsWith('local:') ? agentId.substring(6) : agentId;
+  if (normalizedAgentId.includes(path.sep) || normalizedAgentId.endsWith('.agent')) {
     try {
-      await vscode.workspace.fs.stat(vscode.Uri.file(agentId));
+      await vscode.workspace.fs.stat(vscode.Uri.file(normalizedAgentId));
       return AgentSource.SCRIPT;
     } catch {
       // File doesn't exist, but still looks like a path - treat as script

@@ -94,13 +94,6 @@ export const registerDeactivateAgentCommand = () => {
 
           await agent.deactivate();
 
-          // Restore connection after agent interaction
-          try {
-            await agent.restoreConnection();
-          } catch (error) {
-            console.warn('Error restoring connection:', error);
-          }
-
           channelService.appendLine(`Successfully deactivated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
         }

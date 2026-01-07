@@ -51,34 +51,52 @@ export class AgentInitializer {
     // filePath might be either:
     // 1. A file path to a .agent file
     // 2. A directory path (aabDirectory) - in which case we need to find the .agent file
+    // 3. A path with a "local:" prefix (from Agent.listPreviewable) - strip the prefix
     let aabDirectory: string;
+    
+    // Strip "local:" prefix if present (agents library may return paths with this prefix)
+    const normalizedPath = filePath.startsWith('local:') ? filePath.substring(6) : filePath;
     
     try {
       // Check if filePath is a directory
-      const stats = await fs.stat(filePath);
+      const stats = await fs.stat(normalizedPath);
       if (stats.isDirectory()) {
         // It's already a directory, verify it contains a .agent file
-        const files = await fs.readdir(filePath);
+        const files = await fs.readdir(normalizedPath);
         const agentFile = files.find(f => f.endsWith('.agent'));
         if (!agentFile) {
-          throw new Error(`Directory ${filePath} does not contain a .agent file`);
+          throw new Error(`Directory ${normalizedPath} does not contain a .agent file`);
         }
-        aabDirectory = path.resolve(filePath);
+        aabDirectory = path.resolve(normalizedPath);
+      } else if (normalizedPath.endsWith('.agent')) {
+        // It's a .agent file, the bundle directory is the parent directory
+        aabDirectory = path.resolve(path.dirname(normalizedPath));
+        // Verify the directory contains the .agent file
+        const files = await fs.readdir(aabDirectory);
+        const agentFile = files.find(f => f.endsWith('.agent'));
+        if (!agentFile) {
+          throw new Error(`Directory ${aabDirectory} does not contain a .agent file`);
+        }
       } else {
         // It's a file path, use findAuthoringBundle to get the directory
-        const authoringBundle = findAuthoringBundle(project.getPath(), filePath);
+        const authoringBundle = findAuthoringBundle(project.getPath(), normalizedPath);
         if (!authoringBundle) {
-          throw new Error(`Could not find authoring bundle for file: ${filePath}`);
+          throw new Error(`Could not find authoring bundle for file: ${normalizedPath}`);
         }
         aabDirectory = path.resolve(authoringBundle);
       }
     } catch (error) {
-      // If stat fails, try findAuthoringBundle as fallback
-      const authoringBundle = findAuthoringBundle(project.getPath(), filePath);
-      if (!authoringBundle) {
-        throw new Error(`Could not find authoring bundle for file: ${filePath}. ${error instanceof Error ? error.message : String(error)}`);
+      // If stat fails or it's a .agent file, try using the directory directly
+      if (normalizedPath.endsWith('.agent')) {
+        aabDirectory = path.resolve(path.dirname(normalizedPath));
+      } else {
+        // Try findAuthoringBundle as fallback
+        const authoringBundle = findAuthoringBundle(project.getPath(), normalizedPath);
+        if (!authoringBundle) {
+          throw new Error(`Could not find authoring bundle for file: ${normalizedPath}. ${error instanceof Error ? error.message : String(error)}`);
+        }
+        aabDirectory = path.resolve(authoringBundle);
       }
-      aabDirectory = path.resolve(authoringBundle);
     }
     const agent = await Agent.init({
       connection: conn,
