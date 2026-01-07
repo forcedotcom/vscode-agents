@@ -6,8 +6,6 @@ import type { ApexLog } from '@salesforce/types/tooling';
 import { Lifecycle, SfError, SfProject } from '@salesforce/core';
 import type { ChannelService } from '../types/ChannelService';
 import {
-  appendTraceHistoryEntry,
-  clearTraceHistory,
   readTraceHistoryEntries,
   type TraceHistoryEntry,
   writeTraceEntryToFile
@@ -230,11 +228,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         await this.agentInstance.preview.end(this.sessionId, 'UserRequest');
       }
       // Restore connection before clearing agent references
-      try {
-        await this.agentInstance.restoreConnection();
-      } catch (error) {
-        console.warn('Error restoring connection:', error);
-      }
+        try {
+          await this.agentInstance.restoreConnection();
+        } catch (error) {
+          console.warn('Error restoring connection:', error);
+        }
       this.agentInstance = undefined;
       this.sessionId = Date.now().toString();
       this.currentAgentName = undefined;
@@ -328,8 +326,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
       // Load trace history if available
       if (this.currentAgentId && this.currentAgentSource) {
-        const storageKey = this.getAgentStorageKey(this.currentAgentId, this.currentAgentSource);
-        await clearTraceHistory(storageKey);
+      // Library automatically saves traces/conversation - just load and display
         await this.loadAndSendTraceHistory(this.currentAgentId, this.currentAgentSource, this.webviewView);
       }
 
@@ -533,8 +530,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       ensureActive();
       this.sessionId = session.sessionId;
 
-      const storageKey = this.getAgentStorageKey(agentId, agentSource);
-      await clearTraceHistory(storageKey);
+      // Library automatically saves traces/conversation - just load and display
       await this.loadAndSendTraceHistory(agentId, agentSource, this.webviewView);
       await this.setSessionActive(true);
       ensureActive();
@@ -712,7 +708,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         return AgentSource.PUBLISHED;
       }
     }
-
+    
     // First, try exact match by ID
     const agent = agentList.find(a => a.id === agentId);
     if (agent) {
@@ -742,7 +738,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     // Check if it's a valid Bot ID format (starts with 0X and is 15 or 18 chars)
     // If it matches Bot ID format, it's definitely a published agent
     if (agentId.startsWith('0X') && (agentId.length === 15 || agentId.length === 18)) {
-      return AgentSource.PUBLISHED;
+    return AgentSource.PUBLISHED;
     }
 
     // Default to SCRIPT for unknown formats (more likely to be a script agent name/path)
@@ -773,6 +769,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   /**
    * Load conversation history for an agent and send it to the webview
    * Uses readTranscriptEntries from @salesforce/agents library
+   * Note: The agents library automatically saves conversation history to ~/.sfdx/agents
    */
   private async loadAndSendConversationHistory(
     agentId: string,
@@ -783,9 +780,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       const agentName = this.getAgentStorageKey(agentId, agentSource);
 
       // Use readTranscriptEntries from @salesforce/agents library
-      // This reads from .sfdx/agents/conversations/<agentName>/history.json
-      // For script agents: <name>.agent
-      // For published agents: <agentId> (Bot ID)
+      // This reads conversation history that was automatically saved by the library
+      // Reads from ~/.sfdx/agents/conversations/<agentName>/history.json
       const transcriptEntries = await readTranscriptEntries(agentName);
 
       if (transcriptEntries && transcriptEntries.length > 0) {
@@ -820,6 +816,11 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     return false;
   }
 
+  /**
+   * Load trace history for an agent and send it to the webview
+   * Note: The agents library automatically saves traces to ~/.sfdx/agents
+   * This method reads the trace history that was saved by the library
+   */
   private async loadAndSendTraceHistory(
     agentId: string,
     agentSource: AgentSource,
@@ -827,11 +828,40 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   ): Promise<void> {
     try {
       const agentStorageKey = this.getAgentStorageKey(agentId, agentSource);
+      // Read trace history that was automatically saved by the agents library
       const entries = await readTraceHistoryEntries(agentStorageKey);
+      
+      // Send trace history to populate the history list
       webviewView.webview.postMessage({
         command: 'traceHistory',
         data: { agentId, entries }
       });
+
+      // If we have entries and a current planId, also send the current trace data
+      // This ensures the tracer shows the latest trace immediately
+      if (entries.length > 0 && this.currentPlanId) {
+        const currentEntry = entries.find(entry => entry.planId === this.currentPlanId);
+        if (currentEntry) {
+          webviewView.webview.postMessage({
+            command: 'traceData',
+            data: currentEntry.trace
+          });
+        } else {
+          // If no exact match, send the latest entry
+          const latestEntry = entries[entries.length - 1];
+          webviewView.webview.postMessage({
+            command: 'traceData',
+            data: latestEntry.trace
+          });
+        }
+      } else if (entries.length > 0) {
+        // If no current planId but we have entries, send the latest
+        const latestEntry = entries[entries.length - 1];
+        webviewView.webview.postMessage({
+          command: 'traceData',
+          data: latestEntry.trace
+        });
+      }
     } catch (error) {
       console.error('Could not load trace history:', error);
       webviewView.webview.postMessage({
@@ -841,29 +871,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async persistTraceHistory(traceData: unknown): Promise<void> {
-    if (!this.currentAgentId || !this.currentAgentSource) {
-      return;
-    }
-
-    const agentStorageKey = this.getAgentStorageKey(this.currentAgentId, this.currentAgentSource);
-    const entry: TraceHistoryEntry = {
-      storageKey: agentStorageKey,
-      agentId: this.currentAgentId,
-      sessionId: (traceData as { sessionId?: string })?.sessionId ?? this.sessionId ?? '',
-      planId: (traceData as { planId?: string })?.planId ?? this.currentPlanId ?? '',
-      messageId: this.currentPlanId,
-      userMessage: this.currentUserMessage,
-      timestamp: new Date().toISOString(),
-      trace: traceData
-    };
-
-    try {
-      await appendTraceHistoryEntry(agentStorageKey, entry);
-    } catch (error) {
-      console.error('Could not persist trace history:', error);
-    }
-  }
+  // Note: Trace history is now automatically saved by the agents library
+  // when using agentPreview.send() and agentPreview.start()
+  // No need for manual persistence
 
   private async sendLastStoredTraceData(webviewView: vscode.WebviewView): Promise<boolean> {
     if (!this.currentAgentId || !this.currentAgentSource) {
@@ -1008,9 +1018,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const data = message.data as { agentId?: string; isLiveMode?: boolean } | undefined;
     const agentId = data?.agentId || this.currentAgentId;
 
-    if (!agentId || typeof agentId !== 'string') {
-      throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
-    }
+            if (!agentId || typeof agentId !== 'string') {
+              throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
+            }
 
     const isLiveMode = data?.isLiveMode ?? false;
     await this.startPreviewSession(agentId, this.currentAgentSource ?? AgentSource.SCRIPT, isLiveMode);
@@ -1032,67 +1042,106 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    */
   private async handleSendChatMessage(message: AgentMessage, webviewView: vscode.WebviewView): Promise<void> {
     if (!this.agentInstance || !this.sessionId) {
-      throw new Error('Session has not been started.');
-    }
+            throw new Error('Session has not been started.');
+          }
 
-    webviewView.webview.postMessage({
-      command: 'messageStarting',
-      data: { message: 'Sending message...' }
-    });
+          webviewView.webview.postMessage({
+            command: 'messageStarting',
+            data: { message: 'Sending message...' }
+          });
 
     const data = message.data as { message?: string } | undefined;
     const userMessage = data?.message;
     if (!userMessage || typeof userMessage !== 'string') {
       throw new Error('Invalid message: expected a string.');
     }
-    this.channelService.appendLine(`Simulation message sent - "${userMessage}"`);
+          this.channelService.appendLine(`Simulation message sent - "${userMessage}"`);
 
     const response = await this.agentInstance.preview.send(userMessage);
 
-    const lastMessage = response.messages?.at(-1);
-    this.currentPlanId = lastMessage?.planId;
-    this.currentUserMessage = userMessage;
+          const lastMessage = response.messages?.at(-1);
+          this.currentPlanId = lastMessage?.planId;
+          this.currentUserMessage = userMessage;
 
-    webviewView.webview.postMessage({
-      command: 'messageSent',
-      data: { content: lastMessage?.message }
-    });
+          webviewView.webview.postMessage({
+            command: 'messageSent',
+            data: { content: lastMessage?.message }
+          });
 
-    this.channelService.appendLine(`Simulation message received - "${lastMessage?.message}"`);
+          this.channelService.appendLine(`Simulation message received - "${lastMessage?.message}"`);
 
-    if (this.isApexDebuggingEnabled && response.apexDebugLog) {
-      try {
-        const logPath = await this.saveApexDebugLog(response.apexDebugLog);
-        if (logPath) {
-          try {
-            this.setupAutoDebugListeners();
-            await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
-          } catch (commandErr) {
-            console.warn('Could not launch Apex Replay Debugger:', commandErr);
+          // Load and send trace data after sending message
+          // The library automatically saves traces, so we read from saved data
+          // Use retry logic since the library saves asynchronously
+          if (this.currentAgentId && this.currentAgentSource) {
+            const loadTraceWithRetry = async (retries = 5, delay = 200) => {
+              for (let i = 0; i < retries; i++) {
+                try {
+                  const agentStorageKey = this.getAgentStorageKey(this.currentAgentId!, this.currentAgentSource!);
+                  const entries = await readTraceHistoryEntries(agentStorageKey);
+                  
+                  // Check if we have a new entry with the current planId
+                  if (entries.length > 0) {
+                    const matchingEntry = entries.find(entry => entry.planId === this.currentPlanId);
+                    if (matchingEntry || entries.length > 0) {
+                      // Found trace data, send it
+                      await this.loadAndSendTraceHistory(this.currentAgentId!, this.currentAgentSource!, webviewView);
+                      return;
+                    }
+                  }
+                  
+                  // If not found yet and we have retries left, wait and try again
+                  if (i < retries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                  }
+                } catch (err) {
+                  console.error(`Error loading trace after message (attempt ${i + 1}):`, err);
+                  if (i < retries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                  }
+                }
+              }
+            };
+            
+            // Start loading trace data (don't await, let it run in background)
+            loadTraceWithRetry().catch(err => {
+              console.error('Error in trace loading retry:', err);
+            });
           }
-        }
-      } catch (err) {
-        console.error('Error handling apex debug log:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        vscode.window.showErrorMessage(`Error processing debug log: ${errorMessage}`);
 
-        webviewView.webview.postMessage({
-          command: 'debugLogError',
-          data: {
-            message: `Error processing debug log: ${errorMessage}`
+          if (this.isApexDebuggingEnabled && response.apexDebugLog) {
+            try {
+              const logPath = await this.saveApexDebugLog(response.apexDebugLog);
+              if (logPath) {
+                try {
+                  this.setupAutoDebugListeners();
+                  await vscode.commands.executeCommand('sf.launch.replay.debugger.logfile.path', logPath);
+                } catch (commandErr) {
+                  console.warn('Could not launch Apex Replay Debugger:', commandErr);
+                }
+              }
+            } catch (err) {
+              console.error('Error handling apex debug log:', err);
+              const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+              vscode.window.showErrorMessage(`Error processing debug log: ${errorMessage}`);
+
+              webviewView.webview.postMessage({
+                command: 'debugLogError',
+                data: {
+                  message: `Error processing debug log: ${errorMessage}`
+                }
+              });
+            }
+          } else if (this.isApexDebuggingEnabled && !response.apexDebugLog) {
+            vscode.window.showInformationMessage('Debug mode is enabled but no Apex was executed.');
           }
-        });
-      }
-    } else if (this.isApexDebuggingEnabled && !response.apexDebugLog) {
-      vscode.window.showInformationMessage('Debug mode is enabled but no Apex was executed.');
-    }
   }
 
   /**
    * Handles the endSession command from the webview
    */
   private async handleEndSession(): Promise<void> {
-    await this.endSession();
+          await this.endSession();
   }
 
   /**
@@ -1101,83 +1150,69 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async handleLoadAgentHistory(message: AgentMessage, webviewView: vscode.WebviewView): Promise<void> {
     const data = message.data as { agentId?: string } | undefined;
     const agentId = data?.agentId;
-    if (agentId && typeof agentId === 'string') {
-      const agentSource = await this.getAgentSource(agentId);
-      await this.showHistoryOrPlaceholder(agentId, agentSource, webviewView);
-    }
+          if (agentId && typeof agentId === 'string') {
+          const agentSource = await this.getAgentSource(agentId);
+            await this.showHistoryOrPlaceholder(agentId, agentSource, webviewView);
+          }
   }
 
   /**
    * Handles the getAvailableAgents command from the webview
    */
   private async handleGetAvailableAgents(webviewView: vscode.WebviewView): Promise<void> {
-    try {
-      const conn = await CoreExtensionService.getDefaultConnection();
-      const project = SfProject.getInstance();
+          try {
+            const conn = await CoreExtensionService.getDefaultConnection();
+            const project = SfProject.getInstance();
 
-      const allAgents = await Agent.listPreviewable(conn, project);
+            const allAgents = await Agent.listPreviewable(conn, project);
 
-      // Map PreviewableAgent to the format expected by webview
+            // Map PreviewableAgent to the format expected by webview
       // Pass agent.source directly (it's already the AgentSource enum value)
-      const mappedAgents = allAgents.map(agent => ({
-        name: agent.name,
-        id: agent.id,
+            const mappedAgents = allAgents.map(agent => ({
+              name: agent.name,
+              id: agent.id,
         type: agent.source
-      }));
+            }));
 
-      webviewView.webview.postMessage({
-        command: 'availableAgents',
-        data: {
-          agents: mappedAgents,
-          selectedAgentId: this.currentAgentId
-        }
-      });
+            webviewView.webview.postMessage({
+              command: 'availableAgents',
+              data: {
+                agents: mappedAgents,
+                selectedAgentId: this.currentAgentId
+              }
+            });
 
-      if (this.currentAgentId) {
-        this.currentAgentId = undefined;
-      }
-    } catch (err) {
-      console.error('Error getting available agents from org:', err);
-      webviewView.webview.postMessage({
-        command: 'availableAgents',
-        data: []
-      });
-    }
+            if (this.currentAgentId) {
+              this.currentAgentId = undefined;
+            }
+          } catch (err) {
+            console.error('Error getting available agents from org:', err);
+            webviewView.webview.postMessage({
+              command: 'availableAgents',
+              data: []
+            });
+          }
   }
 
   /**
    * Handles the getTraceData command from the webview
+   * Uses the agents library's automatically saved trace history
    */
   private async handleGetTraceData(webviewView: vscode.WebviewView): Promise<void> {
     try {
-      const emptyTraceData = { plan: [], planId: '', sessionId: '' };
-
-      if (!this.agentInstance || !this.sessionId) {
-        const restored = await this.sendLastStoredTraceData(webviewView);
-        if (!restored) {
-          webviewView.webview.postMessage({
-            command: 'traceData',
-            data: emptyTraceData
-          });
-        }
-        return;
-      }
-
-      const isAgentSimulate = this.currentAgentSource === AgentSource.SCRIPT;
-      if (!isAgentSimulate || !this.currentPlanId) {
-        const restored = await this.sendLastStoredTraceData(webviewView);
-        if (!restored) {
-          webviewView.webview.postMessage({
-            command: 'traceData',
-            data: emptyTraceData
-          });
-        }
-        return;
-      }
-
+      // Always load trace history from the library's saved data
+      // The library automatically saves traces when messages are sent
       if (this.currentAgentId && this.currentAgentSource) {
         await this.loadAndSendTraceHistory(this.currentAgentId, this.currentAgentSource, webviewView);
-      }
+              return;
+            }
+
+      // If no agent is selected, send empty trace data
+      const emptyTraceData = { plan: [], planId: '', sessionId: '' };
+                webviewView.webview.postMessage({
+                  command: 'traceData',
+                  data: emptyTraceData
+                });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       await this.postErrorMessage(webviewView, errorMessage);
@@ -1196,16 +1231,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Handles the getConfiguration command from the webview
    */
   private async handleGetConfiguration(message: AgentMessage, webviewView: vscode.WebviewView): Promise<void> {
-    const config = vscode.workspace.getConfiguration();
+          const config = vscode.workspace.getConfiguration();
     const data = message.data as { section?: string } | undefined;
     const section = data?.section;
-    if (section) {
-      const value = config.get(section);
-      webviewView.webview.postMessage({
-        command: 'configuration',
-        data: { section, value }
-      });
-    }
+          if (section) {
+            const value = config.get(section);
+            webviewView.webview.postMessage({
+              command: 'configuration',
+              data: { section, value }
+            });
+          }
   }
 
   /**
@@ -1214,9 +1249,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async handleExecuteCommand(message: AgentMessage): Promise<void> {
     const data = message.data as { commandId?: string } | undefined;
     const commandId = data?.commandId;
-    if (commandId && typeof commandId === 'string') {
-      await vscode.commands.executeCommand(commandId);
-    }
+          if (commandId && typeof commandId === 'string') {
+            await vscode.commands.executeCommand(commandId);
+          }
   }
 
   /**
@@ -1225,18 +1260,18 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async handleSetSelectedAgentId(message: AgentMessage): Promise<void> {
     const data = message.data as { agentId?: string } | undefined;
     const agentId = data?.agentId;
-    if (agentId && typeof agentId === 'string' && agentId !== '') {
-      this.currentAgentId = agentId;
-      this.currentAgentSource = await this.getAgentSource(agentId);
-      await this.setAgentSelected(true);
-      await this.setResetAgentViewAvailable(false);
-      await this.setSessionErrorState(false);
-      await this.setConversationDataAvailable(false);
-    } else {
-      this.currentAgentId = undefined;
-      this.currentAgentSource = undefined;
-      await this.setAgentSelected(false);
-    }
+          if (agentId && typeof agentId === 'string' && agentId !== '') {
+          this.currentAgentId = agentId;
+          this.currentAgentSource = await this.getAgentSource(agentId);
+            await this.setAgentSelected(true);
+            await this.setResetAgentViewAvailable(false);
+            await this.setSessionErrorState(false);
+            await this.setConversationDataAvailable(false);
+          } else {
+            this.currentAgentId = undefined;
+            this.currentAgentSource = undefined;
+            await this.setAgentSelected(false);
+          }
   }
 
   /**
@@ -1245,19 +1280,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private async handleSetLiveMode(message: AgentMessage): Promise<void> {
     const data = message.data as { isLiveMode?: boolean } | undefined;
     const isLiveMode = data?.isLiveMode;
-    if (typeof isLiveMode === 'boolean') {
-      await this.setLiveMode(isLiveMode);
-    }
+          if (typeof isLiveMode === 'boolean') {
+            await this.setLiveMode(isLiveMode);
+          }
   }
 
   /**
    * Handles the getInitialLiveMode command from the webview
    */
   private async handleGetInitialLiveMode(webviewView: vscode.WebviewView): Promise<void> {
-    webviewView.webview.postMessage({
-      command: 'setLiveMode',
-      data: { isLiveMode: this.isLiveMode }
-    });
+          webviewView.webview.postMessage({
+            command: 'setLiveMode',
+            data: { isLiveMode: this.isLiveMode }
+          });
   }
 
   /**
@@ -1267,12 +1302,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const data = message.data as { content?: string; fileName?: string } | undefined;
     const markdown = data?.content;
     const fileName = data?.fileName;
-    if (typeof markdown === 'string' && markdown.trim() !== '') {
-      await this.saveConversationExport(markdown, fileName);
-    } else {
-      vscode.window.showWarningMessage("Conversation couldn't be exported.");
-    }
-  }
+          if (typeof markdown === 'string' && markdown.trim() !== '') {
+            await this.saveConversationExport(markdown, fileName);
+          } else {
+            vscode.window.showWarningMessage("Conversation couldn't be exported.");
+          }
+        }
 
   /**
    * Routes webview messages to the appropriate handler method
@@ -1313,38 +1348,38 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Handles errors from webview message processing
    */
   private async handleWebviewError(err: unknown, webviewView: vscode.WebviewView): Promise<void> {
-    console.error('AgentCombinedViewProvider Error:', err);
-    let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-    this.channelService.appendLine(`Error: ${errorMessage}`);
-    this.channelService.appendLine('---------------------');
+        console.error('AgentCombinedViewProvider Error:', err);
+        let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        this.channelService.appendLine(`Error: ${errorMessage}`);
+        this.channelService.appendLine('---------------------');
 
-    this.pendingStartAgentId = undefined;
-    this.pendingStartAgentSource = undefined;
+        this.pendingStartAgentId = undefined;
+        this.pendingStartAgentSource = undefined;
 
     if (this.agentInstance || this.isSessionActive) {
       this.agentInstance = undefined;
-      this.sessionId = Date.now().toString();
-      this.currentAgentName = undefined;
-      this.currentPlanId = undefined;
-      await this.setSessionActive(false);
-      await this.setSessionStarting(false);
-    }
+          this.sessionId = Date.now().toString();
+          this.currentAgentName = undefined;
+          this.currentPlanId = undefined;
+          await this.setSessionActive(false);
+          await this.setSessionStarting(false);
+        }
 
-    // Check for specific agent deactivation error
-    if (
-      errorMessage.includes('404') &&
-      errorMessage.includes('NOT_FOUND') &&
-      errorMessage.includes('No valid version available')
-    ) {
-      errorMessage =
-        'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
+        // Check for specific agent deactivation error
+        if (
+          errorMessage.includes('404') &&
+          errorMessage.includes('NOT_FOUND') &&
+          errorMessage.includes('No valid version available')
+        ) {
+          errorMessage =
+            'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
     } else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
       errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
     } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
-      errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
-    }
+          errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
+        }
 
-    await this.postErrorMessage(webviewView, errorMessage);
+        await this.postErrorMessage(webviewView, errorMessage);
   }
 
   public resolveWebviewView(
