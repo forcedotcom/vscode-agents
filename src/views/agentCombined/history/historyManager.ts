@@ -50,29 +50,69 @@ export class HistoryManager {
   }
 
   /**
+   * Extracts user message from trace data
+   */
+  private extractUserMessageFromTrace(trace: unknown): string | undefined {
+    try {
+      // Trace structure: { plan: Array<{ type: string, message?: string, ... }> }
+      const traceObj = trace as { plan?: Array<{ type?: string; message?: string; stepType?: string }> };
+      if (traceObj?.plan && Array.isArray(traceObj.plan)) {
+        // Find the first UserInputStep which contains the user message
+        const userInputStep = traceObj.plan.find(
+          step => step.type === 'UserInputStep' || step.stepType === 'UserInputStep'
+        );
+        if (userInputStep?.message) {
+          return userInputStep.message;
+        }
+      }
+    } catch (error) {
+      console.error('Error extracting user message from trace:', error);
+    }
+    return undefined;
+  }
+
+  /**
    * Load trace history for an agent and send it to the webview
+   * Only shows traces from the current session
    */
   async loadAndSendTraceHistory(agentId: string, agentSource: AgentSource): Promise<void> {
     try {
       const agentStorageKey = getAgentStorageKey(agentId, agentSource);
-      const entries = await readTraceHistoryEntries(agentStorageKey);
+      const allEntries = await readTraceHistoryEntries(agentStorageKey);
+
+      // Filter to only show traces from the current session
+      const currentSessionId = this.state.sessionId;
+      const entries = currentSessionId
+        ? allEntries.filter(entry => entry.sessionId === currentSessionId)
+        : [];
+
+      // Extract user messages from trace data if not already set
+      const entriesWithMessages = entries.map(entry => {
+        if (!entry.userMessage && entry.trace) {
+          const userMessage = this.extractUserMessageFromTrace(entry.trace);
+          if (userMessage) {
+            return { ...entry, userMessage };
+          }
+        }
+        return entry;
+      });
 
       // Send trace history to populate the history list
-      this.messageSender.sendTraceHistory(agentId, entries);
+      this.messageSender.sendTraceHistory(agentId, entriesWithMessages);
 
       // If we have entries and a current planId, also send the current trace data
-      if (entries.length > 0 && this.state.currentPlanId) {
-        const currentEntry = entries.find(entry => entry.planId === this.state.currentPlanId);
+      if (entriesWithMessages.length > 0 && this.state.currentPlanId) {
+        const currentEntry = entriesWithMessages.find(entry => entry.planId === this.state.currentPlanId);
         if (currentEntry) {
           this.messageSender.sendTraceData(currentEntry.trace);
         } else {
           // If no exact match, send the latest entry
-          const latestEntry = entries[entries.length - 1];
+          const latestEntry = entriesWithMessages[entriesWithMessages.length - 1];
           this.messageSender.sendTraceData(latestEntry.trace);
         }
-      } else if (entries.length > 0) {
+      } else if (entriesWithMessages.length > 0) {
         // If no current planId but we have entries, send the latest
-        const latestEntry = entries[entries.length - 1];
+        const latestEntry = entriesWithMessages[entriesWithMessages.length - 1];
         this.messageSender.sendTraceData(latestEntry.trace);
       }
     } catch (error) {
