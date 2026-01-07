@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { registerCreateAiAuthoringBundleCommand } from '../../src/commands/createAiAuthoringBundle';
 import { Commands } from '../../src/enums/commands';
-import { Agent } from '@salesforce/agents';
+import { ScriptAgent } from '@salesforce/agents';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { SfProject, generateApiName } from '@salesforce/core';
 
@@ -129,8 +129,8 @@ describe('createAiAuthoringBundle', () => {
         }) as any
     );
 
-    // Mock Agent.createAgentScript
-    createAgentScriptSpy = jest.spyOn(Agent, 'createAuthoringBundle');
+    // Mock ScriptAgent.createAuthoringBundle
+    createAgentScriptSpy = jest.spyOn(ScriptAgent, 'createAuthoringBundle');
   });
 
   afterEach(() => {
@@ -171,7 +171,6 @@ describe('createAiAuthoringBundle', () => {
     // Verify agent script was created
     expect(createAgentScriptSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        connection: fakeConnection,
         agentSpec: expect.objectContaining({
           name: 'My Test Agent',
           developerName: 'MyTestAgent',
@@ -179,7 +178,8 @@ describe('createAiAuthoringBundle', () => {
           role: 'Test Role'
         }),
         project: mockProject,
-        bundleApiName: 'MyTestAgent'
+        bundleApiName: 'MyTestAgent',
+        outputDir: expect.any(String)
       })
     );
   });
@@ -394,7 +394,6 @@ describe('createAiAuthoringBundle', () => {
     // Verify createAuthoringBundle was called with correct parameters
     expect(createAgentScriptSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        connection: fakeConnection,
         agentSpec: expect.objectContaining({
           name: 'Test Agent',
           developerName: 'TestAgent',
@@ -402,6 +401,7 @@ describe('createAiAuthoringBundle', () => {
           role: 'TestRole'
         }),
         project: mockProject,
+        outputDir: expect.any(String),
         bundleApiName: 'TestAgent'
       })
     );

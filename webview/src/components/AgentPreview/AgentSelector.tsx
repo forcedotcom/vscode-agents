@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
+import { vscodeApi, AgentInfo, AgentSource } from '../../services/vscodeApi.js';
 import { SplitButton } from '../shared/SplitButton.js';
 import { Button } from '../shared/Button.js';
 import './AgentSelector.css';
 
 interface AgentSelectorProps {
-  onClientAppRequired?: (data: any) => void;
-  onClientAppSelection?: (data: any) => void;
   selectedAgent: string;
   onAgentChange: (agentId: string) => void;
   isSessionActive?: boolean;
@@ -47,8 +45,6 @@ export const handleStartClickImpl = ({
 };
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({
-  onClientAppRequired,
-  onClientAppSelection,
   selectedAgent,
   onAgentChange,
   isSessionActive = false,
@@ -109,12 +105,20 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         } else {
           if (data.agents && data.agents.length > 0) {
             setAgents(data.agents);
+            // If there's a selectedAgentId in the message, use it
+            // Otherwise, if we already have a selectedAgent, try to keep it if it exists in the new list
             if (data.selectedAgentId) {
               const agentExists = data.agents.some(agent => agent.id === data.selectedAgentId);
               if (agentExists) {
                 onAgentChange(data.selectedAgentId);
                 vscodeApi.clearMessages();
                 vscodeApi.loadAgentHistory(data.selectedAgentId);
+              }
+            } else if (selectedAgent) {
+              // If we have a selected agent but it's not in the new list, clear the selection
+              const agentExists = data.agents.some(agent => agent.id === selectedAgent);
+              if (!agentExists) {
+                onAgentChange('');
               }
             }
           } else {
@@ -123,16 +127,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         }
       }
     );
-
-    const disposeClientAppRequired = vscodeApi.onMessage('clientAppRequired', data => {
-      setIsLoading(false);
-      onClientAppRequired?.(data);
-    });
-
-    const disposeSelectClientApp = vscodeApi.onMessage('selectClientApp', data => {
-      setIsLoading(false);
-      onClientAppSelection?.(data);
-    });
 
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
       setIsLoading(true);
@@ -143,16 +137,14 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       vscodeApi.getAvailableAgents();
     });
 
-    // Request available agents (this will trigger the client app checking)
+    // Request available agents
     vscodeApi.getAvailableAgents();
 
     return () => {
       disposeAvailableAgents();
-      disposeClientAppRequired();
-      disposeSelectClientApp();
       disposeRefreshAgents();
     };
-  }, [onClientAppRequired, onClientAppSelection, onAgentChange]);
+  }, [onAgentChange, selectedAgent]);
 
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
@@ -161,7 +153,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     if (agentId && agentId !== '') {
       const selectedAgent = agents.find(agent => agent.id === agentId);
 
-      if (selectedAgent?.type === 'published') {
+      if (selectedAgent?.type === AgentSource.PUBLISHED) {
         // Auto-enable live mode for published agents
         setIsLiveMode(true);
       }
@@ -175,15 +167,16 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   };
 
   // Group agents by type
-  const publishedAgents = agents.filter(agent => agent.type === 'published');
-  const scriptAgents = agents.filter(agent => agent.type === 'script');
+  const publishedAgents = agents.filter(agent => agent.type === AgentSource.PUBLISHED);
+  const scriptAgents = agents.filter(agent => agent.type === AgentSource.SCRIPT);
 
   // Get the selected agent's details for custom display
-  const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
+  // This will update when agents list loads or selectedAgent changes
+  const selectedAgentInfo = selectedAgent ? agents.find(agent => agent.id === selectedAgent) : undefined;
   const selectedAgentType =
-    selectedAgentInfo?.type === 'script'
+    selectedAgentInfo?.type === AgentSource.SCRIPT
       ? 'Agent Script'
-      : selectedAgentInfo?.type === 'published'
+      : selectedAgentInfo?.type === AgentSource.PUBLISHED
         ? 'Published'
         : null;
 
@@ -259,7 +252,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         )}
       </div>
       {selectedAgent &&
-        (selectedAgentInfo?.type === 'published' ? (
+        (selectedAgentInfo?.type === AgentSource.PUBLISHED ? (
           <Button
             appearance="primary"
             size="small"

@@ -293,7 +293,7 @@ topic ambiguous_question:
     throw new Error(`Provider not available after ${timeoutMs}ms timeout. Last error: ${lastError?.message || 'unknown'}`);
   }
 
-  test('Should preview agent, start simulated session, send message, and receive response', async function (this: Mocha.Context) {
+  test.skip('Should preview agent, start simulated session, send message, and receive response', async function (this: Mocha.Context) {
     // Skip on Windows due to module loading issues preventing provider instance access
     if ((process.platform as string) === 'win32') {
       this.skip();

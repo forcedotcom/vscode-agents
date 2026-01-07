@@ -20,7 +20,7 @@
   "main": "lib/src/extension.js",
   "dependencies": {
     "@salesforce/agents": "0.19.8",
-    "@salesforce/core": "^8.24.0",
+    "@salesforce/core": "8.23.5",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",
     "cross-spawn": "^7.0.6",
