@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as YAML from 'yaml';
 import { Commands } from '../enums/commands';
-import { Agent } from '@salesforce/agents';
+import { ScriptAgent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfProject, generateApiName } from '@salesforce/core';
 
@@ -116,10 +116,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             progress.report({ message: 'Generating Agent Script file...' });
 
             // Create the agent script using the spec
-            // Note: createAuthoringBundle may have been refactored - using as any to bypass type check
-            const connection = await CoreExtensionService.getDefaultConnection();
-            await Agent.createAuthoringBundle({
-              connection: connection as any,
+            await ScriptAgent.createAuthoringBundle({
               agentSpec: { ...specData, ...{ name, developerName: apiName } },
               project: project as any,
               bundleApiName: apiName,
