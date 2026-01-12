@@ -19,7 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "0.19.8",
+    "@salesforce/agents": "0.20.0",
     "@salesforce/core": "^8.24.0",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",
@@ -334,10 +334,6 @@
         {
           "command": "sf.agent.test.view.collapseAll",
           "when": "sf:project_opened"
-        },
-        {
-          "command": "sf.agent.openChat",
-          "when": "true"
         }
       ]
     },
@@ -484,11 +480,6 @@
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
-      },
-      {
-        "command": "sf.agent.openChat",
-        "title": "%open_chat_with_agent%",
-        "icon": "$(chat-editor-label-icon)"
       },
       {
         "command": "salesforcedx-vscode-agents.activateAgent",
