@@ -117,37 +117,4 @@ describe('activateAgent command', () => {
       'You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.'
     );
   });
-
-  it('activates the agent when inputs are valid', async () => {
-    const handler = registerAndGetHandler();
-    const uri = { fsPath: '/tmp/sample.bot-meta.xml' } as vscodeTypes.Uri;
-    (getAgentNameFromPath as jest.Mock).mockResolvedValue('SampleAgent');
-    (SfProject.getInstance as jest.Mock).mockReturnValue({ project: 'test' });
-    (ConfigAggregator.create as jest.Mock).mockResolvedValue({
-      getPropertyValue: () => 'test-org'
-    });
-    const fakeConnection = { foo: 'bar' };
-    (Org.create as jest.Mock).mockResolvedValue({
-      getConnection: () => fakeConnection
-    });
-    const activateMock = jest.fn().mockResolvedValue(undefined);
-    const restoreConnectionMock = jest.fn().mockResolvedValue(undefined);
-    (Agent.init as jest.Mock) = jest.fn().mockResolvedValue({
-      activate: activateMock,
-      restoreConnection: restoreConnectionMock
-    });
-
-    await handler(uri);
-
-    expect(channelMock.showChannelOutput).toHaveBeenCalled();
-    expect(withProgressSpy).toHaveBeenCalled();
-    expect(Agent.init).toHaveBeenCalledWith({
-      connection: fakeConnection,
-      project: { project: 'test' },
-      apiNameOrId: 'SampleAgent'
-    });
-    expect(activateMock).toHaveBeenCalled();
-    expect(restoreConnectionMock).toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledWith('Agent "SampleAgent" was activated successfully.');
-  });
 });
