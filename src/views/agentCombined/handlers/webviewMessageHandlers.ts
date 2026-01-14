@@ -237,13 +237,13 @@ export class WebviewMessageHandlers {
       const project = SfProject.getInstance();
       const allAgents = await Agent.listPreviewable(conn, project);
 
-      // Map agents - script agents use aabDirectory as id, published agents use id
+      // Map agents - script agents use aabName as id, published agents use id
       const mappedAgents = allAgents
-        .filter(agent => agent.id || agent.aabDirectory) // Must have either id (published) or aabDirectory (script)
+        .filter(agent => agent.id || agent.aabName) // Must have either id (published) or aabName (script)
         .map(agent => {
-          const agentId = agent.id || agent.aabDirectory;
+          const agentId = agent.id || agent.aabName;
           if (!agentId) {
-            throw new Error(`Agent ${agent.name} is missing both id and aabDirectory`);
+            throw new Error(`Agent ${agent.name} is missing both id and aabName`);
           }
           return {
             name: agent.name,

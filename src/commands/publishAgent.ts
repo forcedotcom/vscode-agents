@@ -57,13 +57,13 @@ export const registerPublishAgentCommand = () => {
 
             // Initialize agent instance using Agent.init()
             progress.report({ message: 'Initializing agent...', increment: 0 });
-            // aabDirectory should point to the directory containing the .agent file, not the file itself
-            // Ensure it's an absolute path to avoid path resolution issues
+            // Extract just the name (basename) from the directory containing the .agent file
             const aabDirectory = path.resolve(path.dirname(filePath));
+            const aabName = path.basename(aabDirectory);
             const agent = await Agent.init({
               connection,
               project,
-              aabDirectory
+              aabName
             });
 
             // Step 1: Validate the agent first

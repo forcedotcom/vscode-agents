@@ -50,8 +50,9 @@ export class AgentInitializer {
     // Create agent instance
     // filePath might be either:
     // 1. A file path to a .agent file
-    // 2. A directory path (aabDirectory) - in which case we need to find the .agent file
+    // 2. A directory path - in which case we need to find the .agent file
     // 3. A path with a "local:" prefix (from Agent.listPreviewable) - strip the prefix
+    // 4. Just the name of the authoring bundle (aabName)
     let aabDirectory: string;
     
     // Strip "local:" prefix if present (agents library may return paths with this prefix)
@@ -86,21 +87,35 @@ export class AgentInitializer {
         aabDirectory = path.resolve(authoringBundle);
       }
     } catch (error) {
-      // If stat fails or it's a .agent file, try using the directory directly
+      // If stat fails, it might be just a name (aabName), not a path
+      // Check if it's a .agent file path
       if (normalizedPath.endsWith('.agent')) {
         aabDirectory = path.resolve(path.dirname(normalizedPath));
       } else {
         // Try findAuthoringBundle as fallback
         const authoringBundle = findAuthoringBundle(project.getPath(), normalizedPath);
         if (!authoringBundle) {
-          throw new Error(`Could not find authoring bundle for file: ${normalizedPath}. ${error instanceof Error ? error.message : String(error)}`);
+          // If findAuthoringBundle fails, assume it's just a name (aabName)
+          // Extract just the name from the path if it contains path separators
+          const aabName = normalizedPath.includes(path.sep) ? path.basename(normalizedPath) : normalizedPath;
+          const agent = await Agent.init({
+            connection: conn,
+            aabName,
+            project: project
+          } as any);
+          this.state.agentInstance = agent;
+          return agent as ScriptAgent;
         }
         aabDirectory = path.resolve(authoringBundle);
       }
     }
+    
+    // Extract just the name (basename) from the directory path
+    const aabName = path.basename(aabDirectory);
+    
     const agent = await Agent.init({
       connection: conn,
-      aabDirectory,
+      aabName,
       project: project
     } as any);
 

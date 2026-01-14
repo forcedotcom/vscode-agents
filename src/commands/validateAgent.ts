@@ -57,13 +57,13 @@ export const registerValidateAgentCommand = () => {
           const project = SfProject.getInstance();
 
           // Initialize agent instance using Agent.init()
-          // aabDirectory should point to the directory containing the .agent file, not the file itself
-          // Ensure it's an absolute path to avoid path resolution issues
+          // Extract just the name (basename) from the directory containing the .agent file
           const aabDirectory = path.resolve(path.dirname(normalizedFilePath));
+          const aabName = path.basename(aabDirectory);
           agent = await Agent.init({
             connection,
             project,
-            aabDirectory
+            aabName
           });
 
           // Validate the agent
