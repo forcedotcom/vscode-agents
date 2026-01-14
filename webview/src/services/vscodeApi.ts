@@ -13,10 +13,29 @@ export interface Message {
   timestamp?: string;
 }
 
+// AgentSource enum values - injected from the extension (from @salesforce/agents)
+// This ensures we use the exact same values as the library
+declare global {
+  interface Window {
+    AgentSource: {
+      SCRIPT: string;
+      PUBLISHED: string;
+    };
+  }
+}
+
+// AgentSource enum values are lowercase: 'script' and 'published'
+export const AgentSource = window.AgentSource || {
+  SCRIPT: 'script',
+  PUBLISHED: 'published'
+};
+
+export type AgentSource = typeof AgentSource.SCRIPT | typeof AgentSource.PUBLISHED;
+
 export interface AgentInfo {
   name: string;
   id: string;
-  type: 'published' | 'script';
+  type: AgentSource;
 }
 
 export interface TraceHistoryMessageEntry {
@@ -130,16 +149,6 @@ class VSCodeApiService {
   // Get configuration values
   getConfiguration(section: string) {
     this.postMessage('getConfiguration', { section });
-  }
-
-  // Client app selection
-  selectClientApp(clientAppName: string) {
-    this.postMessage('clientAppSelected', { clientAppName });
-  }
-
-  // Informational message when client app is ready
-  onClientAppReady(handler: () => void): () => void {
-    return this.onMessage('clientAppReady', handler);
   }
 
   // Execute a VSCode command

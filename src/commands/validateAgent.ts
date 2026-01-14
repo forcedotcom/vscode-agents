@@ -1,8 +1,19 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
-import { Agent, type CompilationError } from '@salesforce/agents';
+import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { SfError } from '@salesforce/core';
+import { SfError, SfProject } from '@salesforce/core';
+import * as path from 'path';
+
+// Type declarations for new library API
+interface CompilationError {
+  errorType: string;
+  lineStart: number;
+  colStart: number;
+  lineEnd: number;
+  colEnd: number;
+  description: string;
+}
 
 // Diagnostic collection for agent validation errors
 let diagnosticCollection: vscode.DiagnosticCollection;
@@ -26,7 +37,10 @@ export const registerValidateAgentCommand = () => {
       return;
     }
 
-    const fileUri = vscode.Uri.file(filePath);
+    // Strip "local:" prefix if present (agents library may return paths with this prefix)
+    const normalizedFilePath = filePath.startsWith('local:') ? filePath.substring(6) : filePath;
+    
+    const fileUri = vscode.Uri.file(normalizedFilePath);
     const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
 
     // Show progress notification with spinner
@@ -37,14 +51,26 @@ export const registerValidateAgentCommand = () => {
         cancellable: false
       },
       async progress => {
+        let agent: any = undefined;
         try {
-          const response = await Agent.compileAgentScript(
-            await CoreExtensionService.getDefaultConnection(),
-            fileContents
-          );
+          const connection = await CoreExtensionService.getDefaultConnection();
+          const project = SfProject.getInstance();
+
+          // Initialize agent instance using Agent.init()
+          // Extract just the name (basename) from the directory containing the .agent file
+          const aabDirectory = path.resolve(path.dirname(normalizedFilePath));
+          const aabName = path.basename(aabDirectory);
+          agent = await Agent.init({
+            connection,
+            project,
+            aabName
+          });
+
+          // Validate the agent
+          const response = await agent.compile();
 
           // Type guard to check if response has errors (compilation failure)
-          if (response.status === 'failure') {
+          if (response.status === 'failure' && response.errors) {
             // Parse and display compilation errors in Problems panel
             const diagnostics: vscode.Diagnostic[] = response.errors.map((error: CompilationError) => {
               const range = new vscode.Range(

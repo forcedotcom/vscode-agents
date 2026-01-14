@@ -26,7 +26,7 @@ export const registerOpenAgentInOrgCommand = () => {
     // If no agent name from context, prompt user to select
     if (!agentName) {
       const project = SfProject.getInstance();
-      const agents = await Agent.list(project);
+      const agents = await Agent.list(project as any);
       if (agents.length === 0) {
         vscode.window.showErrorMessage(`Couldn't find any agents in the current DX project.`);
         channelService.appendLine("Couldn't find any agents in the current DX project.");

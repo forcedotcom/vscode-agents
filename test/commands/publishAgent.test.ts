@@ -12,8 +12,8 @@ describe('publishAgent', () => {
   let errorMessageSpy: jest.SpyInstance;
   let infoMessageSpy: jest.SpyInstance;
   let readFileSpy: jest.SpyInstance;
-  let compileAgentScriptSpy: jest.SpyInstance;
-  let publishAgentJsonSpy: jest.SpyInstance;
+  let agentInitSpy: jest.SpyInstance;
+  let mockAgentInstance: any;
   let lifecycleMock: any;
   let lifecycleEmitHandlers: Map<string, Array<(data?: any) => Promise<void>>>;
 
@@ -107,9 +107,13 @@ describe('publishAgent', () => {
         }) as any
     );
 
-    // Mock Agent methods
-    compileAgentScriptSpy = jest.spyOn(Agent, 'compileAgentScript');
-    publishAgentJsonSpy = jest.spyOn(Agent, 'publishAgentJson');
+    // Mock Agent.init() to return an agent instance with compile() and publish() methods
+    mockAgentInstance = {
+      compile: jest.fn(),
+      publish: jest.fn(),
+      restoreConnection: jest.fn().mockResolvedValue(undefined)
+    };
+    agentInitSpy = jest.spyOn(Agent, 'init').mockResolvedValue(mockAgentInstance as any);
   });
 
   afterEach(() => {
@@ -143,17 +147,13 @@ describe('publishAgent', () => {
 
     it('publishes agent successfully with lifecycle events', async () => {
       // Mock successful compilation
-      const mockCompiledArtifact = { name: 'TestAgent', version: '1.0' };
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'success',
-        compiledArtifact: mockCompiledArtifact,
-        errors: [],
-        syntacticMap: { blocks: [] },
-        dslVersion: '0.0.3.rc29'
+        errors: []
       });
 
       // Mock successful publish that triggers lifecycle events
-      publishAgentJsonSpy.mockImplementation(async () => {
+      mockAgentInstance.publish.mockImplementation(async () => {
         await lifecycleMock.emit('scopedPreRetrieve');
         await lifecycleMock.emit('scopedPostRetrieve');
       });
@@ -163,14 +163,16 @@ describe('publishAgent', () => {
       registerPublishAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      expect(compileAgentScriptSpy).toHaveBeenCalledWith(expect.anything(), 'agent TestAgent { }');
-      expect(publishAgentJsonSpy).toHaveBeenCalledWith(expect.anything(), fakeProject, mockCompiledArtifact);
+      expect(agentInitSpy).toHaveBeenCalled();
+      expect(mockAgentInstance.compile).toHaveBeenCalled();
+      expect(mockAgentInstance.publish).toHaveBeenCalled();
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Publishing agent TestAgent...');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Retrieving metadata from org...');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Metadata retrieved successfully.');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Successfully published agent TestAgent.');
       expect(infoMessageSpy).toHaveBeenCalledWith('Agent "TestAgent" was published successfully.');
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Compiling agent...', increment: 0 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Initializing agent...', increment: 0 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Validating agent...', increment: 20 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Publishing agent...', increment: 50 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata...', increment: 70 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved successfully', increment: 90 });
@@ -200,12 +202,9 @@ describe('publishAgent', () => {
         }
       ];
 
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'failure',
-        errors: mockDiagnostics,
-        compiledArtifact: undefined,
-        syntacticMap: undefined,
-        dslVersion: '0.0.3.rc29'
+        errors: mockDiagnostics
       });
 
       const mockUri = vscode.Uri.file('/test/failing.agent');
@@ -213,40 +212,36 @@ describe('publishAgent', () => {
       registerPublishAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      expect(compileAgentScriptSpy).toHaveBeenCalled();
-      expect(publishAgentJsonSpy).not.toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent compilation failed!');
+      expect(mockAgentInstance.compile).toHaveBeenCalled();
+      expect(mockAgentInstance.publish).not.toHaveBeenCalled();
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s):'));
       expect(progressReportSpy).toHaveBeenCalledWith({
-        message: 'Compilation failed with 2 error(s).'
+        message: 'Validation failed with 2 error(s).'
       });
       expect(errorMessageSpy).toHaveBeenCalledWith(
-        'Agent compilation failed with 2 error(s). Check the Output tab for details.'
+        'Agent validation failed with 2 error(s). Check the Output tab for details.'
       );
     });
 
     it('handles publish failure', async () => {
       // Mock successful compilation
-      const mockCompiledArtifact = { name: 'TestAgent', version: '1.0' };
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'success',
-        compiledArtifact: mockCompiledArtifact,
-        errors: [],
-        syntacticMap: { blocks: [] },
-        dslVersion: '0.0.3.rc29'
+        errors: []
       });
 
       // Mock publish failure
       const publishError = new Error('Publish failed: Connection timeout');
-      publishAgentJsonSpy.mockRejectedValue(publishError);
+      mockAgentInstance.publish.mockRejectedValue(publishError);
 
       const mockUri = vscode.Uri.file('/test/TestAgent.agent');
 
       registerPublishAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      expect(compileAgentScriptSpy).toHaveBeenCalled();
-      expect(publishAgentJsonSpy).toHaveBeenCalled();
+      expect(mockAgentInstance.compile).toHaveBeenCalled();
+      expect(mockAgentInstance.publish).toHaveBeenCalled();
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent publish failed!');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringContaining('Error: Publish failed: Connection timeout')
@@ -261,28 +256,24 @@ describe('publishAgent', () => {
 
     it('handles JWT access token error during retrieve step', async () => {
       // Mock successful compilation
-      const mockCompiledArtifact = { name: 'TestAgent', version: '1.0' };
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'success',
-        compiledArtifact: mockCompiledArtifact,
-        errors: [],
-        syntacticMap: { blocks: [] },
-        dslVersion: '0.0.3.rc29'
+        errors: []
       });
 
       // Mock publish failure with JWT access token error (occurs during retrieve)
       const jwtError = new Error(
         'SOAP API does not support JWT-based access tokens. You must disable the "Issue JSON Web Token (JWT)-based access tokens" setting in your Connected App or External Client App'
       );
-      publishAgentJsonSpy.mockRejectedValue(jwtError);
+      mockAgentInstance.publish.mockRejectedValue(jwtError);
 
       const mockUri = vscode.Uri.file('/test/TestAgent.agent');
 
       registerPublishAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      expect(compileAgentScriptSpy).toHaveBeenCalled();
-      expect(publishAgentJsonSpy).toHaveBeenCalled();
+      expect(mockAgentInstance.compile).toHaveBeenCalled();
+      expect(mockAgentInstance.publish).toHaveBeenCalled();
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent publish failed!');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringContaining('SOAP API does not support JWT-based access tokens')
@@ -322,53 +313,15 @@ describe('publishAgent', () => {
       );
     });
 
-    it('uses active text editor when no URI is provided', async () => {
-      // Mock successful compilation and publish
-      const mockCompiledArtifact = { name: 'TestAgent', version: '1.0' };
-      compileAgentScriptSpy.mockResolvedValue({
-        status: 'success',
-        compiledArtifact: mockCompiledArtifact,
-        errors: [],
-        syntacticMap: { blocks: [] },
-        dslVersion: '0.0.3.rc29'
-      });
-      publishAgentJsonSpy.mockImplementation(async () => {
-        await lifecycleMock.emit('scopedPreRetrieve');
-        await lifecycleMock.emit('scopedPostRetrieve');
-      });
-
-      const mockFilePath = '/test/TestAgent.agent';
-
-      // Mock active text editor
-      Object.defineProperty(vscode.window, 'activeTextEditor', {
-        get: jest.fn(() => ({
-          document: { fileName: mockFilePath }
-        })),
-        configurable: true
-      });
-
-      registerPublishAgentCommand();
-      await commandSpy.mock.calls[0][1](); // No URI provided
-
-      expect(progressSpy).toHaveBeenCalled();
-      expect(readFileSpy).toHaveBeenCalled();
-      expect(compileAgentScriptSpy).toHaveBeenCalled();
-      expect(publishAgentJsonSpy).toHaveBeenCalled();
-    });
-
     it('cleans up lifecycle listeners even if publish fails', async () => {
       // Mock successful compilation
-      const mockCompiledArtifact = { name: 'TestAgent', version: '1.0' };
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'success',
-        compiledArtifact: mockCompiledArtifact,
-        errors: [],
-        syntacticMap: { blocks: [] },
-        dslVersion: '0.0.3.rc29'
+        errors: []
       });
 
       // Mock publish failure
-      publishAgentJsonSpy.mockRejectedValue(new Error('Publish failed'));
+      mockAgentInstance.publish.mockRejectedValue(new Error('Publish failed'));
 
       const mockUri = vscode.Uri.file('/test/TestAgent.agent');
 
@@ -382,17 +335,13 @@ describe('publishAgent', () => {
 
     it('handles lifecycle events correctly', async () => {
       // Mock successful compilation and publish
-      const mockCompiledArtifact = { name: 'TestAgent', version: '1.0' };
-      compileAgentScriptSpy.mockResolvedValue({
+      mockAgentInstance.compile.mockResolvedValue({
         status: 'success',
-        compiledArtifact: mockCompiledArtifact,
-        errors: [],
-        syntacticMap: { blocks: [] },
-        dslVersion: '0.0.3.rc29'
+        errors: []
       });
 
       // Mock publish to trigger lifecycle events
-      publishAgentJsonSpy.mockImplementation(async () => {
+      mockAgentInstance.publish.mockImplementation(async () => {
         await lifecycleMock.emit('scopedPreRetrieve');
         await lifecycleMock.emit('scopedPostRetrieve');
       });

@@ -20,6 +20,12 @@ import userEvent from '@testing-library/user-event';
 import AgentSelector, { handleStartClickImpl } from '../../webview/src/components/AgentPreview/AgentSelector';
 import { AgentInfo } from '../../webview/src/services/vscodeApi';
 
+// Setup window.AgentSource BEFORE importing anything
+(window as any).AgentSource = {
+  SCRIPT: 'script',
+  PUBLISHED: 'published'
+};
+
 // Mock vscodeApi
 jest.mock('../../webview/src/services/vscodeApi', () => ({
   vscodeApi: {
@@ -29,6 +35,10 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
     clearMessages: jest.fn(),
     loadAgentHistory: jest.fn(),
     sendConversationExport: jest.fn()
+  },
+  AgentSource: {
+    SCRIPT: 'script',
+    PUBLISHED: 'published'
   }
 }));
 
@@ -255,35 +265,7 @@ describe('AgentSelector', () => {
     });
   });
 
-  describe('Client App Handling', () => {
-    it('should call onClientAppRequired when clientAppRequired message is received', async () => {
-      const onClientAppRequired = jest.fn();
-
-      render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} onClientAppRequired={onClientAppRequired} />);
-
-      const clientAppRequiredHandler = messageHandlers.get('clientAppRequired');
-      const mockData = { message: 'Client app needed' };
-      clientAppRequiredHandler!(mockData);
-
-      await waitFor(() => {
-        expect(onClientAppRequired).toHaveBeenCalledWith(mockData);
-      });
-    });
-
-    it('should call onClientAppSelection when selectClientApp message is received', async () => {
-      const onClientAppSelection = jest.fn();
-
-      render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} onClientAppSelection={onClientAppSelection} />);
-
-      const selectClientAppHandler = messageHandlers.get('selectClientApp');
-      const mockData = { clientApps: [{ name: 'App1', clientId: '123' }] };
-      selectClientAppHandler!(mockData);
-
-      await waitFor(() => {
-        expect(onClientAppSelection).toHaveBeenCalledWith(mockData);
-      });
-    });
-  });
+  // Client App Handling tests removed - functionality was removed
 
   describe('Preselected Agent', () => {
     it('should auto-select and load history for preselected agent', async () => {

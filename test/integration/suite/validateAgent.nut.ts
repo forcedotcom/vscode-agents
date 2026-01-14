@@ -48,9 +48,9 @@ suite('Validate Agent Integration Test', () => {
         error: "Sorry, it looks like something has gone wrong."
 
 config:
-  developer_name: "Willie_Resort_Manager"
+  developer_name: "validateagent"
   default_agent_user: "pronto_sales_assistant.kasr8shhuuvg@orgfarm.salesforce.com"
-  agent_label: "Willie Resort Manager"
+  agent_label: "Validate Agent"
   description: "This agent assists Coral Cloud employees by answering questions related to staff training, work schedules, and company policies. It also helps guests by politely handling complaints and other escalations. It DOES NOT provide information about local events, weather, or other information, nor does it provide help or information related to guest experiences at the resort."
 variables:
     EndUserId: linked string
@@ -108,6 +108,15 @@ topic escalation:
     }
     validAgentFile = path.join(validAgentDir, 'validateagent.agent');
     fs.writeFileSync(validAgentFile, validAgentContent, 'utf8');
+    
+    // Create the bundle-meta.xml file required for the agent bundle
+    const bundleMetaXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<AiAuthoringBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <bundleType>AGENT</bundleType>
+</AiAuthoringBundle>
+`;
+    const bundleMetaXmlFile = path.join(validAgentDir, 'validateagent.bundle-meta.xml');
+    fs.writeFileSync(bundleMetaXmlFile, bundleMetaXmlContent, 'utf8');
 
     // Create an invalid .agent file for testing error cases
     const invalidAgentContent = `system:
@@ -117,10 +126,10 @@ topic escalation:
         error: "Sorry, it looks like something has gone wrong."
 
 config:
-  developer_name: "Willie_Resort_Manager"
+  developer_name: "invalidagent"
   default_agent_user: "pronto_sales_assistant.kasr8shhuuvg@orgfarm.salesforce.com"
-  agent_label: "Willie Resort Manager"
-  description: "This agent assists Coral Cloud employees by answering questions related to staff training, work schedules, and company policies. It also helps guests by politely handling complaints and other escalations. It DOES NOT provide information about local events, weather, or other information, nor does it provide help or information related to guest experiences at the resort."
+  agent_label: "Invalid Agent"
+  description: "This agent has invalid configuration for testing error cases."
 variables:
     EndUserId: linked string
         source: @MessagingSession.MessagingEndUserId
@@ -164,6 +173,15 @@ start_agent topic_selector:
     }
     invalidAgentFile = path.join(invalidAgentDir, 'invalidagent.agent');
     fs.writeFileSync(invalidAgentFile, invalidAgentContent, 'utf8');
+    
+    // Create the bundle-meta.xml file required for the agent bundle
+    const invalidBundleMetaXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<AiAuthoringBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <bundleType>AGENT</bundleType>
+</AiAuthoringBundle>
+`;
+    const invalidBundleMetaXmlFile = path.join(invalidAgentDir, 'invalidagent.bundle-meta.xml');
+    fs.writeFileSync(invalidBundleMetaXmlFile, invalidBundleMetaXmlContent, 'utf8');
   });
 
   suiteTeardown(async function () {

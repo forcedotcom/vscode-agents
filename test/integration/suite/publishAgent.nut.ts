@@ -319,7 +319,7 @@ topic ambiguous_question:
       
       const org = await Org.create({ aliasOrUsername: devhubUsername });
       const connection = await org.getConnection();
-      const remoteAgents = await Agent.listRemote(connection);
+      const remoteAgents = await Agent.listRemote(connection as any);
       
       console.log(`🔍 [Test] Found ${remoteAgents?.length || 0} remote agents`);
       
