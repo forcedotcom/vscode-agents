@@ -153,12 +153,20 @@ export class SessionManager {
    * Restarts the agent session without recompilation
    */
   async restartSession(): Promise<void> {
-    if (!this.state.agentInstance) {
+    if (!this.state.agentInstance || !this.state.sessionId) {
       return;
     }
 
     try {
       await this.state.setSessionStarting(true);
+
+      // End the current session first
+      const isAgentSimulate = this.state.currentAgentSource === AgentSource.SCRIPT;
+      if (isAgentSimulate) {
+        await (this.state.agentInstance.preview as any).end();
+      } else {
+        await this.state.agentInstance.preview.end(this.state.sessionId, 'UserRequest');
+      }
 
       // Restore connection after ending session
       if (this.state.agentInstance) {
