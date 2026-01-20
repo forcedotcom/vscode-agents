@@ -40,6 +40,7 @@ export class AgentViewState {
 
     // Set initial context
     void vscode.commands.executeCommand('setContext', 'agentforceDX:debugMode', this._isApexDebuggingEnabled);
+    void vscode.commands.executeCommand('setContext', 'agentforceDX:isScriptAgent', false);
   }
 
   // Getters
@@ -118,6 +119,8 @@ export class AgentViewState {
 
   set currentAgentSource(value: AgentSource | undefined) {
     this._currentAgentSource = value;
+    // Update context for script agent detection (used for restart menu visibility)
+    void this.setIsScriptAgent(value === AgentSource.SCRIPT);
   }
 
   set currentPlanId(value: string | undefined) {
@@ -165,6 +168,7 @@ export class AgentViewState {
       await this.setResetAgentViewAvailable(false);
       await this.setSessionErrorState(false);
       await this.setConversationDataAvailable(false);
+      await this.setIsScriptAgent(false);
     }
   }
 
@@ -190,6 +194,10 @@ export class AgentViewState {
 
   async setConversationDataAvailable(available: boolean): Promise<void> {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:hasConversationData', available);
+  }
+
+  async setIsScriptAgent(isScript: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:isScriptAgent', isScript);
   }
 
   // Clear session state

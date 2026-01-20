@@ -175,7 +175,7 @@
         },
         {
           "submenu": "sf.agent.combined.view.restartMenu",
-          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && agentforceDX:isScriptAgent",
           "group": "navigation@0"
         },
         {
