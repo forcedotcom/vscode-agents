@@ -48,9 +48,6 @@ export class SessionManager {
       this.messageSender.sendClearMessages();
       this.messageSender.sendSessionStarting();
 
-      // End existing session if one exists
-      await this.endExistingSession(ensureActive);
-
       // Reset planId when starting a new session
       this.state.currentPlanId = undefined;
 
@@ -126,13 +123,6 @@ export class SessionManager {
     const sessionWasStarting = this.state.isSessionStarting;
 
     if (this.state.agentInstance && this.state.sessionId) {
-      const isAgentSimulate = this.state.currentAgentSource === AgentSource.SCRIPT;
-      if (isAgentSimulate) {
-        await (this.state.agentInstance.preview as any).end();
-      } else {
-        await this.state.agentInstance.preview.end(this.state.sessionId, 'UserRequest');
-      }
-
       // Restore connection before clearing agent references
       try {
         await this.state.agentInstance.restoreConnection();
@@ -170,14 +160,6 @@ export class SessionManager {
     try {
       await this.state.setSessionStarting(true);
 
-      // End the current session but keep the agentInstance
-      const isAgentSimulate = this.state.currentAgentSource === AgentSource.SCRIPT;
-      if (isAgentSimulate) {
-        await (this.state.agentInstance.preview as any).end();
-      } else {
-        await this.state.agentInstance.preview.end(this.state.sessionId, 'UserRequest');
-      }
-
       // Restore connection after ending session
       if (this.state.agentInstance) {
         try {
@@ -207,10 +189,7 @@ export class SessionManager {
 
       // Load trace history if available
       if (this.state.currentAgentId && this.state.currentAgentSource) {
-        await this.historyManager.loadAndSendTraceHistory(
-          this.state.currentAgentId,
-          this.state.currentAgentSource
-        );
+        await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
       }
 
       await this.state.setSessionActive(true);
@@ -229,31 +208,6 @@ export class SessionManager {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.channelService.appendLine(`Failed to restart session: ${errorMessage}`);
       await this.messageSender.sendError(`Failed to restart: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Ends an existing session if one is active
-   */
-  private async endExistingSession(ensureActive: () => void): Promise<void> {
-    if (this.state.agentInstance && this.state.sessionId) {
-      try {
-        const isAgentSimulate = this.state.currentAgentSource === AgentSource.SCRIPT;
-        if (isAgentSimulate) {
-          await (this.state.agentInstance.preview as any).end();
-        } else {
-          await this.state.agentInstance.preview.end(this.state.sessionId, 'UserRequest');
-        }
-        // Restore connection after ending session
-        try {
-          await this.state.agentInstance.restoreConnection();
-        } catch (error) {
-          console.warn('Error restoring connection:', error);
-        }
-        ensureActive();
-      } catch (err) {
-        console.warn('Error ending previous session:', err);
-      }
     }
   }
 

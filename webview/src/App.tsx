@@ -72,7 +72,8 @@ const App: React.FC = () => {
         setRestartTrigger(prev => prev + 1);
       } else {
         // Palette selection - let history flow decide whether to show saved conversation or placeholder
-        vscodeApi.clearMessages();
+        // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
+        // to avoid flickering between clear and load
         vscodeApi.loadAgentHistory(data.agentId);
       }
     });

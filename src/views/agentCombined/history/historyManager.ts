@@ -180,21 +180,142 @@ export class HistoryManager {
 
   /**
    * Shows history or placeholder for an agent
+   * Loads history first, then clears and sends in one atomic operation to avoid flickering
    */
   async showHistoryOrPlaceholder(agentId: string, agentSource: AgentSource): Promise<void> {
-    this.messageSender.sendClearMessages();
-
     try {
-      await this.loadAndSendTraceHistory(agentId, agentSource);
-      const hasHistory = await this.loadAndSendConversationHistory(agentId, agentSource);
+      // Load history data first (before clearing) to minimize flickering
+      const traceHistoryPromise = this.loadTraceHistoryData(agentId, agentSource);
+      const conversationHistoryPromise = this.loadConversationHistoryData(agentId, agentSource);
+      
+      // Wait for both to complete
+      const [traceEntries, transcriptEntries] = await Promise.all([
+        traceHistoryPromise,
+        conversationHistoryPromise
+      ]);
 
-      if (!hasHistory) {
+      // Now clear and send in one atomic operation
+      this.messageSender.sendClearMessages();
+      
+      // Send trace history
+      this.messageSender.sendTraceHistory(agentId, traceEntries);
+      
+      // Send conversation history if available
+      if (transcriptEntries && transcriptEntries.length > 0) {
+        const historyMessages = transcriptEntries
+          .filter(entry => entry.text)
+          .map(entry => ({
+            id: `${entry.timestamp}-${entry.sessionId}`,
+            type: entry.role === 'user' ? 'user' : 'agent',
+            content: entry.text || '',
+            timestamp: new Date(entry.timestamp).getTime()
+          }));
+
+        if (historyMessages.length > 0) {
+          this.messageSender.sendConversationHistory(historyMessages);
+          await this.state.setConversationDataAvailable(true);
+        } else {
+          await this.state.setConversationDataAvailable(false);
+          this.messageSender.sendNoHistoryFound(agentId);
+        }
+      } else {
+        await this.state.setConversationDataAvailable(false);
         this.messageSender.sendNoHistoryFound(agentId);
+      }
+
+      // Send trace data if we have entries
+      if (traceEntries.length > 0) {
+        if (this.state.currentPlanId) {
+          const currentEntry = traceEntries.find(entry => entry.planId === this.state.currentPlanId);
+          if (currentEntry) {
+            this.messageSender.sendTraceData(currentEntry.trace);
+          } else {
+            const latestEntry = traceEntries[traceEntries.length - 1];
+            this.messageSender.sendTraceData(latestEntry.trace);
+          }
+        } else {
+          const latestEntry = traceEntries[traceEntries.length - 1];
+          this.messageSender.sendTraceData(latestEntry.trace);
+        }
       }
     } catch (err) {
       console.error('Error loading history:', err);
       await this.state.setConversationDataAvailable(false);
+      this.messageSender.sendClearMessages();
       this.messageSender.sendNoHistoryFound(agentId);
+    }
+  }
+
+  /**
+   * Loads trace history data without sending to webview
+   */
+  private async loadTraceHistoryData(agentId: string, agentSource: AgentSource): Promise<TraceHistoryEntry[]> {
+    try {
+      let history;
+      let sessionId: string | undefined;
+
+      // Use agent instance if available
+      if (this.state.agentInstance && this.state.sessionId) {
+        history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
+        sessionId = this.state.sessionId;
+      } else {
+        // Use getAllHistory from library when no active session
+        const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+        history = await getAllHistory(agentStorageKey, undefined);
+        // When using getAllHistory with undefined sessionId, we get all sessions
+        // Extract sessionId from the most recent trace if available
+        if (history.traces && history.traces.length > 0) {
+          const mostRecentTrace = history.traces[history.traces.length - 1];
+          sessionId = (mostRecentTrace as any).sessionId;
+        }
+      }
+
+      const traces = history.traces || [];
+      const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+      
+      return traces.map((trace, index) => {
+        const planId = (trace as any).planId || `plan-${index}`;
+        const traceSessionId = (trace as any).sessionId || sessionId || 'unknown';
+        const userMessage = this.extractUserMessageFromTrace(trace);
+        
+        return {
+          storageKey: agentStorageKey,
+          agentId: agentId,
+          sessionId: traceSessionId,
+          planId: planId,
+          userMessage: userMessage,
+          timestamp: history.metadata?.startTime || new Date().toISOString(),
+          trace: trace
+        };
+      });
+    } catch (error) {
+      console.error('Could not load trace history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Loads conversation history data without sending to webview
+   */
+  private async loadConversationHistoryData(agentId: string, agentSource: AgentSource): Promise<any[]> {
+    try {
+      let transcriptEntries;
+
+      // Try to use agent instance if available
+      if (this.state.agentInstance && this.state.sessionId) {
+        const history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
+        transcriptEntries = history.transcript || [];
+      } else {
+        // Use getAllHistory from library when no active session
+        const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+        const history = await getAllHistory(agentStorageKey, undefined);
+        transcriptEntries = history.transcript || [];
+      }
+
+      return transcriptEntries || [];
+    } catch (err) {
+      console.error('Could not load conversation history:', err);
+      return [];
     }
   }
 }

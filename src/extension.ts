@@ -239,7 +239,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         ...scriptAgents.map(agent => ({
           label: agent.name,
           description: agent.id ? path.basename(agent.id) : undefined,
-          id: agent.id,
+          // For script agents, use aabName to match what the webview expects
+          id: agent.aabName || agent.id,
           source: agent.source
         }))
         );
@@ -288,11 +289,14 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
               const allAgents = await Agent.listPreviewable(conn, project);
               
               // Map PreviewableAgent to the format expected by webview
-              const mappedAgents = allAgents.map(agent => ({
-                name: agent.name,
-                id: agent.id,
-                type: agent.source
-              }));
+              // Script agents use aabName as id, published agents use id
+              const mappedAgents = allAgents
+                .filter(agent => agent.id || agent.aabName)
+                .map(agent => ({
+                  name: agent.name,
+                  id: agent.id || agent.aabName,
+                  type: agent.source
+                }));
 
               provider.webviewView.webview.postMessage({
                 command: 'availableAgents',
@@ -355,7 +359,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
               ...scriptAgents.map(agent => ({
                 label: agent.name,
                 description: agent.id ? path.basename(agent.id) : undefined,
-                id: agent.id,
+                // For script agents, use aabName to match what the webview expects
+                id: agent.aabName || agent.id,
                 source: agent.source
               }))
             );

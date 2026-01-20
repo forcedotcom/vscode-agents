@@ -111,7 +111,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               const agentExists = data.agents.some(agent => agent.id === data.selectedAgentId);
               if (agentExists) {
                 onAgentChange(data.selectedAgentId);
-                vscodeApi.clearMessages();
+                // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
                 vscodeApi.loadAgentHistory(data.selectedAgentId);
               }
             } else if (selectedAgent) {
@@ -159,9 +159,10 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       }
       // For script agents, keep the current global live mode preference
 
-      vscodeApi.clearMessages();
+      // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
       vscodeApi.loadAgentHistory(agentId);
     } else {
+      // When clearing selection, clear messages immediately
       vscodeApi.clearMessages();
     }
   };
