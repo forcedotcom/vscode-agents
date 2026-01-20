@@ -19,7 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "0.20.0-beta.4",
+    "@salesforce/agents": "0.20.0-beta.5",
     "@salesforce/core": "^8.24.2",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",

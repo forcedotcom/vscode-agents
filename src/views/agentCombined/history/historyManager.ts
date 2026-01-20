@@ -1,5 +1,6 @@
-import { AgentSource, readTranscriptEntries } from '@salesforce/agents';
-import { readTraceHistoryEntries, type TraceHistoryEntry, writeTraceEntryToFile } from '../../../utils/traceHistory';
+import { AgentSource } from '@salesforce/agents';
+import { getAllHistory } from '@salesforce/agents/lib/utils';
+import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import * as vscode from 'vscode';
 import type { AgentViewState } from '../state/agentViewState';
 import type { WebviewMessageSender } from '../handlers/webviewMessageSender';
@@ -16,11 +17,22 @@ export class HistoryManager {
 
   /**
    * Load conversation history for an agent and send it to the webview
+   * Uses agent instance if available, otherwise uses getAllHistory from library
    */
   async loadAndSendConversationHistory(agentId: string, agentSource: AgentSource): Promise<boolean> {
     try {
-      const agentName = getAgentStorageKey(agentId, agentSource);
-      const transcriptEntries = await readTranscriptEntries(agentName);
+      let transcriptEntries;
+
+      // Try to use agent instance if available
+      if (this.state.agentInstance && this.state.sessionId) {
+        const history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
+        transcriptEntries = history.transcript || [];
+      } else {
+        // Use getAllHistory from library when no active session
+        const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+        const history = await getAllHistory(agentStorageKey, undefined);
+        transcriptEntries = history.transcript || [];
+      }
 
       if (transcriptEntries && transcriptEntries.length > 0) {
         const historyMessages = transcriptEntries
@@ -73,46 +85,65 @@ export class HistoryManager {
 
   /**
    * Load trace history for an agent and send it to the webview
-   * Only shows traces from the current session
+   * Uses agent instance getHistoryFromDisc if available, otherwise uses getAllHistory from library
    */
   async loadAndSendTraceHistory(agentId: string, agentSource: AgentSource): Promise<void> {
     try {
-      const agentStorageKey = getAgentStorageKey(agentId, agentSource);
-      const allEntries = await readTraceHistoryEntries(agentStorageKey);
+      let history;
+      let sessionId: string | undefined;
 
-      // Filter to only show traces from the current session
-      const currentSessionId = this.state.sessionId;
-      const entries = currentSessionId
-        ? allEntries.filter(entry => entry.sessionId === currentSessionId)
-        : [];
-
-      // Extract user messages from trace data if not already set
-      const entriesWithMessages = entries.map(entry => {
-        if (!entry.userMessage && entry.trace) {
-          const userMessage = this.extractUserMessageFromTrace(entry.trace);
-          if (userMessage) {
-            return { ...entry, userMessage };
-          }
+      // Use agent instance if available
+      if (this.state.agentInstance && this.state.sessionId) {
+        history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
+        sessionId = this.state.sessionId;
+      } else {
+        // Use getAllHistory from library when no active session
+        const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+        history = await getAllHistory(agentStorageKey, undefined);
+        // When using getAllHistory with undefined sessionId, we get all sessions
+        // Extract sessionId from the most recent trace if available
+        if (history.traces && history.traces.length > 0) {
+          const mostRecentTrace = history.traces[history.traces.length - 1];
+          sessionId = (mostRecentTrace as any).sessionId;
         }
-        return entry;
+      }
+
+      const traces = history.traces || [];
+
+      // Convert traces to TraceHistoryEntry format
+      const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+      const entries: TraceHistoryEntry[] = traces.map((trace, index) => {
+        const planId = (trace as any).planId || `plan-${index}`;
+        const traceSessionId = (trace as any).sessionId || sessionId || 'unknown';
+        const userMessage = this.extractUserMessageFromTrace(trace);
+        
+        return {
+          storageKey: agentStorageKey,
+          agentId: agentId,
+          sessionId: traceSessionId,
+          planId: planId,
+          userMessage: userMessage,
+          timestamp: history.metadata?.startTime || new Date().toISOString(),
+          trace: trace
+        };
       });
 
       // Send trace history to populate the history list
-      this.messageSender.sendTraceHistory(agentId, entriesWithMessages);
+      this.messageSender.sendTraceHistory(agentId, entries);
 
       // If we have entries and a current planId, also send the current trace data
-      if (entriesWithMessages.length > 0 && this.state.currentPlanId) {
-        const currentEntry = entriesWithMessages.find(entry => entry.planId === this.state.currentPlanId);
+      if (entries.length > 0 && this.state.currentPlanId) {
+        const currentEntry = entries.find(entry => entry.planId === this.state.currentPlanId);
         if (currentEntry) {
           this.messageSender.sendTraceData(currentEntry.trace);
         } else {
           // If no exact match, send the latest entry
-          const latestEntry = entriesWithMessages[entriesWithMessages.length - 1];
+          const latestEntry = entries[entries.length - 1];
           this.messageSender.sendTraceData(latestEntry.trace);
         }
-      } else if (entriesWithMessages.length > 0) {
+      } else if (entries.length > 0) {
         // If no current planId but we have entries, send the latest
-        const latestEntry = entriesWithMessages[entriesWithMessages.length - 1];
+        const latestEntry = entries[entries.length - 1];
         this.messageSender.sendTraceData(latestEntry.trace);
       }
     } catch (error) {
@@ -123,21 +154,27 @@ export class HistoryManager {
 
   /**
    * Opens a trace JSON entry in the editor
+   * Creates a virtual document instead of saving to disk
    */
   async openTraceJsonEntry(entryData: TraceHistoryEntry | undefined): Promise<void> {
-    if (!entryData || typeof entryData !== 'object' || !entryData.storageKey) {
+    if (!entryData || typeof entryData !== 'object' || !entryData.trace) {
       vscode.window.showErrorMessage('Unable to open trace JSON: Missing trace details.');
       return;
     }
 
     try {
-      const filePath = await writeTraceEntryToFile(entryData);
-      const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+      // Create a virtual document URI instead of saving to disk
+      const traceJson = JSON.stringify(entryData.trace, null, 2);
+      const uri = vscode.Uri.parse(`untitled:${entryData.planId || 'trace'}.json`);
+      const document = await vscode.workspace.openTextDocument(uri);
+      const edit = new vscode.WorkspaceEdit();
+      edit.insert(uri, new vscode.Position(0, 0), traceJson);
+      await vscode.workspace.applyEdit(edit);
       await vscode.window.showTextDocument(document, { preview: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Unable to open trace JSON: ${errorMessage}`);
-      console.error('Unable to open trace JSON file:', error);
+      console.error('Unable to open trace JSON:', error);
     }
   }
 

@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
 import { SfProject } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
-import { readTraceHistoryEntries } from '../../../utils/traceHistory';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { AgentMessage } from '../types';
 import type { AgentViewState } from '../state/agentViewState';
@@ -12,7 +11,7 @@ import type { HistoryManager } from '../history/historyManager';
 import type { ApexDebugManager } from '../debugging/apexDebugManager';
 import type { ConversationExporter } from '../export/conversationExporter';
 import type { ChannelService } from '../../../types/ChannelService';
-import { getAgentSource, getAgentStorageKey } from '../agent/agentUtils';
+import { getAgentSource } from '../agent/agentUtils';
 
 /**
  * Handles all incoming messages from the webview
@@ -170,21 +169,13 @@ export class WebviewMessageHandlers {
       const loadTraceWithRetry = async (retries = 5, delay = 200) => {
         for (let i = 0; i < retries; i++) {
           try {
-            const agentStorageKey = getAgentStorageKey(
-              this.state.currentAgentId!,
-              this.state.currentAgentSource!
-            );
-            const entries = await readTraceHistoryEntries(agentStorageKey);
-
-            if (entries.length > 0) {
-              const matchingEntry = entries.find(entry => entry.planId === this.state.currentPlanId);
-              if (matchingEntry || entries.length > 0) {
-                await this.historyManager.loadAndSendTraceHistory(
-                  this.state.currentAgentId!,
-                  this.state.currentAgentSource!
-                );
-                return;
-              }
+            // Use agent instance method to get history
+            if (this.state.agentInstance && this.state.sessionId) {
+              await this.historyManager.loadAndSendTraceHistory(
+                this.state.currentAgentId!,
+                this.state.currentAgentSource!
+              );
+              return;
             }
 
             if (i < retries - 1) {
