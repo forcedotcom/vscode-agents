@@ -280,8 +280,17 @@ export class SessionManager {
     project: any,
     ensureActive: () => void
   ): Promise<void> {
-    // Validate agent ID format
-    validatePublishedAgentId(agentId);
+    // Validate agent ID format - only validate if it looks like a Bot ID
+    // This prevents errors when a script agent name is incorrectly passed here
+    if (agentId.startsWith('0X') && (agentId.length === 15 || agentId.length === 18)) {
+      validatePublishedAgentId(agentId);
+    } else {
+      // If it doesn't look like a Bot ID, this is likely a misrouted script agent
+      // Throw a more helpful error
+      throw new Error(
+        `Invalid agent ID for published agent. Expected a Bot ID (starting with "0X"), but got: ${agentId}. This may be a script agent.`
+      );
+    }
 
     // Published agents are always in live mode
     await this.state.setLiveMode(true);

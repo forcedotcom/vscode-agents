@@ -241,7 +241,8 @@ describe('AgentSelector', () => {
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'agent1');
 
-      expect(vscodeApi.clearMessages).toHaveBeenCalled();
+      // clearMessages is no longer called from webview - backend handles it atomically with history loading
+      expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
       expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent1');
     });
 
@@ -282,7 +283,8 @@ describe('AgentSelector', () => {
 
       await waitFor(() => {
         expect(onAgentChange).toHaveBeenCalledWith('agent2');
-        expect(vscodeApi.clearMessages).toHaveBeenCalled();
+        // clearMessages is no longer called from webview - backend handles it atomically with history loading
+        expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
         expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent2');
       });
     });

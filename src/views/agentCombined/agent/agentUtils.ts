@@ -62,6 +62,18 @@ export async function getAgentSource(agentId: string, agents?: PreviewableAgent[
     return agent.source;
   }
 
+  // Check if agentId matches an agent's aabName (for script agents)
+  const agentByAabName = agentList.find(a => a.aabName === agentId);
+  if (agentByAabName) {
+    return agentByAabName.source;
+  }
+
+  // Check if agentId matches an agent name in the list
+  const agentByName = agentList.find(a => a.name === agentId || path.basename(a.id || '') === agentId);
+  if (agentByName) {
+    return agentByName.source;
+  }
+
   // If not found, check if agentId is a file path that exists
   // Strip "local:" prefix if present
   const normalizedAgentId = agentId.startsWith('local:') ? agentId.substring(6) : agentId;
@@ -73,12 +85,6 @@ export async function getAgentSource(agentId: string, agents?: PreviewableAgent[
       // File doesn't exist, but still looks like a path - treat as script
       return AgentSource.SCRIPT;
     }
-  }
-
-  // Check if agentId matches an agent name in the list
-  const agentByName = agentList.find(a => a.name === agentId || path.basename(a.id || '') === agentId);
-  if (agentByName) {
-    return agentByName.source;
   }
 
   // Check if it's a valid Bot ID format

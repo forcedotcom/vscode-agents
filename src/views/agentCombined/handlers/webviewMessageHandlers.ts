@@ -123,10 +123,17 @@ export class WebviewMessageHandlers {
       throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
     }
 
+    // Determine agent source if not already set
+    let agentSource = this.state.currentAgentSource;
+    if (!agentSource) {
+      agentSource = await getAgentSource(agentId);
+      this.state.currentAgentSource = agentSource;
+    }
+
     const isLiveMode = data?.isLiveMode ?? false;
     await this.sessionManager.startSession(
       agentId,
-      this.state.currentAgentSource ?? AgentSource.SCRIPT,
+      agentSource,
       isLiveMode,
       this.webviewView
     );
