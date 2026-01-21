@@ -120,7 +120,7 @@ describe('previewAgent', () => {
 
       expect(postMessageMock).toHaveBeenCalledWith({
         command: 'selectAgent',
-        data: { agentId: '/tmp/preview.agent' }
+        data: { agentId: '/tmp/preview.agent', agentSource: 'script' }
       });
       expect(startPreviewSessionMock).toHaveBeenCalled();
     });
@@ -188,7 +188,7 @@ describe('previewAgent', () => {
       expect(providerMock.setAgentId).toHaveBeenCalledWith('/tmp/from-editor.agent');
       expect(postMessageMock).toHaveBeenCalledWith({
         command: 'selectAgent',
-        data: { agentId: '/tmp/from-editor.agent' }
+        data: { agentId: '/tmp/from-editor.agent', agentSource: 'script' }
       });
       expect(startPreviewSessionMock).toHaveBeenCalled();
 
