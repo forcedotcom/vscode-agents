@@ -266,7 +266,8 @@ describe('App', () => {
       triggerMessage('selectAgent', { agentId: 'agent2' });
 
       await waitFor(() => {
-        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent2');
+        // selectAgent message passes agentSource (undefined when not provided in message)
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent2', undefined);
       });
     });
   });
@@ -337,7 +338,8 @@ describe('App', () => {
       triggerMessage('selectAgent', { agentId: 'agent1' });
 
       await waitFor(() => {
-        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+        // selectAgent message passes agentSource (undefined when not provided in message)
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1', undefined);
       });
     });
 
@@ -482,8 +484,8 @@ describe('App', () => {
       // No session lifecycle methods should fire
       expect(mockVscodeApi.startSession).not.toHaveBeenCalled();
 
-      // Ensure state updates propagated
-      expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+      // Ensure state updates propagated (selectAgent message passes agentSource)
+      expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1', undefined);
 
       // Should not call endSession since no session was active
       expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
@@ -589,7 +591,7 @@ describe('App', () => {
       triggerMessage('selectAgent', { agentId: 'agent1' });
 
       await waitFor(() => {
-        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
+        expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1', undefined);
       });
 
       // Should not call endSession since no session is active
