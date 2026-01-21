@@ -84,7 +84,7 @@ export const registerPreviewAgentCommand = () => {
       if (provider.webviewView?.webview) {
         provider.webviewView.webview.postMessage({
           command: 'selectAgent',
-          data: { agentId: agentId }
+          data: { agentId: agentId, agentSource: agentSource }
         });
       }
 

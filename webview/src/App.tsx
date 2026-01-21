@@ -3,12 +3,13 @@ import AgentPreview, { AgentPreviewRef } from './components/AgentPreview/AgentPr
 import AgentTracer from './components/AgentTracer/AgentTracer.js';
 import AgentSelector from './components/AgentPreview/AgentSelector.js';
 import TabNavigation from './components/shared/TabNavigation.js';
-import { vscodeApi, AgentInfo } from './services/vscodeApi.js';
+import { vscodeApi, AgentInfo, AgentSource } from './services/vscodeApi.js';
 import './App.css';
 
 interface SelectAgentMessage {
   agentId: string;
   forceRestart?: boolean;
+  agentSource?: string;
 }
 
 declare global {
@@ -58,7 +59,8 @@ const App: React.FC = () => {
 
       // Update the selected agent in the dropdown (even when clearing selection)
       setDesiredAgentId(data.agentId);
-      vscodeApi.setSelectedAgentId(data.agentId);
+      // Pass agentSource to avoid expensive re-fetch on the backend
+      vscodeApi.setSelectedAgentId(data.agentId, data.agentSource as AgentSource | undefined);
 
       if (data.agentId === '') {
         // Clear the view immediately when the provider resets the selection
@@ -74,7 +76,8 @@ const App: React.FC = () => {
         // Palette selection - let history flow decide whether to show saved conversation or placeholder
         // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
         // to avoid flickering between clear and load
-        vscodeApi.loadAgentHistory(data.agentId);
+        // Pass agentSource to avoid expensive re-fetch on the backend
+        vscodeApi.loadAgentHistory(data.agentId, data.agentSource as AgentSource | undefined);
       }
     });
 

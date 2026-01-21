@@ -180,29 +180,27 @@ export class HistoryManager {
 
   /**
    * Shows history or placeholder for an agent
-   * Loads history first, then clears and sends in one atomic operation to avoid flickering
+   * Uses atomic setConversation message to avoid visual blink
    */
   async showHistoryOrPlaceholder(agentId: string, agentSource: AgentSource): Promise<void> {
     try {
-      // Load history data first (before clearing) to minimize flickering
+      // Load history data first
       const traceHistoryPromise = this.loadTraceHistoryData(agentId, agentSource);
       const conversationHistoryPromise = this.loadConversationHistoryData(agentId, agentSource);
-      
+
       // Wait for both to complete
       const [traceEntries, transcriptEntries] = await Promise.all([
         traceHistoryPromise,
         conversationHistoryPromise
       ]);
 
-      // Now clear and send in one atomic operation
-      this.messageSender.sendClearMessages();
-      
       // Send trace history
       this.messageSender.sendTraceHistory(agentId, traceEntries);
-      
-      // Send conversation history if available
+
+      // Build history messages if available
+      let historyMessages: Array<{ id: string; type: string; content: string; timestamp: number }> = [];
       if (transcriptEntries && transcriptEntries.length > 0) {
-        const historyMessages = transcriptEntries
+        historyMessages = transcriptEntries
           .filter(entry => entry.text)
           .map(entry => ({
             id: `${entry.timestamp}-${entry.sessionId}`,
@@ -210,18 +208,14 @@ export class HistoryManager {
             content: entry.text || '',
             timestamp: new Date(entry.timestamp).getTime()
           }));
-
-        if (historyMessages.length > 0) {
-          this.messageSender.sendConversationHistory(historyMessages);
-          await this.state.setConversationDataAvailable(true);
-        } else {
-          await this.state.setConversationDataAvailable(false);
-          this.messageSender.sendNoHistoryFound(agentId);
-        }
-      } else {
-        await this.state.setConversationDataAvailable(false);
-        this.messageSender.sendNoHistoryFound(agentId);
       }
+
+      const hasHistory = historyMessages.length > 0;
+      await this.state.setConversationDataAvailable(hasHistory);
+
+      // Send atomic setConversation message - this replaces clearMessages + conversationHistory
+      // showPlaceholder is true when there's no history to display
+      this.messageSender.sendSetConversation(historyMessages, !hasHistory);
 
       // Send trace data if we have entries
       if (traceEntries.length > 0) {
@@ -241,8 +235,8 @@ export class HistoryManager {
     } catch (err) {
       console.error('Error loading history:', err);
       await this.state.setConversationDataAvailable(false);
-      this.messageSender.sendClearMessages();
-      this.messageSender.sendNoHistoryFound(agentId);
+      // Send atomic message with empty history and show placeholder
+      this.messageSender.sendSetConversation([], true);
     }
   }
 

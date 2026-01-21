@@ -171,6 +171,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Gets the currently selected agent source
+   */
+  public getCurrentAgentSource(): string | undefined {
+    return this.state.currentAgentSource;
+  }
+
+  /**
    * Selects an agent and starts a session
    */
   public selectAndStartAgent(agentId: string): void {

@@ -21,8 +21,7 @@ import { CoreExtensionService } from './services/coreExtensionService';
 import type { AgentTestGroupNode, TestNode } from './types';
 import type { TelemetryService } from './types/TelemetryService';
 import { AgentCombinedViewProvider } from './views/agentCombinedViewProvider';
-import { Agent, AgentSource } from '@salesforce/agents';
-import { SfProject } from '@salesforce/core';
+import { AgentSource } from '@salesforce/agents';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
@@ -274,40 +273,13 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         // Reveal the Agentforce DX panel
         await vscode.commands.executeCommand('sf.agent.combined.view.focus');
 
-        const postSelectionMessage = async () => {
+        const postSelectionMessage = () => {
           if (provider.webviewView?.webview) {
-            // Send the selectAgent message
+            // Send the selectAgent message with agentSource to avoid expensive re-fetch
             provider.webviewView.webview.postMessage({
               command: 'selectAgent',
-              data: { agentId: selectedAgent.id }
+              data: { agentId: selectedAgent.id, agentSource: selectedAgent.source }
             });
-            
-            // Also refresh the agents list with the selected agent ID to ensure dropdown updates
-            try {
-              const conn = await CoreExtensionService.getDefaultConnection();
-              const project = SfProject.getInstance();
-              const allAgents = await Agent.listPreviewable(conn, project);
-              
-              // Map PreviewableAgent to the format expected by webview
-              // Script agents use aabName as id, published agents use id
-              const mappedAgents = allAgents
-                .filter(agent => agent.id || agent.aabName)
-                .map(agent => ({
-                  name: agent.name,
-                  id: agent.id || agent.aabName,
-                  type: agent.source
-                }));
-
-              provider.webviewView.webview.postMessage({
-                command: 'availableAgents',
-                data: {
-                  agents: mappedAgents,
-                  selectedAgentId: selectedAgent.id
-                }
-              });
-            } catch (err) {
-              console.error('Error refreshing agents list:', err);
-            }
           }
         };
 

@@ -116,19 +116,19 @@ export class WebviewMessageHandlers {
   }
 
   private async handleStartSession(message: AgentMessage): Promise<void> {
-    const data = message.data as { agentId?: string; isLiveMode?: boolean } | undefined;
+    const data = message.data as { agentId?: string; isLiveMode?: boolean; agentSource?: string } | undefined;
     const agentId = data?.agentId || this.state.currentAgentId;
 
     if (!agentId || typeof agentId !== 'string') {
       throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
     }
 
-    // Determine agent source if not already set
-    let agentSource = this.state.currentAgentSource;
+    // Determine agent source - prefer passed value, then state, then fetch
+    let agentSource = (data?.agentSource as AgentSource) ?? this.state.currentAgentSource;
     if (!agentSource) {
       agentSource = await getAgentSource(agentId);
-      this.state.currentAgentSource = agentSource;
     }
+    this.state.currentAgentSource = agentSource;
 
     const isLiveMode = data?.isLiveMode ?? false;
     await this.sessionManager.startSession(
@@ -221,10 +221,11 @@ export class WebviewMessageHandlers {
   }
 
   private async handleLoadAgentHistory(message: AgentMessage): Promise<void> {
-    const data = message.data as { agentId?: string } | undefined;
+    const data = message.data as { agentId?: string; agentSource?: string } | undefined;
     const agentId = data?.agentId;
     if (agentId && typeof agentId === 'string') {
-      const agentSource = await getAgentSource(agentId);
+      // Use passed agentSource if available to avoid expensive listPreviewable call
+      const agentSource = (data?.agentSource as AgentSource) ?? (await getAgentSource(agentId));
       await this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
     }
   }
@@ -304,19 +305,22 @@ export class WebviewMessageHandlers {
   }
 
   private async handleSetSelectedAgentId(message: AgentMessage): Promise<void> {
-    const data = message.data as { agentId?: string } | undefined;
+    const data = message.data as { agentId?: string; agentSource?: string } | undefined;
     const agentId = data?.agentId;
     if (agentId && typeof agentId === 'string' && agentId !== '') {
       this.state.currentAgentId = agentId;
-      this.state.currentAgentSource = await getAgentSource(agentId);
+      // Use passed agentSource if available to avoid expensive listPreviewable call
+      this.state.currentAgentSource = (data?.agentSource as AgentSource) ?? (await getAgentSource(agentId));
       await this.state.setAgentSelected(true);
       await this.state.setResetAgentViewAvailable(false);
       await this.state.setSessionErrorState(false);
-      await this.state.setConversationDataAvailable(false);
+      // Don't set conversationDataAvailable here - let the history loading flow
+      // (showHistoryOrPlaceholder) control it to avoid download button flashing
     } else {
       this.state.currentAgentId = undefined;
       this.state.currentAgentSource = undefined;
       await this.state.setAgentSelected(false);
+      await this.state.setConversationDataAvailable(false);
     }
   }
 
