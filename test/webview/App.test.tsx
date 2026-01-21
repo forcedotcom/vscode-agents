@@ -255,6 +255,7 @@ describe('App', () => {
       await user.selectOptions(select, 'agent1');
 
       await waitFor(() => {
+        // When selecting from dropdown, App.handleAgentChange only receives agentId
         expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
       });
     });
@@ -291,6 +292,7 @@ describe('App', () => {
       await userEvent.selectOptions(select, 'agent1');
 
       await waitFor(() => {
+        // When selecting from dropdown, App.handleAgentChange only receives agentId
         expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
       });
     });
@@ -571,6 +573,8 @@ describe('App', () => {
       await userEvent.setup().selectOptions(select, 'agent1');
 
       await waitFor(() => {
+        // When selecting from dropdown, App.handleAgentChange only receives agentId
+        // The agentSource is passed separately through loadAgentHistory in AgentSelector
         expect(mockVscodeApi.setSelectedAgentId).toHaveBeenCalledWith('agent1');
       });
 

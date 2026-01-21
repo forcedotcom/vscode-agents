@@ -211,6 +211,22 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeConversationHistory);
 
+      // Atomic conversation state update - replaces separate clearMessages + conversationHistory
+      // to avoid visual blink from sequential state updates
+      const disposeSetConversation = vscodeApi.onMessage('setConversation', data => {
+        // Atomically update all conversation-related state in one render
+        const historyMessages: Message[] =
+          data && Array.isArray(data.messages) ? data.messages.map(normalizeHistoryMessage) : [];
+
+        setMessages(historyMessages);
+        setShowPlaceholder(data?.showPlaceholder ?? historyMessages.length === 0);
+        setSessionActive(false);
+        setAgentConnected(false);
+        setIsLoading(false);
+        setHasSessionError(false);
+      });
+      disposers.push(disposeSetConversation);
+
       const disposeNoHistoryFound = vscodeApi.onMessage('noHistoryFound', data => {
         // No history found - show placeholder instead of auto-starting
         if (data && data.agentId) {
@@ -413,7 +429,8 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         return;
       }
 
-      setMessages([]);
+      // Don't clear messages here - let the backend's setConversation message
+      // handle it atomically to avoid visual blink
 
       if (pendingAgentId && pendingAgentId === selectedAgentId) {
         setIsLoading(true);

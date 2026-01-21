@@ -57,8 +57,8 @@ export class WebviewMessageSender {
   }
 
   // Agent selection
-  sendSelectAgent(agentId: string, forceRestart?: boolean): void {
-    this.postMessage('selectAgent', { agentId, forceRestart });
+  sendSelectAgent(agentId: string, forceRestart?: boolean, agentSource?: string): void {
+    this.postMessage('selectAgent', { agentId, forceRestart, agentSource });
   }
 
   sendAvailableAgents(agents: Array<{ name: string; id: string; type: string }>, selectedAgentId?: string): void {
@@ -71,6 +71,13 @@ export class WebviewMessageSender {
   // History messages
   sendConversationHistory(messages: Array<{ id: string; type: string; content: string; timestamp: number }>): void {
     this.postMessage('conversationHistory', { messages });
+  }
+
+  sendSetConversation(
+    messages: Array<{ id: string; type: string; content: string; timestamp: number }>,
+    showPlaceholder: boolean
+  ): void {
+    this.postMessage('setConversation', { messages, showPlaceholder });
   }
 
   sendTraceHistory(agentId: string, entries: TraceHistoryEntry[]): void {

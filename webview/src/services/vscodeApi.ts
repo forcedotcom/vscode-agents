@@ -109,7 +109,7 @@ class VSCodeApiService {
   }
 
   // Agent session management
-  startSession(agentId: string, options?: { isLiveMode?: boolean }) {
+  startSession(agentId: string, options?: { isLiveMode?: boolean; agentSource?: string }) {
     this.postMessage('startSession', { agentId, ...options });
   }
 
@@ -157,13 +157,13 @@ class VSCodeApiService {
   }
 
   // Notify the extension about the selected agent ID
-  setSelectedAgentId(agentId: string) {
-    this.postMessage('setSelectedAgentId', { agentId });
+  setSelectedAgentId(agentId: string, agentSource?: AgentSource) {
+    this.postMessage('setSelectedAgentId', { agentId, agentSource });
   }
 
   // Load conversation history for an agent without starting a session
-  loadAgentHistory(agentId: string) {
-    this.postMessage('loadAgentHistory', { agentId });
+  loadAgentHistory(agentId: string, agentSource?: AgentSource) {
+    this.postMessage('loadAgentHistory', { agentId, agentSource });
   }
 
   // Set live mode preference

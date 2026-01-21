@@ -108,11 +108,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             // If there's a selectedAgentId in the message, use it
             // Otherwise, if we already have a selectedAgent, try to keep it if it exists in the new list
             if (data.selectedAgentId) {
-              const agentExists = data.agents.some(agent => agent.id === data.selectedAgentId);
-              if (agentExists) {
+              const selectedAgentInfo = data.agents.find(agent => agent.id === data.selectedAgentId);
+              if (selectedAgentInfo) {
                 onAgentChange(data.selectedAgentId);
                 // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
-                vscodeApi.loadAgentHistory(data.selectedAgentId);
+                vscodeApi.loadAgentHistory(data.selectedAgentId, selectedAgentInfo.type);
               }
             } else if (selectedAgent) {
               // If we have a selected agent but it's not in the new list, clear the selection
@@ -151,16 +151,17 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     onAgentChange(agentId);
 
     if (agentId && agentId !== '') {
-      const selectedAgent = agents.find(agent => agent.id === agentId);
+      const selectedAgentData = agents.find(agent => agent.id === agentId);
 
-      if (selectedAgent?.type === AgentSource.PUBLISHED) {
+      if (selectedAgentData?.type === AgentSource.PUBLISHED) {
         // Auto-enable live mode for published agents
         setIsLiveMode(true);
       }
       // For script agents, keep the current global live mode preference
 
       // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
-      vscodeApi.loadAgentHistory(agentId);
+      // Pass the agent source to avoid expensive re-fetch on the backend
+      vscodeApi.loadAgentHistory(agentId, selectedAgentData?.type);
     } else {
       // When clearing selection, clear messages immediately
       vscodeApi.clearMessages();

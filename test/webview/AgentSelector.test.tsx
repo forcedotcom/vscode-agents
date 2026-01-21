@@ -243,7 +243,8 @@ describe('AgentSelector', () => {
 
       // clearMessages is no longer called from webview - backend handles it atomically with history loading
       expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
-      expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent1');
+      // Now passes agent source to avoid expensive re-fetch on backend
+      expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent1', 'published');
     });
 
     it('should clear messages when deselecting agent', async () => {
@@ -285,7 +286,8 @@ describe('AgentSelector', () => {
         expect(onAgentChange).toHaveBeenCalledWith('agent2');
         // clearMessages is no longer called from webview - backend handles it atomically with history loading
         expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
-        expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent2');
+        // Now passes agent source to avoid expensive re-fetch on backend
+        expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent2', 'published');
       });
     });
 

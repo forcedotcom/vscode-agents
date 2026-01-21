@@ -9,6 +9,7 @@ import './App.css';
 interface SelectAgentMessage {
   agentId: string;
   forceRestart?: boolean;
+  agentSource?: string;
 }
 
 declare global {
