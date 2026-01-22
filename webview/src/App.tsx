@@ -186,6 +186,13 @@ const App: React.FC = () => {
     vscodeApi.setSelectedAgentId(agentId);
   }, []);
 
+  const handleStopSession = useCallback(() => {
+    // Optimistic update: immediately update UI state before backend confirms
+    sessionActiveRef.current = false;
+    setIsSessionActive(false);
+    setIsSessionStarting(false);
+  }, []);
+
   useEffect(() => {
     const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', () => {
       sessionActiveRef.current = true;
@@ -351,6 +358,7 @@ const App: React.FC = () => {
           onLiveModeChange={handleLiveModeChange}
           initialLiveMode={isLiveMode}
           onSelectedAgentInfoChange={setSelectedAgentInfo}
+          onStopSession={handleStopSession}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
