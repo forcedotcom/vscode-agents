@@ -12,6 +12,7 @@ interface AgentSelectorProps {
   onLiveModeChange?: (isLive: boolean) => void;
   initialLiveMode?: boolean;
   onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
+  onStopSession?: () => void;
 }
 
 export interface StartClickParams {
@@ -51,7 +52,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   isSessionStarting = false,
   onLiveModeChange,
   initialLiveMode = false,
-  onSelectedAgentInfoChange
+  onSelectedAgentInfoChange,
+  onStopSession
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,6 +199,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
     // If session is active and mode changed, restart with new mode
     if (modeChanged && isSessionActive && selectedAgent) {
+      // Optimistic update: notify parent immediately before sending to backend
+      onStopSession?.();
       await vscodeApi.endSession();
       // Wait a brief moment for the session to fully end
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -211,7 +215,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       isSessionActive,
       isSessionStarting,
       isLiveMode,
-      endSession: () => vscodeApi.endSession(),
+      endSession: () => {
+        // Optimistic update: notify parent immediately before sending to backend
+        onStopSession?.();
+        vscodeApi.endSession();
+      },
       startSession: (agentId, options) => vscodeApi.startSession(agentId, options)
     });
 
