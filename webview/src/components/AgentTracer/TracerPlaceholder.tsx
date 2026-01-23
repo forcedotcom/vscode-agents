@@ -1,5 +1,5 @@
 import React from 'react';
-import { AgentInfo } from '../../services/vscodeApi.js';
+import { AgentInfo, AgentSource } from '../../services/vscodeApi.js';
 import { SplitButton } from '../shared/SplitButton.js';
 import { Button } from '../shared/Button.js';
 import './TracerPlaceholder.css';
@@ -54,7 +54,7 @@ const TracerPlaceholder: React.FC<TracerPlaceholderProps> = ({
     }
   };
 
-  const isPublishedAgent = selectedAgentInfo?.type === 'published';
+  const isPublishedAgent = selectedAgentInfo?.type === AgentSource.PUBLISHED;
 
   return (
     <div className="tracer-placeholder">

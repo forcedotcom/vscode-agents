@@ -18,6 +18,12 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+// Setup window.AgentSource BEFORE importing anything
+(window as any).AgentSource = {
+  SCRIPT: 'script',
+  PUBLISHED: 'published'
+};
+
 // Mock vscodeApi
 jest.mock('../../webview/src/services/vscodeApi', () => ({
   vscodeApi: {
@@ -27,9 +33,11 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
     endSession: jest.fn(),
     sendChatMessage: jest.fn(),
     clearMessages: jest.fn(),
-    selectClientApp: jest.fn(),
-    onClientAppReady: jest.fn(),
     sendConversationExport: jest.fn()
+  },
+  AgentSource: {
+    SCRIPT: 'script',
+    PUBLISHED: 'published'
   }
 }));
 
@@ -50,11 +58,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         messageHandlers.delete(command);
       };
     });
-
-    // Setup onClientAppReady
-    (mockVscodeApi.onClientAppReady as jest.Mock).mockImplementation(() => {
-      return () => {};
-    });
   });
 
   describe('noHistoryFound Message Handling', () => {
@@ -63,10 +66,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
@@ -88,10 +87,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
@@ -111,10 +106,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={true}
@@ -135,10 +126,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
@@ -165,10 +152,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
@@ -199,10 +182,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
@@ -235,10 +214,6 @@ describe('AgentPreview - Placeholder Behavior', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}

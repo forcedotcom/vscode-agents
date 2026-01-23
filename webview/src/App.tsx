@@ -3,17 +3,13 @@ import AgentPreview, { AgentPreviewRef } from './components/AgentPreview/AgentPr
 import AgentTracer from './components/AgentTracer/AgentTracer.js';
 import AgentSelector from './components/AgentPreview/AgentSelector.js';
 import TabNavigation from './components/shared/TabNavigation.js';
-import { vscodeApi, AgentInfo } from './services/vscodeApi.js';
+import { vscodeApi, AgentInfo, AgentSource } from './services/vscodeApi.js';
 import './App.css';
-
-interface ClientApp {
-  name: string;
-  clientId: string;
-}
 
 interface SelectAgentMessage {
   agentId: string;
   forceRestart?: boolean;
+  agentSource?: string;
 }
 
 declare global {
@@ -32,8 +28,6 @@ const App: React.FC = () => {
   const [displayedAgentId, setDisplayedAgentIdState] = useState('');
   const [desiredAgentId, setDesiredAgentId] = useState('');
   const [restartTrigger, setRestartTrigger] = useState(0);
-  const [clientAppState, setClientAppState] = useState<'none' | 'required' | 'selecting' | 'ready'>('none');
-  const [availableClientApps, setAvailableClientApps] = useState<ClientApp[]>([]);
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionStarting, setIsSessionStarting] = useState(false);
@@ -65,7 +59,8 @@ const App: React.FC = () => {
 
       // Update the selected agent in the dropdown (even when clearing selection)
       setDesiredAgentId(data.agentId);
-      vscodeApi.setSelectedAgentId(data.agentId);
+      // Pass agentSource to avoid expensive re-fetch on the backend
+      vscodeApi.setSelectedAgentId(data.agentId, data.agentSource as AgentSource | undefined);
 
       if (data.agentId === '') {
         // Clear the view immediately when the provider resets the selection
@@ -79,8 +74,10 @@ const App: React.FC = () => {
         setRestartTrigger(prev => prev + 1);
       } else {
         // Palette selection - let history flow decide whether to show saved conversation or placeholder
-        vscodeApi.clearMessages();
-        vscodeApi.loadAgentHistory(data.agentId);
+        // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
+        // to avoid flickering between clear and load
+        // Pass agentSource to avoid expensive re-fetch on the backend
+        vscodeApi.loadAgentHistory(data.agentId, data.agentSource as AgentSource | undefined);
       }
     });
 
@@ -183,19 +180,17 @@ const App: React.FC = () => {
     }, 100);
   }, [isSessionActive, isSessionStarting, desiredAgentId]);
 
-  const handleClientAppRequired = useCallback((_data: any) => {
-    setClientAppState('required');
-  }, []);
-
-  const handleClientAppSelection = useCallback((data: any) => {
-    setClientAppState('selecting');
-    setAvailableClientApps(data.clientApps || []);
-  }, []);
-
   const handleAgentChange = useCallback((agentId: string) => {
     setDesiredAgentId(agentId);
     // Notify the extension about the selected agent
     vscodeApi.setSelectedAgentId(agentId);
+  }, []);
+
+  const handleStopSession = useCallback(() => {
+    // Optimistic update: immediately update UI state before backend confirms
+    sessionActiveRef.current = false;
+    setIsSessionActive(false);
+    setIsSessionStarting(false);
   }, []);
 
   useEffect(() => {
@@ -356,8 +351,6 @@ const App: React.FC = () => {
     <div className="app">
       <div className="app-menu">
         <AgentSelector
-          onClientAppRequired={handleClientAppRequired}
-          onClientAppSelection={handleClientAppSelection}
           selectedAgent={desiredAgentId}
           onAgentChange={handleAgentChange}
           isSessionActive={isSessionActive}
@@ -365,6 +358,7 @@ const App: React.FC = () => {
           onLiveModeChange={handleLiveModeChange}
           initialLiveMode={isLiveMode}
           onSelectedAgentInfoChange={setSelectedAgentInfo}
+          onStopSession={handleStopSession}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
@@ -375,10 +369,6 @@ const App: React.FC = () => {
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview
             ref={agentPreviewRef}
-            clientAppState={clientAppState}
-            availableClientApps={availableClientApps}
-            onClientAppStateChange={setClientAppState}
-            onAvailableClientAppsChange={setAvailableClientApps}
             isSessionTransitioning={isSessionTransitioning}
             onSessionTransitionSettled={handleSessionTransitionSettled}
             selectedAgentId={previewAgentId}

@@ -21,6 +21,7 @@ import { CoreExtensionService } from './services/coreExtensionService';
 import type { AgentTestGroupNode, TestNode } from './types';
 import type { TelemetryService } from './types/TelemetryService';
 import { AgentCombinedViewProvider } from './views/agentCombinedViewProvider';
+import { AgentSource } from '@salesforce/agents';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
@@ -220,20 +221,27 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
     try {
       const availableAgents = await provider.getAgentsForCommandPalette();
-      const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
-      const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
+      const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT);
+      const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED);
 
-      const allAgents: Array<{ label: string; description?: string; id?: string; kind?: vscode.QuickPickItemKind }> =
-        [];
+      const allAgents: Array<{
+        label: string;
+        description?: string;
+        id?: string;
+        source?: AgentSource;
+        kind?: vscode.QuickPickItemKind;
+      }> = [];
 
       if (scriptAgents.length > 0) {
         allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
         allAgents.push(
-          ...scriptAgents.map(agent => ({
-            label: agent.name,
-            description: agent.filePath ? path.basename(agent.filePath) : undefined,
-            id: agent.id
-          }))
+        ...scriptAgents.map(agent => ({
+          label: agent.name,
+          description: agent.id ? path.basename(agent.id) : undefined,
+          // For script agents, use aabName to match what the webview expects
+          id: agent.aabName || agent.id,
+          source: agent.source
+        }))
         );
       }
 
@@ -242,7 +250,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         allAgents.push(
           ...publishedAgents.map(agent => ({
             label: agent.name,
-            id: agent.id
+            id: agent.id,
+            source: agent.source
           }))
         );
       }
@@ -266,18 +275,19 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
         const postSelectionMessage = () => {
           if (provider.webviewView?.webview) {
+            // Send the selectAgent message with agentSource to avoid expensive re-fetch
             provider.webviewView.webview.postMessage({
               command: 'selectAgent',
-              data: { agentId: selectedAgent.id }
+              data: { agentId: selectedAgent.id, agentSource: selectedAgent.source }
             });
           }
         };
 
         // If the webview already exists, update it immediately; otherwise try shortly after focus
         if (provider.webviewView?.webview) {
-          postSelectionMessage();
+          await postSelectionMessage();
         } else {
-          setTimeout(postSelectionMessage, 300);
+          setTimeout(() => postSelectionMessage(), 300);
         }
       }
     } catch (error) {
@@ -304,13 +314,14 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
         try {
           const availableAgents = await provider.getAgentsForCommandPalette();
-          const scriptAgents = availableAgents.filter(agent => agent.type === 'script');
-          const publishedAgents = availableAgents.filter(agent => agent.type === 'published');
+          const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT);
+          const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED);
 
           const allAgents: Array<{
             label: string;
             description?: string;
             id?: string;
+            source?: AgentSource;
             kind?: vscode.QuickPickItemKind;
           }> = [];
 
@@ -319,8 +330,10 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
             allAgents.push(
               ...scriptAgents.map(agent => ({
                 label: agent.name,
-                description: agent.filePath ? path.basename(agent.filePath) : undefined,
-                id: agent.id
+                description: agent.id ? path.basename(agent.id) : undefined,
+                // For script agents, use aabName to match what the webview expects
+                id: agent.aabName || agent.id,
+                source: agent.source
               }))
             );
           }
@@ -330,7 +343,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
             allAgents.push(
               ...publishedAgents.map(agent => ({
                 label: agent.name,
-                id: agent.id
+                id: agent.id,
+                source: agent.source
               }))
             );
           }

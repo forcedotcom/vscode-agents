@@ -17,6 +17,12 @@ import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 
+// Setup window.AgentSource BEFORE importing anything
+(window as any).AgentSource = {
+  SCRIPT: 'script',
+  PUBLISHED: 'published'
+};
+
 jest.mock('../../webview/src/services/vscodeApi', () => ({
   vscodeApi: {
     postMessage: jest.fn(),
@@ -25,10 +31,12 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
     endSession: jest.fn(),
     sendChatMessage: jest.fn(),
     clearMessages: jest.fn(),
-    selectClientApp: jest.fn(),
-    onClientAppReady: jest.fn(),
     executeCommand: jest.fn(),
     sendConversationExport: jest.fn()
+  },
+  AgentSource: {
+    SCRIPT: 'script',
+    PUBLISHED: 'published'
   }
 }));
 
@@ -47,7 +55,6 @@ describe('AgentPreview - Message Handlers', () => {
       return () => handlers.delete(cmd);
     });
 
-    (vscodeApi.onClientAppReady as jest.Mock).mockImplementation(() => () => {});
   });
 
   const renderComponent = () =>
@@ -55,10 +62,6 @@ describe('AgentPreview - Message Handlers', () => {
       <AgentPreview
         selectedAgentId="test-agent"
         pendingAgentId={null}
-        clientAppState="none"
-        availableClientApps={[]}
-        onClientAppStateChange={jest.fn()}
-        onAvailableClientAppsChange={jest.fn()}
         isSessionTransitioning={false}
         onSessionTransitionSettled={jest.fn()}
         isLiveMode={false}
@@ -154,10 +157,6 @@ describe('AgentPreview - Message Handlers', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={onSettled}
           isLiveMode={false}
@@ -227,32 +226,7 @@ describe('AgentPreview - Message Handlers', () => {
   });
 
 
-  describe('Client App Ready', () => {
-    it('should call onClientAppStateChange when ready', async () => {
-      const onChange = jest.fn();
-      render(
-        <AgentPreview
-          selectedAgentId="test-agent"
-          pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={onChange}
-          onAvailableClientAppsChange={jest.fn()}
-          isSessionTransitioning={false}
-          onSessionTransitionSettled={jest.fn()}
-          isLiveMode={false}
-        />
-      );
-
-      // Get the onClientAppReady handler
-      const readyHandler = (vscodeApi.onClientAppReady as jest.Mock).mock.calls[0][0];
-      readyHandler();
-
-      await waitFor(() => {
-        expect(onChange).toHaveBeenCalledWith('ready');
-      });
-    });
-  });
+  // Client App Ready tests removed - functionality was removed
 
   describe('No History Found', () => {
     it('should show placeholder on noHistoryFound', async () => {
