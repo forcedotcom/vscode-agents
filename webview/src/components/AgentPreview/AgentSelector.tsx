@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
+import { vscodeApi, AgentInfo, AgentSource } from '../../services/vscodeApi.js';
 import { SplitButton } from '../shared/SplitButton.js';
 import { Button } from '../shared/Button.js';
 import './AgentSelector.css';
 
 interface AgentSelectorProps {
-  onClientAppRequired?: (data: any) => void;
-  onClientAppSelection?: (data: any) => void;
   selectedAgent: string;
   onAgentChange: (agentId: string) => void;
   isSessionActive?: boolean;
@@ -14,6 +12,7 @@ interface AgentSelectorProps {
   onLiveModeChange?: (isLive: boolean) => void;
   initialLiveMode?: boolean;
   onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
+  onStopSession?: () => void;
 }
 
 export interface StartClickParams {
@@ -47,15 +46,14 @@ export const handleStartClickImpl = ({
 };
 
 const AgentSelector: React.FC<AgentSelectorProps> = ({
-  onClientAppRequired,
-  onClientAppSelection,
   selectedAgent,
   onAgentChange,
   isSessionActive = false,
   isSessionStarting = false,
   onLiveModeChange,
   initialLiveMode = false,
-  onSelectedAgentInfoChange
+  onSelectedAgentInfoChange,
+  onStopSession
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,12 +107,20 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         } else {
           if (data.agents && data.agents.length > 0) {
             setAgents(data.agents);
+            // If there's a selectedAgentId in the message, use it
+            // Otherwise, if we already have a selectedAgent, try to keep it if it exists in the new list
             if (data.selectedAgentId) {
-              const agentExists = data.agents.some(agent => agent.id === data.selectedAgentId);
-              if (agentExists) {
+              const selectedAgentInfo = data.agents.find(agent => agent.id === data.selectedAgentId);
+              if (selectedAgentInfo) {
                 onAgentChange(data.selectedAgentId);
-                vscodeApi.clearMessages();
-                vscodeApi.loadAgentHistory(data.selectedAgentId);
+                // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
+                vscodeApi.loadAgentHistory(data.selectedAgentId, selectedAgentInfo.type);
+              }
+            } else if (selectedAgent) {
+              // If we have a selected agent but it's not in the new list, clear the selection
+              const agentExists = data.agents.some(agent => agent.id === selectedAgent);
+              if (!agentExists) {
+                onAgentChange('');
               }
             }
           } else {
@@ -123,16 +129,6 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         }
       }
     );
-
-    const disposeClientAppRequired = vscodeApi.onMessage('clientAppRequired', data => {
-      setIsLoading(false);
-      onClientAppRequired?.(data);
-    });
-
-    const disposeSelectClientApp = vscodeApi.onMessage('selectClientApp', data => {
-      setIsLoading(false);
-      onClientAppSelection?.(data);
-    });
 
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
       setIsLoading(true);
@@ -143,47 +139,48 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       vscodeApi.getAvailableAgents();
     });
 
-    // Request available agents (this will trigger the client app checking)
+    // Request available agents
     vscodeApi.getAvailableAgents();
 
     return () => {
       disposeAvailableAgents();
-      disposeClientAppRequired();
-      disposeSelectClientApp();
       disposeRefreshAgents();
     };
-  }, [onClientAppRequired, onClientAppSelection, onAgentChange]);
+  }, [onAgentChange, selectedAgent]);
 
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
     onAgentChange(agentId);
 
     if (agentId && agentId !== '') {
-      const selectedAgent = agents.find(agent => agent.id === agentId);
+      const selectedAgentData = agents.find(agent => agent.id === agentId);
 
-      if (selectedAgent?.type === 'published') {
+      if (selectedAgentData?.type === AgentSource.PUBLISHED) {
         // Auto-enable live mode for published agents
         setIsLiveMode(true);
       }
       // For script agents, keep the current global live mode preference
 
-      vscodeApi.clearMessages();
-      vscodeApi.loadAgentHistory(agentId);
+      // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
+      // Pass the agent source to avoid expensive re-fetch on the backend
+      vscodeApi.loadAgentHistory(agentId, selectedAgentData?.type);
     } else {
+      // When clearing selection, clear messages immediately
       vscodeApi.clearMessages();
     }
   };
 
   // Group agents by type
-  const publishedAgents = agents.filter(agent => agent.type === 'published');
-  const scriptAgents = agents.filter(agent => agent.type === 'script');
+  const publishedAgents = agents.filter(agent => agent.type === AgentSource.PUBLISHED);
+  const scriptAgents = agents.filter(agent => agent.type === AgentSource.SCRIPT);
 
   // Get the selected agent's details for custom display
-  const selectedAgentInfo = agents.find(agent => agent.id === selectedAgent);
+  // This will update when agents list loads or selectedAgent changes
+  const selectedAgentInfo = selectedAgent ? agents.find(agent => agent.id === selectedAgent) : undefined;
   const selectedAgentType =
-    selectedAgentInfo?.type === 'script'
+    selectedAgentInfo?.type === AgentSource.SCRIPT
       ? 'Agent Script'
-      : selectedAgentInfo?.type === 'published'
+      : selectedAgentInfo?.type === AgentSource.PUBLISHED
         ? 'Published'
         : null;
 
@@ -202,6 +199,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
     // If session is active and mode changed, restart with new mode
     if (modeChanged && isSessionActive && selectedAgent) {
+      // Optimistic update: notify parent immediately before sending to backend
+      onStopSession?.();
       await vscodeApi.endSession();
       // Wait a brief moment for the session to fully end
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -216,7 +215,11 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       isSessionActive,
       isSessionStarting,
       isLiveMode,
-      endSession: () => vscodeApi.endSession(),
+      endSession: () => {
+        // Optimistic update: notify parent immediately before sending to backend
+        onStopSession?.();
+        vscodeApi.endSession();
+      },
       startSession: (agentId, options) => vscodeApi.startSession(agentId, options)
     });
 
@@ -259,7 +262,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         )}
       </div>
       {selectedAgent &&
-        (selectedAgentInfo?.type === 'published' ? (
+        (selectedAgentInfo?.type === AgentSource.PUBLISHED ? (
           <Button
             appearance="primary"
             size="small"

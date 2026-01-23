@@ -240,30 +240,7 @@ describe('vscodeApi', () => {
     });
   });
 
-  describe('Client App Selection', () => {
-    it('should send clientAppSelected message', () => {
-      vscodeApi.selectClientApp('MyClientApp');
-
-      expect(mockVSCodeApi.postMessage).toHaveBeenCalledWith({
-        command: 'clientAppSelected',
-        data: { clientAppName: 'MyClientApp' }
-      });
-    });
-
-    it('should register onClientAppReady handler', () => {
-      const handler = jest.fn();
-      const dispose = vscodeApi.onClientAppReady(handler);
-
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { command: 'clientAppReady', data: {} }
-        })
-      );
-
-      expect(handler).toHaveBeenCalled();
-      expect(typeof dispose).toBe('function');
-    });
-  });
+  // Client App Selection methods were removed - tests deleted
 
   describe('Utility Methods', () => {
     it('should send clearChat message', () => {

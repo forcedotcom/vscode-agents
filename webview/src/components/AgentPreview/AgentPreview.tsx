@@ -7,16 +7,7 @@ import { vscodeApi, Message, AgentInfo } from '../../services/vscodeApi.js';
 import { ChatInputRef } from './ChatInput.js';
 import './AgentPreview.css';
 
-interface ClientApp {
-  name: string;
-  clientId: string;
-}
-
 interface AgentPreviewProps {
-  clientAppState: 'none' | 'required' | 'selecting' | 'ready';
-  availableClientApps: ClientApp[];
-  onClientAppStateChange: (state: 'none' | 'required' | 'selecting' | 'ready') => void;
-  onAvailableClientAppsChange: (apps: ClientApp[]) => void;
   isSessionTransitioning: boolean;
   onSessionTransitionSettled: () => void;
   pendingAgentId: string | null;
@@ -121,10 +112,6 @@ export const buildConversationMarkdown = (
 const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
   (
     {
-      clientAppState,
-      availableClientApps,
-      onClientAppStateChange,
-      onAvailableClientAppsChange: _onAvailableClientAppsChange,
       isSessionTransitioning,
       onSessionTransitionSettled,
       pendingAgentId,
@@ -224,6 +211,22 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeConversationHistory);
 
+      // Atomic conversation state update - replaces separate clearMessages + conversationHistory
+      // to avoid visual blink from sequential state updates
+      const disposeSetConversation = vscodeApi.onMessage('setConversation', data => {
+        // Atomically update all conversation-related state in one render
+        const historyMessages: Message[] =
+          data && Array.isArray(data.messages) ? data.messages.map(normalizeHistoryMessage) : [];
+
+        setMessages(historyMessages);
+        setShowPlaceholder(data?.showPlaceholder ?? historyMessages.length === 0);
+        setSessionActive(false);
+        setAgentConnected(false);
+        setIsLoading(false);
+        setHasSessionError(false);
+      });
+      disposers.push(disposeSetConversation);
+
       const disposeNoHistoryFound = vscodeApi.onMessage('noHistoryFound', data => {
         // No history found - show placeholder instead of auto-starting
         if (data && data.agentId) {
@@ -284,11 +287,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeSessionStarted);
 
-      const disposeClientAppReady = vscodeApi.onClientAppReady(() => {
-        onClientAppStateChange('ready');
-        setIsLoading(false);
-      });
-      disposers.push(disposeClientAppReady);
 
       const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
         const currentSelectedAgentId = selectedAgentIdRef.current;
@@ -412,7 +410,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       return () => {
         disposers.forEach(dispose => dispose());
       };
-    }, [onClientAppStateChange, onSessionTransitionSettled]);
+    }, [onSessionTransitionSettled]);
 
     useEffect(() => {
       if (selectedAgentId === previousSelectedAgentRef.current) {
@@ -431,7 +429,8 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         return;
       }
 
-      setMessages([]);
+      // Don't clear messages here - let the backend's setConversation message
+      // handle it atomically to avoid visual blink
 
       if (pendingAgentId && pendingAgentId === selectedAgentId) {
         setIsLoading(true);
@@ -469,15 +468,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       vscodeApi.sendChatMessage(content);
     };
 
-    const handleClientAppSelected = (clientAppName: string) => {
-      // Hide client app selection UI and reset chat area to normal
-      onClientAppStateChange('ready');
-      // Clear any prior selection/status messages and return to normal chat state
-      setMessages([]);
-      // Notify backend to finalize the client app selection and refresh agents
-      vscodeApi.selectClientApp(clientAppName);
-    };
-
     // Watch for when selectedAgentId becomes empty (user selects default option)
     useEffect(() => {
       if (selectedAgentId === '') {
@@ -494,32 +484,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       }
     }, [selectedAgentId, sessionActive, agentConnected]);
 
-    // Render client app selection UI in the chat area for case 3
-    const renderAgentSelection = () => {
-      if (clientAppState !== 'selecting') return null;
-
-      return (
-        <div className="agent-selection">
-          <h4>Select client app</h4>
-          <select
-            className="agent-select"
-            onChange={e => {
-              if (e.target.value) {
-                handleClientAppSelected(e.target.value);
-              }
-            }}
-          >
-            <option value="">Choose a client app...</option>
-            {availableClientApps.map(app => (
-              <option key={app.name} value={app.name}>
-                {app.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      );
-    };
-
     const handleStartSession = () => {
       if (!hasAgentSelection(selectedAgentId)) {
         return;
@@ -529,11 +493,10 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       vscodeApi.startSession(selectedAgentId);
     };
 
-    // Show placeholder when no agent is selected or in special client app states
-    if (selectedAgentId === '' || clientAppState === 'selecting') {
+    // Show placeholder when no agent is selected
+    if (selectedAgentId === '') {
       return (
         <div className="agent-preview">
-          {renderAgentSelection()}
           <PlaceholderContent />
         </div>
       );
@@ -563,7 +526,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
     return (
       <div className="agent-preview">
-        {renderAgentSelection()}
         <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
         <FormContainer
           ref={chatInputRef}

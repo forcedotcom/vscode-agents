@@ -82,32 +82,47 @@ describe('previewAgent', () => {
       jest.useFakeTimers();
       const showMock = jest.fn();
       const postMessageMock = jest.fn();
+      const startPreviewSessionMock = jest.fn().mockResolvedValue(undefined);
       const providerMock = {
         setAgentId: jest.fn(),
+        startPreviewSession: startPreviewSessionMock,
         webviewView: {
           show: showMock,
           webview: {
-            postMessage: postMessageMock
+            postMessage: postMessageMock,
+            html: '<html></html>' // Simulate webview being ready
           }
         }
       };
 
       jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
+      
+      // Mock Agent.listPreviewable and SfProject
+      const { Agent } = require('@salesforce/agents');
+      const { SfProject } = require('@salesforce/core');
+      Agent.listPreviewable = jest.fn().mockResolvedValue([]);
+      SfProject.getInstance = jest.fn().mockReturnValue({ getPath: () => '/test' });
+      jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue({} as any);
+
       const handler = registerAndGetHandler();
 
       const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
-      await handler(mockUri);
+      const handlerPromise = handler(mockUri);
+      
+      // Advance timers to allow webview ready check
+      jest.advanceTimersByTime(500);
+      await handlerPromise;
 
-      expect(providerMock.setAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('/tmp/preview.agent');
       expect(executeCommandSpy).toHaveBeenNthCalledWith(1, 'workbench.view.extension.agentforce-dx');
       expect(executeCommandSpy).toHaveBeenNthCalledWith(2, 'setContext', 'sf:project_opened', true);
       expect(showMock).toHaveBeenCalledWith(false);
 
-      jest.advanceTimersByTime(500);
       expect(postMessageMock).toHaveBeenCalledWith({
         command: 'selectAgent',
-        data: { agentId: 'local:/tmp/preview.agent' }
+        data: { agentId: '/tmp/preview.agent', agentSource: 'script' }
       });
+      expect(startPreviewSessionMock).toHaveBeenCalled();
     });
 
     it('logs errors to the channel service when preview fails', async () => {
@@ -135,17 +150,28 @@ describe('previewAgent', () => {
       jest.useFakeTimers();
       const showMock = jest.fn();
       const postMessageMock = jest.fn();
+      const startPreviewSessionMock = jest.fn().mockResolvedValue(undefined);
       const providerMock = {
         setAgentId: jest.fn(),
+        startPreviewSession: startPreviewSessionMock,
         webviewView: {
           show: showMock,
           webview: {
-            postMessage: postMessageMock
+            postMessage: postMessageMock,
+            html: '<html></html>' // Simulate webview being ready
           }
         }
       };
 
       jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
+      
+      // Mock Agent.listPreviewable and SfProject
+      const { Agent } = require('@salesforce/agents');
+      const { SfProject } = require('@salesforce/core');
+      Agent.listPreviewable = jest.fn().mockResolvedValue([]);
+      SfProject.getInstance = jest.fn().mockReturnValue({ getPath: () => '/test' });
+      jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue({} as any);
+      
       Object.defineProperty(vscode.window, 'activeTextEditor', {
         configurable: true,
         get: () => ({
@@ -154,14 +180,17 @@ describe('previewAgent', () => {
       });
 
       const handler = registerAndGetHandler();
-      await handler();
-
-      expect(providerMock.setAgentId).toHaveBeenCalledWith('local:/tmp/from-editor.agent');
+      const handlerPromise = handler();
+      
       jest.advanceTimersByTime(500);
+      await handlerPromise;
+
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('/tmp/from-editor.agent');
       expect(postMessageMock).toHaveBeenCalledWith({
         command: 'selectAgent',
-        data: { agentId: 'local:/tmp/from-editor.agent' }
+        data: { agentId: '/tmp/from-editor.agent', agentSource: 'script' }
       });
+      expect(startPreviewSessionMock).toHaveBeenCalled();
 
       // Reset editor mock back to undefined to avoid side effects
       Object.defineProperty(vscode.window, 'activeTextEditor', {
@@ -170,22 +199,5 @@ describe('previewAgent', () => {
       });
     });
 
-    it('handles provider without an attached webview gracefully', async () => {
-      jest.useFakeTimers();
-      const providerMock = {
-        setAgentId: jest.fn(),
-        webviewView: undefined
-      };
-
-      jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
-      const handler = registerAndGetHandler();
-      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
-
-      await handler(mockUri);
-      jest.runOnlyPendingTimers();
-
-      expect(providerMock.setAgentId).toHaveBeenCalledWith('local:/tmp/preview.agent');
-      expect(errorMessageSpy).not.toHaveBeenCalled();
-    });
   });
 });

@@ -13,10 +13,29 @@ export interface Message {
   timestamp?: string;
 }
 
+// AgentSource enum values - injected from the extension (from @salesforce/agents)
+// This ensures we use the exact same values as the library
+declare global {
+  interface Window {
+    AgentSource: {
+      SCRIPT: string;
+      PUBLISHED: string;
+    };
+  }
+}
+
+// AgentSource enum values are lowercase: 'script' and 'published'
+export const AgentSource = window.AgentSource || {
+  SCRIPT: 'script',
+  PUBLISHED: 'published'
+};
+
+export type AgentSource = typeof AgentSource.SCRIPT | typeof AgentSource.PUBLISHED;
+
 export interface AgentInfo {
   name: string;
   id: string;
-  type: 'published' | 'script';
+  type: AgentSource;
 }
 
 export interface TraceHistoryMessageEntry {
@@ -90,7 +109,7 @@ class VSCodeApiService {
   }
 
   // Agent session management
-  startSession(agentId: string, options?: { isLiveMode?: boolean }) {
+  startSession(agentId: string, options?: { isLiveMode?: boolean; agentSource?: string }) {
     this.postMessage('startSession', { agentId, ...options });
   }
 
@@ -132,29 +151,19 @@ class VSCodeApiService {
     this.postMessage('getConfiguration', { section });
   }
 
-  // Client app selection
-  selectClientApp(clientAppName: string) {
-    this.postMessage('clientAppSelected', { clientAppName });
-  }
-
-  // Informational message when client app is ready
-  onClientAppReady(handler: () => void): () => void {
-    return this.onMessage('clientAppReady', handler);
-  }
-
   // Execute a VSCode command
   executeCommand(commandId: string) {
     this.postMessage('executeCommand', { commandId });
   }
 
   // Notify the extension about the selected agent ID
-  setSelectedAgentId(agentId: string) {
-    this.postMessage('setSelectedAgentId', { agentId });
+  setSelectedAgentId(agentId: string, agentSource?: AgentSource) {
+    this.postMessage('setSelectedAgentId', { agentId, agentSource });
   }
 
   // Load conversation history for an agent without starting a session
-  loadAgentHistory(agentId: string) {
-    this.postMessage('loadAgentHistory', { agentId });
+  loadAgentHistory(agentId: string, agentSource?: AgentSource) {
+    this.postMessage('loadAgentHistory', { agentId, agentSource });
   }
 
   // Set live mode preference

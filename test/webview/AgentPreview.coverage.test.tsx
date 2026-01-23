@@ -26,8 +26,6 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
     endSession: jest.fn(),
     sendChatMessage: jest.fn(),
     clearMessages: jest.fn(),
-    selectClientApp: jest.fn(),
-    onClientAppReady: jest.fn(),
     executeCommand: jest.fn(),
     sendConversationExport: jest.fn()
   }
@@ -43,12 +41,20 @@ describe('AgentPreview - Coverage Tests', () => {
     handlers = new Map();
     jest.clearAllMocks();
 
+    // Setup window.AgentSource for tests
+    (window as any).AgentSource = {
+      SCRIPT: 'script',
+      PUBLISHED: 'published'
+    };
+
     (vscodeApi.onMessage as jest.Mock).mockImplementation((cmd: string, handler: Function) => {
       handlers.set(cmd, handler);
       return () => handlers.delete(cmd);
     });
+  });
 
-    (vscodeApi.onClientAppReady as jest.Mock).mockImplementation(() => () => {});
+  afterEach(() => {
+    delete (window as any).AgentSource;
   });
 
   const renderComponent = (props: Partial<React.ComponentProps<typeof AgentPreview>> = {}) =>
@@ -56,10 +62,6 @@ describe('AgentPreview - Coverage Tests', () => {
       <AgentPreview
         selectedAgentId="test-agent"
         pendingAgentId={null}
-        clientAppState="none"
-        availableClientApps={[]}
-        onClientAppStateChange={jest.fn()}
-        onAvailableClientAppsChange={jest.fn()}
         isSessionTransitioning={false}
         onSessionTransitionSettled={jest.fn()}
         isLiveMode={false}
@@ -75,10 +77,6 @@ describe('AgentPreview - Coverage Tests', () => {
           ref={ref}
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
@@ -97,10 +95,6 @@ describe('AgentPreview - Coverage Tests', () => {
           ref={ref}
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           isLiveMode={false}
@@ -244,10 +238,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId=""
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}
@@ -338,61 +328,7 @@ describe('AgentPreview - Coverage Tests', () => {
     });
   });
 
-  describe('client app selection flow', () => {
-    it('should render client app selection UI', () => {
-      renderComponent({
-        clientAppState: 'selecting',
-        availableClientApps: [
-          { name: 'App 1', clientId: 'app1' },
-          { name: 'App 2', clientId: 'app2' }
-        ]
-      });
-
-      expect(screen.getByText('Select client app')).toBeInTheDocument();
-      expect(screen.getByText('App 1')).toBeInTheDocument();
-      expect(screen.getByText('App 2')).toBeInTheDocument();
-    });
-
-    it('should handle client app selection', async () => {
-      const user = userEvent.setup();
-      const onClientAppStateChange = jest.fn();
-      renderComponent({
-        clientAppState: 'selecting',
-        availableClientApps: [{ name: 'App 1', clientId: 'app1' }],
-        onClientAppStateChange
-      });
-
-      const select = screen.getByRole('combobox');
-      await user.selectOptions(select, 'App 1');
-
-      expect(onClientAppStateChange).toHaveBeenCalledWith('ready');
-      expect(vscodeApi.selectClientApp).toHaveBeenCalledWith('App 1');
-    });
-
-    it('should ignore empty client app selection', async () => {
-      const user = userEvent.setup();
-      renderComponent({
-        clientAppState: 'selecting',
-        availableClientApps: [{ name: 'App 1', clientId: 'app1' }]
-      });
-
-      const select = screen.getByRole('combobox');
-      await user.selectOptions(select, 'App 1');
-      (vscodeApi.selectClientApp as jest.Mock).mockClear();
-
-      await user.selectOptions(select, '');
-      expect(vscodeApi.selectClientApp).not.toHaveBeenCalled();
-    });
-
-    it('should render PlaceholderContent when clientAppState is selecting', () => {
-      renderComponent({
-        clientAppState: 'selecting',
-        availableClientApps: []
-      });
-
-      expect(screen.getByText(/Agentforce DX provides a suite of tools/i)).toBeInTheDocument();
-    });
-  });
+  // Client app selection flow tests removed - functionality was removed
 
   describe('session transition loader', () => {
     it('should skip loader when pending agent differs from selection', async () => {
@@ -414,10 +350,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
         />
@@ -434,10 +366,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId=""
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
         />
@@ -465,10 +393,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
         />
@@ -484,10 +408,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}
@@ -499,10 +419,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId=""
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}
@@ -522,10 +438,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId="agent-2"
           pendingAgentId="agent-2"
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}
@@ -544,10 +456,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId="test-agent"
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={true}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}
@@ -566,10 +474,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId="test-agent"
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={true}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}
@@ -588,10 +492,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId="test-agent"
           pendingAgentId="test-agent"
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={false}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}
@@ -609,10 +509,6 @@ describe('AgentPreview - Coverage Tests', () => {
         <AgentPreview
           selectedAgentId=""
           pendingAgentId={null}
-          clientAppState="none"
-          availableClientApps={[]}
-          onClientAppStateChange={jest.fn()}
-          onAvailableClientAppsChange={jest.fn()}
           isSessionTransitioning={true}
           onSessionTransitionSettled={jest.fn()}
           onLoadingChange={onLoadingChange}

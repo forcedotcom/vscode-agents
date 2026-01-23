@@ -4,7 +4,7 @@ import { Commands } from '../enums/commands';
 import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAgentNameFromPath, getAgentNameFromFile } from './agentUtils';
+import { getAgentNameFromPath } from './agentUtils';
 
 export const registerActivateAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.activateAgent, async (uri?: vscode.Uri) => {
@@ -74,10 +74,11 @@ export const registerActivateAgentCommand = () => {
           });
 
           // Create Agent instance and activate it
-          const agent = new Agent({
-            connection: org.getConnection(),
-            project: project,
-            nameOrId: agentName
+          // For published agents, filePath is optional
+          const agent = await Agent.init({
+            connection: org.getConnection() as any,
+            project: project as any,
+            apiNameOrId: agentName
           });
 
           await agent.activate();

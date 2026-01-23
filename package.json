@@ -19,8 +19,8 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "0.20.0",
-    "@salesforce/core": "^8.24.0",
+    "@salesforce/agents": "^0.21.2",
+    "@salesforce/core": "^8.25.0",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",
     "cross-spawn": "^7.0.6",
@@ -175,7 +175,7 @@
         },
         {
           "submenu": "sf.agent.combined.view.restartMenu",
-          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected",
+          "when": "view == sf.agent.combined.view && agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:agentSelected && agentforceDX:isScriptAgent",
           "group": "navigation@0"
         },
         {
