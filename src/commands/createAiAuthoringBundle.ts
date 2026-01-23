@@ -13,9 +13,8 @@ export const registerCreateAiAuthoringBundleCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.createAiAuthoringBundle);
 
-    // Clear previous output and show channel
+    // Clear previous output
     logger.clear();
-    logger.show();
 
     try {
       // Get the project root

@@ -44,7 +44,7 @@ export const registerValidateAgentCommand = () => {
     const fileUri = vscode.Uri.file(normalizedFilePath);
     const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
 
-    // Clear previous output and show channel
+    // Clear previous output
     logger.clear();
     logger.show();
     

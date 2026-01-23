@@ -58,9 +58,8 @@ export const registerActivateAgentCommand = () => {
       const project = SfProject.getInstance();
       const agentName = await getAgentNameFromPath(targetPath);
 
-      // Clear previous output and show channel
+      // Clear previous output
       logger.clear();
-      logger.show();
       
       logger.debug(`Activating agent ${agentName}...`);
 
@@ -94,7 +93,6 @@ export const registerActivateAgentCommand = () => {
     } catch (error) {
       const errorMessage = `Failed to activate agent: ${(error as Error).message}`;
       logger.error(errorMessage, error);
-      logger.show();
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_activation_failed', errorMessage);
     }

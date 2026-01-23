@@ -127,7 +127,8 @@ describe('CoreExtensionService', () => {
     });
     await CoreExtensionService.loadDependencies(mockContext);
 
-    expect(channelSpy).toHaveBeenCalledWith('Agentforce DX Extension');
+    // ColoredChannelService creates its own channel with language support
+    expect(window.createOutputChannel).toHaveBeenCalledWith('Agentforce DX Extension', 'afdx-log');
     expect(telemetrySpy).toHaveBeenCalledWith('AgentforceDX');
     expect(workspaceSpy).toHaveBeenCalledWith(false);
   });
@@ -178,8 +179,7 @@ describe('CoreExtensionService', () => {
   });
 
   it('should return channel service when initialized', async () => {
-    const mockChannelService = { appendLine: jest.fn() };
-    channelServiceInstance.getInstance = jest.fn().mockReturnValue(mockChannelService);
+    channelServiceInstance.getInstance = jest.fn().mockReturnValue({ appendLine: jest.fn() });
 
     jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
       services: {
@@ -191,7 +191,11 @@ describe('CoreExtensionService', () => {
 
     await CoreExtensionService.loadDependencies(mockContext);
     const service = CoreExtensionService.getChannelService();
-    expect(service).toBe(mockChannelService);
+    // Service should be a ColoredChannelService instance
+    expect(service).toBeDefined();
+    expect(service.appendLine).toBeDefined();
+    expect(service.showChannelOutput).toBeDefined();
+    expect(service.clear).toBeDefined();
   });
 
   it('should return telemetry service when initialized', async () => {

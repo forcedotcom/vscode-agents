@@ -69,9 +69,8 @@ export const registerDeactivateAgentCommand = () => {
         return;
       }
 
-      // Clear previous output and show channel
+      // Clear previous output
       logger.clear();
-      logger.show();
       
       logger.debug(`Deactivating agent ${agentName}...`);
 
@@ -105,7 +104,6 @@ export const registerDeactivateAgentCommand = () => {
     } catch (error) {
       const errorMessage = `Failed to deactivate agent: ${(error as Error).message}`;
       logger.error(errorMessage, error);
-      logger.show();
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_deactivation_failed', errorMessage);
     }

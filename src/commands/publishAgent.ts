@@ -42,9 +42,8 @@ export const registerPublishAgentCommand = () => {
       const project = SfProject.getInstance();
       const fileName = path.basename(filePath, '.agent');
 
-      // Clear previous output and show channel
+      // Clear previous output
       logger.clear();
-      logger.show();
       
       // Log SF_TEST_API setting value
       logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
@@ -138,7 +137,6 @@ export const registerPublishAgentCommand = () => {
     } catch (error) {
       const errorMessage = `Failed to publish agent: ${(error as Error).message}`;
       logger.error(errorMessage, error);
-      logger.show();
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_publish_failed', errorMessage);
     }

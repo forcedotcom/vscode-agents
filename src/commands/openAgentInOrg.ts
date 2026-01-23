@@ -32,7 +32,6 @@ export const registerOpenAgentInOrgCommand = () => {
         vscode.window.showErrorMessage(`Couldn't find any agents in the current DX project.`);
         logger.error("Couldn't find any agents in the current DX project.");
         logger.debug('Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.');
-        logger.show();
         return;
       }
       // we need to prompt the user which agent to open

@@ -21,6 +21,7 @@ import { TelemetryService } from '../types/TelemetryService';
 import { CoreExtensionApi } from '../types/CoreExtension';
 import { WorkspaceContext } from '../types/WorkspaceContext';
 import { Connection } from '@salesforce/core';
+import { ColoredChannelService } from '../utils/coloredChannelService';
 
 export interface OrgChangeEvent {
   username?: string;
@@ -90,9 +91,9 @@ export class CoreExtensionService {
     if (!channelService) {
       throw new Error(CHANNEL_SERVICE_NOT_FOUND);
     }
-    // Initialize extension channel for general extension logging
-    CoreExtensionService.channelService = channelService.getInstance('Agentforce DX Extension');
-    // Initialize test channel for agent test output
+    // Initialize extension channel for general extension logging with syntax highlighting
+    CoreExtensionService.channelService = new ColoredChannelService('Agentforce DX Extension');
+    // Initialize test channel for agent test output (keep original for test output formatting)
     CoreExtensionService.testChannelService = channelService.getInstance('Agentforce DX Tests');
   }
 
