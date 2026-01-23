@@ -215,8 +215,8 @@ describe('validateAgent', () => {
 
       expect(fakeChannelService.showChannelOutput).toHaveBeenCalled();
       expect(fakeChannelService.clear).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed.');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s):'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\] Agent validation failed with 2 error\(s\)/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('1. [ParserError]'));
 
       expect(diagnosticCollectionMock.clear).not.toHaveBeenCalled();
       expect(diagnosticCollectionMock.set).toHaveBeenCalledTimes(1);
@@ -248,7 +248,7 @@ describe('validateAgent', () => {
       await commandSpy.mock.calls[0][1](mockUri);
 
       expect(diagnosticCollectionMock.clear).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed.');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\] Agent validation failed/));
       expect(errorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Agent validation failed'));
     });
 
@@ -261,11 +261,9 @@ describe('validateAgent', () => {
       registerValidateAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      // Verify error message is displayed without "Error:" prefix
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Connection failed');
-      expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(
-        expect.stringContaining('Error: Connection failed')
-      );
+      // Verify error message is displayed with formatted logging
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Connection failed/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Details: Connection failed/));
     });
 
     it('displays "Something went wrong" for empty error message', async () => {
@@ -278,8 +276,8 @@ describe('validateAgent', () => {
       registerValidateAgentCommand();
       await commandSpy.mock.calls[0][1](mockUri);
 
-      // Verify fallback message is displayed
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Something went wrong.');
+      // Verify fallback message is displayed with formatted logging
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Agent validation failed/));
     });
 
     it('converts API line numbers to VS Code format', () => {

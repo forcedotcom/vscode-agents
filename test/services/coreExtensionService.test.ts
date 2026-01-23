@@ -13,9 +13,19 @@ import { CoreExtensionApi } from '../../src/types/CoreExtension';
 import { satisfies, valid } from 'semver';
 import { WorkspaceContext } from '../../src/types/WorkspaceContext';
 
+const mockOutputChannel = {
+  appendLine: jest.fn(),
+  show: jest.fn(),
+  clear: jest.fn(),
+  dispose: jest.fn()
+};
+
 jest.mock('vscode', () => ({
   extensions: { getExtension: jest.fn() },
-  window: { showWarningMessage: jest.fn() }
+  window: {
+    showWarningMessage: jest.fn(),
+    createOutputChannel: jest.fn(() => mockOutputChannel)
+  }
 }));
 
 jest.mock('semver', () => ({
@@ -117,7 +127,7 @@ describe('CoreExtensionService', () => {
     });
     await CoreExtensionService.loadDependencies(mockContext);
 
-    expect(channelSpy).toHaveBeenCalledWith('Agentforce DX');
+    expect(channelSpy).toHaveBeenCalledWith('Agentforce DX Extension');
     expect(telemetrySpy).toHaveBeenCalledWith('AgentforceDX');
     expect(workspaceSpy).toHaveBeenCalledWith(false);
   });
