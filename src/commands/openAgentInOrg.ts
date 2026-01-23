@@ -5,11 +5,12 @@ import { Agent } from '@salesforce/agents';
 import { sync } from 'cross-spawn';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath } from './agentUtils';
+import { Logger } from '../utils/logger';
 
 export const registerOpenAgentInOrgCommand = () => {
   return vscode.commands.registerCommand(Commands.openAgentInOrg, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.openAgentInOrg);
 
     let agentName: string | undefined;
@@ -29,8 +30,9 @@ export const registerOpenAgentInOrgCommand = () => {
       const agents = await Agent.list(project as any);
       if (agents.length === 0) {
         vscode.window.showErrorMessage(`Couldn't find any agents in the current DX project.`);
-        channelService.appendLine("Couldn't find any agents in the current DX project.");
-        channelService.appendLine('Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.');
+        logger.error("Couldn't find any agents in the current DX project.");
+        logger.info('Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.');
+        logger.show();
         return;
       }
       // we need to prompt the user which agent to open

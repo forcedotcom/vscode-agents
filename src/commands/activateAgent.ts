@@ -5,11 +5,12 @@ import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath } from './agentUtils';
+import { Logger } from '../utils/logger';
 
 export const registerActivateAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.activateAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.activateAgent);
 
     // Get the file or directory path from the context menu
@@ -57,8 +58,11 @@ export const registerActivateAgentCommand = () => {
       const project = SfProject.getInstance();
       const agentName = await getAgentNameFromPath(targetPath);
 
-      channelService.appendLine(`Activating agent ${agentName}...`);
-      channelService.showChannelOutput();
+      // Clear previous output and show channel
+      logger.clear();
+      logger.show();
+      
+      logger.info(`Activating agent ${agentName}...`);
 
       await vscode.window.withProgress(
         {
@@ -83,13 +87,14 @@ export const registerActivateAgentCommand = () => {
 
           await agent.activate();
 
-          channelService.appendLine(`Successfully activated agent ${agentName}.`);
+          logger.info(`Successfully activated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was activated successfully.`);
         }
       );
     } catch (error) {
       const errorMessage = `Failed to activate agent: ${(error as Error).message}`;
-      channelService.appendLine(errorMessage);
+      logger.error(errorMessage, error);
+      logger.show();
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_activation_failed', errorMessage);
     }

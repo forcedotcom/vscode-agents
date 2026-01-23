@@ -10,13 +10,15 @@ import type { SessionManager } from '../session/sessionManager';
 import type { HistoryManager } from '../history/historyManager';
 import type { ApexDebugManager } from '../debugging/apexDebugManager';
 import type { ConversationExporter } from '../export/conversationExporter';
-import type { ChannelService } from '../../../types/ChannelService';
+import { Logger } from '../../../utils/logger';
 import { getAgentSource } from '../agent/agentUtils';
 
 /**
  * Handles all incoming messages from the webview
  */
 export class WebviewMessageHandlers {
+  private readonly logger: Logger;
+
   constructor(
     private readonly state: AgentViewState,
     private readonly messageSender: WebviewMessageSender,
@@ -24,10 +26,11 @@ export class WebviewMessageHandlers {
     private readonly historyManager: HistoryManager,
     private readonly apexDebugManager: ApexDebugManager,
     private readonly conversationExporter: ConversationExporter,
-    private readonly channelService: ChannelService,
     private readonly context: vscode.ExtensionContext,
     private readonly webviewView: vscode.WebviewView
-  ) {}
+  ) {
+    this.logger = new Logger(CoreExtensionService.getChannelService());
+  }
 
   /**
    * Routes webview messages to the appropriate handler method
@@ -84,8 +87,7 @@ export class WebviewMessageHandlers {
   async handleError(err: unknown): Promise<void> {
     console.error('AgentCombinedViewProvider Error:', err);
     let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-    this.channelService.appendLine(`Error: ${errorMessage}`);
-    this.channelService.appendLine('---------------------');
+    this.logger.error('AgentCombinedViewProvider error', err);
 
     this.state.pendingStartAgentId = undefined;
     this.state.pendingStartAgentSource = undefined;
@@ -160,7 +162,8 @@ export class WebviewMessageHandlers {
       throw new Error('Invalid message: expected a string.');
     }
 
-    this.channelService.appendLine(`Simulation message sent - "${userMessage}"`);
+    // Log connection/technical details instead of message content
+    this.logger.info('Sending message to agent preview');
 
     const response = await this.state.agentInstance.preview.send(userMessage);
 
@@ -169,7 +172,8 @@ export class WebviewMessageHandlers {
     this.state.currentUserMessage = userMessage;
 
     this.messageSender.sendMessageSent(lastMessage?.message);
-    this.channelService.appendLine(`Simulation message received - "${lastMessage?.message}"`);
+    // Log technical details instead of message content
+    this.logger.info('Received response from agent preview');
 
     // Load and send trace data after sending message
     if (this.state.currentAgentId && this.state.currentAgentSource) {

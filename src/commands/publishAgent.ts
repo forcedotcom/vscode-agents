@@ -6,6 +6,7 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfError } from '@salesforce/core';
 import * as path from 'path';
 import { EOL } from 'os';
+import { Logger } from '../utils/logger';
 
 // Type declarations for new library API
 interface CompilationError {
@@ -20,7 +21,7 @@ interface CompilationError {
 export const registerPublishAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.publishAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.publishAgent);
 
     // Get the file path from the context menu
@@ -41,8 +42,13 @@ export const registerPublishAgentCommand = () => {
       const project = SfProject.getInstance();
       const fileName = path.basename(filePath, '.agent');
 
-      channelService.appendLine(`Publishing agent ${fileName}...`);
-      channelService.showChannelOutput();
+      // Clear previous output and show channel
+      logger.clear();
+      logger.show();
+      
+      // Log SF_TEST_API setting value
+      logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
+      logger.info(`Publishing agent ${fileName}...`);
 
       await vscode.window.withProgress(
         {
@@ -79,10 +85,8 @@ export const registerPublishAgentCommand = () => {
                 )
                 .join(EOL);
 
-              channelService.appendLine('❌ Agent validation failed!');
-              channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-              channelService.appendLine(`Found ${validateResponse.errors.length} error(s):`);
-              channelService.appendLine(errorMessages);
+              logger.error(`Agent validation failed with ${validateResponse.errors.length} error(s)`);
+              logger.appendLine(errorMessages);
 
               progress.report({ message: `Validation failed with ${validateResponse.errors.length} error(s).` });
 
@@ -100,12 +104,12 @@ export const registerPublishAgentCommand = () => {
             // Register event listeners
             lifecycle.on('scopedPreRetrieve', async () => {
               progress.report({ message: 'Retrieving metadata...', increment: 70 });
-              channelService.appendLine('Retrieving metadata from org...');
+              logger.info('Retrieving metadata from org...');
             });
 
             lifecycle.on('scopedPostRetrieve', async () => {
               progress.report({ message: 'Metadata retrieved successfully', increment: 90 });
-              channelService.appendLine('Metadata retrieved successfully.');
+              logger.info('Metadata retrieved successfully.');
             });
 
             try {
@@ -117,21 +121,12 @@ export const registerPublishAgentCommand = () => {
             }
 
             progress.report({ message: 'Agent published successfully.', increment: 100 });
-            channelService.appendLine(`Successfully published agent ${fileName}.`);
+            logger.info(`Successfully published agent ${fileName}.`);
 
             vscode.window.showInformationMessage(`Agent "${fileName}" was published successfully.`);
           } catch (publishError) {
             const error = SfError.wrap(publishError);
-            channelService.appendLine('❌ Agent publish failed!');
-            channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-            channelService.appendLine(`Error: ${error.message}`);
-
-            if (error.stack) {
-              channelService.appendLine('');
-              channelService.appendLine('Stack Trace:');
-              channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-              channelService.appendLine(error.stack);
-            }
+            logger.error('Agent publish failed', error);
 
             progress.report({ message: 'Failed' });
 
@@ -142,8 +137,8 @@ export const registerPublishAgentCommand = () => {
       );
     } catch (error) {
       const errorMessage = `Failed to publish agent: ${(error as Error).message}`;
-      channelService.appendLine(errorMessage);
-      channelService.showChannelOutput();
+      logger.error(errorMessage, error);
+      logger.show();
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_publish_failed', errorMessage);
     }

@@ -5,11 +5,12 @@ import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath } from './agentUtils';
+import { Logger } from '../utils/logger';
 
 export const registerDeactivateAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.deactivateAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.deactivateAgent);
 
     // Get the file or directory path from the context menu
@@ -68,8 +69,11 @@ export const registerDeactivateAgentCommand = () => {
         return;
       }
 
-      channelService.appendLine(`Deactivating agent ${agentName}...`);
-      channelService.showChannelOutput();
+      // Clear previous output and show channel
+      logger.clear();
+      logger.show();
+      
+      logger.info(`Deactivating agent ${agentName}...`);
 
       await vscode.window.withProgress(
         {
@@ -94,13 +98,14 @@ export const registerDeactivateAgentCommand = () => {
 
           await agent.deactivate();
 
-          channelService.appendLine(`Successfully deactivated agent ${agentName}.`);
+          logger.info(`Successfully deactivated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
         }
       );
     } catch (error) {
       const errorMessage = `Failed to deactivate agent: ${(error as Error).message}`;
-      channelService.appendLine(errorMessage);
+      logger.error(errorMessage, error);
+      logger.show();
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_deactivation_failed', errorMessage);
     }

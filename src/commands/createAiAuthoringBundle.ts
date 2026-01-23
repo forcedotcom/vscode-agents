@@ -5,12 +5,17 @@ import { Commands } from '../enums/commands';
 import { ScriptAgent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfProject, generateApiName } from '@salesforce/core';
+import { Logger } from '../utils/logger';
 
 export const registerCreateAiAuthoringBundleCommand = () => {
   return vscode.commands.registerCommand(Commands.createAiAuthoringBundle, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.createAiAuthoringBundle);
+
+    // Clear previous output and show channel
+    logger.clear();
+    logger.show();
 
     try {
       // Get the project root
@@ -75,7 +80,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           .filter(([name, type]) => type === vscode.FileType.File && (name.endsWith('.yaml') || name.endsWith('.yml')))
           .map(([name]) => name);
       } catch (error) {
-        channelService.appendLine(`No agent spec directory found at ${specsDir}`);
+        logger.warn(`No agent spec directory found at ${specsDir}`);
       }
 
       // Show dropdown with available spec files
@@ -135,16 +140,16 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            channelService.showChannelOutput();
-            channelService.appendLine('❌ Failed to generate authoring bundle.');
-            channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-            channelService.appendLine(errorMessage || 'Something went wrong');
+            logger.error('Failed to generate authoring bundle', error);
+            logger.show();
             throw error;
           }
         }
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to generate authoring bundle: ${errorMessage}`, error);
+      logger.show();
       vscode.window.showErrorMessage(`Failed to generate authoring bundle: ${errorMessage}`);
     }
   });
