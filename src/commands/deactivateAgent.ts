@@ -73,7 +73,7 @@ export const registerDeactivateAgentCommand = () => {
       logger.clear();
       logger.show();
       
-      logger.info(`Deactivating agent ${agentName}...`);
+      logger.debug(`Deactivating agent ${agentName}...`);
 
       await vscode.window.withProgress(
         {
@@ -98,7 +98,7 @@ export const registerDeactivateAgentCommand = () => {
 
           await agent.deactivate();
 
-          logger.info(`Successfully deactivated agent ${agentName}.`);
+          logger.debug(`Successfully deactivated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
         }
       );

@@ -166,10 +166,10 @@ describe('publishAgent', () => {
       expect(agentInitSpy).toHaveBeenCalled();
       expect(mockAgentInstance.compile).toHaveBeenCalled();
       expect(mockAgentInstance.publish).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[info\].*Publishing agent TestAgent/));
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[info\].*Retrieving metadata from org/));
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[info\].*Metadata retrieved successfully/));
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[info\].*Successfully published agent TestAgent/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[debug\].*Publishing agent TestAgent/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[debug\].*Retrieving metadata from org/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[debug\].*Metadata retrieved successfully/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[debug\].*Successfully published agent TestAgent/));
       expect(infoMessageSpy).toHaveBeenCalledWith('Agent "TestAgent" was published successfully.');
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Initializing agent...', increment: 0 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Validating agent...', increment: 20 });
@@ -355,8 +355,8 @@ describe('publishAgent', () => {
       // Verify progress updates from lifecycle events
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata...', increment: 70 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved successfully', increment: 90 });
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[info\].*Retrieving metadata from org/));
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[info\].*Metadata retrieved successfully/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[debug\].*Retrieving metadata from org/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[debug\].*Metadata retrieved successfully/));
     });
   });
 });

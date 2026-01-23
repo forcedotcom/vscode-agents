@@ -147,7 +147,7 @@ export class SessionManager {
       await restoreViewCallback();
     }
 
-    this.logger.info('Simulation ended');
+    this.logger.debug('Simulation ended');
   }
 
   /**
@@ -190,7 +190,7 @@ export class SessionManager {
       const modeMessage = this.state.isLiveMode ? 'Starting live test...' : 'Starting simulation...';
       this.messageSender.sendSimulationStarting(modeMessage);
 
-      this.logger.info('Restarting agent session');
+      this.logger.debug('Restarting agent session');
 
       // Start a new session on the existing agentInstance
       const session = await this.state.agentInstance.preview.start();
@@ -210,7 +210,7 @@ export class SessionManager {
 
       await this.state.setConversationDataAvailable(true);
 
-      this.logger.info('Agent session restarted');
+      this.logger.debug('Agent session restarted');
     } catch (error) {
       await this.state.setSessionStarting(false);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -251,12 +251,12 @@ export class SessionManager {
           this.messageSender.sendCompilationError(data.error);
         } else {
           this.logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
-          this.logger.info('Compilation endpoint called');
+          this.logger.debug('Compilation endpoint called');
           this.messageSender.sendCompilationStarting(data.message);
         }
       },
       (data: { message?: string }) => {
-        this.logger.info('Simulation session started');
+        this.logger.debug('Simulation session started');
         const modeMessage = determinedLiveMode ? 'Starting live test...' : 'Starting simulation...';
         this.messageSender.sendSimulationStarting(data.message || modeMessage);
       }

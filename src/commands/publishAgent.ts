@@ -48,7 +48,7 @@ export const registerPublishAgentCommand = () => {
       
       // Log SF_TEST_API setting value
       logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
-      logger.info(`Publishing agent ${fileName}...`);
+      logger.debug(`Publishing agent ${fileName}...`);
 
       await vscode.window.withProgress(
         {
@@ -104,12 +104,12 @@ export const registerPublishAgentCommand = () => {
             // Register event listeners
             lifecycle.on('scopedPreRetrieve', async () => {
               progress.report({ message: 'Retrieving metadata...', increment: 70 });
-              logger.info('Retrieving metadata from org...');
+              logger.debug('Retrieving metadata from org...');
             });
 
             lifecycle.on('scopedPostRetrieve', async () => {
               progress.report({ message: 'Metadata retrieved successfully', increment: 90 });
-              logger.info('Metadata retrieved successfully.');
+              logger.debug('Metadata retrieved successfully.');
             });
 
             try {
@@ -121,7 +121,7 @@ export const registerPublishAgentCommand = () => {
             }
 
             progress.report({ message: 'Agent published successfully.', increment: 100 });
-            logger.info(`Successfully published agent ${fileName}.`);
+            logger.debug(`Successfully published agent ${fileName}.`);
 
             vscode.window.showInformationMessage(`Agent "${fileName}" was published successfully.`);
           } catch (publishError) {

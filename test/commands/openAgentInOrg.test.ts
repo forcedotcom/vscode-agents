@@ -98,7 +98,7 @@ describe('registerOpenAgentInOrgCommand', () => {
     expect(errorMessageSpy).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Couldn't find any agents in the current DX project/));
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/\[info\].*Suggestion: Retrieve your agent metadata/)
+      expect.stringMatching(/\[debug\].*Suggestion: Retrieve your agent metadata/)
     );
     expect(progressSpy).not.toHaveBeenCalled(); // Should not proceed
   });

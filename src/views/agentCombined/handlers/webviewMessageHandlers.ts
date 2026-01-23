@@ -163,7 +163,7 @@ export class WebviewMessageHandlers {
     }
 
     // Log connection/technical details instead of message content
-    this.logger.info('Sending message to agent preview');
+    this.logger.debug('Sending message to agent preview');
 
     const response = await this.state.agentInstance.preview.send(userMessage);
 
@@ -173,7 +173,7 @@ export class WebviewMessageHandlers {
 
     this.messageSender.sendMessageSent(lastMessage?.message);
     // Log technical details instead of message content
-    this.logger.info('Received response from agent preview');
+    this.logger.debug('Received response from agent preview');
 
     // Load and send trace data after sending message
     if (this.state.currentAgentId && this.state.currentAgentSource) {

@@ -62,7 +62,7 @@ export const registerActivateAgentCommand = () => {
       logger.clear();
       logger.show();
       
-      logger.info(`Activating agent ${agentName}...`);
+      logger.debug(`Activating agent ${agentName}...`);
 
       await vscode.window.withProgress(
         {
@@ -87,7 +87,7 @@ export const registerActivateAgentCommand = () => {
 
           await agent.activate();
 
-          logger.info(`Successfully activated agent ${agentName}.`);
+          logger.debug(`Successfully activated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was activated successfully.`);
         }
       );

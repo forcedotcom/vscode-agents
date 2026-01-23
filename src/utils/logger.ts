@@ -16,7 +16,7 @@
 
 import { ChannelService } from '../types/ChannelService';
 
-export type LogLevel = 'info' | 'error' | 'warn' | 'debug';
+export type LogLevel = 'error' | 'warn' | 'debug';
 
 /**
  * Formats a log message with timestamp and status indicator
@@ -31,7 +31,6 @@ function formatLogMessage(level: LogLevel, message: string): string {
   });
 
   const statusMap: Record<LogLevel, string> = {
-    info: '[info]',
     error: '[error]',
     warn: '[warn]',
     debug: '[debug]'
@@ -46,12 +45,7 @@ function formatLogMessage(level: LogLevel, message: string): string {
 export class Logger {
   constructor(private readonly channelService: ChannelService) {}
 
-  /**
-   * Log an info message
-   */
-  info(message: string): void {
-    this.channelService.appendLine(formatLogMessage('info', message));
-  }
+
 
   /**
    * Log an error message with optional stack trace and API response
