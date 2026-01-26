@@ -4,7 +4,7 @@ import * as YAML from 'yaml';
 import { Commands } from '../enums/commands';
 import { ScriptAgent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { SfProject, generateApiName } from '@salesforce/core';
+import { SfProject, generateApiName, SfError } from '@salesforce/core';
 import { Logger } from '../utils/logger';
 
 export const registerCreateAiAuthoringBundleCommand = () => {
@@ -113,43 +113,36 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           cancellable: false
         },
         async progress => {
-          try {
-            progress.report({ message: 'Creating authoring bundle structure...', increment: 50 });
-            await new Promise(resolve => setTimeout(resolve, 300));
+          progress.report({ message: 'Creating authoring bundle structure...', increment: 50 });
+          await new Promise(resolve => setTimeout(resolve, 300));
 
-            progress.report({ message: 'Generating Agent Script file...' });
+          progress.report({ message: 'Generating Agent Script file...' });
 
-            // Create the agent script using the spec
-            await ScriptAgent.createAuthoringBundle({
-              agentSpec: { ...specData, ...{ name, developerName: apiName } },
-              project: project as any,
-              bundleApiName: apiName,
-              outputDir: targetDir // Specify where to create the bundle
-            });
+          // Create the agent script using the spec
+          await ScriptAgent.createAuthoringBundle({
+            agentSpec: { ...specData, ...{ name, developerName: apiName } },
+            project: project as any,
+            bundleApiName: apiName,
+            outputDir: targetDir // Specify where to create the bundle
+          });
 
-            progress.report({ message: 'Complete!', increment: 100 });
+          progress.report({ message: 'Complete!', increment: 100 });
 
-            // Open the agent file
-            // Agent.createAuthoringBundle creates the file at outputDir/aiAuthoringBundles/bundleApiName/bundleApiName.agent
-            const agentFilePath = path.join(targetDir, 'aiAuthoringBundles', apiName, `${apiName}.agent`);
-            const doc = await vscode.workspace.openTextDocument(agentFilePath);
-            await vscode.window.showTextDocument(doc);
-            // Wait a moment to show success
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.error('Failed to generate authoring bundle', error);
-            logger.show();
-            throw error;
-          }
+          // Open the agent file
+          // Agent.createAuthoringBundle creates the file at outputDir/aiAuthoringBundles/bundleApiName/bundleApiName.agent
+          const agentFilePath = path.join(targetDir, 'aiAuthoringBundles', apiName, `${apiName}.agent`);
+          const doc = await vscode.workspace.openTextDocument(agentFilePath);
+          await vscode.window.showTextDocument(doc);
+          // Wait a moment to show success
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
         }
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to generate authoring bundle: ${errorMessage}`, error);
-      logger.show();
-      vscode.window.showErrorMessage(`Failed to generate authoring bundle: ${errorMessage}`);
+      const sfError = SfError.wrap(error);
+      const errorMessage = `Failed to generate authoring bundle: ${sfError.message}`;
+      logger.error(errorMessage, sfError);
+      vscode.window.showErrorMessage(errorMessage);
     }
   });
 };

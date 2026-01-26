@@ -100,8 +100,8 @@ export const registerPreviewAgentCommand = () => {
       // For script agents opened from command, default to simulation mode (isLiveMode = false)
       await provider.startPreviewSession(agentId, agentSource, false);
     } catch (e) {
-      const error = SfError.wrap(e);
-      logger.error('Error previewing the .agent file', error);
+      const sfError = SfError.wrap(e);
+      logger.error('Error previewing the .agent file', sfError);
     }
   });
 };

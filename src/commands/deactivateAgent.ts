@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Commands } from '../enums/commands';
-import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
+import { SfProject, ConfigAggregator, Org, SfError } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath } from './agentUtils';
@@ -97,13 +97,13 @@ export const registerDeactivateAgentCommand = () => {
 
           await agent.deactivate();
 
-          logger.debug(`Successfully deactivated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
         }
       );
     } catch (error) {
-      const errorMessage = `Failed to deactivate agent: ${(error as Error).message}`;
-      logger.error(errorMessage, error);
+      const sfError = SfError.wrap(error);
+      const errorMessage = `Failed to deactivate agent: ${sfError.message}`;
+      logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_deactivation_failed', errorMessage);
     }

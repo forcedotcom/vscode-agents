@@ -46,7 +46,6 @@ export const registerValidateAgentCommand = () => {
 
     // Clear previous output
     logger.clear();
-    logger.show();
     
     // Log SF_TEST_API setting value
     logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
@@ -121,18 +120,18 @@ export const registerValidateAgentCommand = () => {
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         } catch (compileError) {
-          const error = SfError.wrap(compileError);
+          const sfError = SfError.wrap(compileError);
           // Clear diagnostics for unexpected errors
           diagnosticCollection.clear();
           // Show error details in output
-          logger.error('Agent validation failed', error);
+          logger.error('Agent validation failed', sfError);
 
           // Update progress to show error
           progress.report({ message: 'Failed' });
           await new Promise(resolve => setTimeout(resolve, 2000));
 
           // Show error message for unexpected errors
-          vscode.window.showErrorMessage(`Agent validation failed: ${error.message}`);
+          vscode.window.showErrorMessage(`Agent validation failed: ${sfError.message}`);
         }
       }
     );

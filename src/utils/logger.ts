@@ -15,6 +15,7 @@
  */
 
 import { ChannelService } from '../types/ChannelService';
+import { SfError } from '@salesforce/core';
 
 export type LogLevel = 'error' | 'warn' | 'debug';
 
@@ -45,42 +46,44 @@ function formatLogMessage(level: LogLevel, message: string): string {
 export class Logger {
   constructor(private readonly channelService: ChannelService) {}
 
-
-
   /**
    * Log an error message with optional stack trace and API response
+   * @param message - The error message to log
+   * @param error - Optional SfError instance containing error details
    */
-  error(message: string, error?: Error | unknown): void {
+  error(message: string, error?: SfError): void {
     this.channelService.appendLine(formatLogMessage('error', message));
-    
-    if (error instanceof Error) {
+
+    if (error) {
       if (error.message && error.message !== message) {
         this.channelService.appendLine(formatLogMessage('error', `  Details: ${error.message}`));
       }
-      
-      // Try to extract API response data from SfError or other error types
+
+      // Try to extract API response data from SfError
       const errorAny = error as any;
       if (errorAny.data || errorAny.response || errorAny.body) {
         this.channelService.appendLine(formatLogMessage('error', '  API Response:'));
         try {
           const responseData = errorAny.data || errorAny.response || errorAny.body;
-          const responseStr = typeof responseData === 'string' 
-            ? responseData 
-            : JSON.stringify(responseData, null, 2);
+          const responseStr = typeof responseData === 'string' ? responseData : JSON.stringify(responseData, null, 2);
           // Indent each line of the response
           responseStr.split('\n').forEach(line => {
             this.channelService.appendLine(formatLogMessage('error', `    ${line}`));
           });
         } catch (e) {
-          this.channelService.appendLine(formatLogMessage('error', `    ${String(errorAny.data || errorAny.response || errorAny.body)}`));
+          this.channelService.appendLine(
+            formatLogMessage('error', `    ${String(errorAny.data || errorAny.response || errorAny.body)}`)
+          );
         }
       }
-      
+
       // Log status code if available
       if (errorAny.statusCode || errorAny.code) {
-        this.channelService.appendLine(formatLogMessage('error', `  Status Code: ${errorAny.statusCode || errorAny.code}`));
+        this.channelService.appendLine(
+          formatLogMessage('error', `  Status Code: ${errorAny.statusCode || errorAny.code}`)
+        );
       }
-      
+
       if (error.stack) {
         // Indent stack trace for readability
         const stackLines = error.stack.split('\n').slice(1); // Skip first line (message)
@@ -88,8 +91,6 @@ export class Logger {
           this.channelService.appendLine(formatLogMessage('error', `  ${line.trim()}`));
         });
       }
-    } else if (error) {
-      this.channelService.appendLine(formatLogMessage('error', `  Details: ${String(error)}`));
     }
   }
 

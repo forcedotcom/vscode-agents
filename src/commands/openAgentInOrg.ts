@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
-import { SfProject } from '@salesforce/core';
+import { SfProject, SfError } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { sync } from 'cross-spawn';
 import { CoreExtensionService } from '../services/coreExtensionService';

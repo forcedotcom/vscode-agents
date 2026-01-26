@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
-import { SfProject } from '@salesforce/core';
+import { SfProject, SfError } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { AgentMessage } from '../types';
@@ -86,8 +86,9 @@ export class WebviewMessageHandlers {
    */
   async handleError(err: unknown): Promise<void> {
     console.error('AgentCombinedViewProvider Error:', err);
-    let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-    this.logger.error('AgentCombinedViewProvider error', err);
+    const sfError = SfError.wrap(err);
+    let errorMessage = sfError.message;
+    this.logger.error('AgentCombinedViewProvider error', sfError);
 
     this.state.pendingStartAgentId = undefined;
     this.state.pendingStartAgentSource = undefined;

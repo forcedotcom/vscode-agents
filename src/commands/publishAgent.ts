@@ -90,7 +90,7 @@ export const registerPublishAgentCommand = () => {
               progress.report({ message: `Validation failed with ${validateResponse.errors.length} error(s).` });
 
               vscode.window.showErrorMessage(
-                `Agent validation failed with ${validateResponse.errors.length} error(s). Check the Output tab for details.`
+                `Agent validation failed with ${validateResponse.errors.length} error(s). See the Problems panel for details.`
               );
               return;
             }
@@ -120,23 +120,22 @@ export const registerPublishAgentCommand = () => {
             }
 
             progress.report({ message: 'Agent published successfully.', increment: 100 });
-            logger.debug(`Successfully published agent ${fileName}.`);
-
             vscode.window.showInformationMessage(`Agent "${fileName}" was published successfully.`);
           } catch (publishError) {
-            const error = SfError.wrap(publishError);
-            logger.error('Agent publish failed', error);
+            const sfError = SfError.wrap(publishError);
+            logger.error('Agent publish failed', sfError);
 
             progress.report({ message: 'Failed' });
 
-            vscode.window.showErrorMessage(`Failed to publish agent: ${error.message}`);
-            telemetryService.sendException('agent_publish_failed', error.message);
+            vscode.window.showErrorMessage(`Failed to publish agent: ${sfError.message}`);
+            telemetryService.sendException('agent_publish_failed', sfError.message);
           }
         }
       );
     } catch (error) {
-      const errorMessage = `Failed to publish agent: ${(error as Error).message}`;
-      logger.error(errorMessage, error);
+      const sfError = SfError.wrap(error);
+      const errorMessage = `Failed to publish agent: ${sfError.message}`;
+      logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_publish_failed', errorMessage);
     }

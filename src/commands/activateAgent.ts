@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Commands } from '../enums/commands';
-import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
+import { SfProject, ConfigAggregator, Org, SfError } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath } from './agentUtils';
@@ -86,13 +86,13 @@ export const registerActivateAgentCommand = () => {
 
           await agent.activate();
 
-          logger.debug(`Successfully activated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was activated successfully.`);
         }
       );
     } catch (error) {
-      const errorMessage = `Failed to activate agent: ${(error as Error).message}`;
-      logger.error(errorMessage, error);
+      const sfError = SfError.wrap(error);
+      const errorMessage = `Failed to activate agent: ${sfError.message}`;
+      logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_activation_failed', errorMessage);
     }

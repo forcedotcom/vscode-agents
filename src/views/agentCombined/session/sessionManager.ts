@@ -112,8 +112,9 @@ export class SessionManager {
         return;
       }
 
-      this.logger.error('Error starting session', err);
-      throw err;
+      const sfError = SfError.wrap(err);
+      this.logger.error('Error starting session', sfError);
+      throw sfError;
     }
   }
 
@@ -143,11 +144,12 @@ export class SessionManager {
       this.messageSender.sendSessionEnded();
     }
 
+    this.logger.debug('Simulation ended');
+
     if (sessionWasStarting && restoreViewCallback) {
       await restoreViewCallback();
     }
 
-    this.logger.debug('Simulation ended');
   }
 
   /**
@@ -213,9 +215,9 @@ export class SessionManager {
       this.logger.debug('Agent session restarted');
     } catch (error) {
       await this.state.setSessionStarting(false);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to restart session: ${errorMessage}`, error);
-      await this.messageSender.sendError(`Failed to restart: ${errorMessage}`);
+      const sfError = SfError.wrap(error);
+      this.logger.error(`Failed to restart session: ${sfError.message}`, sfError);
+      await this.messageSender.sendError(`Failed to restart: ${sfError.message}`);
     }
   }
 

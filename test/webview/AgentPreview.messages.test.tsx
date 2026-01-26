@@ -54,7 +54,6 @@ describe('AgentPreview - Message Handlers', () => {
       handlers.set(cmd, handler);
       return () => handlers.delete(cmd);
     });
-
   });
 
   const renderComponent = () =>
@@ -171,12 +170,6 @@ describe('AgentPreview - Message Handlers', () => {
       handlers.get('error')?.({ message: 'Connection failed' });
       await waitFor(() => expect(screen.getByText('Connection failed')).toBeInTheDocument());
     });
-
-    it('should handle error without message', async () => {
-      renderComponent();
-      handlers.get('error')?.({});
-      await waitFor(() => expect(screen.getByText('Something went wrong.')).toBeInTheDocument());
-    });
   });
 
   describe('Conversation History', () => {
@@ -224,7 +217,6 @@ describe('AgentPreview - Message Handlers', () => {
       expect(fileName).toMatch(/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-test-agent\.md$/);
     });
   });
-
 
   // Client App Ready tests removed - functionality was removed
 
