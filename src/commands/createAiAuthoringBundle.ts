@@ -146,6 +146,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Failed to generate authoring bundle: ${errorMessage}`);
+      telemetryService.sendException('createAiAuthoringBundle_failed', errorMessage);
     }
   });
 };

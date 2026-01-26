@@ -34,6 +34,7 @@ export const registerValidateAgentCommand = () => {
 
     if (!filePath) {
       vscode.window.showErrorMessage('No .agent file selected.');
+      telemetryService.sendException('validateAgent_failed', 'No .agent file selected.');
       return;
     }
 
@@ -134,6 +135,7 @@ export const registerValidateAgentCommand = () => {
 
           // Show error message for unexpected errors
           vscode.window.showErrorMessage(`Agent validation failed: ${error.message}`);
+          telemetryService.sendException('validateAgent_failed', error.message);
         }
       }
     );
