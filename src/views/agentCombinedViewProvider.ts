@@ -32,8 +32,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private readonly agentInitializer: AgentInitializer;
   private messageHandlers?: WebviewMessageHandlers;
 
-  private readonly channelService = CoreExtensionService.getChannelService();
-
   constructor(private readonly context: vscode.ExtensionContext) {
     AgentCombinedViewProvider.instance = this;
 
@@ -54,8 +52,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.state,
       this.messageSender,
       this.agentInitializer,
-      this.historyManager,
-      this.channelService
+      this.historyManager
     );
 
     // Initialize context states
@@ -93,7 +90,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.historyManager,
       this.apexDebugManager,
       this.conversationExporter,
-      this.channelService,
       this.context,
       webviewView
     );

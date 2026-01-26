@@ -140,10 +140,8 @@ describe('previewAgent', () => {
 
       await handler(mockUri);
 
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Error previewing the .agent file.');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Error Details:');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('unable to open view'));
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Stack Trace:');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Error previewing the \.agent file/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Details: unable to open view/));
     });
 
     it('falls back to active editor when URI is not provided', async () => {

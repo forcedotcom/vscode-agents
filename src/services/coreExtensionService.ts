@@ -21,6 +21,7 @@ import { TelemetryService } from '../types/TelemetryService';
 import { CoreExtensionApi } from '../types/CoreExtension';
 import { WorkspaceContext } from '../types/WorkspaceContext';
 import { Connection } from '@salesforce/core';
+import { ColoredChannelService } from '../utils/coloredChannelService';
 
 export interface OrgChangeEvent {
   username?: string;
@@ -37,6 +38,7 @@ export const WORKSPACE_CONTEXT_NOT_FOUND = 'Workspace Context not found';
 export class CoreExtensionService {
   private static initialized = false;
   private static channelService: ChannelService;
+  private static testChannelService: ChannelService;
   private static telemetryService: TelemetryService;
   private static workspaceContext: WorkspaceContext;
 
@@ -89,7 +91,10 @@ export class CoreExtensionService {
     if (!channelService) {
       throw new Error(CHANNEL_SERVICE_NOT_FOUND);
     }
-    CoreExtensionService.channelService = channelService.getInstance(EXTENSION_NAME);
+    // Initialize extension channel for general extension logging with syntax highlighting
+    CoreExtensionService.channelService = new ColoredChannelService('Agentforce DX Extension');
+    // Initialize test channel for agent test output (keep original for test output formatting)
+    CoreExtensionService.testChannelService = channelService.getInstance('Agentforce DX Tests');
   }
 
   private static initializeTelemetryService(
@@ -119,6 +124,13 @@ export class CoreExtensionService {
   static getChannelService(): ChannelService {
     if (CoreExtensionService.initialized) {
       return CoreExtensionService.channelService;
+    }
+    throw new Error(NOT_INITIALIZED_ERROR);
+  }
+
+  static getTestChannelService(): ChannelService {
+    if (CoreExtensionService.initialized) {
+      return CoreExtensionService.testChannelService;
     }
     throw new Error(NOT_INITIALIZED_ERROR);
   }

@@ -6,7 +6,7 @@ import type { AgentViewState } from '../state/agentViewState';
 import type { WebviewMessageSender } from '../handlers/webviewMessageSender';
 import type { AgentInitializer } from '../agent/agentInitializer';
 import type { HistoryManager } from '../history/historyManager';
-import type { ChannelService } from '../../../types/ChannelService';
+import { Logger } from '../../../utils/logger';
 import { createSessionStartGuards } from './sessionStartGuards';
 import { SessionStartCancelledError } from '../types';
 import { validatePublishedAgentId } from '../agent/agentUtils';
@@ -16,13 +16,16 @@ import { SfProject } from '@salesforce/core';
  * Manages agent session lifecycle (start, end, restart)
  */
 export class SessionManager {
+  private readonly logger: Logger;
+
   constructor(
     private readonly state: AgentViewState,
     private readonly messageSender: WebviewMessageSender,
     private readonly agentInitializer: AgentInitializer,
-    private readonly historyManager: HistoryManager,
-    private readonly channelService: ChannelService
-  ) {}
+    private readonly historyManager: HistoryManager
+  ) {
+    this.logger = new Logger(CoreExtensionService.getChannelService());
+  }
 
   /**
    * Starts a preview session for an agent
@@ -104,14 +107,14 @@ export class SessionManager {
       ) {
         const sfError = err as SfError;
         const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
-        this.channelService.appendLine(detailedError);
+        this.logger.error(detailedError, sfError);
         this.messageSender.sendCompilationError(detailedError);
         return;
       }
 
-      this.channelService.appendLine(`Error starting session: ${err}`);
-      this.channelService.appendLine('---------------------');
-      throw err;
+      const sfError = SfError.wrap(err);
+      this.logger.error('Error starting session', sfError);
+      throw sfError;
     }
   }
 
@@ -141,12 +144,12 @@ export class SessionManager {
       this.messageSender.sendSessionEnded();
     }
 
+    this.logger.debug('Simulation ended');
+
     if (sessionWasStarting && restoreViewCallback) {
       await restoreViewCallback();
     }
 
-    this.channelService.appendLine(`Simulation ended.`);
-    this.channelService.appendLine('---------------------');
   }
 
   /**
@@ -189,7 +192,7 @@ export class SessionManager {
       const modeMessage = this.state.isLiveMode ? 'Starting live test...' : 'Starting simulation...';
       this.messageSender.sendSimulationStarting(modeMessage);
 
-      this.channelService.appendLine('Restarting agent session...');
+      this.logger.debug('Restarting agent session');
 
       // Start a new session on the existing agentInstance
       const session = await this.state.agentInstance.preview.start();
@@ -209,13 +212,12 @@ export class SessionManager {
 
       await this.state.setConversationDataAvailable(true);
 
-      this.channelService.appendLine('Agent session restarted.');
-      this.channelService.appendLine('---------------------');
+      this.logger.debug('Agent session restarted');
     } catch (error) {
       await this.state.setSessionStarting(false);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.channelService.appendLine(`Failed to restart session: ${errorMessage}`);
-      await this.messageSender.sendError(`Failed to restart: ${errorMessage}`);
+      const sfError = SfError.wrap(error);
+      this.logger.error(`Failed to restart session: ${sfError.message}`, sfError);
+      await this.messageSender.sendError(`Failed to restart: ${sfError.message}`);
     }
   }
 
@@ -250,13 +252,13 @@ export class SessionManager {
         if (data.error) {
           this.messageSender.sendCompilationError(data.error);
         } else {
-          this.channelService.appendLine(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
-          this.channelService.appendLine(`Compilation end point called.`);
+          this.logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
+          this.logger.debug('Compilation endpoint called');
           this.messageSender.sendCompilationStarting(data.message);
         }
       },
       (data: { message?: string }) => {
-        this.channelService.appendLine(`Simulation session started.`);
+        this.logger.debug('Simulation session started');
         const modeMessage = determinedLiveMode ? 'Starting live test...' : 'Starting simulation...';
         this.messageSender.sendSimulationStarting(data.message || modeMessage);
       }
