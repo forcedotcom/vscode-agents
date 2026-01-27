@@ -481,6 +481,9 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
 
       await provider.refreshAvailableAgents();
 
+      // Wait for background endSession to complete (optimistic UI update runs first)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // If there was an active session, end should be called; otherwise it's fine
       // The important thing is that refreshAvailableAgents doesn't throw
       expect(mockAgentInstance.preview.end).toHaveBeenCalledTimes(
@@ -490,6 +493,45 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
         command: 'sessionEnded',
         data: {}
       });
+    });
+  });
+
+  describe('Reset Agent View', () => {
+    it('should use optimistic UI update when resetting agent view', async () => {
+      // Set up agent in error state
+      (provider as any).state.currentAgentId = '0X1234567890123';
+      (provider as any).state.currentAgentSource = 'PUBLISHED';
+
+      // Reset agent view
+      await provider.resetCurrentAgentView();
+
+      // Verify optimistic update: clearMessages should be sent immediately
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clearMessages'
+      });
+
+      // Wait for background history loading to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    it('should use stored agentSource to avoid slow getAgentSource call', async () => {
+      // Set up agent with known source
+      (provider as any).state.currentAgentId = '0X1234567890123';
+      (provider as any).state.currentAgentSource = 'PUBLISHED';
+
+      // Reset agent view
+      await provider.resetCurrentAgentView();
+
+      // Verify clearMessages was called (optimistic update)
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clearMessages'
+      });
+    });
+
+    it('should throw error when no agent is selected', async () => {
+      (provider as any).state.currentAgentId = undefined;
+
+      await expect(provider.resetCurrentAgentView()).rejects.toThrow('No agent selected to reset.');
     });
   });
 

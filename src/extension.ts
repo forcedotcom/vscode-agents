@@ -427,14 +427,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         return;
       }
 
-      // Set sessionStarting immediately to prevent button flicker
-      await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', true);
-
-      // End the current session (this will trigger compilation on restart)
-      await provider.endSession();
-
-      // Restart the agent session (this will handle sessionStarting state and compilation)
-      provider.selectAndStartAgent(currentAgentId);
+      // Recompile and restart in a single motion (handles UI feedback internally)
+      await provider.recompileAndRestart();
     })
   );
 

@@ -207,6 +207,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Recompiles and restarts the agent session (full restart with compilation)
+   */
+  public async recompileAndRestart(): Promise<void> {
+    await this.sessionManager.recompileAndRestartSession();
+  }
+
+  /**
    * Sets the agent ID
    */
   public setAgentId(agentId: string): void {
@@ -232,7 +239,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Refreshes the available agents list
    */
   public async refreshAvailableAgents(): Promise<void> {
-    await this.endSession();
+    // Clear state and update UI immediately (optimistic update)
     this.state.currentAgentId = undefined;
 
     if (this.webviewView) {
@@ -249,6 +256,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.messageSender.sendNoHistoryFound('refresh-placeholder');
       this.messageSender.sendRefreshAgents();
     }
+
+    // End session in background (non-blocking) - restoreConnection can be slow
+    void this.endSession();
   }
 
   /**
@@ -277,10 +287,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       throw new Error('No agent selected to reset.');
     }
 
-    const agentSource = await getAgentSource(this.state.currentAgentId);
-    await this.historyManager.showHistoryOrPlaceholder(this.state.currentAgentId, agentSource);
+    // Optimistic update: clear UI and update context immediately
+    this.messageSender.sendClearMessages();
     await this.state.setResetAgentViewAvailable(false);
     await this.state.setSessionErrorState(false);
+
+    // Load history in background (non-blocking)
+    // Use stored agentSource to avoid slow getAgentSource call
+    const agentId = this.state.currentAgentId;
+    const agentSource = this.state.currentAgentSource ?? (await getAgentSource(agentId));
+    void this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
   }
 
   /**

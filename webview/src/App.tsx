@@ -72,13 +72,9 @@ const App: React.FC = () => {
         // Restart Agent button clicked - force immediate restart
         forceRestartRef.current = true;
         setRestartTrigger(prev => prev + 1);
-      } else {
-        // Palette selection - let history flow decide whether to show saved conversation or placeholder
-        // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
-        // to avoid flickering between clear and load
-        // Pass agentSource to avoid expensive re-fetch on the backend
-        vscodeApi.loadAgentHistory(data.agentId, data.agentSource as AgentSource | undefined);
       }
+      // History is now loaded atomically by setSelectedAgentId handler
+      // No need for separate loadAgentHistory call
     });
 
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
@@ -180,10 +176,12 @@ const App: React.FC = () => {
     }, 100);
   }, [isSessionActive, isSessionStarting, desiredAgentId]);
 
-  const handleAgentChange = useCallback((agentId: string) => {
+  const handleAgentChange = useCallback((agentId: string, agentSource?: AgentSource) => {
     setDesiredAgentId(agentId);
     // Notify the extension about the selected agent
-    vscodeApi.setSelectedAgentId(agentId);
+    // Pass agentSource to avoid expensive re-fetch on the backend
+    // History is now loaded atomically by setSelectedAgentId handler
+    vscodeApi.setSelectedAgentId(agentId, agentSource);
   }, []);
 
   const handleStopSession = useCallback(() => {
