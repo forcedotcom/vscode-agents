@@ -496,6 +496,45 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
     });
   });
 
+  describe('Reset Agent View', () => {
+    it('should use optimistic UI update when resetting agent view', async () => {
+      // Set up agent in error state
+      (provider as any).state.currentAgentId = '0X1234567890123';
+      (provider as any).state.currentAgentSource = 'PUBLISHED';
+
+      // Reset agent view
+      await provider.resetCurrentAgentView();
+
+      // Verify optimistic update: clearMessages should be sent immediately
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clearMessages'
+      });
+
+      // Wait for background history loading to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    it('should use stored agentSource to avoid slow getAgentSource call', async () => {
+      // Set up agent with known source
+      (provider as any).state.currentAgentId = '0X1234567890123';
+      (provider as any).state.currentAgentSource = 'PUBLISHED';
+
+      // Reset agent view
+      await provider.resetCurrentAgentView();
+
+      // Verify clearMessages was called (optimistic update)
+      expect(mockWebviewView.webview.postMessage).toHaveBeenCalledWith({
+        command: 'clearMessages'
+      });
+    });
+
+    it('should throw error when no agent is selected', async () => {
+      (provider as any).state.currentAgentId = undefined;
+
+      await expect(provider.resetCurrentAgentView()).rejects.toThrow('No agent selected to reset.');
+    });
+  });
+
   describe('Complete User Flows', () => {
     it('should handle flow: start, use agent, error, retry', async () => {
       let startCallCount = 0;

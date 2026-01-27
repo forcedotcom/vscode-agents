@@ -280,10 +280,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       throw new Error('No agent selected to reset.');
     }
 
-    const agentSource = await getAgentSource(this.state.currentAgentId);
-    await this.historyManager.showHistoryOrPlaceholder(this.state.currentAgentId, agentSource);
+    // Optimistic update: clear UI and update context immediately
+    this.messageSender.sendClearMessages();
     await this.state.setResetAgentViewAvailable(false);
     await this.state.setSessionErrorState(false);
+
+    // Load history in background (non-blocking)
+    // Use stored agentSource to avoid slow getAgentSource call
+    const agentId = this.state.currentAgentId;
+    const agentSource = this.state.currentAgentSource ?? (await getAgentSource(agentId));
+    void this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
   }
 
   /**
