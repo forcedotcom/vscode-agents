@@ -25,7 +25,7 @@ const PlaceholderContent: React.FC<PlaceholderContentProps> = ({ hasAgents = fal
           Select Agent
         </Button>
       ) : (
-        !isLoadingAgents && <p>Create an agent to get started.</p>
+        !isLoadingAgents && <p className="placeholder-hint">Create an agent first to get started.</p>
       )}
     </div>
   );

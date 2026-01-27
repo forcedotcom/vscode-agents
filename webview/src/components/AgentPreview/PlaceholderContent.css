@@ -36,6 +36,11 @@ body.vscode-high-contrast .placeholder-icon {
   text-wrap: balance;
 }
 
+.placeholder-content p.placeholder-hint {
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 0;
+}
+
 /* Button wrapper to prevent full-width expansion */
 .placeholder-content .vscode-button {
   width: auto;
