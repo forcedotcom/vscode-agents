@@ -219,11 +219,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   /**
    * Starts a preview session for an agent
    */
-  public async startPreviewSession(
-    agentId: string,
-    agentSource: AgentSource,
-    isLiveMode?: boolean
-  ): Promise<void> {
+  public async startPreviewSession(agentId: string, agentSource: AgentSource, isLiveMode?: boolean): Promise<void> {
     if (!this.webviewView) {
       throw new Error('Webview is not ready. Please ensure the view is visible.');
     }
@@ -297,39 +293,66 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Saves the current conversation session using Agent.preview.saveSession
+   * Works even after ending a session by reinitializing the agent instance if needed
    */
   public async exportConversation(): Promise<void> {
-    if (!this.state.agentInstance || !this.state.sessionId) {
-      vscode.window.showWarningMessage('No active session to save.');
+    const agentId = this.state.currentAgentId;
+    const agentSource = this.state.currentAgentSource;
+
+    if (!agentId || !agentSource) {
+      vscode.window.showWarningMessage('No agent selected to save session.');
       return;
     }
 
-    // Generate default filename
-    const agentName = this.state.currentAgentName || 'agent';
-    const timestamp = new Date().toISOString().replace(/[:]/g, '-').slice(0, 19);
-    const defaultFileName = `${agentName}-session-${timestamp}.json`;
-    
-    // Get workspace folder for default location
-    const defaultFolder = vscode.workspace.workspaceFolders?.[0]?.uri ?? this.context.globalStorageUri;
-    const defaultUri = defaultFolder ? vscode.Uri.joinPath(defaultFolder, defaultFileName) : undefined;
+    // Reinitialize agent instance if it was cleared after ending session
+    let agentInstance = this.state.agentInstance;
+    if (!agentInstance) {
+      const conn = await CoreExtensionService.getDefaultConnection();
+      const project = SfProject.getInstance();
 
-    // Prompt user for save location
-    const targetUri = await vscode.window.showSaveDialog({
-      defaultUri,
-      filters: {
-        JSON: ['json'],
-        'All Files': ['*']
-      },
-      saveLabel: 'Save Conversation'
+      if (agentSource === AgentSource.SCRIPT) {
+        agentInstance = await this.agentInitializer.initializeScriptAgent(
+          agentId,
+          conn,
+          project,
+          this.state.isLiveMode ?? false,
+          () => true // isActive check - always true for save operation
+          // No callbacks needed for save operation
+        );
+      } else {
+        agentInstance = await this.agentInitializer.initializePublishedAgent(agentId, conn, project);
+      }
+    }
+
+    // Get workspace folder - required for saving to local project
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]!;
+
+    // Prompt user for output directory path (relative to workspace root)
+    const directoryPath = await vscode.window.showInputBox({
+      prompt: 'Enter the output directory path ',
+      placeHolder: 'sessions/MySession',
+      value: 'sessions',
+      validateInput: value => {
+        if (!value || value.trim().length === 0) {
+          return 'Directory path is required';
+        }
+        // Check for invalid characters in directory paths
+        if (/[<>:"|?*]/.test(value)) {
+          return 'Directory path contains invalid characters';
+        }
+        return null;
+      }
     });
 
-    if (!targetUri) {
+    if (!directoryPath) {
       return; // User cancelled
     }
 
+    const targetDirectory = path.join(workspaceFolder.uri.fsPath, directoryPath.trim());
+
     try {
-      await this.state.agentInstance.preview.saveSession(targetUri.fsPath);
-      vscode.window.showInformationMessage(`Conversation session saved to ${targetUri.fsPath}.`);
+      await agentInstance.preview.saveSession(targetDirectory);
+      vscode.window.showInformationMessage(`Conversation session saved to ${targetDirectory}.`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Failed to save conversation: ${errorMessage}`);
