@@ -17,6 +17,8 @@ interface AgentPreviewProps {
   isLiveMode?: boolean;
   selectedAgentInfo?: AgentInfo | null;
   onLiveModeChange?: (isLive: boolean) => void;
+  hasAgents?: boolean;
+  isLoadingAgents?: boolean;
 }
 
 export interface AgentPreviewRef {
@@ -120,7 +122,9 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       onLoadingChange,
       isLiveMode = false,
       selectedAgentInfo = null,
-      onLiveModeChange
+      onLiveModeChange,
+      hasAgents = false,
+      isLoadingAgents = true
     },
     ref
   ) => {
@@ -497,7 +501,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     if (selectedAgentId === '') {
       return (
         <div className="agent-preview">
-          <PlaceholderContent />
+          <PlaceholderContent hasAgents={hasAgents} isLoadingAgents={isLoadingAgents} />
         </div>
       );
     }
