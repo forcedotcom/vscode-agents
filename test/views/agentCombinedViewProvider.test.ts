@@ -15,6 +15,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { AgentCombinedViewProvider } from '../../src/views/agentCombinedViewProvider';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { AgentSource } from '@salesforce/agents';
@@ -260,9 +261,10 @@ describe('AgentCombinedViewProvider', () => {
           value: 'sessions'
         })
       );
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/workspace/sessions/MySession');
+      const expectedPath = path.join('/workspace', 'sessions/MySession');
+      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith(expectedPath);
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Conversation session saved to /workspace/sessions/MySession.'
+        `Conversation session saved to ${expectedPath}.`
       );
     });
 
@@ -329,7 +331,8 @@ describe('AgentCombinedViewProvider', () => {
 
       await provider.exportConversation();
 
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/workspace/sessions/MySession');
+      const expectedPath = path.join('/workspace', 'sessions/MySession');
+      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith(expectedPath);
     });
 
     it('should handle saveSession error', async () => {
@@ -373,7 +376,8 @@ describe('AgentCombinedViewProvider', () => {
         false,
         expect.any(Function)
       );
-      expect(mockInitializedAgent.preview.saveSession).toHaveBeenCalledWith('/workspace/sessions/MySession');
+      const expectedPath = path.join('/workspace', 'sessions/MySession');
+      expect(mockInitializedAgent.preview.saveSession).toHaveBeenCalledWith(expectedPath);
     });
 
     it('should reinitialize published agent when not available', async () => {
@@ -401,7 +405,8 @@ describe('AgentCombinedViewProvider', () => {
       await provider.exportConversation();
 
       expect(initializePublishedAgentSpy).toHaveBeenCalledWith('test-agent-id', mockConnection, mockProject);
-      expect(mockInitializedAgent.preview.saveSession).toHaveBeenCalledWith('/workspace/sessions/MySession');
+      const expectedPath = path.join('/workspace', 'sessions/MySession');
+      expect(mockInitializedAgent.preview.saveSession).toHaveBeenCalledWith(expectedPath);
     });
 
     it('should use existing agent instance when available', async () => {
@@ -412,7 +417,8 @@ describe('AgentCombinedViewProvider', () => {
       await provider.exportConversation();
 
       expect(initializeScriptAgentSpy).not.toHaveBeenCalled();
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/workspace/sessions/MySession');
+      const expectedPath = path.join('/workspace', 'sessions/MySession');
+      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith(expectedPath);
     });
   });
 });
