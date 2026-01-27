@@ -175,7 +175,7 @@ describe('AgentSelector', () => {
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'agent1');
 
-      expect(onAgentChange).toHaveBeenCalledWith('agent1');
+      expect(onAgentChange).toHaveBeenCalledWith('agent1', 'published');
     });
 
     it('should display agent type for selected agent', async () => {
@@ -226,7 +226,7 @@ describe('AgentSelector', () => {
       expect(screen.queryByText('(Agent Script)')).not.toBeInTheDocument();
     });
 
-    it('should clear messages and load history when agent is selected', async () => {
+    it('should not clear messages when agent is selected (backend handles atomically)', async () => {
       const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} />);
@@ -243,8 +243,7 @@ describe('AgentSelector', () => {
 
       // clearMessages is no longer called from webview - backend handles it atomically with history loading
       expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
-      // Now passes agent source to avoid expensive re-fetch on backend
-      expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent1', 'published');
+      // History is now loaded atomically by setSelectedAgentId handler on backend, not via loadAgentHistory
     });
 
     it('should clear messages when deselecting agent', async () => {
@@ -270,7 +269,7 @@ describe('AgentSelector', () => {
   // Client App Handling tests removed - functionality was removed
 
   describe('Preselected Agent', () => {
-    it('should auto-select and load history for preselected agent', async () => {
+    it('should auto-select preselected agent and notify parent', async () => {
       const onAgentChange = jest.fn();
       const agents: AgentInfo[] = [
         { id: 'agent1', name: 'TestAgent1', type: 'published' },
@@ -283,11 +282,10 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents, selectedAgentId: 'agent2' });
 
       await waitFor(() => {
-        expect(onAgentChange).toHaveBeenCalledWith('agent2');
+        expect(onAgentChange).toHaveBeenCalledWith('agent2', 'published');
         // clearMessages is no longer called from webview - backend handles it atomically with history loading
         expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
-        // Now passes agent source to avoid expensive re-fetch on backend
-        expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent2', 'published');
+        // History is now loaded atomically by setSelectedAgentId handler on backend
       });
     });
 
@@ -341,7 +339,7 @@ describe('AgentSelector', () => {
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'pub1');
 
-      expect(onAgentChange).toHaveBeenCalledWith('pub1');
+      expect(onAgentChange).toHaveBeenCalledWith('pub1', 'published');
       // For published agents, live mode is auto-enabled (tested via UI state)
     });
 
@@ -361,7 +359,7 @@ describe('AgentSelector', () => {
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'script1');
 
-      expect(onAgentChange).toHaveBeenCalledWith('script1');
+      expect(onAgentChange).toHaveBeenCalledWith('script1', 'script');
       // Script agents default to simulate mode (false)
     });
   });
