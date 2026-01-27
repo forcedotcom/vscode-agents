@@ -10,7 +10,6 @@ import { SessionManager } from './agentCombined/session';
 import { AgentInitializer } from './agentCombined/agent';
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
-import { ConversationExporter } from './agentCombined/export';
 import { getAgentSource } from './agentCombined/agent';
 
 /**
@@ -28,7 +27,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private readonly sessionManager: SessionManager;
   private readonly historyManager: HistoryManager;
   private readonly apexDebugManager: ApexDebugManager;
-  private readonly conversationExporter: ConversationExporter;
   private readonly agentInitializer: AgentInitializer;
   private messageHandlers?: WebviewMessageHandlers;
 
@@ -47,7 +45,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.agentInitializer = new AgentInitializer(this.state);
     this.historyManager = new HistoryManager(this.state, this.messageSender);
     this.apexDebugManager = new ApexDebugManager(this.messageSender);
-    this.conversationExporter = new ConversationExporter(this.state, context);
 
     // Initialize session manager (depends on other managers)
     this.sessionManager = new SessionManager(
@@ -92,7 +89,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.sessionManager,
       this.historyManager,
       this.apexDebugManager,
-      this.conversationExporter,
       this.channelService,
       this.context,
       webviewView
@@ -300,20 +296,43 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Requests conversation export
+   * Saves the current conversation session using Agent.preview.saveSession
    */
   public async exportConversation(): Promise<void> {
-    if (!this.webviewView) {
-      throw new Error('Agent view is not ready.');
+    if (!this.state.agentInstance || !this.state.sessionId) {
+      vscode.window.showWarningMessage('No active session to save.');
+      return;
     }
 
-    if (!this.state.currentAgentId) {
-      throw new Error('No agent selected to export.');
+    // Generate default filename
+    const agentName = this.state.currentAgentName || 'agent';
+    const timestamp = new Date().toISOString().replace(/[:]/g, '-').slice(0, 19);
+    const defaultFileName = `${agentName}-session-${timestamp}.json`;
+    
+    // Get workspace folder for default location
+    const defaultFolder = vscode.workspace.workspaceFolders?.[0]?.uri ?? this.context.globalStorageUri;
+    const defaultUri = defaultFolder ? vscode.Uri.joinPath(defaultFolder, defaultFileName) : undefined;
+
+    // Prompt user for save location
+    const targetUri = await vscode.window.showSaveDialog({
+      defaultUri,
+      filters: {
+        JSON: ['json'],
+        'All Files': ['*']
+      },
+      saveLabel: 'Save Conversation'
+    });
+
+    if (!targetUri) {
+      return; // User cancelled
     }
 
-    this.messageSender.sendRequestConversationExport(
-      this.state.currentAgentId,
-      this.state.currentAgentName ?? this.state.currentAgentId
-    );
+    try {
+      await this.state.agentInstance.preview.saveSession(targetUri.fsPath);
+      vscode.window.showInformationMessage(`Conversation session saved to ${targetUri.fsPath}.`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to save conversation: ${errorMessage}`);
+    }
   }
 }

@@ -55,59 +55,6 @@ export const shouldShowTransitionLoader = (pendingAgentId?: string | null, selec
 
 export const hasAgentSelection = (selectedAgentId?: string): boolean => Boolean(selectedAgentId);
 
-export const sanitizeConversationFileName = (value: string): string =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9-_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-export const buildConversationMarkdown = (
-  agentLabel: string,
-  exportMessages: Message[],
-  disclaimer?: string
-): string => {
-  const exportedAt = new Date();
-  const exportedTimestamp = `${exportedAt.toISOString().slice(0, 19).replace('T', ' ')} UTC`;
-  const lines: string[] = [
-    '# Agentforce DX (AFDX) Log',
-    '',
-    '## Details',
-    '',
-    `- **Agent:** \`${agentLabel}\``,
-    `- **Exported:** ${exportedTimestamp}`,
-    '',
-    '## Conversation',
-    ''
-  ];
-
-  if (disclaimer) {
-    lines.push(`> ${disclaimer}`);
-    lines.push('');
-  }
-
-  if (!exportMessages || exportMessages.length === 0) {
-    lines.push('_No conversation messages available._');
-    return lines.join('\n');
-  }
-
-  exportMessages.forEach(message => {
-    const role = message.type === 'user' ? 'User' : message.type === 'agent' ? 'Agent' : 'System';
-    const timestamp = message.timestamp ? new Date(message.timestamp) : null;
-    const timeFragment = timestamp
-      ? `${timestamp.getUTCHours().toString().padStart(2, '0')}:${timestamp
-          .getUTCMinutes()
-          .toString()
-          .padStart(2, '0')}:${timestamp.getUTCSeconds().toString().padStart(2, '0')}`
-      : 'Unknown time';
-    lines.push(`### ${timeFragment} | ${role}`);
-    lines.push('');
-    lines.push(message.content || '');
-    lines.push('');
-  });
-
-  return lines.join('\n');
-};
 
 const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
   (
@@ -236,20 +183,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeNoHistoryFound);
 
-      const disposeExportRequest = vscodeApi.onMessage('requestConversationExport', data => {
-        const agentLabel = agentInfoRef.current?.name || data?.agentName || 'Agent Conversation';
-        const markdown = buildConversationMarkdown(agentLabel, messagesRef.current);
-        const safeBase = sanitizeConversationFileName(agentLabel) || 'agent-conversation';
-        const exported = new Date();
-        const datePart = exported.toISOString().slice(0, 10);
-        const timePart = `${exported.getUTCHours().toString().padStart(2, '0')}-${exported
-          .getUTCMinutes()
-          .toString()
-          .padStart(2, '0')}-${exported.getUTCSeconds().toString().padStart(2, '0')}`;
-        const fileName = `${datePart}-${timePart}-${safeBase}.md`;
-        vscodeApi.sendConversationExport(markdown, fileName);
-      });
-      disposers.push(disposeExportRequest);
 
       const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', data => {
         const timeSinceError = Date.now() - sessionErrorTimestampRef.current;
