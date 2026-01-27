@@ -232,7 +232,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * Refreshes the available agents list
    */
   public async refreshAvailableAgents(): Promise<void> {
-    await this.endSession();
+    // Clear state and update UI immediately (optimistic update)
     this.state.currentAgentId = undefined;
 
     if (this.webviewView) {
@@ -249,6 +249,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.messageSender.sendNoHistoryFound('refresh-placeholder');
       this.messageSender.sendRefreshAgents();
     }
+
+    // End session in background (non-blocking) - restoreConnection can be slow
+    void this.endSession();
   }
 
   /**

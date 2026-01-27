@@ -481,6 +481,9 @@ describe('AgentCombinedViewProvider Integration Tests', () => {
 
       await provider.refreshAvailableAgents();
 
+      // Wait for background endSession to complete (optimistic UI update runs first)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // If there was an active session, end should be called; otherwise it's fine
       // The important thing is that refreshAvailableAgents doesn't throw
       expect(mockAgentInstance.preview.end).toHaveBeenCalledTimes(
