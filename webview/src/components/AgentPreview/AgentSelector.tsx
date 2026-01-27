@@ -235,7 +235,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
           value={selectedAgent}
           onChange={handleAgentChange}
-          disabled={isLoading || isSessionActive || isSessionStarting}
+          disabled={isLoading || isSessionActive || isSessionStarting || agents.length === 0}
         >
           <option value="">
             {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select agent...'}

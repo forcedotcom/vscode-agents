@@ -115,43 +115,32 @@ describe('PlaceholderContent', () => {
     });
   });
 
-  describe('Disabled State', () => {
-    it('should disable button when no agents are available', () => {
+  describe('No Agents State', () => {
+    it('should hide button and show message when no agents are available', () => {
       render(<PlaceholderContent hasAgents={false} isLoadingAgents={false} />);
 
-      const button = screen.getByRole('button', { name: /Select Agent/i });
-      expect(button).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/Create an agent to get started/i)).toBeInTheDocument();
     });
 
-    it('should disable button when agents are loading', () => {
-      render(<PlaceholderContent hasAgents={true} isLoadingAgents={true} />);
+    it('should hide button and message when agents are loading', () => {
+      render(<PlaceholderContent hasAgents={false} isLoadingAgents={true} />);
 
-      const button = screen.getByRole('button', { name: /Select Agent/i });
-      expect(button).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Create an agent to get started/i)).not.toBeInTheDocument();
     });
 
-    it('should disable button with default props (no agents, loading)', () => {
+    it('should hide button with default props (no agents, loading)', () => {
       render(<PlaceholderContent />);
 
-      const button = screen.getByRole('button', { name: /Select Agent/i });
-      expect(button).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
     });
 
-    it('should enable button when agents are available and not loading', () => {
+    it('should show button when agents are available and not loading', () => {
       render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
-      const button = screen.getByRole('button', { name: /Select Agent/i });
-      expect(button).not.toBeDisabled();
-    });
-
-    it('should not call executeCommand when button is disabled and clicked', async () => {
-      const user = userEvent.setup();
-      render(<PlaceholderContent hasAgents={false} isLoadingAgents={false} />);
-
-      const button = screen.getByRole('button', { name: /Select Agent/i });
-      await user.click(button);
-
-      expect(vscodeApi.executeCommand).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: /Select Agent/i })).toBeInTheDocument();
+      expect(screen.queryByText(/Create an agent to get started/i)).not.toBeInTheDocument();
     });
   });
 });

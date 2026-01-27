@@ -14,15 +14,19 @@ const PlaceholderContent: React.FC<PlaceholderContentProps> = ({ hasAgents = fal
     vscodeApi.executeCommand('sf.agent.selectAndRun');
   };
 
-  const isButtonDisabled = isLoadingAgents || !hasAgents;
+  const showButton = !isLoadingAgents && hasAgents;
 
   return (
     <div className="placeholder-content">
       <div className="placeholder-icon"></div>
       <p>Agentforce DX provides a suite of tools to iteratively build, preview, and test agents right in your IDE.</p>
-      <Button appearance="primary" size="small" onClick={handleSelectAgent} disabled={isButtonDisabled}>
-        Select Agent
-      </Button>
+      {showButton ? (
+        <Button appearance="primary" size="small" onClick={handleSelectAgent}>
+          Select Agent
+        </Button>
+      ) : (
+        !isLoadingAgents && <p>Create an agent to get started.</p>
+      )}
     </div>
   );
 };
