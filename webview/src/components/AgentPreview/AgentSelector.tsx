@@ -58,7 +58,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(initialLiveMode);
-  const shouldShowStop = isSessionActive || isSessionStarting;
+  const shouldShowStop = isSessionActive;
   const stopIcon = (
     <svg className="stop-icon" width="4" height="4" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -264,7 +264,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             size="small"
             onClick={handleStartClick}
             className="agent-selector__start-button"
-            disabled={isLoading}
+            disabled={isLoading || isSessionStarting}
             startIcon={shouldShowStop ? stopIcon : playIcon}
           >
             {shouldShowStop ? 'Stop Live Test' : 'Start Live Test'}
@@ -275,7 +275,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             size="small"
             onClick={handleStartClick}
             className="agent-selector__start-button"
-            disabled={isLoading}
+            disabled={isLoading || isSessionStarting}
             startIcon={stopIcon}
           >
             {isLiveMode ? 'Stop Live Test' : 'Stop Simulation'}
@@ -292,7 +292,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               { label: 'Live Test', value: 'live' }
             ]}
             className="agent-selector__start-button"
-            disabled={isLoading}
+            disabled={isLoading || isSessionStarting}
             startIcon={shouldShowStop ? stopIcon : playIcon}
           >
             {shouldShowStop

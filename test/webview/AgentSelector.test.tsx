@@ -459,7 +459,7 @@ describe('AgentSelector', () => {
       expect(vscodeApi.startSession).toHaveBeenCalledWith('script1', expect.objectContaining({ isLiveMode: false }));
     });
 
-    it('should stop script agent when session is starting', async () => {
+    it('should disable start button for script agent when session is starting', async () => {
       const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(
@@ -476,13 +476,15 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
-        expect(screen.getByText(/Stop Simulation/i)).toBeInTheDocument();
+        expect(screen.getByText(/Start Simulation/i)).toBeInTheDocument();
       });
 
-      const stopButton = screen.getByText(/Stop Simulation/i);
-      await userEvent.click(stopButton);
+      const startButton = screen.getByText(/Start Simulation/i).closest('button');
+      expect(startButton).toBeDisabled();
 
-      expect(vscodeApi.endSession).toHaveBeenCalled();
+      // Clicking a disabled button should not trigger startSession or endSession
+      await userEvent.click(startButton!);
+      expect(vscodeApi.endSession).not.toHaveBeenCalled();
       expect(vscodeApi.startSession).not.toHaveBeenCalled();
     });
 
@@ -504,7 +506,7 @@ describe('AgentSelector', () => {
       expect(vscodeApi.endSession).toHaveBeenCalled();
     });
 
-    it('should stop session when starting', async () => {
+    it('should disable start button when session is starting', async () => {
       const agents: AgentInfo[] = [{ id: 'pub1', name: 'PublishedAgent', type: 'published' }];
 
       render(
@@ -520,13 +522,15 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
-        expect(screen.getByText(/Stop Live Test/i)).toBeInTheDocument();
+        expect(screen.getByText(/Start Live Test/i)).toBeInTheDocument();
       });
 
-      const stopButton = screen.getByText(/Stop Live Test/i);
-      await userEvent.click(stopButton);
+      const startButton = screen.getByText(/Start Live Test/i).closest('button');
+      expect(startButton).toBeDisabled();
 
-      expect(vscodeApi.endSession).toHaveBeenCalled();
+      // Clicking a disabled button should not trigger startSession or endSession
+      await userEvent.click(startButton!);
+      expect(vscodeApi.endSession).not.toHaveBeenCalled();
       expect(vscodeApi.startSession).not.toHaveBeenCalled();
     });
 
@@ -570,7 +574,7 @@ describe('AgentSelector', () => {
       });
     });
 
-    it('should hide mode selector when session is starting', async () => {
+    it('should show disabled mode selector when session is starting', async () => {
       const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionStarting={true} />);
@@ -579,9 +583,15 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
+        // Should have 2 comboboxes: agent selector and mode selector (in disabled SplitButton)
         const comboboxes = screen.getAllByRole('combobox');
-        expect(comboboxes.length).toBe(1);
+        expect(comboboxes.length).toBe(2);
       });
+
+      // Both agent selector and mode selector should be disabled
+      const comboboxes = screen.getAllByRole('combobox');
+      expect(comboboxes[0]).toBeDisabled(); // Agent selector
+      expect(comboboxes[1]).toBeDisabled(); // Mode selector
     });
 
     it('should not render start button when no agent is selected', async () => {
