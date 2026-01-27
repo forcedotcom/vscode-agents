@@ -38,6 +38,7 @@ body.vscode-high-contrast .placeholder-icon {
 
 .placeholder-content p.placeholder-hint {
   color: var(--vscode-descriptionForeground);
+  opacity: 0.7;
   margin-bottom: 0;
 }
 
