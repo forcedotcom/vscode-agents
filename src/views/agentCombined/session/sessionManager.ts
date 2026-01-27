@@ -158,54 +158,16 @@ export class SessionManager {
     }
 
     try {
-      // Immediate UI feedback FIRST - must happen before any slow operations
-      // Set sessionActive=false to hide title bar icons (debug, etc.) during restart
-      // This matches the stop+start flow: sessionStarting updates button state in App.tsx
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(true);
-      this.messageSender.sendClearMessages();
-      const modeMessage = this.state.isLiveMode ? 'Restarting live test...' : 'Restarting...';
-      this.messageSender.sendSessionStarting(modeMessage);
-
-      this.channelService.appendLine('Restarting agent session...');
-
-      // Clear conversation state
-      this.state.currentPlanId = undefined;
-      this.state.currentUserMessage = undefined;
-      await this.state.setConversationDataAvailable(false);
+      const message = this.state.isLiveMode ? 'Restarting live test...' : 'Restarting...';
+      await this.beginRestart(message);
 
       // Start a new session directly - the SDK handles ending the previous session internally
       const session = await this.state.agentInstance.preview.start();
       this.state.sessionId = session.sessionId;
 
-      // Load trace history if available
-      if (this.state.currentAgentId && this.state.currentAgentSource) {
-        await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
-      }
-
-      await this.state.setSessionActive(true);
-      await this.state.setSessionStarting(false);
-
-      // Send session started message
-      const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
-      this.messageSender.sendSessionStarted(agentMessage?.message);
-
-      await this.state.setConversationDataAvailable(true);
-
-      this.channelService.appendLine('Agent session restarted.');
-      this.channelService.appendLine('---------------------');
+      await this.completeRestart(session, 'Agent session restarted.');
     } catch (error) {
-      // Reset session state on error
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(false);
-
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.channelService.appendLine(`Failed to restart session: ${errorMessage}`);
-
-      // Send error and enable reset button (matches handleError pattern)
-      await this.messageSender.sendError(`Failed to restart: ${errorMessage}`);
-      await this.state.setResetAgentViewAvailable(true);
-      await this.state.setSessionErrorState(true);
+      await this.handleRestartError(error, 'restart');
     }
   }
 
@@ -225,14 +187,7 @@ export class SessionManager {
     const { ensureActive, isActive } = createSessionStartGuards(this.state, sessionStartId);
 
     try {
-      // Immediate UI feedback FIRST - must happen before any slow operations
-      // Set sessionActive=false to hide title bar icons (debug, etc.) during restart
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(true);
-      this.messageSender.sendClearMessages();
-      this.messageSender.sendSessionStarting('Recompiling and restarting...');
-
-      this.channelService.appendLine('Recompiling and restarting agent session...');
+      await this.beginRestart('Recompiling and restarting...');
 
       // End current session and clear agent instance (to trigger recompilation)
       if (this.state.agentInstance && this.state.sessionId) {
@@ -253,11 +208,6 @@ export class SessionManager {
       // Clear session state including agent instance (forces recompilation)
       this.state.clearSessionState();
       ensureActive();
-
-      // Clear conversation state
-      this.state.currentPlanId = undefined;
-      this.state.currentUserMessage = undefined;
-      await this.state.setConversationDataAvailable(false);
 
       // Get connection and project for re-initialization
       const conn = await CoreExtensionService.getDefaultConnection();
@@ -285,25 +235,9 @@ export class SessionManager {
       ensureActive();
       this.state.sessionId = session.sessionId;
 
-      // Load trace history if available
-      if (this.state.currentAgentId && this.state.currentAgentSource) {
-        await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
-      }
-
-      await this.state.setSessionActive(true);
-      ensureActive();
-      await this.state.setSessionStarting(false);
-      ensureActive();
-
-      // Send session started message
-      const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
-      this.messageSender.sendSessionStarted(agentMessage?.message);
+      await this.completeRestart(session, 'Agent session recompiled and restarted.', ensureActive);
       this.state.pendingStartAgentId = undefined;
       this.state.pendingStartAgentSource = undefined;
-      await this.state.setConversationDataAvailable(true);
-
-      this.channelService.appendLine('Agent session recompiled and restarted.');
-      this.channelService.appendLine('---------------------');
     } catch (error) {
       if (error instanceof SessionStartCancelledError || !isActive()) {
         return;
@@ -325,18 +259,64 @@ export class SessionManager {
         return;
       }
 
-      // Reset session state on error
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(false);
-
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.channelService.appendLine(`Failed to recompile and restart session: ${errorMessage}`);
-
-      // Send error and enable reset button (matches handleError pattern)
-      await this.messageSender.sendError(`Failed to recompile and restart: ${errorMessage}`);
-      await this.state.setResetAgentViewAvailable(true);
-      await this.state.setSessionErrorState(true);
+      await this.handleRestartError(error, 'recompile and restart');
     }
+  }
+
+  /**
+   * Common setup for restart operations - immediate UI feedback
+   */
+  private async beginRestart(message: string): Promise<void> {
+    await this.state.setSessionActive(false);
+    await this.state.setSessionStarting(true);
+    this.messageSender.sendClearMessages();
+    this.messageSender.sendSessionStarting(message);
+    this.channelService.appendLine(`${message.replace('...', '')} agent session...`);
+
+    // Clear conversation state
+    this.state.currentPlanId = undefined;
+    this.state.currentUserMessage = undefined;
+    await this.state.setConversationDataAvailable(false);
+  }
+
+  /**
+   * Common completion for restart operations
+   */
+  private async completeRestart(
+    session: any,
+    logMessage: string,
+    ensureActive?: () => void
+  ): Promise<void> {
+    if (this.state.currentAgentId && this.state.currentAgentSource) {
+      await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
+    }
+
+    await this.state.setSessionActive(true);
+    ensureActive?.();
+    await this.state.setSessionStarting(false);
+    ensureActive?.();
+
+    const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
+    this.messageSender.sendSessionStarted(agentMessage?.message);
+    await this.state.setConversationDataAvailable(true);
+
+    this.channelService.appendLine(logMessage);
+    this.channelService.appendLine('---------------------');
+  }
+
+  /**
+   * Common error handling for restart operations
+   */
+  private async handleRestartError(error: unknown, action: string): Promise<void> {
+    await this.state.setSessionActive(false);
+    await this.state.setSessionStarting(false);
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    this.channelService.appendLine(`Failed to ${action} session: ${errorMessage}`);
+
+    await this.messageSender.sendError(`Failed to ${action}: ${errorMessage}`);
+    await this.state.setResetAgentViewAvailable(true);
+    await this.state.setSessionErrorState(true);
   }
 
   /**
