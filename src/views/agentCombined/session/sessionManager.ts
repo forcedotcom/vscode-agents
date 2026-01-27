@@ -158,40 +158,23 @@ export class SessionManager {
     }
 
     try {
+      // Immediate UI feedback FIRST - must happen before any slow operations
+      // Set sessionActive=false to hide title bar icons (debug, etc.) during restart
+      // This matches the stop+start flow: sessionStarting updates button state in App.tsx
+      await this.state.setSessionActive(false);
       await this.state.setSessionStarting(true);
+      this.messageSender.sendClearMessages();
+      const modeMessage = this.state.isLiveMode ? 'Restarting live test...' : 'Restarting...';
+      this.messageSender.sendSessionStarting(modeMessage);
 
-      // End the current session first
-      const isAgentSimulate = this.state.currentAgentSource === AgentSource.SCRIPT;
-      if (isAgentSimulate) {
-        await (this.state.agentInstance.preview as any).end();
-      } else {
-        await this.state.agentInstance.preview.end(this.state.sessionId, 'UserRequest');
-      }
-
-      // Restore connection after ending session
-      if (this.state.agentInstance) {
-        try {
-          await this.state.agentInstance.restoreConnection();
-        } catch (error) {
-          console.warn('Error restoring connection:', error);
-        }
-      }
+      this.channelService.appendLine('Restarting agent session...');
 
       // Clear conversation state
       this.state.currentPlanId = undefined;
       this.state.currentUserMessage = undefined;
       await this.state.setConversationDataAvailable(false);
 
-      // Clear the UI
-      this.messageSender.sendClearMessages();
-
-      // Show starting message
-      const modeMessage = this.state.isLiveMode ? 'Starting live test...' : 'Starting simulation...';
-      this.messageSender.sendSimulationStarting(modeMessage);
-
-      this.channelService.appendLine('Restarting agent session...');
-
-      // Start a new session on the existing agentInstance
+      // Start a new session directly - the SDK handles ending the previous session internally
       const session = await this.state.agentInstance.preview.start();
       this.state.sessionId = session.sessionId;
 
@@ -212,10 +195,147 @@ export class SessionManager {
       this.channelService.appendLine('Agent session restarted.');
       this.channelService.appendLine('---------------------');
     } catch (error) {
+      // Reset session state on error
+      await this.state.setSessionActive(false);
       await this.state.setSessionStarting(false);
+
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.channelService.appendLine(`Failed to restart session: ${errorMessage}`);
+
+      // Send error and enable reset button (matches handleError pattern)
       await this.messageSender.sendError(`Failed to restart: ${errorMessage}`);
+      await this.state.setResetAgentViewAvailable(true);
+      await this.state.setSessionErrorState(true);
+    }
+  }
+
+  /**
+   * Recompiles and restarts the agent session (full restart with compilation)
+   */
+  async recompileAndRestartSession(): Promise<void> {
+    const agentId = this.state.currentAgentId;
+    const agentSource = this.state.currentAgentSource;
+    const isLiveMode = this.state.isLiveMode;
+
+    if (!agentId || !agentSource) {
+      return;
+    }
+
+    const sessionStartId = this.state.beginSessionStart();
+    const { ensureActive, isActive } = createSessionStartGuards(this.state, sessionStartId);
+
+    try {
+      // Immediate UI feedback FIRST - must happen before any slow operations
+      // Set sessionActive=false to hide title bar icons (debug, etc.) during restart
+      await this.state.setSessionActive(false);
+      await this.state.setSessionStarting(true);
+      this.messageSender.sendClearMessages();
+      this.messageSender.sendSessionStarting('Recompiling and restarting...');
+
+      this.channelService.appendLine('Recompiling and restarting agent session...');
+
+      // End current session and clear agent instance (to trigger recompilation)
+      if (this.state.agentInstance && this.state.sessionId) {
+        const isAgentSimulate = agentSource === AgentSource.SCRIPT;
+        if (isAgentSimulate) {
+          await (this.state.agentInstance.preview as any).end();
+        } else {
+          await this.state.agentInstance.preview.end(this.state.sessionId, 'UserRequest');
+        }
+
+        try {
+          await this.state.agentInstance.restoreConnection();
+        } catch (error) {
+          console.warn('Error restoring connection:', error);
+        }
+      }
+
+      // Clear session state including agent instance (forces recompilation)
+      this.state.clearSessionState();
+      ensureActive();
+
+      // Clear conversation state
+      this.state.currentPlanId = undefined;
+      this.state.currentUserMessage = undefined;
+      await this.state.setConversationDataAvailable(false);
+
+      // Get connection and project for re-initialization
+      const conn = await CoreExtensionService.getDefaultConnection();
+      ensureActive();
+
+      this.state.currentAgentId = agentId;
+      const project = SfProject.getInstance();
+
+      this.state.pendingStartAgentId = agentId;
+      this.state.pendingStartAgentSource = agentSource;
+
+      // Re-initialize agent (this triggers compilation for script agents)
+      if (agentSource === AgentSource.SCRIPT) {
+        await this.initializeScriptAgent(agentId, conn, project, isLiveMode, isActive, ensureActive);
+      } else {
+        await this.initializePublishedAgent(agentId, conn, project, ensureActive);
+      }
+
+      if (!this.state.agentInstance) {
+        throw new Error('Failed to initialize agent instance.');
+      }
+
+      // Start the session
+      const session = await this.state.agentInstance.preview.start();
+      ensureActive();
+      this.state.sessionId = session.sessionId;
+
+      // Load trace history if available
+      if (this.state.currentAgentId && this.state.currentAgentSource) {
+        await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
+      }
+
+      await this.state.setSessionActive(true);
+      ensureActive();
+      await this.state.setSessionStarting(false);
+      ensureActive();
+
+      // Send session started message
+      const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
+      this.messageSender.sendSessionStarted(agentMessage?.message);
+      this.state.pendingStartAgentId = undefined;
+      this.state.pendingStartAgentSource = undefined;
+      await this.state.setConversationDataAvailable(true);
+
+      this.channelService.appendLine('Agent session recompiled and restarted.');
+      this.channelService.appendLine('---------------------');
+    } catch (error) {
+      if (error instanceof SessionStartCancelledError || !isActive()) {
+        return;
+      }
+
+      // Handle compilation errors specifically
+      if (
+        this.state.currentAgentSource === AgentSource.SCRIPT &&
+        error instanceof SfError &&
+        error.message.includes('Failed to compile agent script')
+      ) {
+        const sfError = error as SfError;
+        const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
+        this.channelService.appendLine(detailedError);
+        this.messageSender.sendCompilationError(detailedError);
+        await this.state.setSessionStarting(false);
+        await this.state.setResetAgentViewAvailable(true);
+        await this.state.setSessionErrorState(true);
+        return;
+      }
+
+      // Reset session state on error
+      await this.state.setSessionActive(false);
+      await this.state.setSessionStarting(false);
+
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.channelService.appendLine(`Failed to recompile and restart session: ${errorMessage}`);
+
+      // Send error and enable reset button (matches handleError pattern)
+      await this.messageSender.sendError(`Failed to recompile and restart: ${errorMessage}`);
+      await this.state.setResetAgentViewAvailable(true);
+      await this.state.setSessionErrorState(true);
     }
   }
 

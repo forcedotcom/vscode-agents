@@ -207,6 +207,13 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Recompiles and restarts the agent session (full restart with compilation)
+   */
+  public async recompileAndRestart(): Promise<void> {
+    await this.sessionManager.recompileAndRestartSession();
+  }
+
+  /**
    * Sets the agent ID
    */
   public setAgentId(agentId: string): void {
