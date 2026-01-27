@@ -24,6 +24,7 @@ export const registerPreviewAgentCommand = () => {
       const provider = AgentCombinedViewProvider.getInstance();
       if (!provider) {
         vscode.window.showErrorMessage('Failed to get Agent Preview provider.');
+        telemetryService.sendException('previewAgent_failed', 'Failed to get Agent Preview provider.');
         return;
       }
 
@@ -106,6 +107,7 @@ export const registerPreviewAgentCommand = () => {
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
         channelService.appendLine(error.stack);
       }
+      telemetryService.sendException('previewAgent_failed', error.message);
     }
   });
 };
