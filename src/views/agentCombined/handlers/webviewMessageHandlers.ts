@@ -314,8 +314,8 @@ export class WebviewMessageHandlers {
       await this.state.setAgentSelected(true);
       await this.state.setResetAgentViewAvailable(false);
       await this.state.setSessionErrorState(false);
-      // Don't set conversationDataAvailable here - let the history loading flow
-      // (showHistoryOrPlaceholder) control it to avoid download button flashing
+      // Load history atomically with agent selection to avoid download button delay
+      await this.historyManager.showHistoryOrPlaceholder(agentId, this.state.currentAgentSource);
     } else {
       this.state.currentAgentId = undefined;
       this.state.currentAgentSource = undefined;
