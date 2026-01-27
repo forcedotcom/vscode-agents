@@ -36,9 +36,7 @@ body.vscode-high-contrast .placeholder-icon {
   text-wrap: balance;
 }
 
-.placeholder-content p.placeholder-hint {
-  color: var(--vscode-descriptionForeground);
-  opacity: 0.7;
+.placeholder-content p:last-child {
   margin-bottom: 0;
 }
 
