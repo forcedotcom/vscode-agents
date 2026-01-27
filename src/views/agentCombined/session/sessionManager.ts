@@ -122,6 +122,11 @@ export class SessionManager {
     this.state.cancelPendingSessionStart();
     const sessionWasStarting = this.state.isSessionStarting;
 
+    // Optimistic update: immediately update VS Code context so view/title icons change
+    // This matches the webview's optimistic update for button state
+    await this.state.setSessionActive(false);
+    await this.state.setSessionStarting(false);
+
     if (this.state.agentInstance && this.state.sessionId) {
       // Restore connection before clearing agent references
       try {
@@ -131,13 +136,8 @@ export class SessionManager {
       }
 
       this.state.clearSessionState();
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(false);
-
       this.messageSender.sendSessionEnded();
     } else if (sessionWasStarting) {
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(false);
       this.messageSender.sendSessionEnded();
     }
 
