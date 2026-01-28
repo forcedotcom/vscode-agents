@@ -201,13 +201,13 @@ export class AgentViewState {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:isScriptAgent', isScript);
   }
 
-  // Export directory persistence
+  // Export directory persistence (per-project using workspaceState)
   getExportDirectory(): string | undefined {
-    return this.context.globalState.get<string>(AgentViewState.EXPORT_DIR_KEY);
+    return this.context.workspaceState.get<string>(AgentViewState.EXPORT_DIR_KEY);
   }
 
   async setExportDirectory(directory: string): Promise<void> {
-    await this.context.globalState.update(AgentViewState.EXPORT_DIR_KEY, directory);
+    await this.context.workspaceState.update(AgentViewState.EXPORT_DIR_KEY, directory);
   }
 
   // Clear session state
