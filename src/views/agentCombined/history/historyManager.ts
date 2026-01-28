@@ -335,9 +335,8 @@ export class HistoryManager {
       // Update state to reflect no conversation data
       await this.state.setConversationDataAvailable(false);
 
-      // Clear the webview messages and show placeholder
-      this.messageSender.sendClearMessages();
-      this.messageSender.sendNoHistoryFound('history-cleared');
+      // Atomically clear messages and show placeholder (the default "nothing yet" state)
+      this.messageSender.sendSetConversation([], true);
 
       // Send empty trace history
       this.messageSender.sendTraceHistory(agentId, []);
