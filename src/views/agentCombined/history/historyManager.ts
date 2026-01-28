@@ -325,28 +325,17 @@ export class HistoryManager {
     // History is stored in ~/.sfdx/agents/<agentStorageKey>/
     const sfdxDir = path.join(os.homedir(), '.sfdx', 'agents', agentStorageKey);
 
-    try {
-      // Check if the directory exists
-      await fs.promises.access(sfdxDir);
+    // Delete the directory if it exists (force: true handles non-existent dirs)
+    await fs.promises.rm(sfdxDir, { recursive: true, force: true });
 
-      // Delete the directory recursively
-      await fs.promises.rm(sfdxDir, { recursive: true, force: true });
+    // Update state to reflect no conversation data
+    await this.state.setConversationDataAvailable(false);
+    await this.state.setResetAgentViewAvailable(false);
 
-      // Update state to reflect no conversation data
-      await this.state.setConversationDataAvailable(false);
+    // Atomically clear messages and show placeholder (the default "nothing yet" state)
+    this.messageSender.sendSetConversation([], true);
 
-      // Atomically clear messages and show placeholder (the default "nothing yet" state)
-      this.messageSender.sendSetConversation([], true);
-
-      // Send empty trace history
-      this.messageSender.sendTraceHistory(agentId, []);
-    } catch (err) {
-      // If directory doesn't exist, that's fine - nothing to clear
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-        await this.state.setConversationDataAvailable(false);
-        return;
-      }
-      throw err;
-    }
+    // Send empty trace history
+    this.messageSender.sendTraceHistory(agentId, []);
   }
 }
