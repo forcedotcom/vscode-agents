@@ -121,9 +121,6 @@ export class WebviewMessageSender {
     this.postMessage('refreshAgents');
   }
 
-  sendRequestConversationExport(agentId: string, agentName: string): void {
-    this.postMessage('requestConversationExport', { agentId, agentName });
-  }
 
   // Helper method to strip HTML tags
   private stripHtmlTags(text: string): string {

@@ -176,9 +176,6 @@ class VSCodeApiService {
     this.postMessage('getInitialLiveMode');
   }
 
-  sendConversationExport(content: string, fileName: string) {
-    this.postMessage('conversationExportReady', { content, fileName });
-  }
 
   openTraceJson(entry: TraceHistoryMessageEntry) {
     this.postMessage('openTraceJson', { entry });

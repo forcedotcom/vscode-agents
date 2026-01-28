@@ -199,32 +199,6 @@ describe('AgentPreview - Message Handlers', () => {
     });
   });
 
-  describe('Conversation Export', () => {
-    it('should respond to export requests with markdown content', async () => {
-      renderComponent();
-      const now = new Date().toISOString();
-      handlers.get('conversationHistory')?.({
-        messages: [{ id: '1', type: 'user', content: 'Hello from history', timestamp: now }]
-      });
-      (vscodeApi.sendConversationExport as jest.Mock).mockClear();
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello from history')).toBeInTheDocument();
-      });
-
-      handlers.get('requestConversationExport')?.({ agentName: 'Test Agent' });
-
-      expect(vscodeApi.sendConversationExport).toHaveBeenCalled();
-      const [content, fileName] = (vscodeApi.sendConversationExport as jest.Mock).mock.calls[0];
-      expect(content).toContain('# Agentforce DX (AFDX) Log');
-      expect(content).toContain('## Details');
-      expect(content).toContain('## Conversation');
-      expect(content).toContain('###');
-      expect(content).toContain('Hello from history');
-      expect(fileName).toMatch(/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}-test-agent\.md$/);
-    });
-  });
-
 
   // Client App Ready tests removed - functionality was removed
 

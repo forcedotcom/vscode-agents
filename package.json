@@ -159,7 +159,7 @@
       ],
       "view/title": [
         {
-          "command": "sf.agent.combined.view.exportConversation",
+          "command": "sf.agent.combined.view.exportConversationAs",
           "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
           "group": "navigation@-1"
         },
@@ -408,7 +408,11 @@
       },
       {
         "command": "sf.agent.combined.view.exportConversation",
-        "title": "Download Conversation",
+        "title": "Save"
+      },
+      {
+        "command": "sf.agent.combined.view.exportConversationAs",
+        "title": "Save Chat History",
         "icon": "$(arrow-circle-down)"
       },
       {
