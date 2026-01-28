@@ -418,7 +418,7 @@
       },
       {
         "command": "sf.agent.combined.view.clearHistory",
-        "title": "Clear Conversation History",
+        "title": "Clear Chat History",
         "icon": "$(trash)"
       },
       {

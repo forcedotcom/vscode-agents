@@ -412,7 +412,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
       }
 
       const confirmation = await vscode.window.showWarningMessage(
-        'Are you sure you want to clear the conversation history for this agent? This action cannot be undone.',
+        'Are you sure you want to clear the chat history for this agent? This action cannot be undone.',
         { modal: true },
         'Clear History'
       );

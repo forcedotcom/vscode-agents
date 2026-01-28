@@ -173,7 +173,7 @@ describe('package.json', () => {
         const clearHistoryCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.clearHistory');
 
         expect(clearHistoryCommand).toBeDefined();
-        expect(clearHistoryCommand?.title).toBe('Clear Conversation History');
+        expect(clearHistoryCommand?.title).toBe('Clear Chat History');
         expect(clearHistoryCommand?.icon).toBe('$(trash)');
       });
 
