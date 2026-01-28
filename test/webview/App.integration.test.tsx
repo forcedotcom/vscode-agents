@@ -50,7 +50,11 @@ const mockVscodeApi = {
 };
 
 jest.mock('../../webview/src/services/vscodeApi', () => ({
-  vscodeApi: mockVscodeApi
+  vscodeApi: mockVscodeApi,
+  AgentSource: {
+    SCRIPT: 'script',
+    PUBLISHED: 'published'
+  }
 }));
 
 // Mock the components to simplify testing
