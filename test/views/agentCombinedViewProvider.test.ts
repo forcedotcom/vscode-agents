@@ -280,7 +280,7 @@ describe('AgentCombinedViewProvider', () => {
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
-          openLabel: 'Select Export Folder'
+          openLabel: 'Save Chat History'
         })
       );
       expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/selected/folder');
