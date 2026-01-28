@@ -420,7 +420,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
       if (confirmation === 'Clear History') {
         try {
           await provider.clearHistory();
-          vscode.window.showInformationMessage('Conversation history cleared.');
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           vscode.window.showErrorMessage(`Unable to clear history: ${errorMessage}`);
@@ -462,7 +461,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async () => {
       await provider.refreshAvailableAgents();
-      vscode.window.showInformationMessage('Agent list refreshed.');
     })
   );
 
