@@ -2,12 +2,13 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
+import { getAllHistory, getHistoryDir } from '@salesforce/agents/lib/utils';
 import { SfProject } from '@salesforce/core';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentViewState } from './agentCombined/state';
 import { WebviewMessageSender, WebviewMessageHandlers } from './agentCombined/handlers';
 import { SessionManager } from './agentCombined/session';
-import { AgentInitializer } from './agentCombined/agent';
+import { AgentInitializer, getAgentStorageKey } from './agentCombined/agent';
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
 import { getAgentSource } from './agentCombined/agent';
@@ -293,7 +294,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Saves the current conversation session using Agent.preview.saveSession
-   * Works even after ending a session by reinitializing the agent instance if needed
+   * Works for both active sessions and loaded history (when no session is active)
    */
   public async exportConversation(): Promise<void> {
     const agentId = this.state.currentAgentId;
@@ -302,26 +303,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     if (!agentId || !agentSource) {
       vscode.window.showWarningMessage('No agent selected to save session.');
       return;
-    }
-
-    // Reinitialize agent instance if it was cleared after ending session
-    let agentInstance = this.state.agentInstance;
-    if (!agentInstance) {
-      const conn = await CoreExtensionService.getDefaultConnection();
-      const project = SfProject.getInstance();
-
-      if (agentSource === AgentSource.SCRIPT) {
-        agentInstance = await this.agentInitializer.initializeScriptAgent(
-          agentId,
-          conn,
-          project,
-          this.state.isLiveMode ?? false,
-          () => true // isActive check - always true for save operation
-          // No callbacks needed for save operation
-        );
-      } else {
-        agentInstance = await this.agentInitializer.initializePublishedAgent(agentId, conn, project);
-      }
     }
 
     // Get workspace folder - required for saving to local project
@@ -351,8 +332,37 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const targetDirectory = path.join(workspaceFolder.uri.fsPath, directoryPath.trim());
 
     try {
-      await agentInstance.preview.saveSession(targetDirectory);
-      vscode.window.showInformationMessage(`Conversation session saved to ${targetDirectory}.`);
+      // If there's an active session, use the library's saveSession method
+      if (this.state.isSessionActive && this.state.agentInstance) {
+        await this.state.agentInstance.preview.saveSession(targetDirectory);
+        vscode.window.showInformationMessage(`Conversation session saved to ${targetDirectory}.`);
+        return;
+      }
+
+      // No active session - save from loaded history by copying the session directory
+      const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+
+      // Get history to find the session ID (getAllHistory finds the most recent session when sessionId is undefined)
+      const history = await getAllHistory(agentStorageKey, undefined);
+
+      if (!history.metadata?.sessionId) {
+        vscode.window.showWarningMessage('No conversation history found to save.');
+        return;
+      }
+
+      const sessionId = history.metadata.sessionId;
+
+      // Get the source directory path where the session is stored
+      const sourceDir = await getHistoryDir(agentStorageKey, sessionId);
+
+      // Create destination directory matching the library's format: {outputDir}/{agentId}/session_{sessionId}/
+      const destDir = path.join(targetDirectory, agentStorageKey, `session_${sessionId}`);
+      await fs.promises.mkdir(destDir, { recursive: true });
+
+      // Copy the entire session directory
+      await fs.promises.cp(sourceDir, destDir, { recursive: true });
+
+      vscode.window.showInformationMessage(`Conversation session saved to ${destDir}.`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       vscode.window.showErrorMessage(`Failed to save conversation: ${errorMessage}`);

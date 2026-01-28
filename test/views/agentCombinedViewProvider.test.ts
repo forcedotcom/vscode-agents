@@ -63,6 +63,21 @@ jest.mock('@salesforce/agents', () => ({
   }
 }));
 
+// Mock @salesforce/agents/lib/utils
+jest.mock('@salesforce/agents/lib/utils', () => ({
+  getAllHistory: jest.fn(),
+  getHistoryDir: jest.fn()
+}));
+
+// Mock fs.promises
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  promises: {
+    mkdir: jest.fn().mockResolvedValue(undefined),
+    cp: jest.fn().mockResolvedValue(undefined)
+  }
+}));
+
 // Mock @salesforce/core
 jest.mock('@salesforce/core', () => ({
   SfProject: {
@@ -232,11 +247,12 @@ describe('AgentCombinedViewProvider', () => {
         }
       };
 
-      // Mock the state to have agent info
+      // Mock the state to have agent info with an active session
       (provider as any).state.currentAgentId = 'test-agent-id';
       (provider as any).state.currentAgentSource = AgentSource.SCRIPT;
       (provider as any).state.currentAgentName = 'Test Agent';
       (provider as any).state.agentInstance = mockAgentInstance;
+      (provider as any).state._isSessionActive = true; // Mark session as active
     });
 
     it('should show warning when no agent is selected', async () => {
@@ -346,67 +362,52 @@ describe('AgentCombinedViewProvider', () => {
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
     });
 
-    it('should reinitialize agent instance when not available', async () => {
+    it('should save from loaded history when no active session (script agent)', async () => {
+      // No active session
+      (provider as any).state._isSessionActive = false;
       (provider as any).state.agentInstance = undefined;
       mockShowInputBox.mockResolvedValue('sessions/MySession');
 
-      const mockConnection = { instanceUrl: 'https://test.salesforce.com' };
-      const mockProject = { getPath: () => '/test' };
-      const { SfProject } = require('@salesforce/core');
-      jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue(mockConnection as any);
-      SfProject.getInstance = jest.fn().mockReturnValue(mockProject);
+      // Mock getAllHistory and getHistoryDir from the library
+      const { getAllHistory, getHistoryDir } = require('@salesforce/agents/lib/utils');
+      getAllHistory.mockResolvedValue({
+        metadata: { sessionId: 'test-session-123' },
+        transcript: [],
+        traces: []
+      });
+      getHistoryDir.mockResolvedValue('/home/.sfdx/agents/test-agent-id/sessions/test-session-123');
 
-      const mockInitializedAgent = {
-        preview: {
-          saveSession: jest.fn().mockResolvedValue(undefined)
-        }
-      };
-
-      // Mock the agent initializer
-      const initializeScriptAgentSpy = jest
-        .spyOn((provider as any).agentInitializer, 'initializeScriptAgent')
-        .mockResolvedValue(mockInitializedAgent);
+      // Get the mocked fs module
+      const fs = require('fs');
 
       await provider.exportConversation();
 
-      expect(initializeScriptAgentSpy).toHaveBeenCalledWith(
-        'test-agent-id',
-        mockConnection,
-        mockProject,
-        false,
-        expect.any(Function)
+      expect(getAllHistory).toHaveBeenCalledWith('test-agent-id', undefined);
+      expect(getHistoryDir).toHaveBeenCalledWith('test-agent-id', 'test-session-123');
+      expect(fs.promises.cp).toHaveBeenCalledWith(
+        '/home/.sfdx/agents/test-agent-id/sessions/test-session-123',
+        expect.stringContaining('session_test-session-123'),
+        { recursive: true }
       );
-      const expectedPath = path.join('/workspace', 'sessions/MySession');
-      expect(mockInitializedAgent.preview.saveSession).toHaveBeenCalledWith(expectedPath);
     });
 
-    it('should reinitialize published agent when not available', async () => {
+    it('should show warning when no history found and no active session', async () => {
+      // No active session
+      (provider as any).state._isSessionActive = false;
       (provider as any).state.agentInstance = undefined;
-      (provider as any).state.currentAgentSource = AgentSource.PUBLISHED;
       mockShowInputBox.mockResolvedValue('sessions/MySession');
 
-      const mockConnection = { instanceUrl: 'https://test.salesforce.com' };
-      const mockProject = { getPath: () => '/test' };
-      const { SfProject } = require('@salesforce/core');
-      jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue(mockConnection as any);
-      SfProject.getInstance = jest.fn().mockReturnValue(mockProject);
-
-      const mockInitializedAgent = {
-        preview: {
-          saveSession: jest.fn().mockResolvedValue(undefined)
-        }
-      };
-
-      // Mock the agent initializer
-      const initializePublishedAgentSpy = jest
-        .spyOn((provider as any).agentInitializer, 'initializePublishedAgent')
-        .mockResolvedValue(mockInitializedAgent);
+      // Mock getAllHistory to return no sessionId
+      const { getAllHistory } = require('@salesforce/agents/lib/utils');
+      getAllHistory.mockResolvedValue({
+        metadata: null,
+        transcript: [],
+        traces: []
+      });
 
       await provider.exportConversation();
 
-      expect(initializePublishedAgentSpy).toHaveBeenCalledWith('test-agent-id', mockConnection, mockProject);
-      const expectedPath = path.join('/workspace', 'sessions/MySession');
-      expect(mockInitializedAgent.preview.saveSession).toHaveBeenCalledWith(expectedPath);
+      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No conversation history found to save.');
     });
 
     it('should use existing agent instance when available', async () => {
