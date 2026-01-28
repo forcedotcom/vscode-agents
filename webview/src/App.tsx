@@ -34,6 +34,8 @@ const App: React.FC = () => {
   const [hasSessionError, setHasSessionError] = useState(false);
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [selectedAgentInfo, setSelectedAgentInfo] = useState<AgentInfo | null>(null);
+  const [hasAgents, setHasAgents] = useState(false);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
   const desiredAgentIdRef = useRef<string>('');
@@ -189,6 +191,11 @@ const App: React.FC = () => {
     sessionActiveRef.current = false;
     setIsSessionActive(false);
     setIsSessionStarting(false);
+  }, []);
+
+  const handleAgentsAvailabilityChange = useCallback((hasAgentsAvailable: boolean, isLoading: boolean) => {
+    setHasAgents(hasAgentsAvailable);
+    setIsLoadingAgents(isLoading);
   }, []);
 
   useEffect(() => {
@@ -357,6 +364,7 @@ const App: React.FC = () => {
           initialLiveMode={isLiveMode}
           onSelectedAgentInfoChange={setSelectedAgentInfo}
           onStopSession={handleStopSession}
+          onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
@@ -375,6 +383,8 @@ const App: React.FC = () => {
             isLiveMode={isLiveMode}
             selectedAgentInfo={selectedAgentInfo}
             onLiveModeChange={handleLiveModeChange}
+            hasAgents={hasAgents}
+            isLoadingAgents={isLoadingAgents}
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>

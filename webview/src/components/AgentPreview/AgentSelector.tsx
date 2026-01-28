@@ -13,6 +13,7 @@ interface AgentSelectorProps {
   initialLiveMode?: boolean;
   onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
   onStopSession?: () => void;
+  onAgentsAvailabilityChange?: (hasAgents: boolean, isLoading: boolean) => void;
 }
 
 export interface StartClickParams {
@@ -53,7 +54,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   onLiveModeChange,
   initialLiveMode = false,
   onSelectedAgentInfoChange,
-  onStopSession
+  onStopSession,
+  onAgentsAvailabilityChange
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -187,6 +189,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   }, [selectedAgentInfo, onSelectedAgentInfoChange]);
 
+  // Notify parent of agent availability changes
+  useEffect(() => {
+    if (onAgentsAvailabilityChange) {
+      onAgentsAvailabilityChange(agents.length > 0, isLoading);
+    }
+  }, [agents.length, isLoading, onAgentsAvailabilityChange]);
+
   const handleModeSelect = async (value: string) => {
     const isLive = value === 'live';
     const modeChanged = isLive !== isLiveMode;
@@ -226,7 +235,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
           value={selectedAgent}
           onChange={handleAgentChange}
-          disabled={isLoading || isSessionActive || isSessionStarting}
+          disabled={isLoading || isSessionActive || isSessionStarting || agents.length === 0}
         >
           <option value="">
             {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select agent...'}
