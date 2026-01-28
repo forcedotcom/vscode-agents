@@ -164,6 +164,13 @@ const App: React.FC = () => {
     vscodeApi.setLiveMode(isLive);
   }, []);
 
+  // Switch to preview tab when a published agent is selected (tracer not supported)
+  useEffect(() => {
+    if (selectedAgentInfo?.type === AgentSource.PUBLISHED && activeTab === 'tracer') {
+      setActiveTab('preview');
+    }
+  }, [selectedAgentInfo, activeTab]);
+
   const handleGoToPreview = useCallback(() => {
     // If session is not active and we have a desired agent, start the session
     if (!isSessionActive && !isSessionStarting && desiredAgentId) {
@@ -368,7 +375,7 @@ const App: React.FC = () => {
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
-          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={true} />
+          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED} />
         )}
       </div>
       <div className="app-content">

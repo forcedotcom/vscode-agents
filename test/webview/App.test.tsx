@@ -40,7 +40,11 @@ const mockVscodeApi = {
 };
 
 jest.mock('../../webview/src/services/vscodeApi', () => ({
-  vscodeApi: mockVscodeApi
+  vscodeApi: mockVscodeApi,
+  AgentSource: {
+    SCRIPT: 'script',
+    PUBLISHED: 'published'
+  }
 }));
 
 // Track focusInput calls
@@ -83,13 +87,29 @@ jest.mock('../../webview/src/components/AgentTracer/AgentTracer', () => {
 });
 
 jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
-  return function MockAgentSelector({ selectedAgent, onAgentChange }: any) {
+  return function MockAgentSelector({ selectedAgent, onAgentChange, onSelectedAgentInfoChange }: any) {
     return (
       <div data-testid="agent-selector">
-        <select data-testid="agent-select" value={selectedAgent} onChange={e => onAgentChange(e.target.value)}>
+        <select
+          data-testid="agent-select"
+          value={selectedAgent}
+          onChange={e => {
+            const agentId = e.target.value;
+            onAgentChange(agentId);
+            // Simulate agent info change based on agent ID
+            if (agentId === 'published-agent') {
+              onSelectedAgentInfoChange?.({ id: agentId, name: 'Published Agent', type: 'published' });
+            } else if (agentId) {
+              onSelectedAgentInfoChange?.({ id: agentId, name: `Agent ${agentId}`, type: 'script' });
+            } else {
+              onSelectedAgentInfoChange?.(null);
+            }
+          }}
+        >
           <option value="">Select agent...</option>
           <option value="agent1">Agent 1</option>
           <option value="agent2">Agent 2</option>
+          <option value="published-agent">Published Agent</option>
         </select>
       </div>
     );
@@ -97,15 +117,17 @@ jest.mock('../../webview/src/components/AgentPreview/AgentSelector', () => {
 });
 
 jest.mock('../../webview/src/components/shared/TabNavigation', () => {
-  return function MockTabNavigation({ onTabChange }: any) {
+  return function MockTabNavigation({ onTabChange, showTracerTab }: any) {
     return (
       <div data-testid="tab-navigation">
         <button data-testid="preview-tab" onClick={() => onTabChange('preview')}>
           Preview
         </button>
-        <button data-testid="tracer-tab" onClick={() => onTabChange('tracer')}>
-          Tracer
-        </button>
+        {showTracerTab && (
+          <button data-testid="tracer-tab" onClick={() => onTabChange('tracer')}>
+            Tracer
+          </button>
+        )}
       </div>
     );
   };
@@ -1008,6 +1030,90 @@ describe('App', () => {
 
       // Should not have triggered end session since session was already ended
       expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Published Agent Behavior', () => {
+    it('should hide tracer tab when a published agent is selected', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Select a script agent first to show tracer tab
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await user.selectOptions(select, 'agent1');
+
+      // Start session to show tabs
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('tracer-tab')).toBeInTheDocument();
+      });
+
+      // Switch to a published agent
+      await user.selectOptions(select, 'published-agent');
+
+      // Tracer tab should be hidden
+      await waitFor(() => {
+        expect(screen.queryByTestId('tracer-tab')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show tracer tab when switching from published to script agent', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Select a published agent first
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await user.selectOptions(select, 'published-agent');
+
+      // Start session to show tabs
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+        // Tracer tab should not be visible for published agent
+        expect(screen.queryByTestId('tracer-tab')).not.toBeInTheDocument();
+      });
+
+      // Switch to a script agent
+      await user.selectOptions(select, 'agent1');
+
+      // Tracer tab should now be visible
+      await waitFor(() => {
+        expect(screen.getByTestId('tracer-tab')).toBeInTheDocument();
+      });
+    });
+
+    it('should switch to preview tab when selecting a published agent while on tracer tab', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Select a script agent
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await user.selectOptions(select, 'agent1');
+
+      // Start session to show tabs
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer tab
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-tracer')).toBeInTheDocument();
+      });
+
+      // Switch to a published agent while on tracer tab
+      await user.selectOptions(select, 'published-agent');
+
+      // Should automatically switch to preview tab
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+      });
     });
   });
 });
