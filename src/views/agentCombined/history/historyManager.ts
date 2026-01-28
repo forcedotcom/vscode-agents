@@ -2,6 +2,9 @@ import { AgentSource } from '@salesforce/agents';
 import { getAllHistory } from '@salesforce/agents/lib/utils';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import type { AgentViewState } from '../state/agentViewState';
 import type { WebviewMessageSender } from '../handlers/webviewMessageSender';
 import { getAgentStorageKey } from '../agent/agentUtils';
@@ -310,6 +313,41 @@ export class HistoryManager {
     } catch (err) {
       console.error('Could not load conversation history:', err);
       return [];
+    }
+  }
+
+  /**
+   * Clears all history for a specific agent by deleting its history directory
+   */
+  async clearHistory(agentId: string, agentSource: AgentSource): Promise<void> {
+    const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+
+    // History is stored in ~/.sfdx/agents/<agentStorageKey>/
+    const sfdxDir = path.join(os.homedir(), '.sfdx', 'agents', agentStorageKey);
+
+    try {
+      // Check if the directory exists
+      await fs.promises.access(sfdxDir);
+
+      // Delete the directory recursively
+      await fs.promises.rm(sfdxDir, { recursive: true, force: true });
+
+      // Update state to reflect no conversation data
+      await this.state.setConversationDataAvailable(false);
+
+      // Clear the webview messages and show placeholder
+      this.messageSender.sendClearMessages();
+      this.messageSender.sendNoHistoryFound('history-cleared');
+
+      // Send empty trace history
+      this.messageSender.sendTraceHistory(agentId, []);
+    } catch (err) {
+      // If directory doesn't exist, that's fine - nothing to clear
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        await this.state.setConversationDataAvailable(false);
+        return;
+      }
+      throw err;
     }
   }
 }
