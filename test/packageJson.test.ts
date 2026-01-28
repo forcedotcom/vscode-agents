@@ -42,16 +42,16 @@ describe('package.json', () => {
         expect(refreshAgentsCommand?.when).not.toContain('agentforceDX:agentSelected');
       });
 
-      it('should have export conversation command visible only when history is present', () => {
-        const exportCommand = viewTitleMenus.find(
-          (menu: any) => menu.command === 'sf.agent.combined.view.exportConversation'
+      it('should have export menu submenu visible only when history is present', () => {
+        const exportSubmenu = viewTitleMenus.find(
+          (menu: any) => menu.submenu === 'sf.agent.combined.view.exportMenu'
         );
 
-        expect(exportCommand).toBeDefined();
-        expect(exportCommand?.when).toContain('agentforceDX:agentSelected');
-        expect(exportCommand?.when).toContain('!agentforceDX:sessionStarting');
-        expect(exportCommand?.when).toContain('!agentforceDX:sessionError');
-        expect(exportCommand?.when).toContain('agentforceDX:hasConversationData');
+        expect(exportSubmenu).toBeDefined();
+        expect(exportSubmenu?.when).toContain('agentforceDX:agentSelected');
+        expect(exportSubmenu?.when).toContain('!agentforceDX:sessionStarting');
+        expect(exportSubmenu?.when).toContain('!agentforceDX:sessionError');
+        expect(exportSubmenu?.when).toContain('agentforceDX:hasConversationData');
       });
 
       it('should show reset agent view command only when reset is available', () => {
@@ -148,12 +148,16 @@ describe('package.json', () => {
         expect(refreshCommand?.icon).toBe('$(refresh)');
       });
 
-      it('should define the export conversation command', () => {
-        const exportCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversation');
+      it('should define the export conversation commands', () => {
+        const saveCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversation');
+        const saveAsCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversationAs');
 
-        expect(exportCommand).toBeDefined();
-        expect(exportCommand?.title).toBe('Download Conversation');
-        expect(exportCommand?.icon).toBe('$(arrow-circle-down)');
+        expect(saveCommand).toBeDefined();
+        expect(saveCommand?.title).toBe('Save');
+        expect(saveCommand?.icon).toBe('$(arrow-circle-down)');
+
+        expect(saveAsCommand).toBeDefined();
+        expect(saveAsCommand?.title).toBe('Save As...');
       });
 
       it('should define the reset agent view command', () => {
