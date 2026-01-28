@@ -54,7 +54,7 @@ describe('package.json', () => {
         expect(exportCommand?.when).toContain('agentforceDX:hasConversationData');
       });
 
-      it('should have clear history command visible only when history is present and session is not active', () => {
+      it('should have clear history command visible only when history is present and no error', () => {
         const clearHistoryCommand = viewTitleMenus.find(
           (menu: any) => menu.command === 'sf.agent.combined.view.clearHistory'
         );
@@ -63,6 +63,7 @@ describe('package.json', () => {
         expect(clearHistoryCommand?.when).toContain('agentforceDX:agentSelected');
         expect(clearHistoryCommand?.when).toContain('!agentforceDX:sessionActive');
         expect(clearHistoryCommand?.when).toContain('!agentforceDX:sessionStarting');
+        expect(clearHistoryCommand?.when).toContain('!agentforceDX:sessionError');
         expect(clearHistoryCommand?.when).toContain('agentforceDX:hasConversationData');
       });
 

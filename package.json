@@ -160,7 +160,7 @@
       "view/title": [
         {
           "command": "sf.agent.combined.view.clearHistory",
-          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && agentforceDX:hasConversationData",
+          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
           "group": "navigation@-2"
         },
         {
