@@ -338,8 +338,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         canSelectFiles: false,
         canSelectFolders: true,
         canSelectMany: false,
-        openLabel: 'Select Export Folder',
-        title: 'Select folder to save conversation sessions',
+        openLabel: 'Save Chat History',
+        title: 'Select folder to save chat history',
         defaultUri
       });
 

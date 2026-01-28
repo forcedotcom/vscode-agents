@@ -156,7 +156,7 @@ describe('package.json', () => {
         expect(saveCommand?.title).toBe('Save');
 
         expect(saveAsCommand).toBeDefined();
-        expect(saveAsCommand?.title).toBe('Save As...');
+        expect(saveAsCommand?.title).toBe('Save Chat History');
         expect(saveAsCommand?.icon).toBe('$(arrow-circle-down)');
       });
 
