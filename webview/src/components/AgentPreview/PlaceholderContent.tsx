@@ -25,11 +25,7 @@ const PlaceholderContent: React.FC<PlaceholderContentProps> = ({ hasAgents = fal
           Select Agent
         </Button>
       ) : (
-        !isLoadingAgents && (
-          <p>
-            There are no agents available, create an agent first to start a simulation.
-          </p>
-        )
+        !isLoadingAgents && <p>Create, or activate a published agent to start a simulation.</p>
       )}
     </div>
   );
