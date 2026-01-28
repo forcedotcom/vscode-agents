@@ -26,7 +26,9 @@ export function getAgentStorageKey(agentId: string, agentSource: AgentSource): s
   if (agentSource === AgentSource.SCRIPT) {
     // For script agents, agentId is the file path or aabName
     // Extract the directory name from the path if it's a path, otherwise use as-is
-    const basename = agentId.includes(path.sep) ? path.basename(agentId) : agentId;
+    // Handle both forward and backward slashes regardless of platform
+    const hasPathSeparator = agentId.includes('/') || agentId.includes('\\');
+    const basename = hasPathSeparator ? path.basename(agentId) : agentId;
     if (!basename) {
       throw new Error(`Invalid agent path: ${agentId}`);
     }
