@@ -295,6 +295,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   /**
    * Saves the current conversation session using Agent.preview.saveSession
    * Works for both active sessions and loaded history (when no session is active)
+   * Uses a persisted export directory - only prompts for folder selection on first use
    */
   public async exportConversation(): Promise<void> {
     const agentId = this.state.currentAgentId;
@@ -305,31 +306,32 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // Get workspace folder - required for saving to local project
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]!;
+    // Check for saved export directory
+    let targetDirectory = this.state.getExportDirectory();
 
-    // Prompt user for output directory path (relative to workspace root)
-    const directoryPath = await vscode.window.showInputBox({
-      prompt: 'Enter the output directory path ',
-      placeHolder: 'sessions/MySession',
-      value: 'sessions',
-      validateInput: value => {
-        if (!value || value.trim().length === 0) {
-          return 'Directory path is required';
-        }
-        // Check for invalid characters in directory paths
-        if (/[<>:"|?*]/.test(value)) {
-          return 'Directory path contains invalid characters';
-        }
-        return null;
+    // If no saved directory, prompt user to select one
+    if (!targetDirectory) {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      const defaultUri = workspaceFolder ? vscode.Uri.joinPath(workspaceFolder.uri, 'sessions') : undefined;
+
+      const selectedFolder = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: 'Select Export Folder',
+        title: 'Select folder to save conversation sessions',
+        defaultUri
+      });
+
+      if (!selectedFolder || selectedFolder.length === 0) {
+        return; // User cancelled
       }
-    });
 
-    if (!directoryPath) {
-      return; // User cancelled
+      targetDirectory = selectedFolder[0].fsPath;
+
+      // Save the selected directory for future exports
+      await this.state.setExportDirectory(targetDirectory);
     }
-
-    const targetDirectory = path.join(workspaceFolder.uri.fsPath, directoryPath.trim());
 
     try {
       // If there's an active session, use the library's saveSession method

@@ -29,6 +29,7 @@ export class AgentViewState {
   // Storage keys
   private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
   private static readonly DEBUG_MODE_KEY = 'agentforceDX.lastDebugMode';
+  private static readonly EXPORT_DIR_KEY = 'agentforceDX.lastExportDirectory';
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Load persisted state
@@ -198,6 +199,15 @@ export class AgentViewState {
 
   async setIsScriptAgent(isScript: boolean): Promise<void> {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:isScriptAgent', isScript);
+  }
+
+  // Export directory persistence
+  getExportDirectory(): string | undefined {
+    return this.context.globalState.get<string>(AgentViewState.EXPORT_DIR_KEY);
+  }
+
+  async setExportDirectory(directory: string): Promise<void> {
+    await this.context.globalState.update(AgentViewState.EXPORT_DIR_KEY, directory);
   }
 
   // Clear session state

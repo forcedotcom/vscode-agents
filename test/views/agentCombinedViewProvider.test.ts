@@ -27,6 +27,7 @@ jest.mock('vscode', () => ({
     showErrorMessage: jest.fn(),
     showWarningMessage: jest.fn(),
     showInputBox: jest.fn(),
+    showOpenDialog: jest.fn(),
     activeTextEditor: null
   },
   workspace: {
@@ -237,10 +238,10 @@ describe('AgentCombinedViewProvider', () => {
 
   describe('exportConversation', () => {
     let mockAgentInstance: any;
-    let mockShowInputBox: jest.SpyInstance;
+    let mockShowOpenDialog: jest.SpyInstance;
 
     beforeEach(() => {
-      mockShowInputBox = jest.spyOn(vscode.window, 'showInputBox');
+      mockShowOpenDialog = jest.spyOn(vscode.window, 'showOpenDialog');
       mockAgentInstance = {
         preview: {
           saveSession: jest.fn().mockResolvedValue(undefined)
@@ -253,6 +254,10 @@ describe('AgentCombinedViewProvider', () => {
       (provider as any).state.currentAgentName = 'Test Agent';
       (provider as any).state.agentInstance = mockAgentInstance;
       (provider as any).state._isSessionActive = true; // Mark session as active
+
+      // Clear any saved export directory
+      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue(undefined);
+      jest.spyOn((provider as any).state, 'setExportDirectory').mockResolvedValue(undefined);
     });
 
     it('should show warning when no agent is selected', async () => {
@@ -262,97 +267,63 @@ describe('AgentCombinedViewProvider', () => {
       await provider.exportConversation();
 
       expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No agent selected to save session.');
-      expect(mockShowInputBox).not.toHaveBeenCalled();
+      expect(mockShowOpenDialog).not.toHaveBeenCalled();
     });
 
-    it('should prompt for directory path and save successfully', async () => {
-      mockShowInputBox.mockResolvedValue('sessions/MySession');
+    it('should show folder picker and save successfully when no saved directory', async () => {
+      mockShowOpenDialog.mockResolvedValue([{ fsPath: '/selected/folder' }]);
 
       await provider.exportConversation();
 
-      expect(mockShowInputBox).toHaveBeenCalledWith(
+      expect(mockShowOpenDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          prompt: 'Enter the output directory path ',
-          placeHolder: 'sessions/MySession',
-          value: 'sessions'
+          canSelectFiles: false,
+          canSelectFolders: true,
+          canSelectMany: false,
+          openLabel: 'Select Export Folder'
         })
       );
-      const expectedPath = path.join('/workspace', 'sessions/MySession');
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith(expectedPath);
+      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/selected/folder');
+      expect((provider as any).state.setExportDirectory).toHaveBeenCalledWith('/selected/folder');
       expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        `Conversation session saved to ${expectedPath}.`
+        'Conversation session saved to /selected/folder.'
       );
     });
 
-    it('should return early when user cancels input', async () => {
-      mockShowInputBox.mockResolvedValue(undefined);
+    it('should use saved directory without prompting', async () => {
+      // Mock saved export directory
+      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/export/dir');
 
       await provider.exportConversation();
 
-      expect(mockShowInputBox).toHaveBeenCalled();
+      expect(mockShowOpenDialog).not.toHaveBeenCalled();
+      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/saved/export/dir');
+      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+        'Conversation session saved to /saved/export/dir.'
+      );
+    });
+
+    it('should return early when user cancels folder selection', async () => {
+      mockShowOpenDialog.mockResolvedValue(undefined);
+
+      await provider.exportConversation();
+
+      expect(mockShowOpenDialog).toHaveBeenCalled();
       expect(mockAgentInstance.preview.saveSession).not.toHaveBeenCalled();
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
     });
 
-    it('should validate empty directory path', async () => {
-      // Mock validation to return error for empty string, then user cancels
-      let validateInputFn: ((value: string) => string | null) | undefined;
-      mockShowInputBox.mockImplementation((options: any) => {
-        validateInputFn = options.validateInput;
-        // Return empty string first (will be caught by validation)
-        if (validateInputFn && validateInputFn('') === 'Directory path is required') {
-          return Promise.resolve(undefined); // User cancels after seeing validation error
-        }
-        return Promise.resolve('sessions/MySession');
-      });
+    it('should return early when user selects empty folder array', async () => {
+      mockShowOpenDialog.mockResolvedValue([]);
 
       await provider.exportConversation();
 
-      expect(validateInputFn).toBeDefined();
-      if (validateInputFn) {
-        expect(validateInputFn('')).toBe('Directory path is required');
-        expect(validateInputFn('   ')).toBe('Directory path is required');
-      }
-    });
-
-    it('should validate invalid characters in directory path', async () => {
-      let validateInputFn: ((value: string) => string | null) | undefined;
-      mockShowInputBox.mockImplementation((options: any) => {
-        validateInputFn = options.validateInput;
-        return Promise.resolve('sessions/MySession');
-      });
-
-      await provider.exportConversation();
-
-      expect(validateInputFn).toBeDefined();
-      if (validateInputFn) {
-        // Invalid characters
-        expect(validateInputFn('test<invalid>')).toBe('Directory path contains invalid characters');
-        expect(validateInputFn('test:invalid')).toBe('Directory path contains invalid characters');
-        expect(validateInputFn('test"invalid')).toBe('Directory path contains invalid characters');
-        expect(validateInputFn('test|invalid')).toBe('Directory path contains invalid characters');
-        expect(validateInputFn('test?invalid')).toBe('Directory path contains invalid characters');
-        expect(validateInputFn('test*invalid')).toBe('Directory path contains invalid characters');
-
-        // Valid paths should pass
-        expect(validateInputFn('sessions/MySession')).toBeNull();
-        expect(validateInputFn('sessions\\MySession')).toBeNull(); // backslash is allowed
-        expect(validateInputFn('MySession')).toBeNull();
-        expect(validateInputFn('sessions/subfolder/MySession')).toBeNull();
-      }
-    });
-
-    it('should trim whitespace from directory path', async () => {
-      mockShowInputBox.mockResolvedValue('  sessions/MySession  ');
-
-      await provider.exportConversation();
-
-      const expectedPath = path.join('/workspace', 'sessions/MySession');
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith(expectedPath);
+      expect(mockShowOpenDialog).toHaveBeenCalled();
+      expect(mockAgentInstance.preview.saveSession).not.toHaveBeenCalled();
     });
 
     it('should handle saveSession error', async () => {
-      mockShowInputBox.mockResolvedValue('sessions/MySession');
+      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/dir');
       const saveError = new Error('Save failed');
       mockAgentInstance.preview.saveSession.mockRejectedValue(saveError);
 
@@ -362,11 +333,11 @@ describe('AgentCombinedViewProvider', () => {
       expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
     });
 
-    it('should save from loaded history when no active session (script agent)', async () => {
+    it('should save from loaded history when no active session', async () => {
       // No active session
       (provider as any).state._isSessionActive = false;
       (provider as any).state.agentInstance = undefined;
-      mockShowInputBox.mockResolvedValue('sessions/MySession');
+      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/export/dir');
 
       // Mock getAllHistory and getHistoryDir from the library
       const { getAllHistory, getHistoryDir } = require('@salesforce/agents/lib/utils');
@@ -395,7 +366,7 @@ describe('AgentCombinedViewProvider', () => {
       // No active session
       (provider as any).state._isSessionActive = false;
       (provider as any).state.agentInstance = undefined;
-      mockShowInputBox.mockResolvedValue('sessions/MySession');
+      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/dir');
 
       // Mock getAllHistory to return no sessionId
       const { getAllHistory } = require('@salesforce/agents/lib/utils');
@@ -410,16 +381,15 @@ describe('AgentCombinedViewProvider', () => {
       expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No conversation history found to save.');
     });
 
-    it('should use existing agent instance when available', async () => {
-      mockShowInputBox.mockResolvedValue('sessions/MySession');
+    it('should not reinitialize agent when using saved directory', async () => {
+      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/dir');
 
       const initializeScriptAgentSpy = jest.spyOn((provider as any).agentInitializer, 'initializeScriptAgent');
 
       await provider.exportConversation();
 
       expect(initializeScriptAgentSpy).not.toHaveBeenCalled();
-      const expectedPath = path.join('/workspace', 'sessions/MySession');
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith(expectedPath);
+      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/saved/dir');
     });
   });
 });
