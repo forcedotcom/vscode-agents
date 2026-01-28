@@ -120,14 +120,14 @@ describe('PlaceholderContent', () => {
       render(<PlaceholderContent hasAgents={false} isLoadingAgents={false} />);
 
       expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
-      expect(screen.getByText(/no agents available, create an agent first/i)).toBeInTheDocument();
+      expect(screen.getByText(/Create, or activate a published agent to start a simulation/i)).toBeInTheDocument();
     });
 
     it('should hide button and message when agents are loading', () => {
       render(<PlaceholderContent hasAgents={false} isLoadingAgents={true} />);
 
       expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
-      expect(screen.queryByText(/no agents available, create an agent first/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Create, or activate a published agent to start a simulation/i)).not.toBeInTheDocument();
     });
 
     it('should hide button with default props (no agents, loading)', () => {
@@ -140,7 +140,7 @@ describe('PlaceholderContent', () => {
       render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       expect(screen.getByRole('button', { name: /Select Agent/i })).toBeInTheDocument();
-      expect(screen.queryByText(/no agents available, create an agent first/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Create, or activate a published agent to start a simulation/i)).not.toBeInTheDocument();
     });
   });
 });
