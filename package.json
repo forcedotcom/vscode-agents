@@ -105,11 +105,6 @@
         "id": "sf.agent.combined.view.restartMenu",
         "label": "Restart Options",
         "icon": "$(debug-rerun)"
-      },
-      {
-        "id": "sf.agent.combined.view.exportMenu",
-        "label": "Save Options",
-        "icon": "$(arrow-circle-down)"
       }
     ],
     "configuration": {
@@ -162,17 +157,9 @@
           "command": "sf.agent.combined.view.recompileAndRestart"
         }
       ],
-      "sf.agent.combined.view.exportMenu": [
-        {
-          "command": "sf.agent.combined.view.exportConversation"
-        },
-        {
-          "command": "sf.agent.combined.view.exportConversationAs"
-        }
-      ],
       "view/title": [
         {
-          "submenu": "sf.agent.combined.view.exportMenu",
+          "command": "sf.agent.combined.view.exportConversationAs",
           "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
           "group": "navigation@-1"
         },
@@ -421,12 +408,12 @@
       },
       {
         "command": "sf.agent.combined.view.exportConversation",
-        "title": "Save",
-        "icon": "$(arrow-circle-down)"
+        "title": "Save"
       },
       {
         "command": "sf.agent.combined.view.exportConversationAs",
-        "title": "Save As..."
+        "title": "Save As...",
+        "icon": "$(arrow-circle-down)"
       },
       {
         "command": "sf.agent.combined.view.refreshAgents",

@@ -42,16 +42,16 @@ describe('package.json', () => {
         expect(refreshAgentsCommand?.when).not.toContain('agentforceDX:agentSelected');
       });
 
-      it('should have export menu submenu visible only when history is present', () => {
-        const exportSubmenu = viewTitleMenus.find(
-          (menu: any) => menu.submenu === 'sf.agent.combined.view.exportMenu'
+      it('should have export command visible only when history is present', () => {
+        const exportCommand = viewTitleMenus.find(
+          (menu: any) => menu.command === 'sf.agent.combined.view.exportConversationAs'
         );
 
-        expect(exportSubmenu).toBeDefined();
-        expect(exportSubmenu?.when).toContain('agentforceDX:agentSelected');
-        expect(exportSubmenu?.when).toContain('!agentforceDX:sessionStarting');
-        expect(exportSubmenu?.when).toContain('!agentforceDX:sessionError');
-        expect(exportSubmenu?.when).toContain('agentforceDX:hasConversationData');
+        expect(exportCommand).toBeDefined();
+        expect(exportCommand?.when).toContain('agentforceDX:agentSelected');
+        expect(exportCommand?.when).toContain('!agentforceDX:sessionStarting');
+        expect(exportCommand?.when).toContain('!agentforceDX:sessionError');
+        expect(exportCommand?.when).toContain('agentforceDX:hasConversationData');
       });
 
       it('should show reset agent view command only when reset is available', () => {
@@ -154,10 +154,10 @@ describe('package.json', () => {
 
         expect(saveCommand).toBeDefined();
         expect(saveCommand?.title).toBe('Save');
-        expect(saveCommand?.icon).toBe('$(arrow-circle-down)');
 
         expect(saveAsCommand).toBeDefined();
         expect(saveAsCommand?.title).toBe('Save As...');
+        expect(saveAsCommand?.icon).toBe('$(arrow-circle-down)');
       });
 
       it('should define the reset agent view command', () => {
