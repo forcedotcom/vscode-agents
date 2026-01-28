@@ -1,10 +1,10 @@
 import { AgentSource } from '@salesforce/agents';
 import { getAllHistory } from '@salesforce/agents/lib/utils';
+import { SfProject } from '@salesforce/core';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import type { AgentViewState } from '../state/agentViewState';
 import type { WebviewMessageSender } from '../handlers/webviewMessageSender';
 import { getAgentStorageKey } from '../agent/agentUtils';
@@ -322,11 +322,14 @@ export class HistoryManager {
   async clearHistory(agentId: string, agentSource: AgentSource): Promise<void> {
     const agentStorageKey = getAgentStorageKey(agentId, agentSource);
 
-    // History is stored in ~/.sfdx/agents/<agentStorageKey>/
-    const sfdxDir = path.join(os.homedir(), '.sfdx', 'agents', agentStorageKey);
+    // History is stored in <project>/.sfdx/agents/<agentStorageKey>/
+    // This matches where the @salesforce/agents library stores history
+    const project = SfProject.getInstance();
+    const projectPath = project.getPath();
+    const agentHistoryDir = path.join(projectPath, '.sfdx', 'agents', agentStorageKey);
 
     // Delete the directory if it exists (force: true handles non-existent dirs)
-    await fs.promises.rm(sfdxDir, { recursive: true, force: true });
+    await fs.promises.rm(agentHistoryDir, { recursive: true, force: true });
 
     // Update state to reflect no conversation data
     await this.state.setConversationDataAvailable(false);
