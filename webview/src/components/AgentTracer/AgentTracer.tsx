@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
-import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
+import { TimelineItemProps } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
 import TabNavigation from '../shared/TabNavigation.js';
 import SystemMessage from '../AgentPreview/SystemMessage.js';
+import { TraceHistoryRow } from './TraceHistoryRow.js';
 
 import { vscodeApi, AgentInfo } from '../../services/vscodeApi.js';
 import './AgentTracer.css';
+import './TraceHistoryRow.css';
 
 interface AgentTracerProps {
   isVisible?: boolean;
@@ -326,37 +328,43 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [panelHeight, setPanelHeight] = useState<number>(300);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
-  const [selectedHistoryIndex, setSelectedHistoryIndex] = useState<number | null>(null);
-  const historyIndexRef = useRef<number | null>(null);
-  const currentHistoryEntry = useMemo(() => {
-    if (selectedHistoryIndex !== null && traceHistory[selectedHistoryIndex]) {
-      return traceHistory[selectedHistoryIndex];
-    }
+  const [expandedIndices, setExpandedIndices] = useState<Set<number>>(new Set());
+  // Track whether a new message has been sent (to auto-expand latest on next load)
+  const shouldExpandLatestRef = useRef<boolean>(true);
 
-    if (traceHistory.length > 0 && (selectedHistoryIndex === null || selectedHistoryIndex >= traceHistory.length)) {
-      return traceHistory[traceHistory.length - 1];
-    }
+  const handleRowExpandedChange = useCallback((index: number, expanded: boolean) => {
+    setExpandedIndices(prev => {
+      const next = new Set(prev);
+      if (expanded) {
+        next.add(index);
+      } else {
+        next.delete(index);
+      }
+      return next;
+    });
+  }, []);
 
-    return null;
-  }, [selectedHistoryIndex, traceHistory]);
+  const handleRowStepSelect = useCallback(
+    (historyIndex: number, stepIndex: number) => {
+      // Set the trace data to the selected entry's trace for the step panel
+      const entry = traceHistory[historyIndex];
+      if (entry) {
+        setTraceData(entry.trace);
+      }
+      setSelectedStepIndex(stepIndex);
+    },
+    [traceHistory]
+  );
 
-  const updateSelectedHistoryIndex = (index: number | null) => {
-    historyIndexRef.current = index;
-    setSelectedHistoryIndex(index);
-  };
+  const handleRowOpenJson = useCallback((entry: TraceHistoryEntry) => {
+    vscodeApi.openTraceJson(entry);
+  }, []);
 
   const requestTraceData = useCallback(() => {
     setLoading(true);
     setError(null);
     vscodeApi.getTraceData();
   }, []);
-
-  const handleOpenTraceJson = useCallback(() => {
-    if (!currentHistoryEntry) {
-      return;
-    }
-    vscodeApi.openTraceJson(currentHistoryEntry);
-  }, [currentHistoryEntry]);
 
   useEffect(() => {
     // Listen for trace data response
@@ -384,8 +392,8 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
 
     // Listen for messageSent events to refresh trace data
     const disposeMessageSent = vscodeApi.onMessage('messageSent', () => {
-      // Reset history selection to automatically select the latest trace
-      historyIndexRef.current = null;
+      // Mark that we should expand the latest trace when it arrives
+      shouldExpandLatestRef.current = true;
       // Wait a bit for the planId to be set in the provider before requesting
       setTimeout(() => {
         requestTraceData();
@@ -404,16 +412,22 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: entries.length, entries });
 
       if (entries.length === 0) {
-        updateSelectedHistoryIndex(null);
         setTraceData(null);
         setSelectedStepIndex(null);
+        setExpandedIndices(new Set());
         return;
       }
 
-      const { nextIndex, nextTraceData } = applyHistorySelection(entries, historyIndexRef.current);
-      updateSelectedHistoryIndex(nextIndex);
-      setTraceData(nextTraceData);
+      // Set trace data to the latest entry for the step panel
+      const latestIndex = entries.length - 1;
+      setTraceData(entries[latestIndex].trace);
       setSelectedStepIndex(null);
+
+      // On initial load or when new message arrives, expand only the latest entry
+      if (shouldExpandLatestRef.current) {
+        setExpandedIndices(new Set([latestIndex]));
+        shouldExpandLatestRef.current = false;
+      }
     });
 
     return () => {
@@ -439,33 +453,15 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     );
   }
 
-  const planSteps = traceData?.plan;
-  const hasPlanArray = Array.isArray(planSteps);
-  const hasTraceData = hasPlanArray && planSteps.length > 0;
-  const shouldShowPlaceholder = !traceData || (hasPlanArray && planSteps.length === 0);
-  const timelineItems = buildTimelineItems(traceData, index => setSelectedStepIndex(index));
+  // Determine if we have trace data - check traceHistory for collapsible rows
+  const hasTraceHistory = traceHistory.length > 0;
+  const shouldShowPlaceholder = !hasTraceHistory;
   const selectedStepData = getStepData(traceData, selectedStepIndex);
 
   // Handle panel resize
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
-  };
-
-  const handleHistoryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const index = parseInt(event.target.value, 10);
-    if (Number.isNaN(index)) {
-      return;
-    }
-
-    const nextTrace = selectHistoryEntry(traceHistory, index);
-    if (!nextTrace) {
-      return;
-    }
-
-    updateSelectedHistoryIndex(index);
-    setTraceData(nextTrace);
-    setSelectedStepIndex(null);
   };
 
   useEffect(() => {
@@ -499,75 +495,30 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             <span className="loading-spinner"></span>
             <span className="loading-text">Loading trace data...</span>
           </div>
-        ) : hasTraceData && traceData ? (
+        ) : hasTraceHistory ? (
           <div className="tracer-simple">
-            {traceHistory.length > 0 && (
-              <div className="trace-history-selector">
-                <div className="trace-history-selector__input">
-                  <select
-                    id="trace-history-select"
-                    aria-label="Trace history"
-                    className={`trace-history-selector__select ${selectedHistoryIndex !== null ? 'has-selection' : ''}`}
-                    value={selectedHistoryIndex !== null ? selectedHistoryIndex : Math.max(traceHistory.length - 1, 0)}
-                    onChange={handleHistoryChange}
-                  >
-                    {traceHistory.map((entry, index) => {
-                      const fullLabel = formatHistoryLabel(entry, index);
-                      const truncatedLabel = formatHistoryLabel(entry, index, 60);
-                      return (
-                        <option key={`${entry.planId}-${index}`} value={index} title={fullLabel}>
-                          {truncatedLabel}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {selectedHistoryIndex !== null &&
-                    (() => {
-                      const currentEntry = traceHistory[selectedHistoryIndex];
-                      const { time, message } = formatHistoryParts(currentEntry, selectedHistoryIndex);
-                      return (
-                        <div className="trace-history-selector__display">
-                          {time && <span className="trace-time">{time}</span>}
-                          {time && <span className="trace-separator">•</span>}
-                          <span className="trace-message">{message}</span>
-                        </div>
-                      );
-                    })()}
-                </div>
-              </div>
-            )}
-            <table className="tracer-info-table">
-              <tbody>
-                <tr>
-                  <td className="tracer-info-table__label">Session ID</td>
-                  <td className="tracer-info-table__value">{traceData.sessionId}</td>
-                </tr>
-                <tr>
-                  <td className="tracer-info-table__label">Plan ID</td>
-                  <td className="tracer-info-table__value">{traceData.planId}</td>
-                </tr>
-                {selectedHistoryIndex !== null && traceHistory[selectedHistoryIndex]?.timestamp && (
-                  <tr>
-                    <td className="tracer-info-table__label">Timestamp</td>
-                    <td className="tracer-info-table__value">
-                      {new Date(traceHistory[selectedHistoryIndex].timestamp).toLocaleString()}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <div className="trace-history-list" role="list" aria-label="Trace history">
+              {[...traceHistory].reverse().map((entry, reversedIndex) => {
+                const originalIndex = traceHistory.length - 1 - reversedIndex;
+                const { time, message } = formatHistoryParts(entry, originalIndex);
+                const timelineItems = buildTimelineItems(entry.trace, stepIndex =>
+                  handleRowStepSelect(originalIndex, stepIndex)
+                );
 
-            <div className="tracer-scrollable-content">
-              <div className="tracer-plan-timeline">
-                <Timeline items={timelineItems} />
-              </div>
-              {currentHistoryEntry && (
-                <div className="tracer-json-link">
-                  <button type="button" className="tracer-json-link__button" onClick={handleOpenTraceJson}>
-                    View raw JSON
-                  </button>
-                </div>
-              )}
+                return (
+                  <TraceHistoryRow
+                    key={`${entry.planId}-${originalIndex}`}
+                    entry={entry}
+                    index={originalIndex}
+                    isExpanded={expandedIndices.has(originalIndex)}
+                    onExpandedChange={expanded => handleRowExpandedChange(originalIndex, expanded)}
+                    onOpenJson={() => handleRowOpenJson(entry)}
+                    timelineItems={timelineItems}
+                    time={time}
+                    message={message}
+                  />
+                );
+              })}
             </div>
           </div>
         ) : shouldShowPlaceholder ? (

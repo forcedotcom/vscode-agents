@@ -54,10 +54,19 @@ body.vscode-high-contrast .tracer-loading .loading-spinner {
 .tracer-simple {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
   padding: 0;
   flex: 1;
   overflow: hidden;
+}
+
+.trace-history-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-left: -18px;
+  margin-right: -18px;
+  padding-left: 1px;
+  padding-right: 1px;
 }
 
 .trace-history-selector {
