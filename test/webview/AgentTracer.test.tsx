@@ -493,4 +493,150 @@ describe('AgentTracer', () => {
     // Step panel should show second content
     expect(screen.getByText(/"second-content"/)).toBeInTheDocument();
   });
+
+  it('clears trace history when session starts', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'test' } }]
+    };
+
+    dispatchMessage('traceHistory', {
+      entries: [
+        {
+          storageKey: 'agent',
+          agentId: 'agent',
+          planId: 'plan-1',
+          sessionId: 'session-1',
+          userMessage: 'Test message',
+          trace
+        }
+      ]
+    });
+
+    // Verify trace is displayed
+    expect(screen.getByText('Test message')).toBeInTheDocument();
+
+    // Start a new session
+    dispatchMessage('sessionStarted', {});
+
+    // Trace history should be cleared, showing placeholder
+    expect(screen.queryByText('Test message')).not.toBeInTheDocument();
+    expect(screen.getByText(/Agent Tracer displays/i)).toBeInTheDocument();
+  });
+
+  it('appends new entries at the end regardless of backend order', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace1 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'first' } }]
+    };
+
+    const trace2 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-2',
+      sessionId: 'session-2',
+      plan: [{ type: 'UserInputStep', data: { content: 'second' } }]
+    };
+
+    // Initial entries
+    dispatchMessage('traceHistory', {
+      entries: [
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'First', trace: trace1 },
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 }
+      ]
+    });
+
+    // Verify order: First at top, Second at bottom (latest expanded)
+    const buttons = screen.getAllByRole('button', { name: /first|second/i });
+    expect(buttons[0]).toHaveTextContent('First');
+    expect(buttons[1]).toHaveTextContent('Second');
+
+    // Add a third entry - backend sends it in any order (here: middle)
+    const trace3 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-3',
+      sessionId: 'session-3',
+      plan: [{ type: 'UserInputStep', data: { content: 'third' } }]
+    };
+
+    dispatchMessage('traceHistory', {
+      entries: [
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'First', trace: trace1 },
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-3', sessionId: 'session-3', userMessage: 'Third', trace: trace3 },
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 }
+      ]
+    });
+
+    // New entry should be appended at the end, not inserted in middle
+    const updatedButtons = screen.getAllByRole('button', { name: /first|second|third/i });
+    expect(updatedButtons[0]).toHaveTextContent('First');
+    expect(updatedButtons[1]).toHaveTextContent('Second');
+    expect(updatedButtons[2]).toHaveTextContent('Third');
+
+    // Third (newest) should be expanded
+    expect(updatedButtons[2]).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('preserves expanded state by planId when new entries arrive', () => {
+    render(<AgentTracer isVisible />);
+
+    const trace1 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-1',
+      sessionId: 'session-1',
+      plan: [{ type: 'UserInputStep', data: { content: 'first' } }]
+    };
+
+    const trace2 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-2',
+      sessionId: 'session-2',
+      plan: [{ type: 'UserInputStep', data: { content: 'second' } }]
+    };
+
+    dispatchMessage('traceHistory', {
+      entries: [
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'First', trace: trace1 },
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 }
+      ]
+    });
+
+    // Latest (Second) should be expanded
+    const secondButton = screen.getByRole('button', { name: /second/i });
+    expect(secondButton).toHaveAttribute('aria-expanded', 'true');
+
+    // Manually expand First
+    const firstButton = screen.getByRole('button', { name: /first/i });
+    fireEvent.click(firstButton);
+    expect(firstButton).toHaveAttribute('aria-expanded', 'true');
+
+    // New entry arrives - only the newest should be expanded now
+    const trace3 = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan-3',
+      sessionId: 'session-3',
+      plan: [{ type: 'UserInputStep', data: { content: 'third' } }]
+    };
+
+    dispatchMessage('traceHistory', {
+      entries: [
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'First', trace: trace1 },
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 },
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-3', sessionId: 'session-3', userMessage: 'Third', trace: trace3 }
+      ]
+    });
+
+    // Only Third (newest) should be expanded, others collapsed
+    const thirdButton = screen.getByRole('button', { name: /third/i });
+    expect(thirdButton).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /first/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: /second/i })).toHaveAttribute('aria-expanded', 'false');
+  });
 });

@@ -328,15 +328,15 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [panelHeight, setPanelHeight] = useState<number>(300);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
-  const [expandedIndices, setExpandedIndices] = useState<Set<number>>(new Set());
+  const [expandedPlanIds, setExpandedPlanIds] = useState<Set<string>>(new Set());
 
-  const handleRowExpandedChange = useCallback((index: number, expanded: boolean) => {
-    setExpandedIndices(prev => {
+  const handleRowExpandedChange = useCallback((planId: string, expanded: boolean) => {
+    setExpandedPlanIds(prev => {
       const next = new Set(prev);
       if (expanded) {
-        next.add(index);
+        next.add(planId);
       } else {
-        next.delete(index);
+        next.delete(planId);
       }
       return next;
     });
@@ -396,46 +396,66 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       }, 200);
     });
 
+    // Clear trace history when a new session starts
+    const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', () => {
+      setTraceHistory([]);
+      setTraceData(null);
+      setSelectedStepIndex(null);
+      setExpandedPlanIds(new Set());
+    });
+
     // Request trace data when component mounts
     requestTraceData();
 
     const disposeTraceHistory = vscodeApi.onMessage('traceHistory', data => {
-      const rawEntries = Array.isArray(data?.entries) ? data.entries : [];
+      const rawEntries: TraceHistoryEntry[] = Array.isArray(data?.entries) ? data.entries : [];
 
-      // Sort entries chronologically (oldest first, newest last)
-      const entries = [...rawEntries].sort((a, b) => {
-        if (!a.timestamp && !b.timestamp) return 0;
-        if (!a.timestamp) return -1;
-        if (!b.timestamp) return 1;
-        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-      });
+      setTraceHistory(prevHistory => {
+        // Build a set of existing planIds for quick lookup
+        const existingPlanIds = new Set(prevHistory.map(e => e.planId));
 
-      setTraceHistory(entries);
-      setLoading(false);
+        // Find new entries that don't exist in current history
+        const newEntries = rawEntries.filter(e => !existingPlanIds.has(e.planId));
 
-      // Send test response when trace history is received (for integration tests)
-      vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: entries.length, entries });
+        // Update existing entries (in case trace data changed) and keep their order
+        const updatedHistory = prevHistory.map(existing => {
+          const updated = rawEntries.find(e => e.planId === existing.planId);
+          return updated || existing;
+        });
 
-      if (entries.length === 0) {
-        setTraceData(null);
+        // Append new entries at the end
+        const entries = [...updatedHistory, ...newEntries];
+
+        // Handle empty state
+        if (entries.length === 0) {
+          setTraceData(null);
+          setSelectedStepIndex(null);
+          setExpandedPlanIds(new Set());
+          setLoading(false);
+          vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: 0, entries: [] });
+          return [];
+        }
+
+        // Set trace data to the latest entry for the step panel
+        const latestEntry = entries[entries.length - 1];
+        setTraceData(latestEntry.trace);
         setSelectedStepIndex(null);
-        setExpandedIndices(new Set());
-        return;
-      }
 
-      // Set trace data to the latest entry for the step panel
-      const latestIndex = entries.length - 1;
-      setTraceData(entries[latestIndex].trace);
-      setSelectedStepIndex(null);
+        // Expand only the latest entry (collapse others)
+        setExpandedPlanIds(new Set([latestEntry.planId]));
 
-      // Always expand the latest entry (collapse others)
-      setExpandedIndices(new Set([latestIndex]));
+        setLoading(false);
+        vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: entries.length, entries });
+
+        return entries;
+      });
     });
 
     return () => {
       disposeTraceData();
       disposeError();
       disposeMessageSent();
+      disposeSessionStarted();
       disposeTraceHistory();
     };
   }, [requestTraceData]);
@@ -508,11 +528,11 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
 
                 return (
                   <TraceHistoryRow
-                    key={`${entry.planId}-${index}`}
+                    key={entry.planId}
                     entry={entry}
                     index={index}
-                    isExpanded={expandedIndices.has(index)}
-                    onExpandedChange={expanded => handleRowExpandedChange(index, expanded)}
+                    isExpanded={expandedPlanIds.has(entry.planId)}
+                    onExpandedChange={expanded => handleRowExpandedChange(entry.planId, expanded)}
                     onOpenJson={() => handleRowOpenJson(entry)}
                     timelineItems={timelineItems}
                     time={time}

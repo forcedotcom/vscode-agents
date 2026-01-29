@@ -1115,5 +1115,36 @@ describe('App', () => {
         expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
       });
     });
+
+    it('should switch to preview tab when deselecting agent while on tracer tab', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      // Select a script agent
+      const select = screen.getByTestId('agent-select') as HTMLSelectElement;
+      await user.selectOptions(select, 'agent1');
+
+      // Start session to show tabs
+      triggerMessage('sessionStarted', {});
+
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Switch to tracer tab
+      fireEvent.click(screen.getByTestId('tracer-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-tracer')).toBeInTheDocument();
+      });
+
+      // Deselect agent (select empty option) while on tracer tab
+      await user.selectOptions(select, '');
+
+      // Should automatically switch to preview tab (tabs will be hidden but activeTab should be preview)
+      await waitFor(() => {
+        expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
+      });
+    });
   });
 });

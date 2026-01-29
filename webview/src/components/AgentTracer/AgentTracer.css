@@ -183,7 +183,7 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 
 .tracer-info-table__label {
   color: var(--vscode-tab-activeForeground);
-  padding: 8px 0;
+  padding: 5px 0;
   text-align: left;
   width: 80px;
   background: transparent;
@@ -195,7 +195,7 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 
 .tracer-info-table__value {
   color: var(--vscode-foreground);
-  padding: 8px 12px;
+  padding: 5px 12px;
   font-family: var(--vscode-editor-font-family);
   font-size: 11px;
   background: transparent;
