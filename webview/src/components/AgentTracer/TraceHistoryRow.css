@@ -1,3 +1,7 @@
+.trace-history-row {
+  margin: 0 14px;
+}
+
 .trace-history-row + .trace-history-row {
   border-top: 1px solid var(--vscode-panel-border);
 }
@@ -5,6 +9,13 @@
 .trace-history-row__header-wrapper {
   display: flex;
   align-items: center;
+  width: 100%;
+}
+
+.trace-history-row__header-wrapper:focus-within,
+.trace-history-row__header-wrapper:has(.trace-history-row__header:active) {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
 .trace-history-row__header {
@@ -14,9 +25,9 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 5px 16px;
+  padding: 5px 8px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   cursor: pointer;
   text-align: left;
   color: var(--vscode-foreground);
@@ -26,32 +37,10 @@
 
 .trace-history-row__header:focus {
   outline: none;
-  border-color: var(--vscode-focusBorder);
 }
 
 .trace-history-row__json-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin-right: 17px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--vscode-descriptionForeground);
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.trace-history-row:hover .trace-history-row__json-icon,
-.trace-history-row__json-icon:focus {
-  opacity: 1;
-}
-
-.trace-history-row__json-icon:focus {
-  outline: 1px solid var(--vscode-focusBorder);
-  outline-offset: 2px;
+  display: none;
 }
 
 .trace-history-row__chevron {
@@ -81,7 +70,6 @@
   flex-shrink: 0;
 }
 
-
 .trace-history-row__message {
   color: var(--vscode-tab-activeForeground);
   font-size: 13px;
@@ -92,7 +80,7 @@
 }
 
 .trace-history-row__content {
-  padding: 0 17px 12px 37px;
+  padding: 10px 0 15px 5px;
   animation: trace-row-expand 0.2s ease-out;
 }
 
