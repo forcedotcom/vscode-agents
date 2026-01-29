@@ -463,7 +463,7 @@ describe('AgentTracer', () => {
     };
 
     // Test data: First is older (index 0), Second is newer (index 1)
-    // After reversal for display: Second appears first in DOM, First appears second
+    // Display order: First appears first in DOM (top), Second appears second (bottom)
     const historyEntries = [
       { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'First', trace: trace1 },
       { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 }
@@ -471,14 +471,14 @@ describe('AgentTracer', () => {
 
     dispatchMessage('traceHistory', { entries: historyEntries });
 
-    // Expand First row (which appears second in DOM after reversal)
+    // Expand First row (which appears first in DOM - older messages at top)
     const firstRowButton = screen.getByRole('button', { name: /first/i });
     fireEvent.click(firstRowButton);
 
-    // Get step buttons - DOM order is reversed: Second (top), First (bottom)
+    // Get step buttons - DOM order: First (top), Second (bottom)
     const stepButtons = screen.getAllByText('User Input');
-    // stepButtons[0] is from "Second" row, stepButtons[1] is from "First" row
-    fireEvent.click(stepButtons[1]); // Click First row's step
+    // stepButtons[0] is from "First" row, stepButtons[1] is from "Second" row
+    fireEvent.click(stepButtons[0]); // Click First row's step
 
     // Step panel should show first content
     expect(screen.getByText(/"first-content"/)).toBeInTheDocument();
@@ -488,7 +488,7 @@ describe('AgentTracer', () => {
     fireEvent.click(closeButton);
 
     // Click on step in Second row
-    fireEvent.click(stepButtons[0]);
+    fireEvent.click(stepButtons[1]);
 
     // Step panel should show second content
     expect(screen.getByText(/"second-content"/)).toBeInTheDocument();

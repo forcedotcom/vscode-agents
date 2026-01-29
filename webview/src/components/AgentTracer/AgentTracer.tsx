@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
 import { TimelineItemProps } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
@@ -329,8 +329,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
   const [expandedIndices, setExpandedIndices] = useState<Set<number>>(new Set());
-  // Track whether a new message has been sent (to auto-expand latest on next load)
-  const shouldExpandLatestRef = useRef<boolean>(true);
 
   const handleRowExpandedChange = useCallback((index: number, expanded: boolean) => {
     setExpandedIndices(prev => {
@@ -392,8 +390,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
 
     // Listen for messageSent events to refresh trace data
     const disposeMessageSent = vscodeApi.onMessage('messageSent', () => {
-      // Mark that we should expand the latest trace when it arrives
-      shouldExpandLatestRef.current = true;
       // Wait a bit for the planId to be set in the provider before requesting
       setTimeout(() => {
         requestTraceData();
@@ -404,7 +400,16 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     requestTraceData();
 
     const disposeTraceHistory = vscodeApi.onMessage('traceHistory', data => {
-      const entries = Array.isArray(data?.entries) ? data.entries : [];
+      const rawEntries = Array.isArray(data?.entries) ? data.entries : [];
+
+      // Sort entries chronologically (oldest first, newest last)
+      const entries = [...rawEntries].sort((a, b) => {
+        if (!a.timestamp && !b.timestamp) return 0;
+        if (!a.timestamp) return -1;
+        if (!b.timestamp) return 1;
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      });
+
       setTraceHistory(entries);
       setLoading(false);
 
@@ -423,11 +428,8 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       setTraceData(entries[latestIndex].trace);
       setSelectedStepIndex(null);
 
-      // On initial load or when new message arrives, expand only the latest entry
-      if (shouldExpandLatestRef.current) {
-        setExpandedIndices(new Set([latestIndex]));
-        shouldExpandLatestRef.current = false;
-      }
+      // Always expand the latest entry (collapse others)
+      setExpandedIndices(new Set([latestIndex]));
     });
 
     return () => {
@@ -498,20 +500,19 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
         ) : hasTraceHistory ? (
           <div className="tracer-simple">
             <div className="trace-history-list" role="list" aria-label="Trace history">
-              {[...traceHistory].reverse().map((entry, reversedIndex) => {
-                const originalIndex = traceHistory.length - 1 - reversedIndex;
-                const { time, message } = formatHistoryParts(entry, originalIndex);
+              {traceHistory.map((entry, index) => {
+                const { time, message } = formatHistoryParts(entry, index);
                 const timelineItems = buildTimelineItems(entry.trace, stepIndex =>
-                  handleRowStepSelect(originalIndex, stepIndex)
+                  handleRowStepSelect(index, stepIndex)
                 );
 
                 return (
                   <TraceHistoryRow
-                    key={`${entry.planId}-${originalIndex}`}
+                    key={`${entry.planId}-${index}`}
                     entry={entry}
-                    index={originalIndex}
-                    isExpanded={expandedIndices.has(originalIndex)}
-                    onExpandedChange={expanded => handleRowExpandedChange(originalIndex, expanded)}
+                    index={index}
+                    isExpanded={expandedIndices.has(index)}
+                    onExpandedChange={expanded => handleRowExpandedChange(index, expanded)}
                     onOpenJson={() => handleRowOpenJson(entry)}
                     timelineItems={timelineItems}
                     time={time}
