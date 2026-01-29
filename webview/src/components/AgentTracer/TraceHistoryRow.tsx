@@ -1,7 +1,5 @@
 import React from 'react';
 import { Timeline, TimelineItemProps } from '../shared/Timeline.js';
-import chevronIconDark from '../../assets/chevron-dark.svg';
-import chevronIconLight from '../../assets/chevron-light.svg';
 import './TraceHistoryRow.css';
 
 interface PlanSuccessResponse {
@@ -51,9 +49,6 @@ export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
   time: _time,
   message
 }) => {
-  const isDark =
-    document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast');
-
   const contentId = `trace-history-content-${index}`;
 
   const handleHeaderClick = () => {
@@ -85,12 +80,17 @@ export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
           aria-expanded={isExpanded}
           aria-controls={contentId}
         >
-          <img
-            src={isDark ? chevronIconDark : chevronIconLight}
-            alt=""
+          <svg
+            width="8"
+            height="5"
+            viewBox="0 0 8 5"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
             className={`trace-history-row__chevron ${isExpanded ? 'trace-history-row__chevron--expanded' : ''}`}
-          />
+          >
+            <path d="M4 3.56L7.24 0.279999L7.72 0.76L4.2 4.24H3.76L0.24 0.76L0.72 0.279999L4 3.56Z" />
+          </svg>
           <span className="trace-history-row__header-content">
             <span className="trace-history-row__message">{message}</span>
           </span>
