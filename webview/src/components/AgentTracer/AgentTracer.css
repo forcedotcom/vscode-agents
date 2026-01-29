@@ -63,6 +63,7 @@ body.vscode-high-contrast .tracer-loading .loading-spinner {
 .trace-history-list {
   flex: 1;
   overflow-y: auto;
+  padding-bottom: 16px;
 }
 
 .trace-history-selector {

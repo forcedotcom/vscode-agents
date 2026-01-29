@@ -415,7 +415,18 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
         const existingPlanIds = new Set(prevHistory.map(e => e.planId));
 
         // Find new entries that don't exist in current history
-        const newEntries = rawEntries.filter(e => !existingPlanIds.has(e.planId));
+        let newEntries = rawEntries.filter(e => !existingPlanIds.has(e.planId));
+
+        // On initial load (no previous history), sort by timestamp to ensure chronological order
+        // Oldest first, newest last. Entries without timestamps go to the end.
+        if (prevHistory.length === 0 && newEntries.length > 1) {
+          newEntries = [...newEntries].sort((a, b) => {
+            if (!a.timestamp && !b.timestamp) return 0;
+            if (!a.timestamp) return 1;  // a goes after b (no timestamp = newest, goes to end)
+            if (!b.timestamp) return -1; // b goes after a
+            return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+          });
+        }
 
         // Update existing entries (in case trace data changed) and keep their order
         const updatedHistory = prevHistory.map(existing => {
