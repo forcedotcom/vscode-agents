@@ -2,15 +2,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
+import { getAllHistory, getHistoryDir } from '@salesforce/agents/lib/utils';
 import { SfProject } from '@salesforce/core';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentViewState } from './agentCombined/state';
 import { WebviewMessageSender, WebviewMessageHandlers } from './agentCombined/handlers';
 import { SessionManager } from './agentCombined/session';
-import { AgentInitializer } from './agentCombined/agent';
+import { AgentInitializer, getAgentStorageKey } from './agentCombined/agent';
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
-import { ConversationExporter } from './agentCombined/export';
 import { getAgentSource } from './agentCombined/agent';
 
 /**
@@ -28,7 +28,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   private readonly sessionManager: SessionManager;
   private readonly historyManager: HistoryManager;
   private readonly apexDebugManager: ApexDebugManager;
-  private readonly conversationExporter: ConversationExporter;
   private readonly agentInitializer: AgentInitializer;
   private messageHandlers?: WebviewMessageHandlers;
 
@@ -47,7 +46,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     this.agentInitializer = new AgentInitializer(this.state);
     this.historyManager = new HistoryManager(this.state, this.messageSender);
     this.apexDebugManager = new ApexDebugManager(this.messageSender);
-    this.conversationExporter = new ConversationExporter(this.state, context);
 
     // Initialize session manager (depends on other managers)
     this.sessionManager = new SessionManager(
@@ -92,7 +90,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       this.sessionManager,
       this.historyManager,
       this.apexDebugManager,
-      this.conversationExporter,
       this.channelService,
       this.context,
       webviewView
@@ -223,11 +220,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   /**
    * Starts a preview session for an agent
    */
-  public async startPreviewSession(
-    agentId: string,
-    agentSource: AgentSource,
-    isLiveMode?: boolean
-  ): Promise<void> {
+  public async startPreviewSession(agentId: string, agentSource: AgentSource, isLiveMode?: boolean): Promise<void> {
     if (!this.webviewView) {
       throw new Error('Webview is not ready. Please ensure the view is visible.');
     }
@@ -300,21 +293,102 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Requests conversation export
+   * Saves the current conversation session using the saved export directory.
+   * Prompts for folder selection only on first use.
    */
   public async exportConversation(): Promise<void> {
-    if (!this.webviewView) {
-      throw new Error('Agent view is not ready.');
+    await this.doExportConversation(false);
+  }
+
+  /**
+   * Saves the current conversation session, always prompting for a new location.
+   * Updates the saved export directory with the new selection.
+   */
+  public async exportConversationAs(): Promise<void> {
+    await this.doExportConversation(true);
+  }
+
+  /**
+   * Core export logic shared between Save and Save As
+   * @param forcePrompt - If true, always show folder picker (Save As behavior)
+   */
+  private async doExportConversation(forcePrompt: boolean): Promise<void> {
+    const agentId = this.state.currentAgentId;
+    const agentSource = this.state.currentAgentSource;
+
+    if (!agentId || !agentSource) {
+      vscode.window.showWarningMessage('No agent selected to save session.');
+      return;
     }
 
-    if (!this.state.currentAgentId) {
-      throw new Error('No agent selected to export.');
+    // Check for saved export directory (skip if forcePrompt is true)
+    let targetDirectory = forcePrompt ? undefined : this.state.getExportDirectory();
+
+    // If no saved directory or forcePrompt, prompt user to select one
+    if (!targetDirectory) {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      const savedDir = this.state.getExportDirectory();
+      const defaultUri = savedDir
+        ? vscode.Uri.file(savedDir)
+        : workspaceFolder
+          ? vscode.Uri.joinPath(workspaceFolder.uri, 'sessions')
+          : undefined;
+
+      const selectedFolder = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: 'Save Chat History',
+        title: 'Select folder to save chat history',
+        defaultUri
+      });
+
+      if (!selectedFolder || selectedFolder.length === 0) {
+        return; // User cancelled
+      }
+
+      targetDirectory = selectedFolder[0].fsPath;
+
+      // Save the selected directory for future exports
+      await this.state.setExportDirectory(targetDirectory);
     }
 
-    this.messageSender.sendRequestConversationExport(
-      this.state.currentAgentId,
-      this.state.currentAgentName ?? this.state.currentAgentId
-    );
+    try {
+      // If there's an active session, use the library's saveSession method
+      if (this.state.isSessionActive && this.state.agentInstance) {
+        await this.state.agentInstance.preview.saveSession(targetDirectory);
+        vscode.window.showInformationMessage(`Conversation session saved to ${targetDirectory}.`);
+        return;
+      }
+
+      // No active session - save from loaded history by copying the session directory
+      const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+
+      // Get history to find the session ID (getAllHistory finds the most recent session when sessionId is undefined)
+      const history = await getAllHistory(agentStorageKey, undefined);
+
+      if (!history.metadata?.sessionId) {
+        vscode.window.showWarningMessage('No conversation history found to save.');
+        return;
+      }
+
+      const sessionId = history.metadata.sessionId;
+
+      // Get the source directory path where the session is stored
+      const sourceDir = await getHistoryDir(agentStorageKey, sessionId);
+
+      // Create destination directory matching the library's format: {outputDir}/{agentId}/session_{sessionId}/
+      const destDir = path.join(targetDirectory, agentStorageKey, `session_${sessionId}`);
+      await fs.promises.mkdir(destDir, { recursive: true });
+
+      // Copy the entire session directory
+      await fs.promises.cp(sourceDir, destDir, { recursive: true });
+
+      vscode.window.showInformationMessage(`Conversation session saved to ${destDir}.`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to save conversation: ${errorMessage}`);
+    }
   }
 
   /**

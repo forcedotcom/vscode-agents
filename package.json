@@ -413,7 +413,11 @@
       },
       {
         "command": "sf.agent.combined.view.exportConversation",
-        "title": "Download Conversation",
+        "title": "Save"
+      },
+      {
+        "command": "sf.agent.combined.view.exportConversationAs",
+        "title": "Save Chat History",
         "icon": "$(arrow-circle-down)"
       },
       {

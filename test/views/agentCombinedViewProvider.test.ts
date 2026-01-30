@@ -15,6 +15,7 @@
  */
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { AgentCombinedViewProvider } from '../../src/views/agentCombinedViewProvider';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { AgentSource } from '@salesforce/agents';
@@ -24,6 +25,9 @@ jest.mock('vscode', () => ({
   window: {
     showInformationMessage: jest.fn(),
     showErrorMessage: jest.fn(),
+    showWarningMessage: jest.fn(),
+    showInputBox: jest.fn(),
+    showOpenDialog: jest.fn(),
     activeTextEditor: null
   },
   workspace: {
@@ -57,6 +61,21 @@ jest.mock('@salesforce/agents', () => ({
   Agent: {
     init: jest.fn(),
     listPreviewable: jest.fn()
+  }
+}));
+
+// Mock @salesforce/agents/lib/utils
+jest.mock('@salesforce/agents/lib/utils', () => ({
+  getAllHistory: jest.fn(),
+  getHistoryDir: jest.fn()
+}));
+
+// Mock fs.promises
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  promises: {
+    mkdir: jest.fn().mockResolvedValue(undefined),
+    cp: jest.fn().mockResolvedValue(undefined)
   }
 }));
 
