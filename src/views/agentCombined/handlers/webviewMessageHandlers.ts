@@ -37,10 +37,7 @@ export class WebviewMessageHandlers {
       return;
     }
 
-    const commandHandlers: Record<
-      string,
-      (message: AgentMessage) => Promise<void>
-    > = {
+    const commandHandlers: Record<string, (message: AgentMessage) => Promise<void>> = {
       startSession: async msg => await this.handleStartSession(msg),
       setApexDebugging: async msg => await this.handleSetApexDebugging(msg),
       sendChatMessage: async msg => await this.handleSendChatMessage(msg),
@@ -105,6 +102,8 @@ export class WebviewMessageHandlers {
       errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
     } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
       errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
+    } else if (errorMessage.includes('Invalid user ID') && errorMessage.includes('start session')) {
+      errorMessage = 'Unable to start session. Invalid user ID provided on session start.';
     }
 
     await this.messageSender.sendError(errorMessage);
@@ -128,12 +127,7 @@ export class WebviewMessageHandlers {
     this.state.currentAgentSource = agentSource;
 
     const isLiveMode = data?.isLiveMode ?? false;
-    await this.sessionManager.startSession(
-      agentId,
-      agentSource,
-      isLiveMode,
-      this.webviewView
-    );
+    await this.sessionManager.startSession(agentId, agentSource, isLiveMode, this.webviewView);
   }
 
   private async handleSetApexDebugging(message: AgentMessage): Promise<void> {
@@ -262,10 +256,7 @@ export class WebviewMessageHandlers {
   private async handleGetTraceData(): Promise<void> {
     try {
       if (this.state.currentAgentId && this.state.currentAgentSource) {
-        await this.historyManager.loadAndSendTraceHistory(
-          this.state.currentAgentId,
-          this.state.currentAgentSource
-        );
+        await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
         return;
       }
 
@@ -332,5 +323,4 @@ export class WebviewMessageHandlers {
   private async handleGetInitialLiveMode(): Promise<void> {
     this.messageSender.sendLiveMode(this.state.isLiveMode);
   }
-
 }
