@@ -86,9 +86,9 @@ export class WebviewMessageHandlers {
 
     if (this.state.agentInstance || this.state.isSessionActive) {
       this.state.clearSessionState();
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(false);
     }
+    await this.state.setSessionActive(false);
+    await this.state.setSessionStarting(false);
 
     // Check for specific agent deactivation error
     if (
