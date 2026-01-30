@@ -403,6 +403,17 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.exportConversationAs', async () => {
+      try {
+        await provider.exportConversationAs();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Unable to export conversation: ${errorMessage}`);
+      }
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.restart', async () => {
       // Lightweight restart - restart session without recompiling
       const currentAgentId = provider.getCurrentAgentId();

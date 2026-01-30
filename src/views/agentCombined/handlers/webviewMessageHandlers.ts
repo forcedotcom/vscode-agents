@@ -9,7 +9,6 @@ import type { WebviewMessageSender } from './webviewMessageSender';
 import type { SessionManager } from '../session/sessionManager';
 import type { HistoryManager } from '../history/historyManager';
 import type { ApexDebugManager } from '../debugging/apexDebugManager';
-import type { ConversationExporter } from '../export/conversationExporter';
 import type { ChannelService } from '../../../types/ChannelService';
 import { getAgentSource } from '../agent/agentUtils';
 
@@ -23,7 +22,6 @@ export class WebviewMessageHandlers {
     private readonly sessionManager: SessionManager,
     private readonly historyManager: HistoryManager,
     private readonly apexDebugManager: ApexDebugManager,
-    private readonly conversationExporter: ConversationExporter,
     private readonly channelService: ChannelService,
     private readonly context: vscode.ExtensionContext,
     private readonly webviewView: vscode.WebviewView
@@ -56,7 +54,6 @@ export class WebviewMessageHandlers {
       setSelectedAgentId: async msg => await this.handleSetSelectedAgentId(msg),
       setLiveMode: async msg => await this.handleSetLiveMode(msg),
       getInitialLiveMode: async () => await this.handleGetInitialLiveMode(),
-      conversationExportReady: async msg => await this.handleConversationExportReady(msg),
       // Test-specific commands for integration tests
       clearMessages: async () => {
         // Clear messages in the webview - no-op on extension side
@@ -336,14 +333,4 @@ export class WebviewMessageHandlers {
     this.messageSender.sendLiveMode(this.state.isLiveMode);
   }
 
-  private async handleConversationExportReady(message: AgentMessage): Promise<void> {
-    const data = message.data as { content?: string; fileName?: string } | undefined;
-    const markdown = data?.content;
-    const fileName = data?.fileName;
-    if (typeof markdown === 'string' && markdown.trim() !== '') {
-      await this.conversationExporter.saveConversationExport(markdown, fileName);
-    } else {
-      vscode.window.showWarningMessage("Conversation couldn't be exported.");
-    }
-  }
 }
