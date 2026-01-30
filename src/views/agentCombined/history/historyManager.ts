@@ -17,32 +17,13 @@ export class HistoryManager {
 
   /**
    * Load conversation history for an agent and send it to the webview
-   * Uses agent instance if available, otherwise uses getAllHistory from library
    */
   async loadAndSendConversationHistory(agentId: string, agentSource: AgentSource): Promise<boolean> {
     try {
-      let transcriptEntries;
+      const transcriptEntries = await this.loadConversationHistoryData(agentId, agentSource);
 
-      // Try to use agent instance if available
-      if (this.state.agentInstance && this.state.sessionId) {
-        const history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
-        transcriptEntries = history.transcript || [];
-      } else {
-        // Use getAllHistory from library when no active session
-        const agentStorageKey = getAgentStorageKey(agentId, agentSource);
-        const history = await getAllHistory(agentStorageKey, undefined);
-        transcriptEntries = history.transcript || [];
-      }
-
-      if (transcriptEntries && transcriptEntries.length > 0) {
-        const historyMessages = transcriptEntries
-          .filter(entry => entry.text)
-          .map(entry => ({
-            id: `${entry.timestamp}-${entry.sessionId}`,
-            type: entry.role === 'user' ? 'user' : 'agent',
-            content: entry.text || '',
-            timestamp: new Date(entry.timestamp).getTime()
-          }));
+      if (transcriptEntries.length > 0) {
+        const historyMessages = this.convertTranscriptToMessages(transcriptEntries);
 
         if (historyMessages.length > 0) {
           this.messageSender.sendConversationHistory(historyMessages);
@@ -52,13 +33,45 @@ export class HistoryManager {
       }
     } catch (err) {
       console.error('Could not load conversation history:', err);
-      if (err instanceof Error) {
-        console.error('Error stack:', err.stack);
-      }
     }
 
     await this.state.setConversationDataAvailable(false);
     return false;
+  }
+
+  /**
+   * Converts transcript entries to message format, sorted chronologically
+   */
+  private convertTranscriptToMessages(
+    transcriptEntries: Array<{ text?: string; timestamp: string; sessionId: string; role: string }>
+  ): Array<{ id: string; type: string; content: string; timestamp: number }> {
+    return transcriptEntries
+      .filter(entry => entry.text)
+      .map(entry => ({
+        id: `${entry.timestamp}-${entry.sessionId}`,
+        type: entry.role === 'user' ? 'user' : 'agent',
+        content: entry.text || '',
+        timestamp: new Date(entry.timestamp).getTime()
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+  }
+
+  /**
+   * Extracts the start time from a trace's UserInputStep for sorting
+   */
+  private getTraceStartTime(trace: unknown): number {
+    try {
+      const traceObj = trace as { plan?: Array<{ type?: string; startExecutionTime?: number }> };
+      if (traceObj?.plan && Array.isArray(traceObj.plan)) {
+        const userInputStep = traceObj.plan.find(step => step.type === 'UserInputStep');
+        if (userInputStep?.startExecutionTime) {
+          return userInputStep.startExecutionTime;
+        }
+      }
+    } catch (error) {
+      // Fall through to default
+    }
+    return Number.MAX_SAFE_INTEGER; // Put traces without timestamps at the end
   }
 
   /**
@@ -85,66 +98,21 @@ export class HistoryManager {
 
   /**
    * Load trace history for an agent and send it to the webview
-   * Uses agent instance getHistoryFromDisc if available, otherwise uses getAllHistory from library
    */
   async loadAndSendTraceHistory(agentId: string, agentSource: AgentSource): Promise<void> {
     try {
-      let history;
-      let sessionId: string | undefined;
-
-      // Use agent instance if available
-      if (this.state.agentInstance && this.state.sessionId) {
-        history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
-        sessionId = this.state.sessionId;
-      } else {
-        // Use getAllHistory from library when no active session
-        const agentStorageKey = getAgentStorageKey(agentId, agentSource);
-        history = await getAllHistory(agentStorageKey, undefined);
-        // When using getAllHistory with undefined sessionId, we get all sessions
-        // Extract sessionId from the most recent trace if available
-        if (history.traces && history.traces.length > 0) {
-          const mostRecentTrace = history.traces[history.traces.length - 1];
-          sessionId = (mostRecentTrace as any).sessionId;
-        }
-      }
-
-      const traces = history.traces || [];
-
-      // Convert traces to TraceHistoryEntry format
-      const agentStorageKey = getAgentStorageKey(agentId, agentSource);
-      const entries: TraceHistoryEntry[] = traces.map((trace, index) => {
-        const planId = (trace as any).planId || `plan-${index}`;
-        const traceSessionId = (trace as any).sessionId || sessionId || 'unknown';
-        const userMessage = this.extractUserMessageFromTrace(trace);
-        
-        return {
-          storageKey: agentStorageKey,
-          agentId: agentId,
-          sessionId: traceSessionId,
-          planId: planId,
-          userMessage: userMessage,
-          timestamp: history.metadata?.startTime || new Date().toISOString(),
-          trace: trace
-        };
-      });
+      const entries = await this.loadTraceHistoryData(agentId, agentSource);
 
       // Send trace history to populate the history list
       this.messageSender.sendTraceHistory(agentId, entries);
 
-      // If we have entries and a current planId, also send the current trace data
-      if (entries.length > 0 && this.state.currentPlanId) {
-        const currentEntry = entries.find(entry => entry.planId === this.state.currentPlanId);
-        if (currentEntry) {
-          this.messageSender.sendTraceData(currentEntry.trace);
-        } else {
-          // If no exact match, send the latest entry
-          const latestEntry = entries[entries.length - 1];
-          this.messageSender.sendTraceData(latestEntry.trace);
-        }
-      } else if (entries.length > 0) {
-        // If no current planId but we have entries, send the latest
-        const latestEntry = entries[entries.length - 1];
-        this.messageSender.sendTraceData(latestEntry.trace);
+      // Send current or latest trace data
+      if (entries.length > 0) {
+        const currentEntry = this.state.currentPlanId
+          ? entries.find(entry => entry.planId === this.state.currentPlanId)
+          : undefined;
+        const entryToSend = currentEntry || entries[entries.length - 1];
+        this.messageSender.sendTraceData(entryToSend.trace);
       }
     } catch (error) {
       console.error('Could not load trace history:', error);
@@ -184,58 +152,32 @@ export class HistoryManager {
    */
   async showHistoryOrPlaceholder(agentId: string, agentSource: AgentSource): Promise<void> {
     try {
-      // Load history data first
-      const traceHistoryPromise = this.loadTraceHistoryData(agentId, agentSource);
-      const conversationHistoryPromise = this.loadConversationHistoryData(agentId, agentSource);
-
-      // Wait for both to complete
+      // Load both histories in parallel
       const [traceEntries, transcriptEntries] = await Promise.all([
-        traceHistoryPromise,
-        conversationHistoryPromise
+        this.loadTraceHistoryData(agentId, agentSource),
+        this.loadConversationHistoryData(agentId, agentSource)
       ]);
 
       // Send trace history
       this.messageSender.sendTraceHistory(agentId, traceEntries);
 
-      // Build history messages if available
-      let historyMessages: Array<{ id: string; type: string; content: string; timestamp: number }> = [];
-      if (transcriptEntries && transcriptEntries.length > 0) {
-        historyMessages = transcriptEntries
-          .filter(entry => entry.text)
-          .map(entry => ({
-            id: `${entry.timestamp}-${entry.sessionId}`,
-            type: entry.role === 'user' ? 'user' : 'agent',
-            content: entry.text || '',
-            timestamp: new Date(entry.timestamp).getTime()
-          }));
-      }
-
+      // Convert and send conversation history
+      const historyMessages = this.convertTranscriptToMessages(transcriptEntries);
       const hasHistory = historyMessages.length > 0;
       await this.state.setConversationDataAvailable(hasHistory);
-
-      // Send atomic setConversation message - this replaces clearMessages + conversationHistory
-      // showPlaceholder is true when there's no history to display
       this.messageSender.sendSetConversation(historyMessages, !hasHistory);
 
-      // Send trace data if we have entries
+      // Send current or latest trace data
       if (traceEntries.length > 0) {
-        if (this.state.currentPlanId) {
-          const currentEntry = traceEntries.find(entry => entry.planId === this.state.currentPlanId);
-          if (currentEntry) {
-            this.messageSender.sendTraceData(currentEntry.trace);
-          } else {
-            const latestEntry = traceEntries[traceEntries.length - 1];
-            this.messageSender.sendTraceData(latestEntry.trace);
-          }
-        } else {
-          const latestEntry = traceEntries[traceEntries.length - 1];
-          this.messageSender.sendTraceData(latestEntry.trace);
-        }
+        const currentEntry = this.state.currentPlanId
+          ? traceEntries.find(entry => entry.planId === this.state.currentPlanId)
+          : undefined;
+        const entryToSend = currentEntry || traceEntries[traceEntries.length - 1];
+        this.messageSender.sendTraceData(entryToSend.trace);
       }
     } catch (err) {
       console.error('Error loading history:', err);
       await this.state.setConversationDataAvailable(false);
-      // Send atomic message with empty history and show placeholder
       this.messageSender.sendSetConversation([], true);
     }
   }
@@ -248,12 +190,13 @@ export class HistoryManager {
       let history;
       let sessionId: string | undefined;
 
-      // Use agent instance if available
-      if (this.state.agentInstance && this.state.sessionId) {
+      // Use agent instance if available AND the session belongs to the requested agent
+      // This prevents loading wrong history when switching agents while a session is active
+      if (this.state.agentInstance && this.state.sessionId && this.state.sessionAgentId === agentId) {
         history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
         sessionId = this.state.sessionId;
       } else {
-        // Use getAllHistory from library when no active session
+        // Use getAllHistory from library when no active session or session belongs to different agent
         const agentStorageKey = getAgentStorageKey(agentId, agentSource);
         history = await getAllHistory(agentStorageKey, undefined);
         // When using getAllHistory with undefined sessionId, we get all sessions
@@ -264,24 +207,31 @@ export class HistoryManager {
         }
       }
 
-      const traces = history.traces || [];
+      // Sort traces by startExecutionTime from UserInputStep (oldest first)
+      const sortedTraces = [...(history.traces || [])].sort((a, b) => {
+        const timeA = this.getTraceStartTime(a);
+        const timeB = this.getTraceStartTime(b);
+        return timeA - timeB;
+      });
+
       const agentStorageKey = getAgentStorageKey(agentId, agentSource);
-      
-      return traces.map((trace, index) => {
+      const entries = sortedTraces.map((trace, index) => {
         const planId = (trace as any).planId || `plan-${index}`;
         const traceSessionId = (trace as any).sessionId || sessionId || 'unknown';
         const userMessage = this.extractUserMessageFromTrace(trace);
-        
+
         return {
           storageKey: agentStorageKey,
           agentId: agentId,
           sessionId: traceSessionId,
           planId: planId,
           userMessage: userMessage,
-          timestamp: history.metadata?.startTime || new Date().toISOString(),
+          timestamp: new Date().toISOString(),
           trace: trace
         };
       });
+
+      return entries;
     } catch (error) {
       console.error('Could not load trace history:', error);
       return [];
@@ -295,12 +245,13 @@ export class HistoryManager {
     try {
       let transcriptEntries;
 
-      // Try to use agent instance if available
-      if (this.state.agentInstance && this.state.sessionId) {
+      // Try to use agent instance if available AND the session belongs to the requested agent
+      // This prevents loading wrong history when switching agents while a session is active
+      if (this.state.agentInstance && this.state.sessionId && this.state.sessionAgentId === agentId) {
         const history = await this.state.agentInstance.getHistoryFromDisc(this.state.sessionId);
         transcriptEntries = history.transcript || [];
       } else {
-        // Use getAllHistory from library when no active session
+        // Use getAllHistory from library when no active session or session belongs to different agent
         const agentStorageKey = getAgentStorageKey(agentId, agentSource);
         const history = await getAllHistory(agentStorageKey, undefined);
         transcriptEntries = history.transcript || [];

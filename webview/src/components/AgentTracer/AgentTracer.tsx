@@ -408,58 +408,32 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
     requestTraceData();
 
     const disposeTraceHistory = vscodeApi.onMessage('traceHistory', data => {
-      const rawEntries: TraceHistoryEntry[] = Array.isArray(data?.entries) ? data.entries : [];
+      const entries: TraceHistoryEntry[] = Array.isArray(data?.entries) ? data.entries : [];
 
-      setTraceHistory(prevHistory => {
-        // Build a set of existing planIds for quick lookup
-        const existingPlanIds = new Set(prevHistory.map(e => e.planId));
-
-        // Find new entries that don't exist in current history
-        let newEntries = rawEntries.filter(e => !existingPlanIds.has(e.planId));
-
-        // On initial load (no previous history), sort by timestamp to ensure chronological order
-        // Oldest first, newest last. Entries without timestamps go to the end.
-        if (prevHistory.length === 0 && newEntries.length > 1) {
-          newEntries = [...newEntries].sort((a, b) => {
-            if (!a.timestamp && !b.timestamp) return 0;
-            if (!a.timestamp) return 1;  // a goes after b (no timestamp = newest, goes to end)
-            if (!b.timestamp) return -1; // b goes after a
-            return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-          });
-        }
-
-        // Update existing entries (in case trace data changed) and keep their order
-        const updatedHistory = prevHistory.map(existing => {
-          const updated = rawEntries.find(e => e.planId === existing.planId);
-          return updated || existing;
-        });
-
-        // Append new entries at the end
-        const entries = [...updatedHistory, ...newEntries];
-
-        // Handle empty state
-        if (entries.length === 0) {
-          setTraceData(null);
-          setSelectedStepIndex(null);
-          setExpandedPlanIds(new Set());
-          setLoading(false);
-          vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: 0, entries: [] });
-          return [];
-        }
-
-        // Set trace data to the latest entry for the step panel
-        const latestEntry = entries[entries.length - 1];
-        setTraceData(latestEntry.trace);
+      // Handle empty state
+      if (entries.length === 0) {
+        setTraceHistory([]);
+        setTraceData(null);
         setSelectedStepIndex(null);
-
-        // Expand only the latest entry (collapse others)
-        setExpandedPlanIds(new Set([latestEntry.planId]));
-
+        setExpandedPlanIds(new Set());
         setLoading(false);
-        vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: entries.length, entries });
+        vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: 0, entries: [] });
+        return;
+      }
 
-        return entries;
-      });
+      // Use entries directly from backend - trust backend order
+      setTraceHistory(entries);
+
+      // Set trace data to the latest entry for the step panel
+      const latestEntry = entries[entries.length - 1];
+      setTraceData(latestEntry.trace);
+      setSelectedStepIndex(null);
+
+      // Expand only the latest entry (collapse others)
+      setExpandedPlanIds(new Set([latestEntry.planId]));
+
+      setLoading(false);
+      vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: entries.length, entries });
     });
 
     return () => {

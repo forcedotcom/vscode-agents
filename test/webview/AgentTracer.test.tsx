@@ -528,7 +528,7 @@ describe('AgentTracer', () => {
     expect(screen.getByText(/Agent Tracer displays/i)).toBeInTheDocument();
   });
 
-  it('appends new entries at the end regardless of backend order', () => {
+  it('displays entries in backend order (backend sorts by startExecutionTime)', () => {
     render(<AgentTracer isVisible />);
 
     const trace1 = {
@@ -545,20 +545,6 @@ describe('AgentTracer', () => {
       plan: [{ type: 'UserInputStep', data: { content: 'second' } }]
     };
 
-    // Initial entries
-    dispatchMessage('traceHistory', {
-      entries: [
-        { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'First', trace: trace1 },
-        { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 }
-      ]
-    });
-
-    // Verify order: First at top, Second at bottom (latest expanded)
-    const buttons = screen.getAllByRole('button', { name: /first|second/i });
-    expect(buttons[0]).toHaveTextContent('First');
-    expect(buttons[1]).toHaveTextContent('Second');
-
-    // Add a third entry - backend sends it in any order (here: middle)
     const trace3 = {
       type: 'PlanSuccessResponse',
       planId: 'plan-3',
@@ -566,22 +552,23 @@ describe('AgentTracer', () => {
       plan: [{ type: 'UserInputStep', data: { content: 'third' } }]
     };
 
+    // Backend sends entries sorted by startExecutionTime (oldest first)
     dispatchMessage('traceHistory', {
       entries: [
         { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'First', trace: trace1 },
-        { storageKey: 'agent', agentId: 'agent', planId: 'plan-3', sessionId: 'session-3', userMessage: 'Third', trace: trace3 },
-        { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 }
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'Second', trace: trace2 },
+        { storageKey: 'agent', agentId: 'agent', planId: 'plan-3', sessionId: 'session-3', userMessage: 'Third', trace: trace3 }
       ]
     });
 
-    // New entry should be appended at the end, not inserted in middle
-    const updatedButtons = screen.getAllByRole('button', { name: /first|second|third/i });
-    expect(updatedButtons[0]).toHaveTextContent('First');
-    expect(updatedButtons[1]).toHaveTextContent('Second');
-    expect(updatedButtons[2]).toHaveTextContent('Third');
+    // Frontend displays entries in the exact order received from backend
+    const buttons = screen.getAllByRole('button', { name: /first|second|third/i });
+    expect(buttons[0]).toHaveTextContent('First');
+    expect(buttons[1]).toHaveTextContent('Second');
+    expect(buttons[2]).toHaveTextContent('Third');
 
-    // Third (newest) should be expanded
-    expect(updatedButtons[2]).toHaveAttribute('aria-expanded', 'true');
+    // Latest entry (last in list) should be expanded
+    expect(buttons[2]).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('preserves expanded state by planId when new entries arrive', () => {
