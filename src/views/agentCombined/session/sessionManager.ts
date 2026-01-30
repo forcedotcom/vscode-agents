@@ -107,6 +107,9 @@ export class SessionManager {
         const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
         this.channelService.appendLine(detailedError);
         this.messageSender.sendCompilationError(detailedError);
+        await this.state.setSessionStarting(false);
+        await this.state.setResetAgentViewAvailable(true);
+        await this.state.setSessionErrorState(true);
         return;
       }
 

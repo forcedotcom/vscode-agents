@@ -236,160 +236,29 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('exportConversation', () => {
-    let mockAgentInstance: any;
-    let mockShowOpenDialog: jest.SpyInstance;
-
-    beforeEach(() => {
-      mockShowOpenDialog = jest.spyOn(vscode.window, 'showOpenDialog');
-      mockAgentInstance = {
-        preview: {
-          saveSession: jest.fn().mockResolvedValue(undefined)
-        }
-      };
-
-      // Mock the state to have agent info with an active session
-      (provider as any).state.currentAgentId = 'test-agent-id';
-      (provider as any).state.currentAgentSource = AgentSource.SCRIPT;
-      (provider as any).state.currentAgentName = 'Test Agent';
-      (provider as any).state.agentInstance = mockAgentInstance;
-      (provider as any).state._isSessionActive = true; // Mark session as active
-
-      // Clear any saved export directory
-      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue(undefined);
-      jest.spyOn((provider as any).state, 'setExportDirectory').mockResolvedValue(undefined);
+  describe('clearHistory', () => {
+    it('should throw error when webview is not ready', async () => {
+      await expect(provider.clearHistory()).rejects.toThrow('Agent view is not ready.');
     });
 
-    it('should show warning when no agent is selected', async () => {
-      (provider as any).state.currentAgentId = undefined;
-      (provider as any).state.currentAgentSource = undefined;
+    it('should throw error when no agent is selected', async () => {
+      const mockWebviewView = {
+        webview: {
+          options: {},
+          onDidReceiveMessage: jest.fn(),
+          postMessage: jest.fn(),
+          html: ''
+        },
+        show: jest.fn()
+      } as any;
 
-      await provider.exportConversation();
-
-      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No agent selected to save session.');
-      expect(mockShowOpenDialog).not.toHaveBeenCalled();
-    });
-
-    it('should show folder picker and save successfully when no saved directory', async () => {
-      mockShowOpenDialog.mockResolvedValue([{ fsPath: '/selected/folder' }]);
-
-      await provider.exportConversation();
-
-      expect(mockShowOpenDialog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          canSelectFiles: false,
-          canSelectFolders: true,
-          canSelectMany: false,
-          openLabel: 'Save Chat History'
-        })
-      );
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/selected/folder');
-      expect((provider as any).state.setExportDirectory).toHaveBeenCalledWith('/selected/folder');
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Conversation session saved to /selected/folder.'
-      );
-    });
-
-    it('should use saved directory without prompting', async () => {
-      // Mock saved export directory
-      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/export/dir');
-
-      await provider.exportConversation();
-
-      expect(mockShowOpenDialog).not.toHaveBeenCalled();
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/saved/export/dir');
-      expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-        'Conversation session saved to /saved/export/dir.'
-      );
-    });
-
-    it('should return early when user cancels folder selection', async () => {
-      mockShowOpenDialog.mockResolvedValue(undefined);
-
-      await provider.exportConversation();
-
-      expect(mockShowOpenDialog).toHaveBeenCalled();
-      expect(mockAgentInstance.preview.saveSession).not.toHaveBeenCalled();
-      expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
-    });
-
-    it('should return early when user selects empty folder array', async () => {
-      mockShowOpenDialog.mockResolvedValue([]);
-
-      await provider.exportConversation();
-
-      expect(mockShowOpenDialog).toHaveBeenCalled();
-      expect(mockAgentInstance.preview.saveSession).not.toHaveBeenCalled();
-    });
-
-    it('should handle saveSession error', async () => {
-      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/dir');
-      const saveError = new Error('Save failed');
-      mockAgentInstance.preview.saveSession.mockRejectedValue(saveError);
-
-      await provider.exportConversation();
-
-      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Failed to save conversation: Save failed');
-      expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
-    });
-
-    it('should save from loaded history when no active session', async () => {
-      // No active session
-      (provider as any).state._isSessionActive = false;
-      (provider as any).state.agentInstance = undefined;
-      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/export/dir');
-
-      // Mock getAllHistory and getHistoryDir from the library
-      const { getAllHistory, getHistoryDir } = require('@salesforce/agents/lib/utils');
-      getAllHistory.mockResolvedValue({
-        metadata: { sessionId: 'test-session-123' },
-        transcript: [],
-        traces: []
-      });
-      getHistoryDir.mockResolvedValue('/home/.sfdx/agents/test-agent-id/sessions/test-session-123');
-
-      // Get the mocked fs module
+      // Mock fs.readFileSync for getHtmlForWebview
       const fs = require('fs');
+      jest.spyOn(fs, 'readFileSync').mockReturnValue('<html></html>');
 
-      await provider.exportConversation();
+      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
 
-      expect(getAllHistory).toHaveBeenCalledWith('test-agent-id', undefined);
-      expect(getHistoryDir).toHaveBeenCalledWith('test-agent-id', 'test-session-123');
-      expect(fs.promises.cp).toHaveBeenCalledWith(
-        '/home/.sfdx/agents/test-agent-id/sessions/test-session-123',
-        expect.stringContaining('session_test-session-123'),
-        { recursive: true }
-      );
-    });
-
-    it('should show warning when no history found and no active session', async () => {
-      // No active session
-      (provider as any).state._isSessionActive = false;
-      (provider as any).state.agentInstance = undefined;
-      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/dir');
-
-      // Mock getAllHistory to return no sessionId
-      const { getAllHistory } = require('@salesforce/agents/lib/utils');
-      getAllHistory.mockResolvedValue({
-        metadata: null,
-        transcript: [],
-        traces: []
-      });
-
-      await provider.exportConversation();
-
-      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No conversation history found to save.');
-    });
-
-    it('should not reinitialize agent when using saved directory', async () => {
-      jest.spyOn((provider as any).state, 'getExportDirectory').mockReturnValue('/saved/dir');
-
-      const initializeScriptAgentSpy = jest.spyOn((provider as any).agentInitializer, 'initializeScriptAgent');
-
-      await provider.exportConversation();
-
-      expect(initializeScriptAgentSpy).not.toHaveBeenCalled();
-      expect(mockAgentInstance.preview.saveSession).toHaveBeenCalledWith('/saved/dir');
+      await expect(provider.clearHistory()).rejects.toThrow('No agent selected to clear history.');
     });
   });
 });

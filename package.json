@@ -159,7 +159,12 @@
       ],
       "view/title": [
         {
-          "command": "sf.agent.combined.view.exportConversationAs",
+          "command": "sf.agent.combined.view.clearHistory",
+          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
+          "group": "navigation@-2"
+        },
+        {
+          "command": "sf.agent.combined.view.exportConversation",
           "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
           "group": "navigation@-1"
         },
@@ -408,12 +413,13 @@
       },
       {
         "command": "sf.agent.combined.view.exportConversation",
-        "title": "Save"
-      },
-      {
-        "command": "sf.agent.combined.view.exportConversationAs",
         "title": "Save Chat History",
         "icon": "$(arrow-circle-down)"
+      },
+      {
+        "command": "sf.agent.combined.view.clearHistory",
+        "title": "Clear Chat History",
+        "icon": "$(trash)"
       },
       {
         "command": "sf.agent.combined.view.refreshAgents",

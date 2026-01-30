@@ -390,4 +390,20 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       vscode.window.showErrorMessage(`Failed to save conversation: ${errorMessage}`);
     }
   }
+
+  /**
+   * Clears conversation history for the current agent
+   */
+  public async clearHistory(): Promise<void> {
+    if (!this.webviewView) {
+      throw new Error('Agent view is not ready.');
+    }
+
+    if (!this.state.currentAgentId) {
+      throw new Error('No agent selected to clear history.');
+    }
+
+    const agentSource = this.state.currentAgentSource ?? (await getAgentSource(this.state.currentAgentId));
+    await this.historyManager.clearHistory(this.state.currentAgentId, agentSource);
+  }
 }
