@@ -145,7 +145,7 @@ describe('HistoryManager', () => {
     });
 
     it('should handle script agent paths with path separators', async () => {
-      const agentId = '/path/to/MyAgent';
+      const agentId = ['path', 'to', 'MyAgent'].join(path.sep);
       const agentSource = AgentSource.SCRIPT;
 
       await historyManager.clearHistory(agentId, agentSource);
