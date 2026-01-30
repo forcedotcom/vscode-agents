@@ -148,17 +148,17 @@ describe('TraceHistoryRow', () => {
     expect(screen.getByText('User Input')).toBeInTheDocument();
   });
 
-  it('renders View raw JSON icon button in header', () => {
+  it('renders Open JSON icon button in header', () => {
     render(<TraceHistoryRow {...defaultProps} isExpanded={false} />);
 
-    expect(screen.getByRole('button', { name: /view raw json/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open json/i })).toBeInTheDocument();
   });
 
-  it('calls onOpenJson when View raw JSON icon is clicked', () => {
+  it('calls onOpenJson when Open JSON icon is clicked', () => {
     const onOpenJson = jest.fn();
     render(<TraceHistoryRow {...defaultProps} isExpanded={false} onOpenJson={onOpenJson} />);
 
-    const jsonButton = screen.getByRole('button', { name: /view raw json/i });
+    const jsonButton = screen.getByRole('button', { name: /open json/i });
     fireEvent.click(jsonButton);
 
     expect(onOpenJson).toHaveBeenCalled();
