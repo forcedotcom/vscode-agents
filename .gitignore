@@ -1,24 +1,28 @@
-.beads
-.claude
-.cursor
+# Editor config
+.claude/
+.cursor/
 .idea/
 .sfdx/
-.gitattributes
-*.vsix
-**/node_modules/
-/coverage
-/extension
-/junit-custom-unitTests.xml
-CLAUDE.md
-ctx/
-dist/
-lib/
-node_modules
-out/
-
-# VS Code test artifacts (downloaded VS Code, extensions, user data)
 .vscode-test/
 
-# Test result files
+# Build and output
+**/node_modules/
+coverage/
+dist/
+extension/
+lib/
+node_modules/
+out/
+
+# Artifacts
+*.vsix
+
+# Test files
 junit-*.xml
 *-tests.xml
+junit-custom-unitTests.xml
+
+# Documentation
+CLAUDE.md
+.gitattributes
+vscode-webview-*.md

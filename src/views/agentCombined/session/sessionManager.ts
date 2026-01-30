@@ -77,6 +77,7 @@ export class SessionManager {
       const session = await this.state.agentInstance.preview.start();
       ensureActive();
       this.state.sessionId = session.sessionId;
+      this.state.sessionAgentId = agentId;
 
       // Load history
       await this.historyManager.loadAndSendTraceHistory(agentId, agentSource);
@@ -237,6 +238,7 @@ export class SessionManager {
       const session = await this.state.agentInstance.preview.start();
       ensureActive();
       this.state.sessionId = session.sessionId;
+      this.state.sessionAgentId = agentId;
 
       await this.completeRestart(session, 'Agent session recompiled and restarted.', ensureActive);
       this.state.pendingStartAgentId = undefined;

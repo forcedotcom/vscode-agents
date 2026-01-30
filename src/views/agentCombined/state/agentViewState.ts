@@ -9,6 +9,7 @@ export class AgentViewState {
   // Agent instance state
   private _agentInstance?: AgentInstance;
   private _sessionId: string = '';
+  private _sessionAgentId?: string; // Tracks which agent the current session belongs to
   private _currentAgentName?: string;
   private _currentAgentId?: string;
   private _currentAgentSource?: AgentSource;
@@ -51,6 +52,10 @@ export class AgentViewState {
 
   get sessionId(): string {
     return this._sessionId;
+  }
+
+  get sessionAgentId(): string | undefined {
+    return this._sessionAgentId;
   }
 
   get currentAgentName(): string | undefined {
@@ -108,6 +113,10 @@ export class AgentViewState {
 
   set sessionId(value: string) {
     this._sessionId = value;
+  }
+
+  set sessionAgentId(value: string | undefined) {
+    this._sessionAgentId = value;
   }
 
   set currentAgentName(value: string | undefined) {
@@ -214,6 +223,7 @@ export class AgentViewState {
   clearSessionState(): void {
     this._agentInstance = undefined;
     this._sessionId = Date.now().toString();
+    this._sessionAgentId = undefined;
     this._currentAgentName = undefined;
     this._currentPlanId = undefined;
     this._currentUserMessage = undefined;

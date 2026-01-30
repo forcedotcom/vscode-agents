@@ -165,11 +165,14 @@ const App: React.FC = () => {
   }, []);
 
   // Switch to preview tab when a published agent is selected (tracer not supported)
+  // or when no agent is selected
   useEffect(() => {
-    if (selectedAgentInfo?.type === AgentSource.PUBLISHED && activeTab === 'tracer') {
-      setActiveTab('preview');
+    if (activeTab === 'tracer') {
+      if (selectedAgentInfo?.type === AgentSource.PUBLISHED || !desiredAgentId) {
+        setActiveTab('preview');
+      }
     }
-  }, [selectedAgentInfo, activeTab]);
+  }, [selectedAgentInfo, activeTab, desiredAgentId]);
 
   const handleGoToPreview = useCallback(() => {
     // If session is not active and we have a desired agent, start the session
