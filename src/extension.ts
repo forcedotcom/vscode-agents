@@ -403,12 +403,27 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.exportConversationAs', async () => {
-      try {
-        await provider.exportConversationAs();
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        vscode.window.showErrorMessage(`Unable to export conversation: ${errorMessage}`);
+    vscode.commands.registerCommand('sf.agent.combined.view.clearHistory', async () => {
+      const currentAgentId = provider.getCurrentAgentId();
+
+      if (!currentAgentId) {
+        vscode.window.showErrorMessage('Agentforce DX: Select an agent to clear history.');
+        return;
+      }
+
+      const confirmation = await vscode.window.showWarningMessage(
+        'Are you sure you want to clear the chat history for this agent? This action cannot be undone.',
+        { modal: true },
+        'Clear History'
+      );
+
+      if (confirmation === 'Clear History') {
+        try {
+          await provider.clearHistory();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          vscode.window.showErrorMessage(`Unable to clear history: ${errorMessage}`);
+        }
       }
     })
   );
@@ -446,7 +461,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async () => {
       await provider.refreshAvailableAgents();
-      vscode.window.showInformationMessage('Agent list refreshed.');
     })
   );
 
