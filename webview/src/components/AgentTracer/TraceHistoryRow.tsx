@@ -33,8 +33,6 @@ export interface TraceHistoryRowProps {
   onOpenJson: () => void;
   /** Timeline items for this entry */
   timelineItems: TimelineItemProps[];
-  /** Time string for header display */
-  time: string | null;
   /** Message string for header display */
   message: string;
 }
@@ -46,7 +44,6 @@ export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
   onExpandedChange,
   onOpenJson,
   timelineItems,
-  time: _time,
   message
 }) => {
   const contentId = `trace-history-content-${index}`;

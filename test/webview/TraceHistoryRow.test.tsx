@@ -36,7 +36,6 @@ describe('TraceHistoryRow', () => {
     onExpandedChange: jest.fn(),
     onOpenJson: jest.fn(),
     timelineItems: createMockTimelineItems(),
-    time: '12:00:00 PM',
     message: 'Test message'
   };
 

@@ -532,7 +532,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-simple">
             <div className="trace-history-list" role="list" aria-label="Trace history">
               {traceHistory.map((entry, index) => {
-                const { time, message } = formatHistoryParts(entry, index);
+                const { message } = formatHistoryParts(entry, index);
                 const timelineItems = buildTimelineItems(entry.trace, stepIndex =>
                   handleRowStepSelect(index, stepIndex)
                 );
@@ -546,7 +546,6 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     onExpandedChange={expanded => handleRowExpandedChange(entry.planId, expanded)}
                     onOpenJson={() => handleRowOpenJson(entry)}
                     timelineItems={timelineItems}
-                    time={time}
                     message={message}
                   />
                 );
