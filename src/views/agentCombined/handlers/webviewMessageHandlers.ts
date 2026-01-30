@@ -76,39 +76,58 @@ export class WebviewMessageHandlers {
    * Handles errors from webview message processing
    */
   async handleError(err: unknown): Promise<void> {
-    console.error('AgentCombinedViewProvider Error:', err);
-    let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-    this.channelService.appendLine(`Error: ${errorMessage}`);
-    this.channelService.appendLine('---------------------');
+    try {
+      console.error('AgentCombinedViewProvider Error:', err);
+      let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
 
-    this.state.pendingStartAgentId = undefined;
-    this.state.pendingStartAgentSource = undefined;
+      // Safely truncate very long error messages to prevent issues
+      if (errorMessage.length > 500) {
+        errorMessage = errorMessage.substring(0, 500) + '...';
+      }
 
-    if (this.state.agentInstance || this.state.isSessionActive) {
-      this.state.clearSessionState();
-      await this.state.setSessionActive(false);
-      await this.state.setSessionStarting(false);
+      this.channelService.appendLine(`Error: ${errorMessage}`);
+      this.channelService.appendLine('---------------------');
+
+      this.state.pendingStartAgentId = undefined;
+      this.state.pendingStartAgentSource = undefined;
+
+      if (this.state.agentInstance || this.state.isSessionActive) {
+        this.state.clearSessionState();
+        await this.state.setSessionActive(false);
+        await this.state.setSessionStarting(false);
+      }
+
+      // Check for specific agent deactivation error
+      if (
+        errorMessage.includes('404') &&
+        errorMessage.includes('NOT_FOUND') &&
+        errorMessage.includes('No valid version available')
+      ) {
+        errorMessage =
+          'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
+      } else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
+        errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
+      } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
+        errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
+      } else if (errorMessage.includes('Invalid user ID') && errorMessage.includes('start session')) {
+        errorMessage = 'Unable to start session. Invalid user ID provided on session start.';
+      }
+
+      await this.messageSender.sendError(errorMessage);
+      await this.state.setResetAgentViewAvailable(true);
+      await this.state.setSessionErrorState(true);
+    } catch (handlerError) {
+      // If error handling itself fails, log it and try to send a generic error
+      console.error('Error in handleError:', handlerError);
+      try {
+        await this.messageSender.sendError('An unexpected error occurred. Please try again.');
+        await this.state.setResetAgentViewAvailable(true);
+        await this.state.setSessionErrorState(true);
+      } catch {
+        // Last resort - at least log that we couldn't recover
+        console.error('Failed to send error message to webview');
+      }
     }
-
-    // Check for specific agent deactivation error
-    if (
-      errorMessage.includes('404') &&
-      errorMessage.includes('NOT_FOUND') &&
-      errorMessage.includes('No valid version available')
-    ) {
-      errorMessage =
-        'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
-    } else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
-      errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
-    } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
-      errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
-    } else if (errorMessage.includes('Invalid user ID') && errorMessage.includes('start session')) {
-      errorMessage = 'Unable to start session. Invalid user ID provided on session start.';
-    }
-
-    await this.messageSender.sendError(errorMessage);
-    await this.state.setResetAgentViewAvailable(true);
-    await this.state.setSessionErrorState(true);
   }
 
   private async handleStartSession(message: AgentMessage): Promise<void> {

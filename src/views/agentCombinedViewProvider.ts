@@ -114,7 +114,12 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       try {
         await this.messageHandlers!.handleMessage(message);
       } catch (err) {
-        await this.messageHandlers!.handleError(err);
+        try {
+          await this.messageHandlers!.handleError(err);
+        } catch (handlerErr) {
+          // If even error handling fails, log it to prevent silent failures
+          console.error('Critical error in message handling:', handlerErr);
+        }
       }
     });
   }

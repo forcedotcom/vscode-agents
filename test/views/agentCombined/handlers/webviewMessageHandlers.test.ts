@@ -145,6 +145,15 @@ describe('WebviewMessageHandlers', () => {
   });
 
   describe('handleError', () => {
+    // Suppress console.error for expected error logs
+    const originalError = console.error;
+    beforeAll(() => {
+      console.error = jest.fn();
+    });
+    afterAll(() => {
+      console.error = originalError;
+    });
+
     it('should display deactivation message for deactivated agent error', async () => {
       const error = new Error('404 NOT_FOUND: No valid version available for this agent');
 
