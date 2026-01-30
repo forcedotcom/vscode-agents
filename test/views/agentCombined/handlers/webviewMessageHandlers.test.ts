@@ -184,16 +184,6 @@ describe('WebviewMessageHandlers', () => {
       );
     });
 
-    it('should display invalid user ID message for user ID error', async () => {
-      const error = new Error('Bad Request: Invalid user ID');
-
-      await handlers.handleError(error);
-
-      expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        'Unable to start session. Please check your user configuration.'
-      );
-    });
-
     it('should display original error message for unknown errors', async () => {
       const error = new Error('Something unexpected happened');
 

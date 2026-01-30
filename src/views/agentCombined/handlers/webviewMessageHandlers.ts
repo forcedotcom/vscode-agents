@@ -109,8 +109,6 @@ export class WebviewMessageHandlers {
         errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
       } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
         errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
-      } else if (errorMessage.includes('Invalid user ID')) {
-        errorMessage = 'Unable to start session. Please check your user configuration.';
       }
 
       await this.messageSender.sendError(errorMessage);
