@@ -34,6 +34,8 @@ const App: React.FC = () => {
   const [hasSessionError, setHasSessionError] = useState(false);
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [selectedAgentInfo, setSelectedAgentInfo] = useState<AgentInfo | null>(null);
+  const [hasAgents, setHasAgents] = useState(false);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
   const desiredAgentIdRef = useRef<string>('');
@@ -72,13 +74,9 @@ const App: React.FC = () => {
         // Restart Agent button clicked - force immediate restart
         forceRestartRef.current = true;
         setRestartTrigger(prev => prev + 1);
-      } else {
-        // Palette selection - let history flow decide whether to show saved conversation or placeholder
-        // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
-        // to avoid flickering between clear and load
-        // Pass agentSource to avoid expensive re-fetch on the backend
-        vscodeApi.loadAgentHistory(data.agentId, data.agentSource as AgentSource | undefined);
       }
+      // History is now loaded atomically by setSelectedAgentId handler
+      // No need for separate loadAgentHistory call
     });
 
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
@@ -166,6 +164,16 @@ const App: React.FC = () => {
     vscodeApi.setLiveMode(isLive);
   }, []);
 
+  // Switch to preview tab when a published agent is selected (tracer not supported)
+  // or when no agent is selected
+  useEffect(() => {
+    if (activeTab === 'tracer') {
+      if (selectedAgentInfo?.type === AgentSource.PUBLISHED || !desiredAgentId) {
+        setActiveTab('preview');
+      }
+    }
+  }, [selectedAgentInfo, activeTab, desiredAgentId]);
+
   const handleGoToPreview = useCallback(() => {
     // If session is not active and we have a desired agent, start the session
     if (!isSessionActive && !isSessionStarting && desiredAgentId) {
@@ -180,10 +188,12 @@ const App: React.FC = () => {
     }, 100);
   }, [isSessionActive, isSessionStarting, desiredAgentId]);
 
-  const handleAgentChange = useCallback((agentId: string) => {
+  const handleAgentChange = useCallback((agentId: string, agentSource?: AgentSource) => {
     setDesiredAgentId(agentId);
     // Notify the extension about the selected agent
-    vscodeApi.setSelectedAgentId(agentId);
+    // Pass agentSource to avoid expensive re-fetch on the backend
+    // History is now loaded atomically by setSelectedAgentId handler
+    vscodeApi.setSelectedAgentId(agentId, agentSource);
   }, []);
 
   const handleStopSession = useCallback(() => {
@@ -191,6 +201,11 @@ const App: React.FC = () => {
     sessionActiveRef.current = false;
     setIsSessionActive(false);
     setIsSessionStarting(false);
+  }, []);
+
+  const handleAgentsAvailabilityChange = useCallback((hasAgentsAvailable: boolean, isLoading: boolean) => {
+    setHasAgents(hasAgentsAvailable);
+    setIsLoadingAgents(isLoading);
   }, []);
 
   useEffect(() => {
@@ -359,10 +374,11 @@ const App: React.FC = () => {
           initialLiveMode={isLiveMode}
           onSelectedAgentInfoChange={setSelectedAgentInfo}
           onStopSession={handleStopSession}
+          onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
         />
         <div className="app-menu-divider" />
         {previewAgentId !== '' && !hasSessionError && !isSessionStarting && (
-          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={true} />
+          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED} />
         )}
       </div>
       <div className="app-content">
@@ -377,6 +393,8 @@ const App: React.FC = () => {
             isLiveMode={isLiveMode}
             selectedAgentInfo={selectedAgentInfo}
             onLiveModeChange={handleLiveModeChange}
+            hasAgents={hasAgents}
+            isLoadingAgents={isLoadingAgents}
           />
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>

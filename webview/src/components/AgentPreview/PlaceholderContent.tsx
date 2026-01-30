@@ -3,19 +3,30 @@ import { vscodeApi } from '../../services/vscodeApi.js';
 import { Button } from '../shared/Button.js';
 import './PlaceholderContent.css';
 
-const PlaceholderContent: React.FC = () => {
+interface PlaceholderContentProps {
+  hasAgents?: boolean;
+  isLoadingAgents?: boolean;
+}
+
+const PlaceholderContent: React.FC<PlaceholderContentProps> = ({ hasAgents = false, isLoadingAgents = true }) => {
   const handleSelectAgent = () => {
     // Open the agent picker to select and start an agent
     vscodeApi.executeCommand('sf.agent.selectAndRun');
   };
 
+  const showButton = !isLoadingAgents && hasAgents;
+
   return (
     <div className="placeholder-content">
       <div className="placeholder-icon"></div>
       <p>Agentforce DX provides a suite of tools to iteratively build, preview, and test agents right in your IDE.</p>
-      <Button appearance="primary" size="small" onClick={handleSelectAgent}>
-        Select Agent
-      </Button>
+      {showButton ? (
+        <Button appearance="primary" size="small" onClick={handleSelectAgent}>
+          Select Agent
+        </Button>
+      ) : (
+        !isLoadingAgents && <p>Create, or activate a published agent to start a simulation.</p>
+      )}
     </div>
   );
 };

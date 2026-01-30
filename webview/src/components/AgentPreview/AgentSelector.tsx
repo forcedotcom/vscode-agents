@@ -6,13 +6,14 @@ import './AgentSelector.css';
 
 interface AgentSelectorProps {
   selectedAgent: string;
-  onAgentChange: (agentId: string) => void;
+  onAgentChange: (agentId: string, agentSource?: AgentSource) => void;
   isSessionActive?: boolean;
   isSessionStarting?: boolean;
   onLiveModeChange?: (isLive: boolean) => void;
   initialLiveMode?: boolean;
   onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
   onStopSession?: () => void;
+  onAgentsAvailabilityChange?: (hasAgents: boolean, isLoading: boolean) => void;
 }
 
 export interface StartClickParams {
@@ -53,12 +54,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   onLiveModeChange,
   initialLiveMode = false,
   onSelectedAgentInfoChange,
-  onStopSession
+  onStopSession,
+  onAgentsAvailabilityChange
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(initialLiveMode);
-  const shouldShowStop = isSessionActive || isSessionStarting;
+  const shouldShowStop = isSessionActive;
   const stopIcon = (
     <svg className="stop-icon" width="4" height="4" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -112,9 +114,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             if (data.selectedAgentId) {
               const selectedAgentInfo = data.agents.find(agent => agent.id === data.selectedAgentId);
               if (selectedAgentInfo) {
-                onAgentChange(data.selectedAgentId);
-                // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
-                vscodeApi.loadAgentHistory(data.selectedAgentId, selectedAgentInfo.type);
+                // Pass agentSource so history is loaded atomically by setSelectedAgentId handler
+                onAgentChange(data.selectedAgentId, selectedAgentInfo.type);
               }
             } else if (selectedAgent) {
               // If we have a selected agent but it's not in the new list, clear the selection
@@ -150,20 +151,17 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
-    onAgentChange(agentId);
+    const selectedAgentData = agentId ? agents.find(agent => agent.id === agentId) : undefined;
+
+    // Pass agentSource so history is loaded atomically by setSelectedAgentId handler
+    onAgentChange(agentId, selectedAgentData?.type);
 
     if (agentId && agentId !== '') {
-      const selectedAgentData = agents.find(agent => agent.id === agentId);
-
       if (selectedAgentData?.type === AgentSource.PUBLISHED) {
         // Auto-enable live mode for published agents
         setIsLiveMode(true);
       }
       // For script agents, keep the current global live mode preference
-
-      // Don't clear messages here - let the backend's showHistoryOrPlaceholder handle it atomically
-      // Pass the agent source to avoid expensive re-fetch on the backend
-      vscodeApi.loadAgentHistory(agentId, selectedAgentData?.type);
     } else {
       // When clearing selection, clear messages immediately
       vscodeApi.clearMessages();
@@ -190,6 +188,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       onSelectedAgentInfoChange(selectedAgentInfo || null);
     }
   }, [selectedAgentInfo, onSelectedAgentInfoChange]);
+
+  // Notify parent of agent availability changes
+  useEffect(() => {
+    if (onAgentsAvailabilityChange) {
+      onAgentsAvailabilityChange(agents.length > 0, isLoading);
+    }
+  }, [agents.length, isLoading, onAgentsAvailabilityChange]);
 
   const handleModeSelect = async (value: string) => {
     const isLive = value === 'live';
@@ -230,7 +235,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
           value={selectedAgent}
           onChange={handleAgentChange}
-          disabled={isLoading || isSessionActive || isSessionStarting}
+          disabled={isLoading || isSessionActive || isSessionStarting || agents.length === 0}
         >
           <option value="">
             {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select agent...'}
@@ -268,7 +273,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             size="small"
             onClick={handleStartClick}
             className="agent-selector__start-button"
-            disabled={isLoading}
+            disabled={isLoading || isSessionStarting}
             startIcon={shouldShowStop ? stopIcon : playIcon}
           >
             {shouldShowStop ? 'Stop Live Test' : 'Start Live Test'}
@@ -279,7 +284,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             size="small"
             onClick={handleStartClick}
             className="agent-selector__start-button"
-            disabled={isLoading}
+            disabled={isLoading || isSessionStarting}
             startIcon={stopIcon}
           >
             {isLiveMode ? 'Stop Live Test' : 'Stop Simulation'}
@@ -296,7 +301,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               { label: 'Live Test', value: 'live' }
             ]}
             className="agent-selector__start-button"
-            disabled={isLoading}
+            disabled={isLoading || isSessionStarting}
             startIcon={shouldShowStop ? stopIcon : playIcon}
           >
             {shouldShowStop

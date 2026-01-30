@@ -36,26 +36,26 @@ describe('PlaceholderContent', () => {
 
   describe('Rendering', () => {
     it('should render placeholder content', () => {
-      render(<PlaceholderContent />);
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       expect(screen.getByText(/Agentforce DX provides a suite of tools/i)).toBeInTheDocument();
     });
 
     it('should render select agent button', () => {
-      render(<PlaceholderContent />);
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       expect(screen.getByText('Select Agent')).toBeInTheDocument();
     });
 
     it('should render placeholder icon', () => {
-      const { container } = render(<PlaceholderContent />);
+      const { container } = render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       const icon = container.querySelector('.placeholder-icon');
       expect(icon).toBeInTheDocument();
     });
 
     it('should have correct CSS class structure', () => {
-      const { container } = render(<PlaceholderContent />);
+      const { container } = render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       const placeholderContent = container.querySelector('.placeholder-content');
       expect(placeholderContent).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('PlaceholderContent', () => {
   describe('Button Interaction', () => {
     it('should call executeCommand when button is clicked', async () => {
       const user = userEvent.setup();
-      render(<PlaceholderContent />);
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       const button = screen.getByText('Select Agent');
       await user.click(button);
@@ -81,7 +81,7 @@ describe('PlaceholderContent', () => {
 
     it('should call executeCommand only once per click', async () => {
       const user = userEvent.setup();
-      render(<PlaceholderContent />);
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       const button = screen.getByText('Select Agent');
       await user.click(button);
@@ -91,7 +91,7 @@ describe('PlaceholderContent', () => {
 
     it('should be clickable multiple times', async () => {
       const user = userEvent.setup();
-      render(<PlaceholderContent />);
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       const button = screen.getByText('Select Agent');
 
@@ -108,10 +108,39 @@ describe('PlaceholderContent', () => {
 
   describe('Accessibility', () => {
     it('should render button as accessible element', () => {
-      render(<PlaceholderContent />);
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       const button = screen.getByRole('button', { name: /Select Agent/i });
       expect(button).toBeInTheDocument();
+    });
+  });
+
+  describe('No Agents State', () => {
+    it('should hide button and show message when no agents are available', () => {
+      render(<PlaceholderContent hasAgents={false} isLoadingAgents={false} />);
+
+      expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/Create, or activate a published agent to start a simulation/i)).toBeInTheDocument();
+    });
+
+    it('should hide button and message when agents are loading', () => {
+      render(<PlaceholderContent hasAgents={false} isLoadingAgents={true} />);
+
+      expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Create, or activate a published agent to start a simulation/i)).not.toBeInTheDocument();
+    });
+
+    it('should hide button with default props (no agents, loading)', () => {
+      render(<PlaceholderContent />);
+
+      expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
+    });
+
+    it('should show button when agents are available and not loading', () => {
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
+
+      expect(screen.getByRole('button', { name: /Select Agent/i })).toBeInTheDocument();
+      expect(screen.queryByText(/Create, or activate a published agent to start a simulation/i)).not.toBeInTheDocument();
     });
   });
 });

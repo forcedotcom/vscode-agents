@@ -22,7 +22,7 @@ export const registerPreviewAgentCommand = () => {
 
     // Clear previous output
     logger.clear();
-    
+
     // Log SF_TEST_API setting value
     logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
 
@@ -31,6 +31,7 @@ export const registerPreviewAgentCommand = () => {
       const provider = AgentCombinedViewProvider.getInstance();
       if (!provider) {
         vscode.window.showErrorMessage('Failed to get Agent Preview provider.');
+        telemetryService.sendException('previewAgent_failed', 'Failed to get Agent Preview provider.');
         return;
       }
 
@@ -102,6 +103,7 @@ export const registerPreviewAgentCommand = () => {
     } catch (e) {
       const sfError = SfError.wrap(e);
       logger.error('Error previewing the .agent file', sfError);
+      telemetryService.sendException('previewAgent_failed', sfError.message);
     }
   });
 };

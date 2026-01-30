@@ -1,17 +1,16 @@
 import * as vscode from 'vscode';
-import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
+import { AgentSource, Agent } from '@salesforce/agents';
 import { SfProject, SfError } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { AgentMessage } from '../types';
-import type { AgentViewState } from '../state/agentViewState';
+import type { AgentViewState } from '../state';
 import type { WebviewMessageSender } from './webviewMessageSender';
-import type { SessionManager } from '../session/sessionManager';
-import type { HistoryManager } from '../history/historyManager';
-import type { ApexDebugManager } from '../debugging/apexDebugManager';
-import type { ConversationExporter } from '../export/conversationExporter';
+import type { SessionManager } from '../session';
+import type { HistoryManager } from '../history';
+import type { ApexDebugManager } from '../debugging';
 import { Logger } from '../../../utils/logger';
-import { getAgentSource } from '../agent/agentUtils';
+import { getAgentSource } from '../agent';
 
 /**
  * Handles all incoming messages from the webview
@@ -25,7 +24,6 @@ export class WebviewMessageHandlers {
     private readonly sessionManager: SessionManager,
     private readonly historyManager: HistoryManager,
     private readonly apexDebugManager: ApexDebugManager,
-    private readonly conversationExporter: ConversationExporter,
     private readonly context: vscode.ExtensionContext,
     private readonly webviewView: vscode.WebviewView
   ) {
@@ -42,10 +40,7 @@ export class WebviewMessageHandlers {
       return;
     }
 
-    const commandHandlers: Record<
-      string,
-      (message: AgentMessage) => Promise<void>
-    > = {
+    const commandHandlers: Record<string, (message: AgentMessage) => Promise<void>> = {
       startSession: async msg => await this.handleStartSession(msg),
       setApexDebugging: async msg => await this.handleSetApexDebugging(msg),
       sendChatMessage: async msg => await this.handleSendChatMessage(msg),
@@ -59,7 +54,6 @@ export class WebviewMessageHandlers {
       setSelectedAgentId: async msg => await this.handleSetSelectedAgentId(msg),
       setLiveMode: async msg => await this.handleSetLiveMode(msg),
       getInitialLiveMode: async () => await this.handleGetInitialLiveMode(),
-      conversationExportReady: async msg => await this.handleConversationExportReady(msg),
       // Test-specific commands for integration tests
       clearMessages: async () => {
         // Clear messages in the webview - no-op on extension side
@@ -134,12 +128,7 @@ export class WebviewMessageHandlers {
     this.state.currentAgentSource = agentSource;
 
     const isLiveMode = data?.isLiveMode ?? false;
-    await this.sessionManager.startSession(
-      agentId,
-      agentSource,
-      isLiveMode,
-      this.webviewView
-    );
+    await this.sessionManager.startSession(agentId, agentSource, isLiveMode, this.webviewView);
   }
 
   private async handleSetApexDebugging(message: AgentMessage): Promise<void> {
@@ -163,7 +152,6 @@ export class WebviewMessageHandlers {
       throw new Error('Invalid message: expected a string.');
     }
 
-    // Log connection/technical details instead of message content
     this.logger.debug('Sending message to agent preview');
 
     const response = await this.state.agentInstance.preview.send(userMessage);
@@ -173,7 +161,6 @@ export class WebviewMessageHandlers {
     this.state.currentUserMessage = userMessage;
 
     this.messageSender.sendMessageSent(lastMessage?.message);
-    // Log technical details instead of message content
     this.logger.debug('Received response from agent preview');
 
     // Load and send trace data after sending message
@@ -270,10 +257,7 @@ export class WebviewMessageHandlers {
   private async handleGetTraceData(): Promise<void> {
     try {
       if (this.state.currentAgentId && this.state.currentAgentSource) {
-        await this.historyManager.loadAndSendTraceHistory(
-          this.state.currentAgentId,
-          this.state.currentAgentSource
-        );
+        await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
         return;
       }
 
@@ -319,8 +303,8 @@ export class WebviewMessageHandlers {
       await this.state.setAgentSelected(true);
       await this.state.setResetAgentViewAvailable(false);
       await this.state.setSessionErrorState(false);
-      // Don't set conversationDataAvailable here - let the history loading flow
-      // (showHistoryOrPlaceholder) control it to avoid download button flashing
+      // Load history atomically with agent selection to avoid download button delay
+      await this.historyManager.showHistoryOrPlaceholder(agentId, this.state.currentAgentSource);
     } else {
       this.state.currentAgentId = undefined;
       this.state.currentAgentSource = undefined;
@@ -339,16 +323,5 @@ export class WebviewMessageHandlers {
 
   private async handleGetInitialLiveMode(): Promise<void> {
     this.messageSender.sendLiveMode(this.state.isLiveMode);
-  }
-
-  private async handleConversationExportReady(message: AgentMessage): Promise<void> {
-    const data = message.data as { content?: string; fileName?: string } | undefined;
-    const markdown = data?.content;
-    const fileName = data?.fileName;
-    if (typeof markdown === 'string' && markdown.trim() !== '') {
-      await this.conversationExporter.saveConversationExport(markdown, fileName);
-    } else {
-      vscode.window.showWarningMessage("Conversation couldn't be exported.");
-    }
   }
 }

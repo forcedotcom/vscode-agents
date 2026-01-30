@@ -35,18 +35,19 @@ export const registerValidateAgentCommand = () => {
 
     if (!filePath) {
       vscode.window.showErrorMessage('No .agent file selected.');
+      telemetryService.sendException('validateAgent_failed', 'No .agent file selected.');
       return;
     }
 
     // Strip "local:" prefix if present (agents library may return paths with this prefix)
     const normalizedFilePath = filePath.startsWith('local:') ? filePath.substring(6) : filePath;
-    
+
     const fileUri = vscode.Uri.file(normalizedFilePath);
     const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
 
     // Clear previous output
     logger.clear();
-    
+
     // Log SF_TEST_API setting value
     logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
 
@@ -132,6 +133,7 @@ export const registerValidateAgentCommand = () => {
 
           // Show error message for unexpected errors
           vscode.window.showErrorMessage(`Agent validation failed: ${sfError.message}`);
+          telemetryService.sendException('validateAgent_failed', sfError.message);
         }
       }
     );

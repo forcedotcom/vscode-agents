@@ -9,6 +9,7 @@ export class AgentViewState {
   // Agent instance state
   private _agentInstance?: AgentInstance;
   private _sessionId: string = '';
+  private _sessionAgentId?: string; // Tracks which agent the current session belongs to
   private _currentAgentName?: string;
   private _currentAgentId?: string;
   private _currentAgentSource?: AgentSource;
@@ -29,6 +30,7 @@ export class AgentViewState {
   // Storage keys
   private static readonly LIVE_MODE_KEY = 'agentforceDX.lastLiveMode';
   private static readonly DEBUG_MODE_KEY = 'agentforceDX.lastDebugMode';
+  private static readonly EXPORT_DIR_KEY = 'agentforceDX.lastExportDirectory';
 
   constructor(private readonly context: vscode.ExtensionContext) {
     // Load persisted state
@@ -50,6 +52,10 @@ export class AgentViewState {
 
   get sessionId(): string {
     return this._sessionId;
+  }
+
+  get sessionAgentId(): string | undefined {
+    return this._sessionAgentId;
   }
 
   get currentAgentName(): string | undefined {
@@ -107,6 +113,10 @@ export class AgentViewState {
 
   set sessionId(value: string) {
     this._sessionId = value;
+  }
+
+  set sessionAgentId(value: string | undefined) {
+    this._sessionAgentId = value;
   }
 
   set currentAgentName(value: string | undefined) {
@@ -200,10 +210,20 @@ export class AgentViewState {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:isScriptAgent', isScript);
   }
 
+  // Export directory persistence (per-project using workspaceState)
+  getExportDirectory(): string | undefined {
+    return this.context.workspaceState.get<string>(AgentViewState.EXPORT_DIR_KEY);
+  }
+
+  async setExportDirectory(directory: string): Promise<void> {
+    await this.context.workspaceState.update(AgentViewState.EXPORT_DIR_KEY, directory);
+  }
+
   // Clear session state
   clearSessionState(): void {
     this._agentInstance = undefined;
     this._sessionId = Date.now().toString();
+    this._sessionAgentId = undefined;
     this._currentAgentName = undefined;
     this._currentPlanId = undefined;
     this._currentUserMessage = undefined;

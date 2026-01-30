@@ -175,7 +175,7 @@ describe('AgentSelector', () => {
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'agent1');
 
-      expect(onAgentChange).toHaveBeenCalledWith('agent1');
+      expect(onAgentChange).toHaveBeenCalledWith('agent1', 'published');
     });
 
     it('should display agent type for selected agent', async () => {
@@ -226,7 +226,7 @@ describe('AgentSelector', () => {
       expect(screen.queryByText('(Agent Script)')).not.toBeInTheDocument();
     });
 
-    it('should clear messages and load history when agent is selected', async () => {
+    it('should not clear messages when agent is selected (backend handles atomically)', async () => {
       const agents: AgentInfo[] = [{ id: 'agent1', name: 'TestAgent', type: 'published' }];
 
       render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} />);
@@ -243,8 +243,7 @@ describe('AgentSelector', () => {
 
       // clearMessages is no longer called from webview - backend handles it atomically with history loading
       expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
-      // Now passes agent source to avoid expensive re-fetch on backend
-      expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent1', 'published');
+      // History is now loaded atomically by setSelectedAgentId handler on backend, not via loadAgentHistory
     });
 
     it('should clear messages when deselecting agent', async () => {
@@ -270,7 +269,7 @@ describe('AgentSelector', () => {
   // Client App Handling tests removed - functionality was removed
 
   describe('Preselected Agent', () => {
-    it('should auto-select and load history for preselected agent', async () => {
+    it('should auto-select preselected agent and notify parent', async () => {
       const onAgentChange = jest.fn();
       const agents: AgentInfo[] = [
         { id: 'agent1', name: 'TestAgent1', type: 'published' },
@@ -283,11 +282,10 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents, selectedAgentId: 'agent2' });
 
       await waitFor(() => {
-        expect(onAgentChange).toHaveBeenCalledWith('agent2');
+        expect(onAgentChange).toHaveBeenCalledWith('agent2', 'published');
         // clearMessages is no longer called from webview - backend handles it atomically with history loading
         expect(vscodeApi.clearMessages).not.toHaveBeenCalled();
-        // Now passes agent source to avoid expensive re-fetch on backend
-        expect(vscodeApi.loadAgentHistory).toHaveBeenCalledWith('agent2', 'published');
+        // History is now loaded atomically by setSelectedAgentId handler on backend
       });
     });
 
@@ -341,7 +339,7 @@ describe('AgentSelector', () => {
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'pub1');
 
-      expect(onAgentChange).toHaveBeenCalledWith('pub1');
+      expect(onAgentChange).toHaveBeenCalledWith('pub1', 'published');
       // For published agents, live mode is auto-enabled (tested via UI state)
     });
 
@@ -361,7 +359,7 @@ describe('AgentSelector', () => {
       const select = screen.getByRole('combobox');
       await userEvent.selectOptions(select, 'script1');
 
-      expect(onAgentChange).toHaveBeenCalledWith('script1');
+      expect(onAgentChange).toHaveBeenCalledWith('script1', 'script');
       // Script agents default to simulate mode (false)
     });
   });
@@ -461,7 +459,7 @@ describe('AgentSelector', () => {
       expect(vscodeApi.startSession).toHaveBeenCalledWith('script1', expect.objectContaining({ isLiveMode: false }));
     });
 
-    it('should stop script agent when session is starting', async () => {
+    it('should disable start button for script agent when session is starting', async () => {
       const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(
@@ -478,13 +476,15 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
-        expect(screen.getByText(/Stop Simulation/i)).toBeInTheDocument();
+        expect(screen.getByText(/Start Simulation/i)).toBeInTheDocument();
       });
 
-      const stopButton = screen.getByText(/Stop Simulation/i);
-      await userEvent.click(stopButton);
+      const startButton = screen.getByText(/Start Simulation/i).closest('button');
+      expect(startButton).toBeDisabled();
 
-      expect(vscodeApi.endSession).toHaveBeenCalled();
+      // Clicking a disabled button should not trigger startSession or endSession
+      await userEvent.click(startButton!);
+      expect(vscodeApi.endSession).not.toHaveBeenCalled();
       expect(vscodeApi.startSession).not.toHaveBeenCalled();
     });
 
@@ -506,7 +506,7 @@ describe('AgentSelector', () => {
       expect(vscodeApi.endSession).toHaveBeenCalled();
     });
 
-    it('should stop session when starting', async () => {
+    it('should disable start button when session is starting', async () => {
       const agents: AgentInfo[] = [{ id: 'pub1', name: 'PublishedAgent', type: 'published' }];
 
       render(
@@ -522,13 +522,15 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
-        expect(screen.getByText(/Stop Live Test/i)).toBeInTheDocument();
+        expect(screen.getByText(/Start Live Test/i)).toBeInTheDocument();
       });
 
-      const stopButton = screen.getByText(/Stop Live Test/i);
-      await userEvent.click(stopButton);
+      const startButton = screen.getByText(/Start Live Test/i).closest('button');
+      expect(startButton).toBeDisabled();
 
-      expect(vscodeApi.endSession).toHaveBeenCalled();
+      // Clicking a disabled button should not trigger startSession or endSession
+      await userEvent.click(startButton!);
+      expect(vscodeApi.endSession).not.toHaveBeenCalled();
       expect(vscodeApi.startSession).not.toHaveBeenCalled();
     });
 
@@ -572,7 +574,7 @@ describe('AgentSelector', () => {
       });
     });
 
-    it('should hide mode selector when session is starting', async () => {
+    it('should show disabled mode selector when session is starting', async () => {
       const agents: AgentInfo[] = [{ id: 'script1', name: 'ScriptAgent', type: 'script' }];
 
       render(<AgentSelector selectedAgent="script1" onAgentChange={jest.fn()} isSessionStarting={true} />);
@@ -581,9 +583,15 @@ describe('AgentSelector', () => {
       availableAgentsHandler!({ agents });
 
       await waitFor(() => {
+        // Should have 2 comboboxes: agent selector and mode selector (in disabled SplitButton)
         const comboboxes = screen.getAllByRole('combobox');
-        expect(comboboxes.length).toBe(1);
+        expect(comboboxes.length).toBe(2);
       });
+
+      // Both agent selector and mode selector should be disabled
+      const comboboxes = screen.getAllByRole('combobox');
+      expect(comboboxes[0]).toBeDisabled(); // Agent selector
+      expect(comboboxes[1]).toBeDisabled(); // Mode selector
     });
 
     it('should not render start button when no agent is selected', async () => {

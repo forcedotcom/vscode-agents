@@ -1,0 +1,141 @@
+.trace-history-row {
+  margin: 0 14px;
+}
+
+.trace-history-row__header-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.trace-history-row__header-wrapper:focus-within,
+.trace-history-row__header-wrapper:has(.trace-history-row__header:active) {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.trace-history-row__header {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 32px 5px 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  font-family: var(--vscode-font-family);
+}
+
+.trace-history-row__header:focus {
+  outline: none;
+}
+
+.trace-history-row__json-icon {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.trace-history-row:hover .trace-history-row__json-icon,
+.trace-history-row--expanded .trace-history-row__json-icon,
+.trace-history-row__json-icon:focus {
+  opacity: 1;
+}
+
+.trace-history-row__json-icon:focus {
+  outline: none;
+}
+
+.trace-history-row__json-icon[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 6px);
+  transform: translateY(-50%);
+  padding: 4px 8px;
+  background: var(--vscode-editorWidget-background, #252526);
+  color: var(--vscode-editorWidget-foreground, #cccccc);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+}
+
+.trace-history-row__json-icon[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.5s;
+}
+
+.trace-history-row__chevron {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.trace-history-row__chevron--expanded {
+  transform: rotate(0deg);
+}
+
+.trace-history-row__header-content {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.trace-history-row__message {
+  color: var(--vscode-tab-activeForeground);
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace-history-row__message::before {
+  content: '"';
+}
+
+.trace-history-row__message::after {
+  content: '"';
+}
+
+.trace-history-row__content {
+  padding: 5px 0 10px 5px;
+}
+
+.trace-history-row__content .tracer-info-table {
+  margin-bottom: 16px;
+}
+
+.trace-history-row__timeline {
+  margin-top: 6px;
+  padding-left: 0;
+  padding-bottom: 0;
+}
+
