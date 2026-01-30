@@ -44,7 +44,7 @@ describe('package.json', () => {
 
       it('should have export command visible only when history is present', () => {
         const exportCommand = viewTitleMenus.find(
-          (menu: any) => menu.command === 'sf.agent.combined.view.exportConversationAs'
+          (menu: any) => menu.command === 'sf.agent.combined.view.exportConversation'
         );
 
         expect(exportCommand).toBeDefined();
@@ -161,16 +161,12 @@ describe('package.json', () => {
         expect(refreshCommand?.icon).toBe('$(refresh)');
       });
 
-      it('should define the export conversation commands', () => {
-        const saveCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversation');
-        const saveAsCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversationAs');
+      it('should define the export conversation command', () => {
+        const exportCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.exportConversation');
 
-        expect(saveCommand).toBeDefined();
-        expect(saveCommand?.title).toBe('Save');
-
-        expect(saveAsCommand).toBeDefined();
-        expect(saveAsCommand?.title).toBe('Save Chat History');
-        expect(saveAsCommand?.icon).toBe('$(arrow-circle-down)');
+        expect(exportCommand).toBeDefined();
+        expect(exportCommand?.title).toBe('Save Chat History');
+        expect(exportCommand?.icon).toBe('$(arrow-circle-down)');
       });
 
       it('should define the clear history command', () => {
