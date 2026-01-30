@@ -215,7 +215,7 @@ describe('AgentTracer', () => {
 
     dispatchMessage('traceHistory', { entries: historyEntries });
 
-    const button = screen.getByRole('button', { name: /view raw json/i });
+    const button = screen.getByRole('button', { name: /open json/i });
     fireEvent.click(button);
 
     expect((window as any).vscode.postMessage).toHaveBeenCalledWith({
@@ -355,7 +355,7 @@ describe('AgentTracer', () => {
     dispatchMessage('traceHistory', { entries: [] });
 
     // Button should not be rendered when there's no data
-    expect(screen.queryByRole('button', { name: /view raw json/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /open json/i })).not.toBeInTheDocument();
   });
 
   it('handles click on open trace json when no data', () => {
@@ -364,7 +364,7 @@ describe('AgentTracer', () => {
     dispatchMessage('traceHistory', { entries: [] });
 
     // When there's no data, button shouldn't exist
-    const button = screen.queryByRole('button', { name: /view raw json/i });
+    const button = screen.queryByRole('button', { name: /open json/i });
     expect(button).not.toBeInTheDocument();
   });
 
