@@ -1,10 +1,17 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { readFileSync } from 'node:fs';
 import { registerCreateAiAuthoringBundleCommand } from '../../src/commands/createAiAuthoringBundle';
 import { Commands } from '../../src/enums/commands';
 import { ScriptAgent } from '@salesforce/agents';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { SfProject, generateApiName } from '@salesforce/core';
+
+// Preserve real fs (got, via @salesforce/agents, needs fs.stat) and only mock readFileSync
+jest.mock('node:fs', () => ({
+  ...jest.requireActual('node:fs'),
+  readFileSync: jest.fn()
+}));
 
 // Mock generateApiName
 jest.mock('@salesforce/core', () => ({
@@ -131,11 +138,22 @@ describe('createAiAuthoringBundle', () => {
 
     // Mock ScriptAgent.createAuthoringBundle
     createAgentScriptSpy = jest.spyOn(ScriptAgent, 'createAuthoringBundle');
+
+    // Mock readFileSync for spec file reads (used when a file spec is selected)
+    (readFileSync as jest.Mock).mockImplementation((filePath: string) => {
+      if (filePath.includes('specs')) {
+        return 'agentType: customer\nrole: TestRole';
+      }
+      throw new Error(`ENOENT: no such file or directory, open '${filePath}'`);
+    });
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
+
+  const defaultSpecItem = { label: 'Default Agent Spec', description: 'Create bundle without a custom spec', isDefaultSpec: true };
+  const fileSpecItem = (filename: string) => ({ label: filename, isDefaultSpec: false });
 
   it('registers the command', () => {
     registerCreateAiAuthoringBundleCommand();
@@ -152,11 +170,10 @@ describe('createAiAuthoringBundle', () => {
       ['another-spec.yml', vscode.FileType.File]
     ]);
 
-    showQuickPickSpy.mockResolvedValue('test-spec.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test-spec.yaml'));
 
-    // Mock spec file content
-    const specContent = 'agentType: customer\nrole: Test Role';
-    readFileSpy.mockResolvedValue(new TextEncoder().encode(specContent));
+    // Mock spec file content (read via readFileSync when file spec is selected)
+    (readFileSync as jest.Mock).mockReturnValue('agentType: customer\nrole: Test Role');
 
     // Mock agent script generation
     createAgentScriptSpy.mockResolvedValue(undefined);
@@ -194,21 +211,35 @@ describe('createAiAuthoringBundle', () => {
     expect(createAgentScriptSpy).not.toHaveBeenCalled();
   });
 
-  it('shows error when no spec files found', async () => {
+  it('shows Default Agent Spec only when no spec files found and calls createAuthoringBundle without agentSpec', async () => {
     showInputBoxSpy.mockResolvedValue('My Test Agent');
     readDirectorySpy.mockResolvedValue([]); // No spec files
+    showQuickPickSpy.mockResolvedValue(defaultSpecItem);
+    createAgentScriptSpy.mockResolvedValue(undefined);
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
     await handler();
 
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No agent spec YAML files found'));
+    // Quick pick should have one option: Default Agent Spec
+    const quickPickItems = showQuickPickSpy.mock.calls[0][0];
+    expect(quickPickItems).toHaveLength(1);
+    expect(quickPickItems[0]).toMatchObject({ label: 'Default Agent Spec', isDefaultSpec: true });
+    // createAuthoringBundle called without agentSpec
+    expect(createAgentScriptSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        project: mockProject,
+        bundleApiName: 'MyTestAgent',
+        outputDir: expect.any(String)
+      })
+    );
+    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
   });
 
   it('cancels when user cancels spec selection', async () => {
     showInputBoxSpy.mockResolvedValue('My Test Agent');
     readDirectorySpy.mockResolvedValue([['test-spec.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue(undefined); // User cancelled
+    showQuickPickSpy.mockResolvedValue(undefined as any); // User cancelled
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -228,7 +259,7 @@ describe('createAiAuthoringBundle', () => {
       ['subdir', vscode.FileType.Directory] // Should be filtered out
     ]);
 
-    showQuickPickSpy.mockResolvedValue('test-spec.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test-spec.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
@@ -236,14 +267,18 @@ describe('createAiAuthoringBundle', () => {
     const handler = commandSpy.mock.calls[0][1];
     await handler();
 
-    // Verify only YAML files were shown
-    expect(showQuickPickSpy).toHaveBeenCalledWith(['test-spec.yaml', 'another-spec.yml'], expect.any(Object));
+    // Verify Default Agent Spec plus only YAML files were shown
+    const quickPickItems = showQuickPickSpy.mock.calls[0][0];
+    expect(quickPickItems).toHaveLength(3);
+    expect(quickPickItems[0]).toMatchObject({ label: 'Default Agent Spec', isDefaultSpec: true });
+    expect(quickPickItems.map((i: any) => i.label)).toContain('test-spec.yaml');
+    expect(quickPickItems.map((i: any) => i.label)).toContain('another-spec.yml');
   });
 
   it('generates correct API name from regular name', async () => {
     showInputBoxSpy.mockResolvedValue('My Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
@@ -258,7 +293,7 @@ describe('createAiAuthoringBundle', () => {
   it('creates bundle in correct directory structure', async () => {
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
@@ -273,7 +308,7 @@ describe('createAiAuthoringBundle', () => {
   it('handles agent script generation errors gracefully', async () => {
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
 
     // Mock createAuthoringBundle to throw error
@@ -290,8 +325,7 @@ describe('createAiAuthoringBundle', () => {
   it('displays error message in output channel', async () => {
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
-    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
 
     // Mock createAgentScript to throw error
     createAgentScriptSpy.mockRejectedValue(new Error('API connection timeout'));
@@ -312,7 +346,7 @@ describe('createAiAuthoringBundle', () => {
   it('displays "Something went wrong" for empty error message in output channel', async () => {
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
 
     // Mock createAgentScript to throw error with empty message
@@ -356,7 +390,7 @@ describe('createAiAuthoringBundle', () => {
 
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
@@ -371,7 +405,7 @@ describe('createAiAuthoringBundle', () => {
   it('calls createDirectory to create bundle structure', async () => {
     showInputBoxSpy.mockResolvedValue('My Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
@@ -387,8 +421,8 @@ describe('createAiAuthoringBundle', () => {
   it('passes spec data with name and developerName to createAuthoringBundle', async () => {
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
-    readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer\nrole: TestRole'));
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
+    (readFileSync as jest.Mock).mockReturnValue('agentType: customer\nrole: TestRole');
     createAgentScriptSpy.mockResolvedValue(undefined);
 
     registerCreateAiAuthoringBundleCommand();
@@ -418,17 +452,41 @@ describe('createAiAuthoringBundle', () => {
     showInputBoxSpy.mockResolvedValue('Test Agent');
     // Mock readDirectory to throw error (directory not found)
     readDirectorySpy.mockRejectedValue(new Error('Directory not found'));
+    showQuickPickSpy.mockResolvedValue(defaultSpecItem);
+    createAgentScriptSpy.mockResolvedValue(undefined);
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
     await handler();
 
-    // Should show error about no spec files
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No agent spec YAML files found'));
-    // Should log the warning
+    // Should log the warning (specs dir not found)
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
       expect.stringMatching(/\[warn\].*No agent spec directory found/)
     );
+    // Should show Default Agent Spec only and call createAuthoringBundle without agentSpec
+    expect(createAgentScriptSpy).toHaveBeenCalled();
+    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
+  });
+
+  it('calls createAuthoringBundle without agentSpec when Default Agent Spec is selected', async () => {
+    showInputBoxSpy.mockResolvedValue('New Agent');
+    readDirectorySpy.mockResolvedValue([['custom.yaml', vscode.FileType.File]]);
+    showQuickPickSpy.mockResolvedValue(defaultSpecItem);
+    createAgentScriptSpy.mockResolvedValue(undefined);
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    expect(createAgentScriptSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        project: mockProject,
+        bundleApiName: 'NewAgent',
+        outputDir: expect.any(String)
+      })
+    );
+    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
+    expect(readFileSync).not.toHaveBeenCalled();
   });
 
   it('opens the generated agent file after successful creation', async () => {
@@ -437,7 +495,7 @@ describe('createAiAuthoringBundle', () => {
 
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
-    showQuickPickSpy.mockResolvedValue('test.yaml');
+    showQuickPickSpy.mockResolvedValue(fileSpecItem('test.yaml'));
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 

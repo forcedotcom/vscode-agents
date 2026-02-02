@@ -2,10 +2,11 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as YAML from 'yaml';
 import { Commands } from '../enums/commands';
-import { ScriptAgent } from '@salesforce/agents';
+import { AgentJobSpec, ScriptAgent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfProject, generateApiName, SfError } from '@salesforce/core';
 import { Logger } from '../utils/logger';
+import { readFileSync } from 'node:fs';
 
 export const registerCreateAiAuthoringBundleCommand = () => {
   return vscode.commands.registerCommand(Commands.createAiAuthoringBundle, async (uri?: vscode.Uri) => {
@@ -76,34 +77,35 @@ export const registerCreateAiAuthoringBundleCommand = () => {
         const specDirUri = vscode.Uri.file(specsDir);
         const files = await vscode.workspace.fs.readDirectory(specDirUri);
         specFiles = files
-          .filter(([name, type]) => type === vscode.FileType.File && (name.endsWith('.yaml') || name.endsWith('.yml')))
-          .map(([name]) => name);
+          .filter(
+            ([fileName, type]) =>
+              type === vscode.FileType.File && (fileName.endsWith('.yaml') || fileName.endsWith('.yml'))
+          )
+          .map(([fileName]) => fileName);
       } catch (error) {
         logger.warn(`No agent spec directory found at ${specsDir}`);
       }
 
-      // Show dropdown with available spec files
-      if (specFiles.length === 0) {
-        vscode.window.showErrorMessage(
-          `No agent spec YAML files found in ${specsDir}. You must add at least one agent spec YAML file to continue.`
-        );
-        return;
-      }
+      type SpecPickItem = vscode.QuickPickItem & { isDefaultSpec?: boolean };
+      const specItems: SpecPickItem[] = [
+        {
+          label: 'Default Agent Spec',
+          description: 'Create bundle without a custom spec',
+          isDefaultSpec: true
+        },
+        ...specFiles.map(file => ({ label: file, isDefaultSpec: false }) as SpecPickItem)
+      ];
 
-      const selectedSpec = await vscode.window.showQuickPick(specFiles, {
+      const selectedItem = await vscode.window.showQuickPick(specItems, {
         placeHolder: 'Select an agent spec YAML file to generate the authoring bundle from.',
         title: 'Choose Agent Spec'
       });
 
-      if (!selectedSpec) {
+      if (!selectedItem) {
         return; // User cancelled
       }
 
-      const specPath = path.join(specsDir, selectedSpec);
-
-      // Read and parse the YAML spec file
-      const specContent = await vscode.workspace.fs.readFile(vscode.Uri.file(specPath));
-      const specData = YAML.parse(Buffer.from(specContent).toString());
+      const spec = (selectedItem as SpecPickItem).isDefaultSpec ? undefined : path.join(specsDir, selectedItem.label);
 
       // Show progress
       await vscode.window.withProgress(
@@ -118,12 +120,16 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
           progress.report({ message: 'Generating Agent Script file...' });
 
-          // Create the agent script using the spec
           await ScriptAgent.createAuthoringBundle({
-            agentSpec: { ...specData, ...{ name, developerName: apiName } },
-            project: project as any,
+            project,
+            agentSpec: spec
+              ? {
+                  ...(YAML.parse(readFileSync(spec, 'utf8')) as AgentJobSpec),
+                  ...{ name, developerName: apiName }
+                }
+              : undefined,
             bundleApiName: apiName,
-            outputDir: targetDir // Specify where to create the bundle
+            outputDir: targetDir
           });
 
           progress.report({ message: 'Complete!', increment: 100 });
