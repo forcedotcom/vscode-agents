@@ -1,2 +1,8 @@
 export { AgentInitializer } from './agentInitializer';
-export { validatePublishedAgentId, getAgentStorageKey, getAgentSource } from './agentUtils';
+export {
+  validatePublishedAgentId,
+  getAgentStorageKey,
+  getAgentSource,
+  findLocalAgentsUnderProject,
+  mergeWithLocalAgents
+} from './agentUtils';

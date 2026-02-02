@@ -22,7 +22,6 @@ const PlaceholderContent: React.FC<PlaceholderContentProps> = ({ hasAgents = fal
   };
 
   const showSelectButton = !isLoadingAgents && hasAgents;
-  const showCreateButton = !isLoadingAgents && !hasAgents;
 
   return (
     <div className="placeholder-content">
@@ -34,12 +33,10 @@ const PlaceholderContent: React.FC<PlaceholderContentProps> = ({ hasAgents = fal
         </Button>
       ) : (
         <>
-          {!isLoadingAgents && <p>Create, or activate a published agent to start a simulation.</p>}
-          {showCreateButton && (
-            <Button appearance="primary" size="small" onClick={handleCreateAgent}>
-              Create new agent
-            </Button>
-          )}
+          <p>Create, or activate a published agent to start a simulation.</p>
+          <Button appearance="primary" size="small" onClick={handleCreateAgent}>
+            Create new agent
+          </Button>
         </>
       )}
     </div>
