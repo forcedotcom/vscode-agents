@@ -69,6 +69,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         <div className="error-boundary-fallback">
           <div className="error-boundary-icon" />
           <p>Something went wrong. Please try again.</p>
+          {this.state.error?.message && (
+            <p className="error-boundary-details">{this.state.error.message}</p>
+          )}
           <Button appearance="primary" size="small" onClick={this.handleReset}>
             Go Back
           </Button>

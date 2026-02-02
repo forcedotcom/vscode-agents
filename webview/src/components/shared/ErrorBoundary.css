@@ -36,6 +36,14 @@ body.vscode-high-contrast .error-boundary-icon {
   text-wrap: balance;
 }
 
+.error-boundary-fallback .error-boundary-details {
+  color: var(--vscode-errorForeground);
+  font-size: 12px;
+  font-weight: 400;
+  margin: -20px 0 30px 0;
+  opacity: 0.9;
+}
+
 .error-boundary-fallback .vscode-button {
   width: auto;
   min-width: auto;
