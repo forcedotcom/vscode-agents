@@ -22,7 +22,9 @@ describe('registerOpenAgentInOrgCommand', () => {
     sendCommandEvent: jest.fn()
   };
   const fakeChannelService: any = {
-    appendLine: jest.fn()
+    appendLine: jest.fn(),
+    showChannelOutput: jest.fn(),
+    clear: jest.fn()
   };
   beforeEach(() => {
     jest.spyOn(CoreExtensionService, 'getTelemetryService').mockReturnValue(fakeTelemetryInstance);
@@ -94,9 +96,9 @@ describe('registerOpenAgentInOrgCommand', () => {
     await commandSpy.mock.calls[0][1]();
 
     expect(errorMessageSpy).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Couldn't find any agents in the current DX project/));
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      'Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.'
+      expect.stringMatching(/\[debug\].*Suggestion: Retrieve your agent metadata/)
     );
     expect(progressSpy).not.toHaveBeenCalled(); // Should not proceed
   });

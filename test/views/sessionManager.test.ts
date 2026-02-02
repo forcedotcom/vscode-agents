@@ -59,12 +59,14 @@ jest.mock('../../src/services/coreExtensionService', () => ({
     }),
     getChannelService: jest.fn(() => ({
       appendLine: jest.fn(),
-      showChannelOutput: jest.fn()
+      showChannelOutput: jest.fn(),
+      clear: jest.fn()
     }))
   }
 }));
 
 // Import after mocks
+import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { SessionManager } from '../../src/views/agentCombined/session/sessionManager';
 
 describe('SessionManager', () => {
@@ -126,16 +128,14 @@ describe('SessionManager', () => {
 
     mockChannelService = {
       appendLine: jest.fn(),
-      showChannelOutput: jest.fn()
+      showChannelOutput: jest.fn(),
+      clear: jest.fn()
     };
 
-    sessionManager = new SessionManager(
-      mockState,
-      mockMessageSender,
-      mockAgentInitializer,
-      mockHistoryManager,
-      mockChannelService
-    );
+    // Ensure getChannelService returns our mock so Logger gets a valid channelService
+    jest.spyOn(CoreExtensionService, 'getChannelService').mockReturnValue(mockChannelService as any);
+
+    sessionManager = new SessionManager(mockState, mockMessageSender, mockAgentInitializer, mockHistoryManager);
   });
 
   describe('error handling', () => {

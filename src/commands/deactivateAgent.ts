@@ -1,15 +1,16 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Commands } from '../enums/commands';
-import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
+import { SfProject, ConfigAggregator, Org, SfError } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath } from './agentUtils';
+import { Logger } from '../utils/logger';
 
 export const registerDeactivateAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.deactivateAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.deactivateAgent);
 
     // Get the file or directory path from the context menu
@@ -68,8 +69,10 @@ export const registerDeactivateAgentCommand = () => {
         return;
       }
 
-      channelService.appendLine(`Deactivating agent ${agentName}...`);
-      channelService.showChannelOutput();
+      // Clear previous output
+      logger.clear();
+      
+      logger.debug(`Deactivating agent ${agentName}...`);
 
       await vscode.window.withProgress(
         {
@@ -94,13 +97,13 @@ export const registerDeactivateAgentCommand = () => {
 
           await agent.deactivate();
 
-          channelService.appendLine(`Successfully deactivated agent ${agentName}.`);
           vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
         }
       );
     } catch (error) {
-      const errorMessage = `Failed to deactivate agent: ${(error as Error).message}`;
-      channelService.appendLine(errorMessage);
+      const sfError = SfError.wrap(error);
+      const errorMessage = `Failed to deactivate agent: ${sfError.message}`;
+      logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_deactivation_failed', errorMessage);
     }

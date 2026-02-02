@@ -95,7 +95,7 @@ describe('createAiAuthoringBundle', () => {
       save: jest.fn(),
       dispose: jest.fn()
     } as any);
-    
+
     // Mock showTextDocument - add it to window if it doesn't exist
     Object.defineProperty(vscode.window, 'showTextDocument', {
       value: jest.fn().mockResolvedValue({
@@ -301,10 +301,12 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify error message is displayed in channel
-    expect(fakeChannelService.showChannelOutput).toHaveBeenCalled();
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Failed to generate authoring bundle.');
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('────────────────────────────────────────────────────────────────────────');
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('API connection timeout');
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/\[error\].*Failed to generate authoring bundle/)
+    );
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/\[error\].*Details: API connection timeout/)
+    );
   });
 
   it('displays "Something went wrong" for empty error message in output channel', async () => {
@@ -322,7 +324,9 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify fallback message is displayed
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Something went wrong');
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/\[error\].*Failed to generate authoring bundle/)
+    );
     expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to generate authoring bundle'));
   });
 
@@ -421,16 +425,16 @@ describe('createAiAuthoringBundle', () => {
 
     // Should show error about no spec files
     expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('No agent spec YAML files found'));
-    // Should log the error
+    // Should log the warning
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringContaining('No agent spec directory found')
+      expect.stringMatching(/\[warn\].*No agent spec directory found/)
     );
   });
 
   it('opens the generated agent file after successful creation', async () => {
     const openTextDocumentSpy = jest.spyOn(vscode.workspace, 'openTextDocument');
     const showTextDocumentSpy = jest.spyOn(vscode.window, 'showTextDocument');
-    
+
     showInputBoxSpy.mockResolvedValue('Test Agent');
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
     showQuickPickSpy.mockResolvedValue('test.yaml');

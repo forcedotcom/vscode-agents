@@ -4,6 +4,7 @@ import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfError, SfProject } from '@salesforce/core';
 import * as path from 'path';
+import { Logger } from '../utils/logger';
 
 // Type declarations for new library API
 interface CompilationError {
@@ -26,7 +27,7 @@ export function initializeDiagnosticCollection(context: vscode.ExtensionContext)
 export const registerValidateAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.validateAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.validateAgent);
 
     // Get the file path from the context menu
@@ -40,9 +41,15 @@ export const registerValidateAgentCommand = () => {
 
     // Strip "local:" prefix if present (agents library may return paths with this prefix)
     const normalizedFilePath = filePath.startsWith('local:') ? filePath.substring(6) : filePath;
-    
+
     const fileUri = vscode.Uri.file(normalizedFilePath);
     const fileContents = Buffer.from(await vscode.workspace.fs.readFile(fileUri)).toString();
+
+    // Clear previous output
+    logger.clear();
+
+    // Log SF_TEST_API setting value
+    logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
 
     // Show progress notification with spinner
     await vscode.window.withProgress(
@@ -89,14 +96,10 @@ export const registerValidateAgentCommand = () => {
             diagnosticCollection.set(fileUri, diagnostics);
 
             // Also show in output channel
-            channelService.showChannelOutput();
-            channelService.clear();
-            channelService.appendLine('❌ Agent validation failed.');
-            channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-            channelService.appendLine(`Found ${response.errors.length} error(s):\n`);
+            logger.error(`Agent validation failed with ${response.errors.length} error(s)`);
             response.errors.forEach((error: CompilationError, index: number) => {
-              channelService.appendLine(`${index + 1}. [${error.errorType}] Line ${error.lineStart}:${error.colStart}`);
-              channelService.appendLine(`   ${error.description}\n`);
+              logger.appendLine(`${index + 1}. [${error.errorType}] Line ${error.lineStart}:${error.colStart}`);
+              logger.appendLine(`   ${error.description}`);
             });
 
             // Update progress message to show failure
@@ -118,24 +121,19 @@ export const registerValidateAgentCommand = () => {
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         } catch (compileError) {
-          const error = SfError.wrap(compileError);
+          const sfError = SfError.wrap(compileError);
           // Clear diagnostics for unexpected errors
           diagnosticCollection.clear();
-          // Show the output channel
-          channelService.showChannelOutput();
-          channelService.clear();
           // Show error details in output
-          channelService.appendLine('❌ Agent validation failed.');
-          channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-          channelService.appendLine(error.message || 'Something went wrong.');
+          logger.error('Agent validation failed', sfError);
 
           // Update progress to show error
           progress.report({ message: 'Failed' });
           await new Promise(resolve => setTimeout(resolve, 2000));
 
           // Show error message for unexpected errors
-          vscode.window.showErrorMessage(`Agent validation failed: ${error.message}`);
-          telemetryService.sendException('validateAgent_failed', error.message);
+          vscode.window.showErrorMessage(`Agent validation failed: ${sfError.message}`);
+          telemetryService.sendException('validateAgent_failed', sfError.message);
         }
       }
     );

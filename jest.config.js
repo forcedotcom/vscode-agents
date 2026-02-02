@@ -9,7 +9,9 @@ module.exports = {
     '/lib/', // Add this line to ignore the lib directory
     '/extension/',
     '/test/webview/', // Ignore webview tests (they use a separate config)
-    '/.vscode-test/' // Ignore VS Code test installations
+    '/test/integration/', // Ignore integration tests (they use a separate runner)
+    '/.vscode-test/', // Ignore VS Code test installations
+    'integration.test' // Ignore any files with "integration.test" in the name
   ],
   modulePathIgnorePatterns: [
     '/.vscode-test/' // Ignore VS Code test installations in module resolution

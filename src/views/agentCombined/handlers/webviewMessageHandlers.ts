@@ -1,31 +1,34 @@
 import * as vscode from 'vscode';
-import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
-import { SfProject } from '@salesforce/core';
+import { AgentSource, Agent } from '@salesforce/agents';
+import { SfProject, SfError } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { AgentMessage } from '../types';
-import type { AgentViewState } from '../state/agentViewState';
+import type { AgentViewState } from '../state';
 import type { WebviewMessageSender } from './webviewMessageSender';
-import type { SessionManager } from '../session/sessionManager';
-import type { HistoryManager } from '../history/historyManager';
-import type { ApexDebugManager } from '../debugging/apexDebugManager';
-import type { ChannelService } from '../../../types/ChannelService';
-import { getAgentSource } from '../agent/agentUtils';
+import type { SessionManager } from '../session';
+import type { HistoryManager } from '../history';
+import type { ApexDebugManager } from '../debugging';
+import { Logger } from '../../../utils/logger';
+import { getAgentSource } from '../agent';
 
 /**
  * Handles all incoming messages from the webview
  */
 export class WebviewMessageHandlers {
+  private readonly logger: Logger;
+
   constructor(
     private readonly state: AgentViewState,
     private readonly messageSender: WebviewMessageSender,
     private readonly sessionManager: SessionManager,
     private readonly historyManager: HistoryManager,
     private readonly apexDebugManager: ApexDebugManager,
-    private readonly channelService: ChannelService,
     private readonly context: vscode.ExtensionContext,
     private readonly webviewView: vscode.WebviewView
-  ) {}
+  ) {
+    this.logger = new Logger(CoreExtensionService.getChannelService());
+  }
 
   /**
    * Routes webview messages to the appropriate handler method
@@ -37,10 +40,7 @@ export class WebviewMessageHandlers {
       return;
     }
 
-    const commandHandlers: Record<
-      string,
-      (message: AgentMessage) => Promise<void>
-    > = {
+    const commandHandlers: Record<string, (message: AgentMessage) => Promise<void>> = {
       startSession: async msg => await this.handleStartSession(msg),
       setApexDebugging: async msg => await this.handleSetApexDebugging(msg),
       sendChatMessage: async msg => await this.handleSendChatMessage(msg),
@@ -80,9 +80,9 @@ export class WebviewMessageHandlers {
    */
   async handleError(err: unknown): Promise<void> {
     console.error('AgentCombinedViewProvider Error:', err);
-    let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-    this.channelService.appendLine(`Error: ${errorMessage}`);
-    this.channelService.appendLine('---------------------');
+    const sfError = SfError.wrap(err);
+    let errorMessage = sfError.message;
+    this.logger.error('AgentCombinedViewProvider error', sfError);
 
     this.state.pendingStartAgentId = undefined;
     this.state.pendingStartAgentSource = undefined;
@@ -128,12 +128,7 @@ export class WebviewMessageHandlers {
     this.state.currentAgentSource = agentSource;
 
     const isLiveMode = data?.isLiveMode ?? false;
-    await this.sessionManager.startSession(
-      agentId,
-      agentSource,
-      isLiveMode,
-      this.webviewView
-    );
+    await this.sessionManager.startSession(agentId, agentSource, isLiveMode, this.webviewView);
   }
 
   private async handleSetApexDebugging(message: AgentMessage): Promise<void> {
@@ -157,7 +152,7 @@ export class WebviewMessageHandlers {
       throw new Error('Invalid message: expected a string.');
     }
 
-    this.channelService.appendLine(`Simulation message sent - "${userMessage}"`);
+    this.logger.debug('Sending message to agent preview');
 
     const response = await this.state.agentInstance.preview.send(userMessage);
 
@@ -166,7 +161,7 @@ export class WebviewMessageHandlers {
     this.state.currentUserMessage = userMessage;
 
     this.messageSender.sendMessageSent(lastMessage?.message);
-    this.channelService.appendLine(`Simulation message received - "${lastMessage?.message}"`);
+    this.logger.debug('Received response from agent preview');
 
     // Load and send trace data after sending message
     if (this.state.currentAgentId && this.state.currentAgentSource) {
@@ -262,10 +257,7 @@ export class WebviewMessageHandlers {
   private async handleGetTraceData(): Promise<void> {
     try {
       if (this.state.currentAgentId && this.state.currentAgentSource) {
-        await this.historyManager.loadAndSendTraceHistory(
-          this.state.currentAgentId,
-          this.state.currentAgentSource
-        );
+        await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
         return;
       }
 
@@ -332,5 +324,4 @@ export class WebviewMessageHandlers {
   private async handleGetInitialLiveMode(): Promise<void> {
     this.messageSender.sendLiveMode(this.state.isLiveMode);
   }
-
 }

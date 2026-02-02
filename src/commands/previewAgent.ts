@@ -4,11 +4,12 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfError, SfProject } from '@salesforce/core';
 import { AgentCombinedViewProvider } from '../views/agentCombinedViewProvider';
 import { Agent, AgentSource } from '@salesforce/agents';
+import { Logger } from '../utils/logger';
 
 export const registerPreviewAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.previewAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
-    const channelService = CoreExtensionService.getChannelService();
+    const logger = new Logger(CoreExtensionService.getChannelService());
     telemetryService.sendCommandEvent(Commands.previewAgent);
 
     // Get the file path from the context menu
@@ -18,6 +19,12 @@ export const registerPreviewAgentCommand = () => {
       vscode.window.showErrorMessage('No .agent file selected.');
       return;
     }
+
+    // Clear previous output
+    logger.clear();
+
+    // Log SF_TEST_API setting value
+    logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
 
     try {
       // Open the Agent Preview panel
@@ -94,20 +101,9 @@ export const registerPreviewAgentCommand = () => {
       // For script agents opened from command, default to simulation mode (isLiveMode = false)
       await provider.startPreviewSession(agentId, agentSource, false);
     } catch (e) {
-      const error = SfError.wrap(e);
-      channelService.appendLine('❌ Error previewing the .agent file.');
-      channelService.appendLine('');
-      channelService.appendLine('Error Details:');
-      channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-      channelService.appendLine(error.message || 'Something went wrong.');
-
-      if (error.stack) {
-        channelService.appendLine('');
-        channelService.appendLine('Stack Trace:');
-        channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        channelService.appendLine(error.stack);
-      }
-      telemetryService.sendException('previewAgent_failed', error.message);
+      const sfError = SfError.wrap(e);
+      logger.error('Error previewing the .agent file', sfError);
+      telemetryService.sendException('previewAgent_failed', sfError.message);
     }
   });
 };

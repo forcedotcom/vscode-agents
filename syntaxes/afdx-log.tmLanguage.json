@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "AFDX Log",
+  "patterns": [
+    {
+      "name": "comment.line.timestamp.log",
+      "match": "\\[\\d{2}:\\d{2}:\\d{2}\\]"
+    },
+    {
+      "name": "keyword.other.debug.afdx-log",
+      "match": "\\[debug\\]"
+    },
+    {
+      "name": "keyword.other.warn.afdx-log",
+      "match": "\\[warn\\]"
+    },
+    {
+      "name": "string.quoted.error.afdx-log",
+      "match": "\\[error\\]"
+    },
+    {
+      "name": "markup.underline.link",
+      "match": "https?://[^\\s]+"
+    },
+    {
+      "name": "string.quoted.double",
+      "match": "\"[^\"]*\""
+    }
+  ],
+  "scopeName": "text.afdx.log"
+}
