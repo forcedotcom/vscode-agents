@@ -51,9 +51,10 @@ body.vscode-high-contrast .agent-preview-error-icon {
 .agent-preview-error-details {
   margin: 0 0 30px 0;
   color: var(--vscode-errorForeground);
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.5;
+  text-wrap: balance;
 }
 
 .agent-preview-error .vscode-button {
