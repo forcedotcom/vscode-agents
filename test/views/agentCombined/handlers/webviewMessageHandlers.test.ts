@@ -48,7 +48,9 @@ jest.mock('@salesforce/core', () => ({
       getPath: () => '/mock/project'
     })
   },
-  SfError: Error
+  SfError: {
+    wrap: (err: unknown) => (err instanceof Error ? err : new Error(String(err)))
+  }
 }));
 
 // Mock CoreExtensionService
@@ -71,6 +73,7 @@ jest.mock('../../../../src/views/agentCombined/agent/agentUtils', () => ({
 
 // Import after mocks
 import { WebviewMessageHandlers } from '../../../../src/views/agentCombined/handlers/webviewMessageHandlers';
+import { CoreExtensionService } from '../../../../src/services/coreExtensionService';
 
 describe('WebviewMessageHandlers', () => {
   let handlers: WebviewMessageHandlers;
@@ -79,9 +82,9 @@ describe('WebviewMessageHandlers', () => {
   let mockSessionManager: any;
   let mockHistoryManager: any;
   let mockApexDebugManager: any;
-  let mockChannelService: any;
   let mockContext: any;
   let mockWebviewView: any;
+  let mockChannelService: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -119,12 +122,15 @@ describe('WebviewMessageHandlers', () => {
 
     mockApexDebugManager = {};
 
+    mockContext = {};
+
     mockChannelService = {
       appendLine: jest.fn(),
       showChannelOutput: jest.fn()
     };
 
-    mockContext = {};
+    // Ensure getChannelService returns our mock so Logger gets a valid channelService
+    jest.spyOn(CoreExtensionService, 'getChannelService').mockReturnValue(mockChannelService as any);
 
     mockWebviewView = {
       webview: {
@@ -138,7 +144,6 @@ describe('WebviewMessageHandlers', () => {
       mockSessionManager,
       mockHistoryManager,
       mockApexDebugManager,
-      mockChannelService,
       mockContext,
       mockWebviewView
     );
@@ -228,7 +233,9 @@ describe('WebviewMessageHandlers', () => {
 
       await handlers.handleError(error);
 
-      expect(mockChannelService.appendLine).toHaveBeenCalledWith('Error: Test error message');
+      expect(mockChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringContaining('[error] AgentCombinedViewProvider error')
+      );
     });
   });
 });
