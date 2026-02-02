@@ -31,7 +31,7 @@ export class AgentTestRunner {
   constructor(private testOutline: AgentTestOutlineProvider) {}
 
   public displayTestDetails(test: TestNode) {
-    const channelService = CoreExtensionService.getChannelService();
+    const channelService = CoreExtensionService.getTestChannelService();
     channelService.showChannelOutput();
     channelService.clear();
     if (test.parentName == '') {
@@ -121,7 +121,7 @@ export class AgentTestRunner {
   }
 
   public async runAgentTest(test: AgentTestGroupNode) {
-    const channelService = CoreExtensionService.getChannelService();
+    const channelService = CoreExtensionService.getTestChannelService();
     const telemetryService = CoreExtensionService.getTelemetryService();
     telemetryService.sendCommandEvent('RunAgentTest');
     try {
@@ -206,7 +206,7 @@ export class AgentTestRunner {
   }
 
   private printTestSummary(result: AgentTestResults) {
-    const channelService = CoreExtensionService.getChannelService();
+    const channelService = CoreExtensionService.getTestChannelService();
     channelService.appendLine(result.status);
     channelService.appendLine('');
     channelService.appendLine('Test Results');

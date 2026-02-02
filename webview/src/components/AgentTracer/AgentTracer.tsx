@@ -372,7 +372,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       setError(null);
 
       // Send test response when trace data is received (for integration tests)
-      vscodeApi.postTestMessage('testTraceDataReceived', { 
+      vscodeApi.postTestMessage('testTraceDataReceived', {
         hasPlanId: !!data?.planId,
         hasSessionId: !!data?.sessionId,
         planStepCount: data?.plan?.length || 0,
@@ -455,7 +455,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   if (error) {
     return (
       <div className="agent-tracer">
-        <div className="tracer-error">{error || 'Something went wrong'}</div>
+        <div className="tracer-error">{error}</div>
       </div>
     );
   }

@@ -166,10 +166,15 @@ describe('publishAgent', () => {
       expect(agentInitSpy).toHaveBeenCalled();
       expect(mockAgentInstance.compile).toHaveBeenCalled();
       expect(mockAgentInstance.publish).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Publishing agent TestAgent...');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Retrieving metadata from org...');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Metadata retrieved successfully.');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Successfully published agent TestAgent.');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringMatching(/\[debug\].*Publishing agent TestAgent/)
+      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringMatching(/\[debug\].*Retrieving metadata from org/)
+      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringMatching(/\[debug\].*Metadata retrieved successfully/)
+      );
       expect(infoMessageSpy).toHaveBeenCalledWith('Agent "TestAgent" was published successfully.');
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Initializing agent...', increment: 0 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Validating agent...', increment: 20 });
@@ -214,13 +219,15 @@ describe('publishAgent', () => {
 
       expect(mockAgentInstance.compile).toHaveBeenCalled();
       expect(mockAgentInstance.publish).not.toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent validation failed!');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('Found 2 error(s):'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringMatching(/\[error\].*Agent validation failed with 2 error\(s\)/)
+      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[ParserError]'));
       expect(progressReportSpy).toHaveBeenCalledWith({
         message: 'Validation failed with 2 error(s).'
       });
       expect(errorMessageSpy).toHaveBeenCalledWith(
-        'Agent validation failed with 2 error(s). Check the Output tab for details.'
+        'Agent validation failed with 2 error(s). See the Problems panel for details.'
       );
     });
 
@@ -242,9 +249,11 @@ describe('publishAgent', () => {
 
       expect(mockAgentInstance.compile).toHaveBeenCalled();
       expect(mockAgentInstance.publish).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent publish failed!');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-        expect.stringContaining('Error: Publish failed: Connection timeout')
+        expect.stringMatching(/\[error\].*Agent publish failed/)
+      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringMatching(/\[error\].*Details: Publish failed: Connection timeout/)
       );
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed' });
       expect(errorMessageSpy).toHaveBeenCalledWith('Failed to publish agent: Publish failed: Connection timeout');
@@ -274,12 +283,11 @@ describe('publishAgent', () => {
 
       expect(mockAgentInstance.compile).toHaveBeenCalled();
       expect(mockAgentInstance.publish).toHaveBeenCalled();
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('❌ Agent publish failed!');
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-        expect.stringContaining('SOAP API does not support JWT-based access tokens')
+        expect.stringMatching(/\[error\].*Agent publish failed/)
       );
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-        expect.stringContaining('You must disable the "Issue JSON Web Token (JWT)-based access tokens"')
+        expect.stringMatching(/\[error\].*SOAP API does not support JWT-based access tokens/)
       );
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed' });
       expect(errorMessageSpy).toHaveBeenCalledWith(
@@ -304,7 +312,7 @@ describe('publishAgent', () => {
 
       // The error message is wrapped in the outer catch block
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-        'Failed to publish agent: Project initialization failed'
+        expect.stringMatching(/\[error\].*Failed to publish agent: Project initialization failed/)
       );
       expect(errorMessageSpy).toHaveBeenCalledWith('Failed to publish agent: Project initialization failed');
       expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith(
@@ -358,8 +366,12 @@ describe('publishAgent', () => {
       // Verify progress updates from lifecycle events
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata...', increment: 70 });
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved successfully', increment: 90 });
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Retrieving metadata from org...');
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith('Metadata retrieved successfully.');
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringMatching(/\[debug\].*Retrieving metadata from org/)
+      );
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+        expect.stringMatching(/\[debug\].*Metadata retrieved successfully/)
+      );
     });
   });
 });

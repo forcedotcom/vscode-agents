@@ -1,31 +1,34 @@
 import * as vscode from 'vscode';
-import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
-import { SfProject } from '@salesforce/core';
+import { AgentSource, Agent } from '@salesforce/agents';
+import { SfProject, SfError } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { AgentMessage } from '../types';
-import type { AgentViewState } from '../state/agentViewState';
+import type { AgentViewState } from '../state';
 import type { WebviewMessageSender } from './webviewMessageSender';
-import type { SessionManager } from '../session/sessionManager';
-import type { HistoryManager } from '../history/historyManager';
-import type { ApexDebugManager } from '../debugging/apexDebugManager';
-import type { ChannelService } from '../../../types/ChannelService';
-import { getAgentSource } from '../agent/agentUtils';
+import type { SessionManager } from '../session';
+import type { HistoryManager } from '../history';
+import type { ApexDebugManager } from '../debugging';
+import { Logger } from '../../../utils/logger';
+import { getAgentSource } from '../agent';
 
 /**
  * Handles all incoming messages from the webview
  */
 export class WebviewMessageHandlers {
+  private readonly logger: Logger;
+
   constructor(
     private readonly state: AgentViewState,
     private readonly messageSender: WebviewMessageSender,
     private readonly sessionManager: SessionManager,
     private readonly historyManager: HistoryManager,
     private readonly apexDebugManager: ApexDebugManager,
-    private readonly channelService: ChannelService,
     private readonly context: vscode.ExtensionContext,
     private readonly webviewView: vscode.WebviewView
-  ) {}
+  ) {
+    this.logger = new Logger(CoreExtensionService.getChannelService());
+  }
 
   /**
    * Routes webview messages to the appropriate handler method
@@ -76,56 +79,37 @@ export class WebviewMessageHandlers {
    * Handles errors from webview message processing
    */
   async handleError(err: unknown): Promise<void> {
-    try {
-      console.error('AgentCombinedViewProvider Error:', err);
-      let errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+    console.error('AgentCombinedViewProvider Error:', err);
+    const sfError = SfError.wrap(err);
+    let errorMessage = sfError.message;
+    this.logger.error('AgentCombinedViewProvider error', sfError);
 
-      // Safely truncate very long error messages to prevent issues
-      if (errorMessage.length > 500) {
-        errorMessage = errorMessage.substring(0, 500) + '...';
-      }
+    this.state.pendingStartAgentId = undefined;
+    this.state.pendingStartAgentSource = undefined;
 
-      this.channelService.appendLine(`Error: ${errorMessage}`);
-      this.channelService.appendLine('---------------------');
-
-      this.state.pendingStartAgentId = undefined;
-      this.state.pendingStartAgentSource = undefined;
-
-      if (this.state.agentInstance || this.state.isSessionActive) {
-        this.state.clearSessionState();
-        await this.state.setSessionActive(false);
-        await this.state.setSessionStarting(false);
-      }
-
-      // Check for specific agent deactivation error
-      if (
-        errorMessage.includes('404') &&
-        errorMessage.includes('NOT_FOUND') &&
-        errorMessage.includes('No valid version available')
-      ) {
-        errorMessage =
-          'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
-      } else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
-        errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
-      } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
-        errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
-      }
-
-      await this.messageSender.sendError(errorMessage);
-      await this.state.setResetAgentViewAvailable(true);
-      await this.state.setSessionErrorState(true);
-    } catch (handlerError) {
-      // If error handling itself fails, log it and try to send a generic error
-      console.error('Error in handleError:', handlerError);
-      try {
-        await this.messageSender.sendError('An unexpected error occurred. Please try again.');
-        await this.state.setResetAgentViewAvailable(true);
-        await this.state.setSessionErrorState(true);
-      } catch {
-        // Last resort - at least log that we couldn't recover
-        console.error('Failed to send error message to webview');
-      }
+    if (this.state.agentInstance || this.state.isSessionActive) {
+      this.state.clearSessionState();
+      await this.state.setSessionActive(false);
+      await this.state.setSessionStarting(false);
     }
+
+    // Check for specific agent deactivation error
+    if (
+      errorMessage.includes('404') &&
+      errorMessage.includes('NOT_FOUND') &&
+      errorMessage.includes('No valid version available')
+    ) {
+      errorMessage =
+        'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
+    } else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
+      errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
+    } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
+      errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
+    }
+
+    await this.messageSender.sendError(errorMessage);
+    await this.state.setResetAgentViewAvailable(true);
+    await this.state.setSessionErrorState(true);
   }
 
   private async handleStartSession(message: AgentMessage): Promise<void> {
@@ -168,7 +152,7 @@ export class WebviewMessageHandlers {
       throw new Error('Invalid message: expected a string.');
     }
 
-    this.channelService.appendLine(`Simulation message sent - "${userMessage}"`);
+    this.logger.debug('Sending message to agent preview');
 
     const response = await this.state.agentInstance.preview.send(userMessage);
 
@@ -177,7 +161,7 @@ export class WebviewMessageHandlers {
     this.state.currentUserMessage = userMessage;
 
     this.messageSender.sendMessageSent(lastMessage?.message);
-    this.channelService.appendLine(`Simulation message received - "${lastMessage?.message}"`);
+    this.logger.debug('Received response from agent preview');
 
     // Load and send trace data after sending message
     if (this.state.currentAgentId && this.state.currentAgentSource) {

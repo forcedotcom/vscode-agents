@@ -26,7 +26,6 @@ export interface AgentPreviewRef {
   sendMessage?: (message: string) => void;
 }
 
-
 export const normalizeHistoryMessage = (msg: any): Message => ({
   id: msg?.id || `${msg?.timestamp ?? 'history'}-${Date.now()}`,
   type: msg?.type as 'user' | 'agent',
@@ -224,7 +223,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeSessionStarted);
 
-
       const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
         const currentSelectedAgentId = selectedAgentIdRef.current;
         const currentPendingAgentId = pendingAgentIdRef.current;
@@ -280,7 +278,6 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeSimulationStarting);
 
-
       const disposeMessageSent = vscodeApi.onMessage('messageSent', data => {
         if (data && data.content) {
           const agentMessage: Message = {
@@ -310,7 +307,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
         setMessages(prev => {
           const filteredMessages = pruneStartingSessionMessages(prev);
-          const errorMessage = createSystemMessage(data?.message || 'Something went wrong.', 'error');
+          const errorMessage = createSystemMessage(data?.message, 'error');
           return errorMessage ? [...filteredMessages, errorMessage] : filteredMessages;
         });
 

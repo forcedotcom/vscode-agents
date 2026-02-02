@@ -95,6 +95,21 @@
     "workspaceContains:sfdx-project.json"
   ],
   "contributes": {
+    "languages": [
+      {
+        "id": "afdx-log",
+        "extensions": [
+          ".afdxlog"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "afdx-log",
+        "scopeName": "text.afdx.log",
+        "path": "./syntaxes/afdx-log.tmLanguage.json"
+      }
+    ],
     "extensionPack": [
       "salesforce.salesforcedx-vscode-core",
       "salesforce.salesforcedx-vscode-apex-replay-debugger",
