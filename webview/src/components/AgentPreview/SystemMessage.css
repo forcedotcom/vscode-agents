@@ -12,7 +12,13 @@
 }
 
 .system-message.error {
+  color: var(--vscode-foreground);
+}
+
+.system-message-details {
   color: var(--vscode-errorForeground);
+  margin-top: 4px;
+  font-size: 11px;
 }
 
 .system-message.warning {

@@ -1,16 +1,4 @@
-.agent-preview {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background-color: var(--vscode-sideBar-background);
-  color: var(--vscode-foreground);
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-.agent-preview-error {
+.error-boundary-fallback {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -23,7 +11,7 @@
   margin: 0 auto;
 }
 
-.agent-preview-error-icon {
+.error-boundary-icon {
   margin-bottom: 20px;
   opacity: 0.2;
   width: 50px;
@@ -34,13 +22,13 @@
   background-position: center;
 }
 
-body.vscode-dark .agent-preview-error-icon,
-body.vscode-high-contrast .agent-preview-error-icon {
+body.vscode-dark .error-boundary-icon,
+body.vscode-high-contrast .error-boundary-icon {
   background-image: url('../../assets/error-dark.svg');
 }
 
-.agent-preview-error-message {
-  margin: 0 0 10px 0;
+.error-boundary-fallback p {
+  margin: 0 0 30px 0;
   color: var(--vscode-foreground);
   font-size: 14px;
   font-weight: 500;
@@ -48,16 +36,15 @@ body.vscode-high-contrast .agent-preview-error-icon {
   text-wrap: balance;
 }
 
-.agent-preview-error-details {
-  margin: 0 0 30px 0;
+.error-boundary-fallback .error-boundary-details {
   color: var(--vscode-descriptionForeground);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
-  text-wrap: balance;
+  margin: -20px 0 30px 0;
 }
 
-.agent-preview-error .vscode-button {
+.error-boundary-fallback .vscode-button {
   width: auto;
   min-width: auto;
 }

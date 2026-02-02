@@ -443,7 +443,7 @@
       },
       {
         "command": "sf.agent.combined.view.resetAgentView",
-        "title": "Reset Agent View",
+        "title": "Reset",
         "icon": "$(clear-all)"
       },
       {

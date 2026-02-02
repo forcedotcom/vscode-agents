@@ -236,7 +236,12 @@ export class HistoryManager {
 
       return entries;
     } catch (error) {
-      console.error('Could not load trace history:', error);
+      // NoSessionFound is expected for new agents with no previous sessions - don't log as error
+      const isExpectedError = error instanceof Error &&
+        (error.name === 'NoSessionFound' || error.message.includes('No sessions found'));
+      if (!isExpectedError) {
+        console.error('Could not load trace history:', error);
+      }
       return [];
     }
   }
@@ -262,7 +267,12 @@ export class HistoryManager {
 
       return transcriptEntries || [];
     } catch (err) {
-      console.error('Could not load conversation history:', err);
+      // NoSessionFound is expected for new agents with no previous sessions - don't log as error
+      const isExpectedError = err instanceof Error &&
+        (err.name === 'NoSessionFound' || err.message.includes('No sessions found'));
+      if (!isExpectedError) {
+        console.error('Could not load conversation history:', err);
+      }
       return [];
     }
   }

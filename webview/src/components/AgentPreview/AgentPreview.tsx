@@ -3,6 +3,7 @@ import ChatContainer from './ChatContainer.js';
 import FormContainer from './FormContainer.js';
 import PlaceholderContent from './PlaceholderContent.js';
 import AgentPreviewPlaceholder from './AgentPreviewPlaceholder.js';
+import { Button } from '../shared/Button.js';
 import { vscodeApi, Message, AgentInfo } from '../../services/vscodeApi.js';
 import { ChatInputRef } from './ChatInput.js';
 import './AgentPreview.css';
@@ -36,7 +37,11 @@ export const normalizeHistoryMessage = (msg: any): Message => ({
 export const pruneStartingSessionMessages = (messages: Message[]): Message[] =>
   messages.filter(message => !(message.type === 'system' && message.content === 'Starting session...'));
 
-export const createSystemMessage = (message?: string, systemType: Message['systemType'] = 'debug'): Message | null => {
+export const createSystemMessage = (
+  message?: string,
+  systemType: Message['systemType'] = 'debug',
+  details?: string
+): Message | null => {
   if (!message) {
     return null;
   }
@@ -46,6 +51,7 @@ export const createSystemMessage = (message?: string, systemType: Message['syste
     type: 'system',
     content: message,
     systemType,
+    details,
     timestamp: new Date().toISOString()
   };
 };
@@ -80,6 +86,8 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     const [loadingMessage, setLoadingMessage] = useState('Loading...');
     const [agentConnected, setAgentConnected] = useState(false);
     const [hasSessionError, setHasSessionError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>('');
+    const [errorDetails, setErrorDetails] = useState<string | undefined>(undefined);
     const [showPlaceholder, setShowPlaceholder] = useState(false);
     const sessionErrorTimestampRef = React.useRef<number>(0);
     const sessionActiveStateRef = React.useRef(false);
@@ -303,14 +311,10 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         setAgentConnected(false);
         sessionActiveStateRef.current = false;
         sessionErrorTimestampRef.current = Date.now();
-        setHasSessionError(true); // Set error state when session fails
-
-        setMessages(prev => {
-          const filteredMessages = pruneStartingSessionMessages(prev);
-          const errorMessage = createSystemMessage(data?.message, 'error');
-          return errorMessage ? [...filteredMessages, errorMessage] : filteredMessages;
-        });
-
+        setHasSessionError(true);
+        setErrorMessage(data?.message || 'Something went wrong. Please try again.');
+        setErrorDetails(data?.details);
+        setMessages(prev => pruneStartingSessionMessages(prev));
         setIsLoading(false);
         onSessionTransitionSettled();
       });
@@ -426,6 +430,30 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       setIsLoading(true);
       vscodeApi.startSession(selectedAgentId);
     };
+
+    const handleErrorReset = () => {
+      setHasSessionError(false);
+      setErrorMessage('');
+      setErrorDetails(undefined);
+      setShowPlaceholder(true);
+      vscodeApi.executeCommand('sf.agent.combined.view.resetAgentView');
+    };
+
+    // Show error screen when session error occurred
+    if (hasSessionError) {
+      return (
+        <div className="agent-preview">
+          <div className="agent-preview-error">
+            <div className="agent-preview-error-icon" />
+            <p className="agent-preview-error-message">{errorMessage}</p>
+            {errorDetails && <p className="agent-preview-error-details">{errorDetails}</p>}
+            <Button appearance="primary" size="small" onClick={handleErrorReset}>
+              Go Back
+            </Button>
+          </div>
+        </div>
+      );
+    }
 
     // Show placeholder when no agent is selected
     if (selectedAgentId === '') {

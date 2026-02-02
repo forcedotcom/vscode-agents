@@ -181,7 +181,7 @@ describe('package.json', () => {
         const resetCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.resetAgentView');
 
         expect(resetCommand).toBeDefined();
-        expect(resetCommand?.title).toBe('Reset Agent View');
+        expect(resetCommand?.title).toBe('Reset');
         expect(resetCommand?.icon).toBe('$(clear-all)');
       });
 

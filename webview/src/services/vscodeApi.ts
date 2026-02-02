@@ -10,6 +10,7 @@ export interface Message {
   type: 'user' | 'agent' | 'system';
   content: string;
   systemType?: 'session' | 'debug' | 'error' | 'warning';
+  details?: string;
   timestamp?: string;
 }
 
