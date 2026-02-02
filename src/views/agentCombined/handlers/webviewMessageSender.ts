@@ -93,9 +93,10 @@ export class WebviewMessageSender {
   }
 
   // Error messages
-  async sendError(message: string): Promise<void> {
+  async sendError(message: string, details?: string): Promise<void> {
     const sanitizedMessage = this.stripHtmlTags(message);
-    this.postMessage('error', { message: sanitizedMessage });
+    const sanitizedDetails = details ? this.stripHtmlTags(details) : undefined;
+    this.postMessage('error', { message: sanitizedMessage, details: sanitizedDetails });
   }
 
   sendDebugLogError(message: string): void {

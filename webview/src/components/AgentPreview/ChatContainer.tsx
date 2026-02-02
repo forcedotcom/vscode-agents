@@ -8,6 +8,7 @@ interface Message {
   type: 'user' | 'agent' | 'system';
   content: string;
   systemType?: 'session' | 'debug' | 'error' | 'warning';
+  details?: string;
   timestamp?: string;
 }
 
@@ -38,7 +39,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading, load
     <div className="chat-container" ref={chatContainerRef}>
       {messages.map(message =>
         message.type === 'system' ? (
-          <SystemMessage key={message.id} content={message.content} type={message.systemType} />
+          <SystemMessage key={message.id} content={message.content} type={message.systemType} details={message.details} />
         ) : (
           <ChatMessage key={message.id} type={message.type} content={message.content} />
         )

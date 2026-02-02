@@ -189,12 +189,15 @@ describe('WebviewMessageHandlers', () => {
       );
     });
 
-    it('should display original error message for unknown errors', async () => {
+    it('should display generic message with technical details for unknown errors', async () => {
       const error = new Error('Something unexpected happened');
 
       await handlers.handleError(error);
 
-      expect(mockMessageSender.sendError).toHaveBeenCalledWith('Something unexpected happened');
+      expect(mockMessageSender.sendError).toHaveBeenCalledWith(
+        'Something went wrong. Please try again.',
+        'Something unexpected happened'
+      );
     });
 
     it('should set error state flags', async () => {

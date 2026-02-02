@@ -36,7 +36,11 @@ export const normalizeHistoryMessage = (msg: any): Message => ({
 export const pruneStartingSessionMessages = (messages: Message[]): Message[] =>
   messages.filter(message => !(message.type === 'system' && message.content === 'Starting session...'));
 
-export const createSystemMessage = (message?: string, systemType: Message['systemType'] = 'debug'): Message | null => {
+export const createSystemMessage = (
+  message?: string,
+  systemType: Message['systemType'] = 'debug',
+  details?: string
+): Message | null => {
   if (!message) {
     return null;
   }
@@ -46,6 +50,7 @@ export const createSystemMessage = (message?: string, systemType: Message['syste
     type: 'system',
     content: message,
     systemType,
+    details,
     timestamp: new Date().toISOString()
   };
 };
@@ -307,7 +312,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
         setMessages(prev => {
           const filteredMessages = pruneStartingSessionMessages(prev);
-          const errorMessage = createSystemMessage(data?.message, 'error');
+          const errorMessage = createSystemMessage(data?.message, 'error', data?.details);
           return errorMessage ? [...filteredMessages, errorMessage] : filteredMessages;
         });
 

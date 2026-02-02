@@ -81,7 +81,7 @@ export class WebviewMessageHandlers {
   async handleError(err: unknown): Promise<void> {
     console.error('AgentCombinedViewProvider Error:', err);
     const sfError = SfError.wrap(err);
-    let errorMessage = sfError.message;
+    const originalErrorMessage = sfError.message;
     this.logger.error('AgentCombinedViewProvider error', sfError);
 
     this.state.pendingStartAgentId = undefined;
@@ -95,19 +95,26 @@ export class WebviewMessageHandlers {
 
     // Check for specific agent deactivation error
     if (
-      errorMessage.includes('404') &&
-      errorMessage.includes('NOT_FOUND') &&
-      errorMessage.includes('No valid version available')
+      originalErrorMessage.includes('404') &&
+      originalErrorMessage.includes('NOT_FOUND') &&
+      originalErrorMessage.includes('No valid version available')
     ) {
-      errorMessage =
-        'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.';
-    } else if (errorMessage.includes('NOT_FOUND') && errorMessage.includes('404')) {
-      errorMessage = "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.";
-    } else if (errorMessage.includes('403') || errorMessage.includes('FORBIDDEN')) {
-      errorMessage = "You don't have permission to use this agent. Consult your Salesforce administrator.";
+      await this.messageSender.sendError(
+        'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.'
+      );
+    } else if (originalErrorMessage.includes('NOT_FOUND') && originalErrorMessage.includes('404')) {
+      await this.messageSender.sendError(
+        "The selected agent couldn't be found. Either it's been deleted or you don't have access to it."
+      );
+    } else if (originalErrorMessage.includes('403') || originalErrorMessage.includes('FORBIDDEN')) {
+      await this.messageSender.sendError(
+        "You don't have permission to use this agent. Consult your Salesforce administrator."
+      );
+    } else {
+      // For unknown errors, show generic message with technical details
+      await this.messageSender.sendError('Something went wrong. Please try again.', originalErrorMessage);
     }
 
-    await this.messageSender.sendError(errorMessage);
     await this.state.setResetAgentViewAvailable(true);
     await this.state.setSessionErrorState(true);
   }
