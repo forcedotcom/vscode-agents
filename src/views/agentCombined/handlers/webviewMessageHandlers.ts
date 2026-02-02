@@ -100,15 +100,18 @@ export class WebviewMessageHandlers {
       originalErrorMessage.includes('No valid version available')
     ) {
       await this.messageSender.sendError(
-        'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.'
+        'This agent is currently deactivated, so you can\'t converse with it.  Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.',
+        originalErrorMessage
       );
     } else if (originalErrorMessage.includes('NOT_FOUND') && originalErrorMessage.includes('404')) {
       await this.messageSender.sendError(
-        "The selected agent couldn't be found. Either it's been deleted or you don't have access to it."
+        "The selected agent couldn't be found. Either it's been deleted or you don't have access to it.",
+        originalErrorMessage
       );
     } else if (originalErrorMessage.includes('403') || originalErrorMessage.includes('FORBIDDEN')) {
       await this.messageSender.sendError(
-        "You don't have permission to use this agent. Consult your Salesforce administrator."
+        "You don't have permission to use this agent. Consult your Salesforce administrator.",
+        originalErrorMessage
       );
     } else {
       // For unknown errors, show generic message with technical details
