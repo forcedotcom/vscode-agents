@@ -193,7 +193,7 @@ describe('AgentTracer helpers', () => {
 
     const items = buildTimelineItems(trace, () => {});
     expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('Entered Topic');
+    expect(items[0].label).toBe('Topic Selected');
     expect(items[0].description).toBe('share_local_events');
   });
 
