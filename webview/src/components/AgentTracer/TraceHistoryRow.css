@@ -1,5 +1,5 @@
 .trace-history-row {
-  margin: 0 14px;
+  margin: 0 14px 0 8px;
 }
 
 .trace-history-row__header-wrapper {
@@ -126,7 +126,7 @@
 }
 
 .trace-history-row__content {
-  padding: 5px 0 10px 5px;
+  padding: 8px 0 4px 5px;
 }
 
 .trace-history-row__content .tracer-info-table {
@@ -134,7 +134,7 @@
 }
 
 .trace-history-row__timeline {
-  margin-top: 6px;
+  margin-top: 8px;
   padding-left: 0;
   padding-bottom: 0;
 }

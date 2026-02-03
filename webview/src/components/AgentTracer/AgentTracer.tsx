@@ -345,6 +345,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+  const [selectedHistoryIndex, setSelectedHistoryIndex] = useState<number | null>(null);
   const [panelHeight, setPanelHeight] = useState<number>(300);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
@@ -369,6 +370,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       if (entry) {
         setTraceData(entry.trace);
       }
+      setSelectedHistoryIndex(historyIndex);
       setSelectedStepIndex(stepIndex);
     },
     [traceHistory]
@@ -421,6 +423,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       setTraceHistory([]);
       setTraceData(null);
       setSelectedStepIndex(null);
+      setSelectedHistoryIndex(null);
       setExpandedPlanIds(new Set());
     });
 
@@ -435,6 +438,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
         setTraceHistory([]);
         setTraceData(null);
         setSelectedStepIndex(null);
+        setSelectedHistoryIndex(null);
         setExpandedPlanIds(new Set());
         setLoading(false);
         vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: 0, entries: [] });
@@ -448,6 +452,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       const latestEntry = entries[entries.length - 1];
       setTraceData(latestEntry.trace);
       setSelectedStepIndex(null);
+      setSelectedHistoryIndex(null);
 
       // Expand only the latest entry (collapse others)
       setExpandedPlanIds(new Set([latestEntry.planId]));
@@ -541,6 +546,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     onOpenJson={() => handleRowOpenJson(entry)}
                     timelineItems={timelineItems}
                     message={message}
+                    selectedStepIndex={selectedHistoryIndex === index ? selectedStepIndex ?? undefined : undefined}
                   />
                 );
               })}
@@ -565,7 +571,10 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <TabNavigation
             activeTab={0}
             onTabChange={() => {}}
-            onClose={() => setSelectedStepIndex(null)}
+            onClose={() => {
+                  setSelectedStepIndex(null);
+                  setSelectedHistoryIndex(null);
+                }}
             tabs={[
               {
                 id: 'json',

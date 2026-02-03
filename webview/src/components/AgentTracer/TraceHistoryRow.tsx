@@ -35,6 +35,8 @@ export interface TraceHistoryRowProps {
   timelineItems: TimelineItemProps[];
   /** Message string for header display */
   message: string;
+  /** Currently selected step index in this row's timeline */
+  selectedStepIndex?: number;
 }
 
 export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
@@ -44,7 +46,8 @@ export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
   onExpandedChange,
   onOpenJson,
   timelineItems,
-  message
+  message,
+  selectedStepIndex
 }) => {
   const contentId = `trace-history-content-${index}`;
 
@@ -127,7 +130,7 @@ export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
           </table>
 
           <div className="trace-history-row__timeline">
-            <Timeline items={timelineItems} />
+            <Timeline items={timelineItems} selectedIndex={selectedStepIndex} />
           </div>
         </div>
       )}

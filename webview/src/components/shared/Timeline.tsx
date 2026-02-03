@@ -55,6 +55,10 @@ export interface TimelineProps extends React.HTMLAttributes<HTMLDivElement> {
    * Timeline items to display
    */
   items: TimelineItemProps[];
+  /**
+   * Index of the currently selected item
+   */
+  selectedIndex?: number;
 }
 
 /**
@@ -66,22 +70,30 @@ export interface TimelineProps extends React.HTMLAttributes<HTMLDivElement> {
  *
  * @public
  */
-export const Timeline = React.forwardRef<HTMLDivElement, TimelineProps>(({ items, className, ...props }, ref) => {
-  const timelineClass = ['vscode-timeline', className].filter(Boolean).join(' ');
+export const Timeline = React.forwardRef<HTMLDivElement, TimelineProps>(
+  ({ items, selectedIndex, className, ...props }, ref) => {
+    const timelineClass = ['vscode-timeline', className].filter(Boolean).join(' ');
 
-  return (
-    <div ref={ref} className={timelineClass} {...props}>
-      {items.map((item, index) => (
-        <TimelineItem key={index} {...item} isLast={index === items.length - 1} />
-      ))}
-    </div>
-  );
-});
+    return (
+      <div ref={ref} className={timelineClass} {...props}>
+        {items.map((item, index) => (
+          <TimelineItem
+            key={index}
+            {...item}
+            isLast={index === items.length - 1}
+            isSelected={selectedIndex === index}
+          />
+        ))}
+      </div>
+    );
+  }
+);
 
 Timeline.displayName = 'Timeline';
 
 interface TimelineItemInternalProps extends TimelineItemProps {
   isLast: boolean;
+  isSelected?: boolean;
 }
 
 // SVG icon components for each icon name (VS Code icons from microsoft/vscode-icons)
@@ -231,7 +243,8 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
   href,
   onClick,
   isLast,
-  icon
+  icon,
+  isSelected
 }) => {
   const getIconContent = () => {
     // If a custom icon is provided, use it
@@ -256,7 +269,8 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
     'vscode-timeline-item',
     `vscode-timeline-item--${status}`,
     isLast && 'vscode-timeline-item--last',
-    onClick && 'vscode-timeline-item--clickable'
+    onClick && 'vscode-timeline-item--clickable',
+    isSelected && 'vscode-timeline-item--selected'
   ]
     .filter(Boolean)
     .join(' ');
