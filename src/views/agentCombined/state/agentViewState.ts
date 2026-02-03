@@ -15,6 +15,7 @@ export class AgentViewState {
   private _currentAgentSource?: AgentSource;
   private _currentPlanId?: string;
   private _currentUserMessage?: string;
+  private _lastTraceData?: unknown;
 
   // Session state
   private _isSessionActive = false;
@@ -78,6 +79,10 @@ export class AgentViewState {
     return this._currentUserMessage;
   }
 
+  get lastTraceData(): unknown | undefined {
+    return this._lastTraceData;
+  }
+
   get isSessionActive(): boolean {
     return this._isSessionActive;
   }
@@ -139,6 +144,10 @@ export class AgentViewState {
 
   set currentUserMessage(value: string | undefined) {
     this._currentUserMessage = value;
+  }
+
+  set lastTraceData(value: unknown | undefined) {
+    this._lastTraceData = value;
   }
 
   set pendingStartAgentId(value: string | undefined) {
@@ -227,6 +236,7 @@ export class AgentViewState {
     this._currentAgentName = undefined;
     this._currentPlanId = undefined;
     this._currentUserMessage = undefined;
+    this._lastTraceData = undefined;
     this._pendingStartAgentId = undefined;
     this._pendingStartAgentSource = undefined;
   }

@@ -407,4 +407,32 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const agentSource = this.state.currentAgentSource ?? (await getAgentSource(this.state.currentAgentId));
     await this.historyManager.clearHistory(this.state.currentAgentId, agentSource);
   }
+
+  /**
+   * Opens the last trace payload in the editor (for debugging)
+   */
+  public async showLastTrace(): Promise<void> {
+    const trace = this.state.lastTraceData;
+
+    if (!trace) {
+      vscode.window.showWarningMessage('No trace data available. Send a message first.');
+      return;
+    }
+
+    try {
+      const traceJson = JSON.stringify(trace, null, 2);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const uri = vscode.Uri.parse(`untitled:trace-${timestamp}.json`);
+
+      const document = await vscode.workspace.openTextDocument(uri);
+      const edit = new vscode.WorkspaceEdit();
+      edit.insert(uri, new vscode.Position(0, 0), traceJson);
+      await vscode.workspace.applyEdit(edit);
+
+      await vscode.window.showTextDocument(document, { preview: true });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Unable to show trace: ${errorMessage}`);
+    }
+  }
 }

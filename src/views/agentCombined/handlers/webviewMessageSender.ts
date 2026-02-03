@@ -85,6 +85,8 @@ export class WebviewMessageSender {
   }
 
   sendTraceData(trace: unknown): void {
+    // Store the trace data for debugging/introspection
+    this.state.lastTraceData = trace;
     this.postMessage('traceData', trace);
   }
 

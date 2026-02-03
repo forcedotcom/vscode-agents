@@ -495,5 +495,12 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
     })
   );
 
+  // Dev-only command to inspect trace payload
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.showLastTrace', async () => {
+      await provider.showLastTrace();
+    })
+  );
+
   return vscode.Disposable.from(...disposables);
 };

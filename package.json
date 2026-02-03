@@ -459,6 +459,10 @@
         "enablement": "agentforceDX:debugMode"
       },
       {
+        "command": "sf.agent.combined.view.showLastTrace",
+        "title": "AFDX: Show Last Trace"
+      },
+      {
         "command": "salesforcedx-vscode-agents.previewAgent",
         "title": "AFDX: Preview This Agent"
       },
