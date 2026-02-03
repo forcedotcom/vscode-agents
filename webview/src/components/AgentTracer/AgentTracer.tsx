@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
-import { TimelineItemProps } from '../shared/Timeline.js';
+import { TimelineItemProps, TimelineIconName } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
 import TabNavigation from '../shared/TabNavigation.js';
 import SystemMessage from '../AgentPreview/SystemMessage.js';
@@ -123,7 +123,7 @@ export const applyHistorySelection = (
 const STEP_DISPLAY_NAMES: Record<string, string> = {
   UserInputStep: 'User Input',
   SessionInitialStateStep: 'Session Initialized',
-  NodeEntryStateStep: 'Entered Topic',
+  NodeEntryStateStep: 'Topic Selected',
   EnabledToolsStep: 'Tools Enabled',
   LLMStep: 'Reasoning',
   VariableUpdateStep: 'Variable Update',
@@ -133,6 +133,22 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   PlannerResponseStep: 'Agent Response',
   UpdateTopicStep: 'Topic Selected',
   FunctionStep: 'Action Executed'
+};
+
+// Map step types to icons (VS Code icons)
+const STEP_ICONS: Record<string, TimelineIconName> = {
+  UserInputStep: 'account',
+  SessionInitialStateStep: 'debug-start',
+  NodeEntryStateStep: 'check-all',
+  EnabledToolsStep: 'tools',
+  LLMStep: 'lightbulb',
+  VariableUpdateStep: 'symbol-namespace',
+  TransitionStep: 'arrow-right',
+  BeforeReasoningStep: 'checklist',
+  ReasoningStep: 'search',
+  PlannerResponseStep: 'agent',
+  UpdateTopicStep: 'tag',
+  FunctionStep: 'run-all'
 };
 
 // Get the description/subtitle for a step based on its type
@@ -245,6 +261,9 @@ export const buildTimelineItems = (
     // Get user-friendly display name
     const displayType = STEP_DISPLAY_NAMES[stepType] || stepType;
 
+    // Get icon for this step type
+    const icon = STEP_ICONS[stepType];
+
     let label: string;
     if (stepType && stepName) {
       label = `${displayType}: ${stepName}`;
@@ -263,6 +282,7 @@ export const buildTimelineItems = (
       status,
       label,
       description,
+      icon,
       onClick: hasData ? () => onSelect(index) : undefined
     };
   });
