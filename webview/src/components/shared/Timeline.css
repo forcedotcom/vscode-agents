@@ -14,7 +14,7 @@
   display: flex;
   gap: 12px;
   position: relative;
-  padding: 4px 4px 4px 8px;
+  padding: 8px 4px 8px 8px;
 }
 
 .vscode-timeline-item__indicator {
@@ -48,14 +48,14 @@
   flex: 1;
   background-color: var(--vscode-descriptionForeground);
   min-height: 16px;
-  margin-bottom: -8px;
+  margin-bottom: -16px;
 }
 
 .vscode-timeline-item__content {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-bottom: 12px;
+  padding-bottom: 4px;
   flex: 1;
   min-width: 0;
 }
