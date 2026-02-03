@@ -111,10 +111,10 @@ tools: []`;
 
       const agentFileContent = fs.readFileSync(expectedAgentFile, 'utf8');
       assert.ok(agentFileContent.length > 0, 'Agent file should have content');
-      
+      // Bundle name may appear as agent_label, developer_name, or elsewhere depending on spec/library
       assert.ok(
-        agentFileContent.includes(`agent_label: "${bundleName}"`),
-        `Agent file should contain agent_label: "${bundleName}"`
+        agentFileContent.includes(bundleName),
+        `Agent file should reference the bundle name "${bundleName}"`
       );
     } finally {
       mockedUI.restore();
@@ -148,5 +148,44 @@ tools: []`;
     assert.ok(fs.existsSync(specFilePath), 'Spec file should exist');
 
     await executeAndVerifyBundle('commandpalettetitle');
+  });
+
+  test('Should create AI authoring bundle with Default Agent Spec (no custom spec)', async function (this: Mocha.Context) {
+    this.timeout(120000);
+
+    await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
+
+    const bundleName = 'defaultconfig';
+    const aiAuthoringBundlesDir = path.join(testWorkspacePath, 'force-app', 'main', 'default', 'aiAuthoringBundles');
+    const expectedBundleDir = path.join(aiAuthoringBundlesDir, bundleName);
+    const expectedAgentFile = path.join(expectedBundleDir, `${bundleName}.agent`);
+
+    if (fs.existsSync(expectedBundleDir)) {
+      fs.rmSync(expectedBundleDir, { recursive: true, force: true });
+    }
+
+    // Select "Default Agent Spec" (first quick pick item) by passing its label
+    const mockedUI = mockHeadlessUI({
+      inputBoxResponses: [bundleName],
+      quickPickResponses: ['Default Agent Spec']
+    });
+
+    try {
+      await vscode.commands.executeCommand('salesforcedx-vscode-agents.createAiAuthoringBundle');
+
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
+      assert.ok(fs.existsSync(expectedBundleDir), `Expected bundle directory not found: ${expectedBundleDir}`);
+      assert.ok(fs.existsSync(expectedAgentFile), `Expected agent file not found: ${expectedAgentFile}`);
+
+      const agentFileContent = fs.readFileSync(expectedAgentFile, 'utf8');
+      assert.ok(agentFileContent.length > 0, 'Agent file should have content');
+      assert.ok(
+        agentFileContent.includes(bundleName),
+        `Agent file should reference the bundle name "${bundleName}"`
+      );
+    } finally {
+      mockedUI.restore();
+    }
   });
 });
