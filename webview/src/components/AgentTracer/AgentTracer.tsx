@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
-import { TimelineItemProps } from '../shared/Timeline.js';
+import { TimelineItemProps, TimelineIconName } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
 import TabNavigation from '../shared/TabNavigation.js';
 import SystemMessage from '../AgentPreview/SystemMessage.js';
@@ -135,6 +135,22 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   FunctionStep: 'Action Executed'
 };
 
+// Map step types to icons (VS Code icons)
+const STEP_ICONS: Record<string, TimelineIconName> = {
+  UserInputStep: 'account',
+  SessionInitialStateStep: 'rocket',
+  NodeEntryStateStep: 'sign-in',
+  EnabledToolsStep: 'tools',
+  LLMStep: 'lightbulb',
+  VariableUpdateStep: 'symbol-variable',
+  TransitionStep: 'arrow-right',
+  BeforeReasoningStep: 'history',
+  ReasoningStep: 'eye',
+  PlannerResponseStep: 'comment',
+  UpdateTopicStep: 'tag',
+  FunctionStep: 'run'
+};
+
 // Get the description/subtitle for a step based on its type
 const getStepDescription = (step: any): string | undefined => {
   const stepType = step.type || step.stepType || '';
@@ -245,6 +261,9 @@ export const buildTimelineItems = (
     // Get user-friendly display name
     const displayType = STEP_DISPLAY_NAMES[stepType] || stepType;
 
+    // Get icon for this step type
+    const icon = STEP_ICONS[stepType];
+
     let label: string;
     if (stepType && stepName) {
       label = `${displayType}: ${stepName}`;
@@ -263,6 +282,7 @@ export const buildTimelineItems = (
       status,
       label,
       description,
+      icon,
       onClick: hasData ? () => onSelect(index) : undefined
     };
   });
