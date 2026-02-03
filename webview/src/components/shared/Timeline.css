@@ -148,13 +148,10 @@
 
 /* Hover state for clickable items - subtle overlay that blends with sidebar */
 .vscode-timeline-item--clickable:hover {
-  background-color: var(--vscode-foreground);
-  opacity: 1;
+  background-color: transparent;
   border-radius: 4px;
-  margin-left: -4px;
-  margin-right: -4px;
-  padding-left: 4px;
-  padding-right: 4px;
+  margin: -4px -4px -4px -8px;
+  padding: 4px 4px 4px 8px;
 }
 
 .vscode-timeline-item--clickable:hover::before {
@@ -167,12 +164,13 @@
   pointer-events: none;
 }
 
-/* Remove the background from the parent, use only the pseudo-element */
-.vscode-timeline-item--clickable:hover {
-  background-color: transparent;
+/* Selected state - slightly stronger overlay */
+.vscode-timeline-item--selected {
+  border-radius: 4px;
+  margin: -4px -4px -4px -8px;
+  padding: 4px 4px 4px 8px;
 }
 
-/* Selected state - slightly stronger overlay */
 .vscode-timeline-item--selected::before {
   content: '';
   position: absolute;
@@ -181,12 +179,4 @@
   opacity: 0.1;
   border-radius: 4px;
   pointer-events: none;
-}
-
-.vscode-timeline-item--selected {
-  border-radius: 4px;
-  margin-left: -4px;
-  margin-right: -4px;
-  padding-left: 4px;
-  padding-right: 4px;
 }
