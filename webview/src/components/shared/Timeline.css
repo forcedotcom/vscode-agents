@@ -48,6 +48,7 @@
   flex: 1;
   background-color: var(--vscode-descriptionForeground);
   min-height: 16px;
+  margin-bottom: -8px;
 }
 
 .vscode-timeline-item__content {
