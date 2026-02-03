@@ -123,7 +123,7 @@ export const applyHistorySelection = (
 const STEP_DISPLAY_NAMES: Record<string, string> = {
   UserInputStep: 'User Input',
   SessionInitialStateStep: 'Session Initialized',
-  NodeEntryStateStep: 'Entered Topic',
+  NodeEntryStateStep: 'Topic Selected',
   EnabledToolsStep: 'Tools Enabled',
   LLMStep: 'Reasoning',
   VariableUpdateStep: 'Variable Update',
@@ -138,17 +138,17 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
 // Map step types to icons (VS Code icons)
 const STEP_ICONS: Record<string, TimelineIconName> = {
   UserInputStep: 'account',
-  SessionInitialStateStep: 'rocket',
-  NodeEntryStateStep: 'sign-in',
+  SessionInitialStateStep: 'debug-start',
+  NodeEntryStateStep: 'check-all',
   EnabledToolsStep: 'tools',
   LLMStep: 'lightbulb',
-  VariableUpdateStep: 'symbol-variable',
+  VariableUpdateStep: 'symbol-namespace',
   TransitionStep: 'arrow-right',
-  BeforeReasoningStep: 'history',
-  ReasoningStep: 'eye',
-  PlannerResponseStep: 'comment',
+  BeforeReasoningStep: 'checklist',
+  ReasoningStep: 'search',
+  PlannerResponseStep: 'agent',
   UpdateTopicStep: 'tag',
-  FunctionStep: 'run'
+  FunctionStep: 'run-all'
 };
 
 // Get the description/subtitle for a step based on its type
