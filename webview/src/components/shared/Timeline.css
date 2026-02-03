@@ -146,9 +146,10 @@
   color: var(--vscode-textLink-foreground);
 }
 
-/* Hover state for clickable items */
+/* Hover state for clickable items - subtle overlay that blends with sidebar */
 .vscode-timeline-item--clickable:hover {
-  background-color: var(--vscode-list-hoverBackground);
+  background-color: var(--vscode-foreground);
+  opacity: 1;
   border-radius: 4px;
   margin-left: -4px;
   margin-right: -4px;
@@ -156,21 +157,36 @@
   padding-right: 4px;
 }
 
-/* Selected state */
+.vscode-timeline-item--clickable:hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--vscode-foreground);
+  opacity: 0.06;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Remove the background from the parent, use only the pseudo-element */
+.vscode-timeline-item--clickable:hover {
+  background-color: transparent;
+}
+
+/* Selected state - slightly stronger overlay */
+.vscode-timeline-item--selected::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--vscode-foreground);
+  opacity: 0.1;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
 .vscode-timeline-item--selected {
-  background-color: var(--vscode-list-activeSelectionBackground);
   border-radius: 4px;
   margin-left: -4px;
   margin-right: -4px;
   padding-left: 4px;
   padding-right: 4px;
-}
-
-.vscode-timeline-item--selected .vscode-timeline-item__label {
-  color: var(--vscode-list-activeSelectionForeground);
-}
-
-.vscode-timeline-item--selected .vscode-timeline-item__description {
-  color: var(--vscode-list-activeSelectionForeground);
-  opacity: 0.9;
 }
