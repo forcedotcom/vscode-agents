@@ -145,3 +145,32 @@
 .vscode-timeline-item--clickable .vscode-timeline-item__label {
   color: var(--vscode-textLink-foreground);
 }
+
+/* Hover state for clickable items */
+.vscode-timeline-item--clickable:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  border-radius: 4px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* Selected state */
+.vscode-timeline-item--selected {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  border-radius: 4px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.vscode-timeline-item--selected .vscode-timeline-item__label {
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.vscode-timeline-item--selected .vscode-timeline-item__description {
+  color: var(--vscode-list-activeSelectionForeground);
+  opacity: 0.9;
+}
