@@ -14,6 +14,7 @@
   display: flex;
   gap: 12px;
   position: relative;
+  padding: 8px 4px 8px 8px;
 }
 
 .vscode-timeline-item__indicator {
@@ -24,8 +25,8 @@
 }
 
 .vscode-timeline-item__icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,14 +47,15 @@
   width: 2px;
   flex: 1;
   background-color: var(--vscode-descriptionForeground);
-  min-height: 24px;
+  min-height: 16px;
+  margin-bottom: -16px;
 }
 
 .vscode-timeline-item__content {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-bottom: 16px;
+  padding-bottom: 4px;
   flex: 1;
   min-width: 0;
 }
@@ -144,4 +146,26 @@
 /* Clickable items - style as links */
 .vscode-timeline-item--clickable .vscode-timeline-item__label {
   color: var(--vscode-textLink-foreground);
+}
+
+/* Hover state for clickable items - subtle overlay that blends with sidebar */
+.vscode-timeline-item--clickable:hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--vscode-foreground);
+  opacity: 0.06;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Selected state - slightly stronger overlay */
+.vscode-timeline-item--selected::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--vscode-foreground);
+  opacity: 0.1;
+  border-radius: 4px;
+  pointer-events: none;
 }

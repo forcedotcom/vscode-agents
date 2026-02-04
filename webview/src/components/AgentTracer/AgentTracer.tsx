@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TracerPlaceholder from './TracerPlaceholder.js';
-import { TimelineItemProps } from '../shared/Timeline.js';
+import { TimelineItemProps, TimelineIconName } from '../shared/Timeline.js';
 import { CodeBlock } from '../shared/CodeBlock.js';
 import TabNavigation from '../shared/TabNavigation.js';
 import SystemMessage from '../AgentPreview/SystemMessage.js';
@@ -123,7 +123,7 @@ export const applyHistorySelection = (
 const STEP_DISPLAY_NAMES: Record<string, string> = {
   UserInputStep: 'User Input',
   SessionInitialStateStep: 'Session Initialized',
-  NodeEntryStateStep: 'Entered Topic',
+  NodeEntryStateStep: 'Topic Selected',
   EnabledToolsStep: 'Tools Enabled',
   LLMStep: 'Reasoning',
   VariableUpdateStep: 'Variable Update',
@@ -133,6 +133,22 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   PlannerResponseStep: 'Agent Response',
   UpdateTopicStep: 'Topic Selected',
   FunctionStep: 'Action Executed'
+};
+
+// Map step types to icons (VS Code icons)
+const STEP_ICONS: Record<string, TimelineIconName> = {
+  UserInputStep: 'account',
+  SessionInitialStateStep: 'debug-start',
+  NodeEntryStateStep: 'check-all',
+  EnabledToolsStep: 'tools',
+  LLMStep: 'lightbulb',
+  VariableUpdateStep: 'symbol-namespace',
+  TransitionStep: 'arrow-right',
+  BeforeReasoningStep: 'checklist',
+  ReasoningStep: 'search',
+  PlannerResponseStep: 'agent',
+  UpdateTopicStep: 'tag',
+  FunctionStep: 'run-all'
 };
 
 // Get the description/subtitle for a step based on its type
@@ -245,6 +261,9 @@ export const buildTimelineItems = (
     // Get user-friendly display name
     const displayType = STEP_DISPLAY_NAMES[stepType] || stepType;
 
+    // Get icon for this step type
+    const icon = STEP_ICONS[stepType];
+
     let label: string;
     if (stepType && stepName) {
       label = `${displayType}: ${stepName}`;
@@ -263,6 +282,7 @@ export const buildTimelineItems = (
       status,
       label,
       description,
+      icon,
       onClick: hasData ? () => onSelect(index) : undefined
     };
   });
@@ -325,6 +345,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+  const [selectedHistoryIndex, setSelectedHistoryIndex] = useState<number | null>(null);
   const [panelHeight, setPanelHeight] = useState<number>(300);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
@@ -349,6 +370,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       if (entry) {
         setTraceData(entry.trace);
       }
+      setSelectedHistoryIndex(historyIndex);
       setSelectedStepIndex(stepIndex);
     },
     [traceHistory]
@@ -401,6 +423,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       setTraceHistory([]);
       setTraceData(null);
       setSelectedStepIndex(null);
+      setSelectedHistoryIndex(null);
       setExpandedPlanIds(new Set());
     });
 
@@ -415,6 +438,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
         setTraceHistory([]);
         setTraceData(null);
         setSelectedStepIndex(null);
+        setSelectedHistoryIndex(null);
         setExpandedPlanIds(new Set());
         setLoading(false);
         vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: 0, entries: [] });
@@ -428,6 +452,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       const latestEntry = entries[entries.length - 1];
       setTraceData(latestEntry.trace);
       setSelectedStepIndex(null);
+      setSelectedHistoryIndex(null);
 
       // Expand only the latest entry (collapse others)
       setExpandedPlanIds(new Set([latestEntry.planId]));
@@ -521,6 +546,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     onOpenJson={() => handleRowOpenJson(entry)}
                     timelineItems={timelineItems}
                     message={message}
+                    selectedStepIndex={selectedHistoryIndex === index ? selectedStepIndex ?? undefined : undefined}
                   />
                 );
               })}
@@ -545,7 +571,10 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <TabNavigation
             activeTab={0}
             onTabChange={() => {}}
-            onClose={() => setSelectedStepIndex(null)}
+            onClose={() => {
+                  setSelectedStepIndex(null);
+                  setSelectedHistoryIndex(null);
+                }}
             tabs={[
               {
                 id: 'json',
