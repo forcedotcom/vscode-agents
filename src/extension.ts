@@ -61,6 +61,15 @@ export async function activate(context: vscode.ExtensionContext) {
     // Set initial value
     updateTestApiEnv();
 
+    // Initialize and watch SF_SKIP_RETRIEVE setting
+    const updateSkipRetrieveEnv = () => {
+      const config = vscode.workspace.getConfiguration('salesforce.agentforceDX');
+      process.env.SF_SKIP_RETRIEVE = config.get<boolean>('skipRetrieve', false) ? 'true' : 'false';
+    };
+
+    // Set initial value
+    updateSkipRetrieveEnv();
+
     // Watch for configuration changes
     context.subscriptions.push(
       vscode.workspace.onDidChangeConfiguration(e => {
@@ -235,13 +244,13 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
       if (scriptAgents.length > 0) {
         allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
         allAgents.push(
-        ...scriptAgents.map(agent => ({
-          label: agent.name,
-          description: agent.id ? path.basename(agent.id) : undefined,
-          // For script agents, use aabName to match what the webview expects
-          id: agent.aabName || agent.id,
-          source: agent.source
-        }))
+          ...scriptAgents.map(agent => ({
+            label: agent.name,
+            description: agent.id ? path.basename(agent.id) : undefined,
+            // For script agents, use aabName to match what the webview expects
+            id: agent.aabName || agent.id,
+            source: agent.source
+          }))
         );
       }
 

@@ -134,6 +134,11 @@
           "type": "boolean",
           "default": false,
           "description": "Enable SF_TEST_API mode. When enabled, sets the SF_TEST_API environment variable for agent compilation and simulation."
+        },
+        "salesforce.agentforceDX.skipRetrieve": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip retrieving agent metadata to your DX project when publishing the authoring bundle to your org."
         }
       }
     },
