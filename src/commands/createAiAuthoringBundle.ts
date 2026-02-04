@@ -50,7 +50,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       // Prompt for bundle name (regular name)
       const name = await vscode.window.showInputBox({
         prompt: 'Enter the name of the new authoring bundle.',
-        placeHolder: 'My Agent Bundle',
+        placeHolder: 'My Agent Name',
         validateInput: value => {
           if (!value) {
             return 'Bundle name is required';
@@ -86,26 +86,47 @@ export const registerCreateAiAuthoringBundleCommand = () => {
         logger.warn(`No agent spec directory found at ${specsDir}`);
       }
 
-      type SpecPickItem = vscode.QuickPickItem & { isDefaultSpec?: boolean };
-      const specItems: SpecPickItem[] = [
+      type SpecTypePickItem = vscode.QuickPickItem & { isCustom: boolean };
+      const specTypeItems: SpecTypePickItem[] = [
         {
           label: 'Default Agent Spec',
           description: 'Create bundle without a custom spec',
-          isDefaultSpec: true
+          isCustom: false
         },
-        ...specFiles.map(file => ({ label: file, isDefaultSpec: false }) as SpecPickItem)
+        ...(specFiles.length > 0
+          ? [
+              {
+                label: 'Custom Agent Spec',
+                description: 'Choose from available spec files',
+                isCustom: true
+              }
+            ]
+          : [])
       ];
 
-      const selectedItem = await vscode.window.showQuickPick(specItems, {
-        placeHolder: 'Select an agent spec YAML file to generate the authoring bundle from.',
-        title: 'Choose Agent Spec'
+      const selectedType = await vscode.window.showQuickPick(specTypeItems, {
+        placeHolder: 'Select the type of agent spec to use.',
+        title: 'Choose Agent Spec Type'
       });
 
-      if (!selectedItem) {
+      if (!selectedType) {
         return; // User cancelled
       }
 
-      const spec = (selectedItem as SpecPickItem).isDefaultSpec ? undefined : path.join(specsDir, selectedItem.label);
+      let spec: string | undefined;
+
+      if (selectedType.isCustom) {
+        const selectedSpecFile = await vscode.window.showQuickPick(specFiles, {
+          placeHolder: 'Select an agent spec YAML file.',
+          title: 'Choose Agent Spec File'
+        });
+
+        if (!selectedSpecFile) {
+          return; // User cancelled
+        }
+
+        spec = path.join(specsDir, selectedSpecFile);
+      }
 
       // Show progress
       await vscode.window.withProgress(
@@ -139,8 +160,10 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const agentFilePath = path.join(targetDir, 'aiAuthoringBundles', apiName, `${apiName}.agent`);
           const doc = await vscode.workspace.openTextDocument(agentFilePath);
           await vscode.window.showTextDocument(doc);
-          // Wait a moment to show success
-          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Refresh agent list and auto-select the newly created agent
+          await vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', apiName);
+
           vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
         }
       );
