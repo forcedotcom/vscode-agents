@@ -72,7 +72,8 @@ describe('previewAgent', () => {
       jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(undefined as any);
       const handler = registerAndGetHandler();
 
-      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
+      // Use realistic path: /project/agents/AgentName/AgentName.agent
+      const mockUri = { fsPath: '/project/agents/TestAgent/TestAgent.agent' } as vscodeTypes.Uri;
       await handler(mockUri);
 
       expect(errorMessageSpy).toHaveBeenCalledWith('Failed to get Agent Preview provider.');
@@ -106,21 +107,24 @@ describe('previewAgent', () => {
 
       const handler = registerAndGetHandler();
 
-      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
+      // Use realistic path: /project/agents/AgentName/AgentName.agent
+      // The aabName (bundle name) is extracted as the parent directory: "TestAgent"
+      const mockUri = { fsPath: '/project/agents/TestAgent/TestAgent.agent' } as vscodeTypes.Uri;
       const handlerPromise = handler(mockUri);
-      
+
       // Advance timers to allow webview ready check
       jest.advanceTimersByTime(500);
       await handlerPromise;
 
-      expect(providerMock.setAgentId).toHaveBeenCalledWith('/tmp/preview.agent');
+      // Agent ID should be the aabName (parent directory name), not the full path
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('TestAgent');
       expect(executeCommandSpy).toHaveBeenNthCalledWith(1, 'workbench.view.extension.agentforce-dx');
       expect(executeCommandSpy).toHaveBeenNthCalledWith(2, 'setContext', 'sf:project_opened', true);
       expect(showMock).toHaveBeenCalledWith(false);
 
       expect(postMessageMock).toHaveBeenCalledWith({
         command: 'selectAgent',
-        data: { agentId: '/tmp/preview.agent', agentSource: 'script' }
+        data: { agentId: 'TestAgent', agentSource: 'script' }
       });
       // Session should NOT start automatically - user clicks play to start
       expect(startPreviewSessionMock).not.toHaveBeenCalled();
@@ -134,10 +138,18 @@ describe('previewAgent', () => {
 
       jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
 
+      // Mock Agent.listPreviewable and SfProject to avoid console.warn
+      const { Agent } = require('@salesforce/agents');
+      const { SfProject } = require('@salesforce/core');
+      Agent.listPreviewable = jest.fn().mockResolvedValue([]);
+      SfProject.getInstance = jest.fn().mockReturnValue({ getPath: () => '/test' });
+      jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue({} as any);
+
       executeCommandSpy.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('unable to open view'));
 
       const handler = registerAndGetHandler();
-      const mockUri = { fsPath: '/tmp/preview.agent' } as vscodeTypes.Uri;
+      // Use realistic path
+      const mockUri = { fsPath: '/project/agents/TestAgent/TestAgent.agent' } as vscodeTypes.Uri;
 
       await handler(mockUri);
 
@@ -171,23 +183,25 @@ describe('previewAgent', () => {
       SfProject.getInstance = jest.fn().mockReturnValue({ getPath: () => '/test' });
       jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue({} as any);
       
+      // Use realistic path: /project/agents/AgentName/AgentName.agent
       Object.defineProperty(vscode.window, 'activeTextEditor', {
         configurable: true,
         get: () => ({
-          document: { fileName: '/tmp/from-editor.agent' }
+          document: { fileName: '/project/agents/EditorAgent/EditorAgent.agent' }
         })
       });
 
       const handler = registerAndGetHandler();
       const handlerPromise = handler();
-      
+
       jest.advanceTimersByTime(500);
       await handlerPromise;
 
-      expect(providerMock.setAgentId).toHaveBeenCalledWith('/tmp/from-editor.agent');
+      // Agent ID should be the aabName (parent directory name), not the full path
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('EditorAgent');
       expect(postMessageMock).toHaveBeenCalledWith({
         command: 'selectAgent',
-        data: { agentId: '/tmp/from-editor.agent', agentSource: 'script' }
+        data: { agentId: 'EditorAgent', agentSource: 'script' }
       });
       // Session should NOT start automatically - user clicks play to start
       expect(startPreviewSessionMock).not.toHaveBeenCalled();

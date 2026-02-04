@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { Commands } from '../enums/commands';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { SfError, SfProject } from '@salesforce/core';
@@ -35,8 +36,32 @@ export const registerPreviewAgentCommand = () => {
         return;
       }
 
-      // Use the file path directly as the agent ID
-      const agentId = filePath;
+      // For script agents, the dropdown uses aabName (bundle name) as the agent ID,
+      // not the file path. Extract the aabName from the file path.
+      // The aabName is the parent directory of the .agent file.
+      const aabName = path.basename(path.dirname(filePath));
+
+      // Determine agent source and find the matching agent ID for the dropdown
+      // We need to match the ID format that handleGetAvailableAgents uses
+      let agentId = aabName; // Default to aabName for script agents
+      let agentSource: AgentSource = AgentSource.SCRIPT;
+
+      try {
+        const conn = await CoreExtensionService.getDefaultConnection();
+        const project = SfProject.getInstance();
+        const allAgents = await Agent.listPreviewable(conn, project);
+
+        // Find the matching agent - for script agents, match by aabName
+        const agent = allAgents.find(a => a.aabName === aabName || a.id === aabName);
+        if (agent) {
+          // Use the same ID format as handleGetAvailableAgents: agent.id || agent.aabName
+          agentId = agent.id || agent.aabName || aabName;
+          agentSource = agent.source;
+        }
+      } catch (err) {
+        // If we can't fetch agents, continue with aabName as the ID
+        console.warn('Could not fetch agents list, using aabName as agent ID:', err);
+      }
 
       // Set the agent ID early so it's available when the webview requests available agents
       // This ensures the agent is pre-selected even if the webview mounts before we post selectAgent
@@ -69,27 +94,6 @@ export const registerPreviewAgentCommand = () => {
       if (!webviewReady) {
         vscode.window.showWarningMessage('Webview is taking longer than expected to load. Please try again.');
         return;
-      }
-
-      // Determine agent source by checking the PreviewableAgent list
-      // For script agents opened from file, the agentId is the file path
-      let agentSource: AgentSource | undefined;
-      try {
-        const conn = await CoreExtensionService.getDefaultConnection();
-        const project = SfProject.getInstance();
-        const allAgents = await Agent.listPreviewable(conn, project);
-        // For script agents, the agentId in the list should match the file path
-        const agent = allAgents.find(a => a.id === agentId);
-        if (agent) {
-          agentSource = agent.source;
-        } else {
-          // If not found in list, assume it's a script agent (file path)
-          agentSource = AgentSource.SCRIPT;
-        }
-      } catch (err) {
-        // If we can't determine source, default to SCRIPT for file-based previews
-        console.warn('Could not determine agent source, defaulting to SCRIPT:', err);
-        agentSource = AgentSource.SCRIPT;
       }
 
       // Send selectAgent message to update the webview UI
