@@ -38,6 +38,10 @@ export const registerPreviewAgentCommand = () => {
       // Use the file path directly as the agent ID
       const agentId = filePath;
 
+      // Set the agent ID early so it's available when the webview requests available agents
+      // This ensures the agent is pre-selected even if the webview mounts before we post selectAgent
+      provider.setAgentId(agentId);
+
       // Open the Agentforce DX view
       await vscode.commands.executeCommand('workbench.view.extension.agentforce-dx');
       await vscode.commands.executeCommand('setContext', 'sf:project_opened', true);
@@ -88,7 +92,8 @@ export const registerPreviewAgentCommand = () => {
         agentSource = AgentSource.SCRIPT;
       }
 
-      // Update webview to show the selected agent in the dropdown
+      // Send selectAgent message to update the webview UI
+      // This is a backup in case the webview loaded before getAvailableAgents responded
       // The user will click play to start the preview session
       if (provider.webviewView?.webview) {
         provider.webviewView.webview.postMessage({
@@ -96,9 +101,6 @@ export const registerPreviewAgentCommand = () => {
           data: { agentId: agentId, agentSource: agentSource }
         });
       }
-
-      // Set the agent ID (session starts when user clicks play)
-      provider.setAgentId(agentId);
     } catch (e) {
       const sfError = SfError.wrap(e);
       logger.error('Error previewing the .agent file', sfError);
