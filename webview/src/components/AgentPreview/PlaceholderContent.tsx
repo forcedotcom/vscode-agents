@@ -27,18 +27,22 @@ const PlaceholderContent: React.FC<PlaceholderContentProps> = ({ hasAgents = fal
     <div className="placeholder-content">
       <div className="placeholder-icon"></div>
       <p>Agentforce DX provides a suite of tools to iteratively build, preview, and test agents right in your IDE.</p>
-      {showSelectButton ? (
-        <Button appearance="primary" size="small" onClick={handleSelectAgent}>
-          Select Agent
-        </Button>
-      ) : (
-        <>
-          <p>Create, or activate a published agent to start a simulation.</p>
+      <div className="placeholder-buttons">
+        {showSelectButton ? (
+          <>
+            <Button appearance="secondary" size="small" onClick={handleCreateAgent}>
+              Create Agent
+            </Button>
+            <Button appearance="primary" size="small" onClick={handleSelectAgent}>
+              Select Agent
+            </Button>
+          </>
+        ) : (
           <Button appearance="primary" size="small" onClick={handleCreateAgent}>
-            Create new agent
+            Create Agent
           </Button>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -231,10 +231,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Refreshes the available agents list
+   * @param selectAgentId Optional agent ID to auto-select after refresh
    */
-  public async refreshAvailableAgents(): Promise<void> {
+  public async refreshAvailableAgents(selectAgentId?: string): Promise<void> {
     // Clear state and update UI immediately (optimistic update)
     this.state.currentAgentId = undefined;
+
+    // Set pending select agent ID if provided (will be used when agents are loaded)
+    this.state.pendingSelectAgentId = selectAgentId;
 
     if (this.webviewView) {
       this.state.currentAgentName = undefined;

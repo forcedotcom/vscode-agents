@@ -22,6 +22,7 @@ export class AgentViewState {
   private _sessionStartOperationId = 0;
   private _pendingStartAgentId?: string;
   private _pendingStartAgentSource?: AgentSource;
+  private _pendingSelectAgentId?: string;
 
   // Mode state
   private _isApexDebuggingEnabled = false;
@@ -98,6 +99,10 @@ export class AgentViewState {
     return this._pendingStartAgentSource;
   }
 
+  get pendingSelectAgentId(): string | undefined {
+    return this._pendingSelectAgentId;
+  }
+
   get isApexDebuggingEnabled(): boolean {
     return this._isApexDebuggingEnabled;
   }
@@ -147,6 +152,10 @@ export class AgentViewState {
 
   set pendingStartAgentSource(value: AgentSource | undefined) {
     this._pendingStartAgentSource = value;
+  }
+
+  set pendingSelectAgentId(value: string | undefined) {
+    this._pendingSelectAgentId = value;
   }
 
   // State update methods
@@ -210,6 +219,10 @@ export class AgentViewState {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:isScriptAgent', isScript);
   }
 
+  async setHasAgents(hasAgents: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:hasAgents', hasAgents);
+  }
+
   // Export directory persistence (per-project using workspaceState)
   getExportDirectory(): string | undefined {
     return this.context.workspaceState.get<string>(AgentViewState.EXPORT_DIR_KEY);
@@ -229,5 +242,6 @@ export class AgentViewState {
     this._currentUserMessage = undefined;
     this._pendingStartAgentId = undefined;
     this._pendingStartAgentSource = undefined;
+    this._pendingSelectAgentId = undefined;
   }
 }

@@ -184,9 +184,14 @@
           "group": "navigation@-1"
         },
         {
+          "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView && !agentforceDX:agentSelected",
+          "group": "navigation@0"
+        },
+        {
           "command": "sf.agent.combined.view.refreshAgents",
           "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView",
-          "group": "navigation@0"
+          "group": "navigation@1"
         },
         {
           "command": "sf.agent.combined.view.resetAgentView",
@@ -407,7 +412,7 @@
       },
       {
         "command": "sf.agent.selectAndRun",
-        "title": "Select Agent"
+        "title": "AFDX: Select Agent"
       },
       {
         "command": "sf.agent.combined.view.stop",
@@ -538,7 +543,8 @@
       },
       {
         "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
-        "title": "AFDX: Generate Authoring Bundle"
+        "title": "AFDX: Create Agent",
+        "icon": "$(add)"
       }
     ]
   }

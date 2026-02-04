@@ -459,8 +459,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
-    vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async () => {
-      await provider.refreshAvailableAgents();
+    vscode.commands.registerCommand('sf.agent.combined.view.refreshAgents', async (selectAgentId?: string) => {
+      await provider.refreshAvailableAgents(selectAgentId);
     })
   );
 

@@ -254,14 +254,23 @@ export class WebviewMessageHandlers {
           };
         });
 
-      this.messageSender.sendAvailableAgents(mappedAgents, this.state.currentAgentId);
+      // Use pendingSelectAgentId if available (e.g., after creating a new agent), otherwise currentAgentId
+      const selectAgentId = this.state.pendingSelectAgentId || this.state.currentAgentId;
+      this.messageSender.sendAvailableAgents(mappedAgents, selectAgentId);
 
+      // Update context for command visibility
+      await this.state.setHasAgents(mappedAgents.length > 0);
+
+      // Clear the pending/current agent IDs after use
+      this.state.pendingSelectAgentId = undefined;
       if (this.state.currentAgentId) {
         this.state.currentAgentId = undefined;
       }
     } catch (err) {
       console.error('Error getting available agents from org:', err);
+      this.state.pendingSelectAgentId = undefined;
       this.messageSender.sendAvailableAgents([], undefined);
+      await this.state.setHasAgents(false);
     }
   }
 
