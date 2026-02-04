@@ -209,7 +209,7 @@ describe('package.json', () => {
         const selectAgentCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.selectAndRun');
 
         expect(selectAgentCommand).toBeDefined();
-        expect(selectAgentCommand?.title).toBe('Select Agent');
+        expect(selectAgentCommand?.title).toBe('AFDX: Select Agent');
       });
 
       it('should have debug commands with proper enablement', () => {
