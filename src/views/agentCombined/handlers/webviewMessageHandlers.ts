@@ -254,10 +254,8 @@ export class WebviewMessageHandlers {
         });
 
       this.messageSender.sendAvailableAgents(mappedAgents, this.state.currentAgentId);
-
-      if (this.state.currentAgentId) {
-        this.state.currentAgentId = undefined;
-      }
+      // Note: Don't clear currentAgentId here - it should persist until explicitly changed
+      // by setSelectedAgentId or a new preview command
     } catch (err) {
       console.error('Error getting available agents from org:', err);
       this.messageSender.sendAvailableAgents([], undefined);
