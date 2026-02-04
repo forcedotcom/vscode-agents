@@ -213,5 +213,55 @@ describe('previewAgent', () => {
       });
     });
 
+    it('uses agent ID from listPreviewable when agent is found', async () => {
+      jest.useFakeTimers();
+      const showMock = jest.fn();
+      const postMessageMock = jest.fn();
+      const startPreviewSessionMock = jest.fn().mockResolvedValue(undefined);
+      const providerMock = {
+        setAgentId: jest.fn(),
+        startPreviewSession: startPreviewSessionMock,
+        webviewView: {
+          show: showMock,
+          webview: {
+            postMessage: postMessageMock,
+            html: '<html></html>'
+          }
+        }
+      };
+
+      jest.spyOn(AgentCombinedViewProvider, 'getInstance').mockReturnValue(providerMock as any);
+
+      // Mock Agent.listPreviewable to return an agent matching the aabName
+      const { Agent, AgentSource } = require('@salesforce/agents');
+      const { SfProject } = require('@salesforce/core');
+      Agent.listPreviewable = jest.fn().mockResolvedValue([
+        {
+          name: 'My Test Agent',
+          id: 'custom-agent-id', // This ID should be used instead of aabName
+          aabName: 'TestAgent',
+          source: AgentSource.SCRIPT
+        }
+      ]);
+      SfProject.getInstance = jest.fn().mockReturnValue({ getPath: () => '/test' });
+      jest.spyOn(CoreExtensionService, 'getDefaultConnection').mockResolvedValue({} as any);
+
+      const handler = registerAndGetHandler();
+
+      const mockUri = { fsPath: '/project/agents/TestAgent/TestAgent.agent' } as vscodeTypes.Uri;
+      const handlerPromise = handler(mockUri);
+
+      jest.advanceTimersByTime(500);
+      await handlerPromise;
+
+      // Agent ID should come from the matched agent's id field, not aabName
+      expect(providerMock.setAgentId).toHaveBeenCalledWith('custom-agent-id');
+      expect(postMessageMock).toHaveBeenCalledWith({
+        command: 'selectAgent',
+        data: { agentId: 'custom-agent-id', agentSource: 'script' }
+      });
+      expect(startPreviewSessionMock).not.toHaveBeenCalled();
+    });
+
   });
 });
