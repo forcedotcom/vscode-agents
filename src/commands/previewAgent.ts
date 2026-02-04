@@ -89,6 +89,7 @@ export const registerPreviewAgentCommand = () => {
       }
 
       // Update webview to show the selected agent in the dropdown
+      // The user will click play to start the preview session
       if (provider.webviewView?.webview) {
         provider.webviewView.webview.postMessage({
           command: 'selectAgent',
@@ -96,10 +97,8 @@ export const registerPreviewAgentCommand = () => {
         });
       }
 
-      // Set the agent ID and start the preview session directly
+      // Set the agent ID (session starts when user clicks play)
       provider.setAgentId(agentId);
-      // For script agents opened from command, default to simulation mode (isLiveMode = false)
-      await provider.startPreviewSession(agentId, agentSource, false);
     } catch (e) {
       const sfError = SfError.wrap(e);
       logger.error('Error previewing the .agent file', sfError);

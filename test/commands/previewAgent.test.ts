@@ -122,7 +122,8 @@ describe('previewAgent', () => {
         command: 'selectAgent',
         data: { agentId: '/tmp/preview.agent', agentSource: 'script' }
       });
-      expect(startPreviewSessionMock).toHaveBeenCalled();
+      // Session should NOT start automatically - user clicks play to start
+      expect(startPreviewSessionMock).not.toHaveBeenCalled();
     });
 
     it('logs errors to the channel service when preview fails', async () => {
@@ -188,7 +189,8 @@ describe('previewAgent', () => {
         command: 'selectAgent',
         data: { agentId: '/tmp/from-editor.agent', agentSource: 'script' }
       });
-      expect(startPreviewSessionMock).toHaveBeenCalled();
+      // Session should NOT start automatically - user clicks play to start
+      expect(startPreviewSessionMock).not.toHaveBeenCalled();
 
       // Reset editor mock back to undefined to avoid side effects
       Object.defineProperty(vscode.window, 'activeTextEditor', {
