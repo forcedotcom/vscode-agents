@@ -19,7 +19,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "^0.21.2",
+    "@salesforce/agents": "0.22.2",
     "@salesforce/core": "^8.25.0",
     "@salesforce/kit": "^3.2.4",
     "@salesforce/types": "^1.4.0",
@@ -134,6 +134,11 @@
           "type": "boolean",
           "default": false,
           "description": "Enable SF_TEST_API mode. When enabled, sets the SF_TEST_API environment variable for agent compilation and simulation."
+        },
+        "salesforce.agentforceDX.skipRetrieve": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip retrieving agent metadata to your DX project when publishing the authoring bundle to your org."
         }
       }
     },

@@ -47,6 +47,8 @@ export const registerPublishAgentCommand = () => {
       
       // Log SF_TEST_API setting value
       logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
+      // Log SF_SKIP_RETRIEVE setting value
+      logger.debug(`SF_SKIP_RETRIEVE = ${process.env.SF_SKIP_RETRIEVE ?? 'false'}`);
       logger.debug(`Publishing agent ${fileName}...`);
 
       await vscode.window.withProgress(
@@ -112,7 +114,10 @@ export const registerPublishAgentCommand = () => {
             });
 
             try {
-              await agent.publish();
+              await agent.publish(
+                  vscode.workspace
+                  .getConfiguration('salesforce.agentforceDX')
+                  .get<boolean>('skipRetrieve', false));
             } finally {
               // Clean up event listeners
               lifecycle.removeAllListeners('scopedPreRetrieve');
