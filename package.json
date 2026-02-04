@@ -138,7 +138,7 @@
         "salesforce.agentforceDX.skipRetrieve": {
           "type": "boolean",
           "default": false,
-          "description": "Skip retrieve of agent metadata on publishing. When enabled, the agent metadata will not be retrieved as part of the publish process."
+          "description": "Skip retrieving agent metadata to your DX project when publishing the authoring bundle to your org."
         }
       }
     },
