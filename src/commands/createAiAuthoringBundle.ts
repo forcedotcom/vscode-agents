@@ -8,6 +8,106 @@ import { SfProject, generateApiName, SfError } from '@salesforce/core';
 import { Logger } from '../utils/logger';
 import { readFileSync } from 'node:fs';
 
+type SpecTypePickItem = vscode.QuickPickItem & { isCustom: boolean };
+
+/**
+ * Shows a QuickPick with optional back button support
+ * Returns the selected item, 'back' if back was pressed, or undefined if cancelled
+ */
+async function showQuickPickWithBack<T extends vscode.QuickPickItem>(
+  items: T[],
+  options: { title: string; placeholder: string; showBack: boolean }
+): Promise<T | 'back' | undefined> {
+  return new Promise(resolve => {
+    const quickPick = vscode.window.createQuickPick<T>();
+    quickPick.items = items;
+    quickPick.title = options.title;
+    quickPick.placeholder = options.placeholder;
+
+    if (options.showBack) {
+      quickPick.buttons = [vscode.QuickInputButtons.Back];
+    }
+
+    quickPick.onDidTriggerButton(button => {
+      if (button === vscode.QuickInputButtons.Back) {
+        quickPick.hide();
+        resolve('back');
+      }
+    });
+
+    quickPick.onDidAccept(() => {
+      const selection = quickPick.selectedItems[0];
+      quickPick.hide();
+      resolve(selection);
+    });
+
+    quickPick.onDidHide(() => {
+      quickPick.dispose();
+      resolve(undefined);
+    });
+
+    quickPick.show();
+  });
+}
+
+/**
+ * Shows an InputBox with optional back button support
+ * Returns the input value, 'back' if back was pressed, or undefined if cancelled
+ */
+async function showInputBoxWithBack(options: {
+  title: string;
+  prompt: string;
+  placeholder: string;
+  value?: string;
+  showBack: boolean;
+  validateInput?: (value: string) => string | null;
+}): Promise<string | 'back' | undefined> {
+  return new Promise(resolve => {
+    const inputBox = vscode.window.createInputBox();
+    inputBox.title = options.title;
+    inputBox.prompt = options.prompt;
+    inputBox.placeholder = options.placeholder;
+    inputBox.value = options.value ?? '';
+
+    if (options.showBack) {
+      inputBox.buttons = [vscode.QuickInputButtons.Back];
+    }
+
+    if (options.validateInput) {
+      inputBox.onDidChangeValue(value => {
+        inputBox.validationMessage = options.validateInput!(value) ?? undefined;
+      });
+    }
+
+    inputBox.onDidTriggerButton(button => {
+      if (button === vscode.QuickInputButtons.Back) {
+        inputBox.hide();
+        resolve('back');
+      }
+    });
+
+    inputBox.onDidAccept(() => {
+      if (options.validateInput) {
+        const error = options.validateInput(inputBox.value);
+        if (error) {
+          inputBox.validationMessage = error;
+          return;
+        }
+      }
+      const value = inputBox.value;
+      inputBox.hide();
+      resolve(value);
+    });
+
+    inputBox.onDidHide(() => {
+      inputBox.dispose();
+      resolve(undefined);
+    });
+
+    inputBox.show();
+  });
+}
+
 export const registerCreateAiAuthoringBundleCommand = () => {
   return vscode.commands.registerCommand(Commands.createAiAuthoringBundle, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
@@ -47,28 +147,6 @@ export const registerCreateAiAuthoringBundleCommand = () => {
         // Directory might already exist, which is fine
       }
 
-      // Prompt for bundle name (regular name)
-      const name = await vscode.window.showInputBox({
-        prompt: 'Enter the name of the new authoring bundle.',
-        placeHolder: 'My Agent Name',
-        validateInput: value => {
-          if (!value) {
-            return 'Bundle name is required';
-          }
-          if (value.trim().length === 0) {
-            return "Bundle name can't be empty.";
-          }
-          return null;
-        }
-      });
-
-      if (!name) {
-        return; // User cancelled
-      }
-
-      // Generate API name from the regular name
-      const apiName = generateApiName(name);
-
       // Look for spec files in the specs directory (at project root)
       const specsDir = path.join(projectRoot, 'specs');
       let specFiles: string[] = [];
@@ -86,7 +164,6 @@ export const registerCreateAiAuthoringBundleCommand = () => {
         logger.warn(`No agent spec directory found at ${specsDir}`);
       }
 
-      type SpecTypePickItem = vscode.QuickPickItem & { isCustom: boolean };
       const specTypeItems: SpecTypePickItem[] = [
         {
           label: 'Default Agent Spec',
@@ -104,29 +181,86 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           : [])
       ];
 
-      const selectedType = await vscode.window.showQuickPick(specTypeItems, {
-        placeHolder: 'Select the type of agent spec to use.',
-        title: 'Choose Agent Spec Type'
-      });
-
-      if (!selectedType) {
-        return; // User cancelled
-      }
-
+      // Multi-step wizard with back navigation
+      let step = 1;
+      let name: string | undefined;
+      let selectedType: SpecTypePickItem | undefined;
       let spec: string | undefined;
 
-      if (selectedType.isCustom) {
-        const selectedSpecFile = await vscode.window.showQuickPick(specFiles, {
-          placeHolder: 'Select an agent spec YAML file.',
-          title: 'Choose Agent Spec File'
-        });
+      while (step > 0) {
+        if (step === 1) {
+          // Step 1: Enter bundle name
+          const result = await showInputBoxWithBack({
+            title: 'Create Agent (Step 1 of 2)',
+            prompt: 'Enter the name of the new authoring bundle.',
+            placeholder: 'My Agent Name',
+            value: name,
+            showBack: false,
+            validateInput: value => {
+              if (!value) {
+                return 'Bundle name is required';
+              }
+              if (value.trim().length === 0) {
+                return "Bundle name can't be empty.";
+              }
+              return null;
+            }
+          });
 
-        if (!selectedSpecFile) {
-          return; // User cancelled
+          if (result === undefined) {
+            return; // User cancelled
+          }
+          name = result;
+          step = 2;
+        } else if (step === 2) {
+          // Step 2: Choose spec type
+          const result = await showQuickPickWithBack(specTypeItems, {
+            title: 'Create Agent (Step 2 of 2)',
+            placeholder: 'Select the type of agent spec to use.',
+            showBack: true
+          });
+
+          if (result === 'back') {
+            step = 1;
+            continue;
+          }
+          if (result === undefined) {
+            return; // User cancelled
+          }
+          selectedType = result;
+
+          if (selectedType.isCustom) {
+            step = 3;
+          } else {
+            break; // Done with wizard
+          }
+        } else if (step === 3) {
+          // Step 3: Choose spec file (only if Custom selected)
+          const specFileItems = specFiles.map(file => ({ label: file }));
+          const result = await showQuickPickWithBack(specFileItems, {
+            title: 'Create Agent (Step 2 of 2)',
+            placeholder: 'Select an agent spec YAML file.',
+            showBack: true
+          });
+
+          if (result === 'back') {
+            step = 2;
+            continue;
+          }
+          if (result === undefined) {
+            return; // User cancelled
+          }
+          spec = path.join(specsDir, result.label);
+          break; // Done with wizard
         }
-
-        spec = path.join(specsDir, selectedSpecFile);
       }
+
+      if (!name) {
+        return;
+      }
+
+      // Generate API name from the regular name
+      const apiName = generateApiName(name);
 
       // Show progress
       await vscode.window.withProgress(
