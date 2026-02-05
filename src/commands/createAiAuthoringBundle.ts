@@ -157,7 +157,9 @@ export const registerCreateAiAuthoringBundleCommand = () => {
         specFiles = files
           .filter(
             ([fileName, type]) =>
-              type === vscode.FileType.File && (fileName.endsWith('.yaml') || fileName.endsWith('.yml'))
+              type === vscode.FileType.File &&
+              (fileName.endsWith('.yaml') || fileName.endsWith('.yml')) &&
+              !fileName.includes('-testSpec')
           )
           .map(([fileName]) => fileName);
       } catch (error) {
