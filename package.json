@@ -381,6 +381,10 @@
         "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
       },
       {
+        "command": "salesforcedx-vscode-agents.manageAgentActivation",
+        "when": "sf:project_opened"
+      },
+      {
         "command": "sf.agent.selectAndRun",
         "when": "sf:project_opened"
       },
@@ -523,6 +527,10 @@
       {
         "command": "salesforcedx-vscode-agents.deactivateAgent",
         "title": "%salesforcedx-vscode-agents.deactivateAgent%"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.manageAgentActivation",
+        "title": "AFDX: Manage Agent Activation"
       },
       {
         "command": "sf.agent.test.view.toggleGeneratedData.on",
