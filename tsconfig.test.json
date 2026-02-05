@@ -7,7 +7,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "types": ["jest", "node", "@testing-library/jest-dom"],
-    "isolatedModules": false
+    "isolatedModules": true
   },
   "include": ["webview/src/**/*", "test/webview/**/*"]
 }
