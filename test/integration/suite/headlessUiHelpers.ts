@@ -164,7 +164,8 @@ export function mockHeadlessUI(options: {
         inputBoxCallCount++;
         const responseIndex = inputBoxCallCount - 1;
 
-        setTimeout(() => {
+        // Use setImmediate for better compatibility with VS Code extension host
+        setImmediate(() => {
           if (responseIndex < inputBoxResponses.length) {
             const response = inputBoxResponses[responseIndex];
             console.log(`[Headless UI] createInputBox call #${inputBoxCallCount}: returning "${response}"`);
@@ -181,7 +182,7 @@ export function mockHeadlessUI(options: {
               onDidHideCallback();
             }
           }
-        }, 0);
+        });
       },
       hide: () => {},
       dispose: () => {}
@@ -214,7 +215,8 @@ export function mockHeadlessUI(options: {
         quickPickCallCount++;
         const responseIndex = quickPickCallCount - 1;
 
-        setTimeout(() => {
+        // Use setImmediate for better compatibility with VS Code extension host
+        setImmediate(() => {
           if (responseIndex < quickPickResponses.length) {
             const response = quickPickResponses[responseIndex];
             console.log(`[Headless UI] createQuickPick call #${quickPickCallCount}: returning "${response}"`);
@@ -253,7 +255,7 @@ export function mockHeadlessUI(options: {
               }
             }
           }
-        }, 0);
+        });
       },
       hide: () => {},
       dispose: () => {}
