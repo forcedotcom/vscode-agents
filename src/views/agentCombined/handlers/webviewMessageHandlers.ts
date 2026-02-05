@@ -10,7 +10,7 @@ import type { SessionManager } from '../session';
 import type { HistoryManager } from '../history';
 import type { ApexDebugManager } from '../debugging';
 import { Logger } from '../../../utils/logger';
-import { getAgentSource } from '../agent';
+import { getAgentSource, mergeWithLocalAgents } from '../agent';
 
 /**
  * Handles all incoming messages from the webview
@@ -236,7 +236,8 @@ export class WebviewMessageHandlers {
     try {
       const conn = await CoreExtensionService.getDefaultConnection();
       const project = SfProject.getInstance();
-      const allAgents = await Agent.listPreviewable(conn, project);
+      const fromLibrary = await Agent.listPreviewable(conn, project);
+      const allAgents = mergeWithLocalAgents(project.getPath(), fromLibrary);
 
       // Map agents - script agents use aabName as id, published agents use id
       const mappedAgents = allAgents
@@ -253,14 +254,23 @@ export class WebviewMessageHandlers {
           };
         });
 
-      this.messageSender.sendAvailableAgents(mappedAgents, this.state.currentAgentId);
+      // Use pendingSelectAgentId if available (e.g., after creating a new agent), otherwise currentAgentId
+      const selectAgentId = this.state.pendingSelectAgentId || this.state.currentAgentId;
+      this.messageSender.sendAvailableAgents(mappedAgents, selectAgentId);
 
+      // Update context for command visibility
+      await this.state.setHasAgents(mappedAgents.length > 0);
+
+      // Clear the pending/current agent IDs after use
+      this.state.pendingSelectAgentId = undefined;
       if (this.state.currentAgentId) {
         this.state.currentAgentId = undefined;
       }
     } catch (err) {
       console.error('Error getting available agents from org:', err);
+      this.state.pendingSelectAgentId = undefined;
       this.messageSender.sendAvailableAgents([], undefined);
+      await this.state.setHasAgents(false);
     }
   }
 

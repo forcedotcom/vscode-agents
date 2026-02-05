@@ -80,6 +80,9 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
   // Track if we're syncing from parent to prevent circular updates
   const isSyncingRef = React.useRef(false);
+  // Track current selected agent for use in callbacks without triggering re-renders
+  const selectedAgentRef = React.useRef(selectedAgent);
+  selectedAgentRef.current = selectedAgent;
 
   // Sync with parent's live mode when it changes
   useEffect(() => {
@@ -117,9 +120,9 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
                 // Pass agentSource so history is loaded atomically by setSelectedAgentId handler
                 onAgentChange(data.selectedAgentId, selectedAgentInfo.type);
               }
-            } else if (selectedAgent) {
+            } else if (selectedAgentRef.current) {
               // If we have a selected agent but it's not in the new list, clear the selection
-              const agentExists = data.agents.some(agent => agent.id === selectedAgent);
+              const agentExists = data.agents.some(agent => agent.id === selectedAgentRef.current);
               if (!agentExists) {
                 onAgentChange('');
               }
@@ -147,7 +150,8 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       disposeAvailableAgents();
       disposeRefreshAgents();
     };
-  }, [onAgentChange, selectedAgent]);
+    // Note: selectedAgent is accessed via ref to avoid re-fetching agents on every selection change
+  }, [onAgentChange]);
 
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = e.target.value;
