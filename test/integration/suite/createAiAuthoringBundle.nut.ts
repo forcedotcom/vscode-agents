@@ -91,10 +91,10 @@ tools: []`;
       fs.rmSync(expectedBundleDir, { recursive: true, force: true });
     }
 
-    const specFileName = 'test-agent-spec.yaml';
+    // Wizard flow: 1) name input, 2) spec type selection, 3) spec file selection
     const mockedUI = mockHeadlessUI({
       inputBoxResponses: [bundleName],
-      quickPickResponses: [specFileName]
+      quickPickResponses: ['From Spec File (Advanced)', 'test-agent-spec.yaml']
     });
 
     try {
