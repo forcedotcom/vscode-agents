@@ -259,8 +259,8 @@ describe('createAiAuthoringBundle', () => {
     jest.restoreAllMocks();
   });
 
-  const defaultSpecTypeItem = { label: 'Default Agent Spec', description: 'Create bundle without a custom spec', isCustom: false };
-  const customSpecTypeItem = { label: 'Custom Agent Spec', description: 'Choose from available spec files', isCustom: true };
+  const defaultSpecTypeItem = { label: 'Default Template (Recommended)', description: 'Start with a ready-to-use Agent Script', isCustom: false };
+  const customSpecTypeItem = { label: 'From Spec File (Advanced)', description: 'Generate Agent Script from an existing YAML spec', isCustom: true };
 
   it('registers the command', () => {
     registerCreateAiAuthoringBundleCommand();
@@ -319,7 +319,7 @@ describe('createAiAuthoringBundle', () => {
     expect(createAgentScriptSpy).not.toHaveBeenCalled();
   });
 
-  it('shows Default Agent Spec only when no spec files found and calls createAuthoringBundle without agentSpec', async () => {
+  it('shows Default Template only when no spec files found and calls createAuthoringBundle without agentSpec', async () => {
     readDirectorySpy.mockResolvedValue([]); // No spec files
     createAgentScriptSpy.mockResolvedValue(undefined);
 
@@ -640,12 +640,12 @@ describe('createAiAuthoringBundle', () => {
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
       expect.stringMatching(/\[warn\].*No agent spec directory found/)
     );
-    // Should show Default Agent Spec only and call createAuthoringBundle without agentSpec
+    // Should show Default Template only and call createAuthoringBundle without agentSpec
     expect(createAgentScriptSpy).toHaveBeenCalled();
     expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
   });
 
-  it('calls createAuthoringBundle without agentSpec when Default Agent Spec is selected', async () => {
+  it('calls createAuthoringBundle without agentSpec when Default Template is selected', async () => {
     readDirectorySpy.mockResolvedValue([['custom.yaml', vscode.FileType.File]]);
     createAgentScriptSpy.mockResolvedValue(undefined);
 

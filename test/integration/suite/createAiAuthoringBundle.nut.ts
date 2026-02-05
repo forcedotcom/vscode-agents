@@ -150,7 +150,7 @@ tools: []`;
     await executeAndVerifyBundle('commandpalettetitle');
   });
 
-  test('Should create AI authoring bundle with Default Agent Spec (no custom spec)', async function (this: Mocha.Context) {
+  test('Should create AI authoring bundle with Default Template (no custom spec)', async function (this: Mocha.Context) {
     this.timeout(120000);
 
     await waitForCommand('salesforcedx-vscode-agents.createAiAuthoringBundle', 15000);
@@ -164,10 +164,10 @@ tools: []`;
       fs.rmSync(expectedBundleDir, { recursive: true, force: true });
     }
 
-    // Select "Default Agent Spec" (first quick pick item) by passing its label
+    // Select "Default Template (Recommended)" (first quick pick item) by passing its label
     const mockedUI = mockHeadlessUI({
       inputBoxResponses: [bundleName],
-      quickPickResponses: ['Default Agent Spec']
+      quickPickResponses: ['Default Template (Recommended)']
     });
 
     try {

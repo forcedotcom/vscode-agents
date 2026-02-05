@@ -166,15 +166,15 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
       const specTypeItems: SpecTypePickItem[] = [
         {
-          label: 'Default Agent Spec',
-          description: 'Create bundle without a custom spec',
+          label: 'Default Template (Recommended)',
+          description: 'Start with a ready-to-use Agent Script',
           isCustom: false
         },
         ...(specFiles.length > 0
           ? [
               {
-                label: 'Custom Agent Spec',
-                description: 'Choose from available spec files',
+                label: 'From Spec File (Advanced)',
+                description: 'Generate Agent Script from an existing YAML spec',
                 isCustom: true
               }
             ]
@@ -192,8 +192,8 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Step 1: Enter bundle name
           const result = await showInputBoxWithBack({
             title: 'Create Agent (Step 1 of 2)',
-            prompt: 'Enter the name of the new authoring bundle.',
-            placeholder: 'My Agent Name',
+            prompt: 'Enter a name for the new agent',
+            placeholder: 'Agent Name',
             value: name,
             showBack: false,
             validateInput: value => {
@@ -216,7 +216,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Step 2: Choose spec type
           const result = await showQuickPickWithBack(specTypeItems, {
             title: 'Create Agent (Step 2 of 2)',
-            placeholder: 'Select the type of agent spec to use.',
+            placeholder: 'Select the type of agent spec to use',
             showBack: true
           });
 
@@ -239,7 +239,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const specFileItems = specFiles.map(file => ({ label: file }));
           const result = await showQuickPickWithBack(specFileItems, {
             title: 'Create Agent (Step 2 of 2)',
-            placeholder: 'Select an agent spec YAML file.',
+            placeholder: 'Choose a spec to generate your Agent Script',
             showBack: true
           });
 
