@@ -9,6 +9,14 @@
   position: relative;
 }
 
+/* Make header sticky when expanded so user keeps context while scrolling */
+.trace-history-row--expanded .trace-history-row__header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+}
+
 .trace-history-row__header-wrapper:focus-within,
 .trace-history-row__header-wrapper:has(.trace-history-row__header:active) {
   outline: 1px solid var(--vscode-focusBorder);
