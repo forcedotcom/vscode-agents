@@ -68,7 +68,8 @@ jest.mock('../../../../src/services/coreExtensionService', () => ({
 
 // Mock agentUtils
 jest.mock('../../../../src/views/agentCombined/agent/agentUtils', () => ({
-  getAgentSource: jest.fn()
+  getAgentSource: jest.fn(),
+  mergeWithLocalAgents: jest.fn((_projectPath: string, agents: unknown[]) => agents)
 }));
 
 // Import after mocks

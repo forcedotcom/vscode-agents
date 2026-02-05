@@ -62,6 +62,8 @@ export function mockHeadlessUI(options: {
   // Store original functions
   const originalShowInputBox = vscode.window.showInputBox;
   const originalShowQuickPick = vscode.window.showQuickPick;
+  const originalCreateInputBox = vscode.window.createInputBox;
+  const originalCreateQuickPick = vscode.window.createQuickPick;
   const originalShowInformationMessage = vscode.window.showInformationMessage;
   const originalShowErrorMessage = vscode.window.showErrorMessage;
   const originalShowWarningMessage = vscode.window.showWarningMessage;
@@ -132,6 +134,136 @@ export function mockHeadlessUI(options: {
     return undefined;
   };
 
+  // Mock createInputBox (for wizard-style input boxes)
+  (vscode.window as any).createInputBox = (): vscode.InputBox => {
+    let onDidAcceptCallback: (() => void) | undefined;
+    let onDidHideCallback: (() => void) | undefined;
+    let onDidChangeValueCallback: ((value: string) => void) | undefined;
+
+    const mockInputBox: Partial<vscode.InputBox> & { value: string; validationMessage: string | undefined } = {
+      title: '',
+      prompt: '',
+      placeholder: '',
+      value: '',
+      validationMessage: undefined,
+      buttons: [],
+      onDidAccept: (callback: () => void) => {
+        onDidAcceptCallback = callback;
+        return { dispose: () => {} };
+      },
+      onDidHide: (callback: () => void) => {
+        onDidHideCallback = callback;
+        return { dispose: () => {} };
+      },
+      onDidTriggerButton: () => ({ dispose: () => {} }),
+      onDidChangeValue: (callback: (value: string) => void) => {
+        onDidChangeValueCallback = callback;
+        return { dispose: () => {} };
+      },
+      show: () => {
+        inputBoxCallCount++;
+        const responseIndex = inputBoxCallCount - 1;
+
+        // Use setImmediate for better compatibility with VS Code extension host
+        setImmediate(() => {
+          if (responseIndex < inputBoxResponses.length) {
+            const response = inputBoxResponses[responseIndex];
+            console.log(`[Headless UI] createInputBox call #${inputBoxCallCount}: returning "${response}"`);
+            mockInputBox.value = response;
+            if (onDidChangeValueCallback) {
+              onDidChangeValueCallback(response);
+            }
+            if (onDidAcceptCallback) {
+              onDidAcceptCallback();
+            }
+          } else {
+            console.warn(`[Headless UI] createInputBox call #${inputBoxCallCount}: No response configured, hiding`);
+            if (onDidHideCallback) {
+              onDidHideCallback();
+            }
+          }
+        });
+      },
+      hide: () => {},
+      dispose: () => {}
+    };
+
+    return mockInputBox as vscode.InputBox;
+  };
+
+  // Mock createQuickPick (for wizard-style quick picks)
+  (vscode.window as any).createQuickPick = <T extends vscode.QuickPickItem>(): vscode.QuickPick<T> => {
+    let onDidAcceptCallback: (() => void) | undefined;
+    let onDidHideCallback: (() => void) | undefined;
+
+    const mockQuickPick: Partial<vscode.QuickPick<T>> & { items: T[]; selectedItems: T[] } = {
+      title: '',
+      placeholder: '',
+      items: [],
+      selectedItems: [],
+      buttons: [],
+      onDidAccept: (callback: () => void) => {
+        onDidAcceptCallback = callback;
+        return { dispose: () => {} };
+      },
+      onDidHide: (callback: () => void) => {
+        onDidHideCallback = callback;
+        return { dispose: () => {} };
+      },
+      onDidTriggerButton: () => ({ dispose: () => {} }),
+      show: () => {
+        quickPickCallCount++;
+        const responseIndex = quickPickCallCount - 1;
+
+        // Use setImmediate for better compatibility with VS Code extension host
+        setImmediate(() => {
+          if (responseIndex < quickPickResponses.length) {
+            const response = quickPickResponses[responseIndex];
+            console.log(`[Headless UI] createQuickPick call #${quickPickCallCount}: returning "${response}"`);
+
+            if (response === undefined) {
+              if (onDidHideCallback) {
+                onDidHideCallback();
+              }
+              return;
+            }
+
+            // Find matching item by label
+            const matchingItem = mockQuickPick.items.find(item => item.label === response);
+            if (matchingItem) {
+              mockQuickPick.selectedItems = [matchingItem];
+            } else if (mockQuickPick.items.length > 0) {
+              // Default to first item if no match
+              mockQuickPick.selectedItems = [mockQuickPick.items[0]];
+            }
+
+            if (onDidAcceptCallback) {
+              onDidAcceptCallback();
+            }
+          } else {
+            // Default: select first item if available
+            if (mockQuickPick.items.length > 0) {
+              console.log(`[Headless UI] createQuickPick call #${quickPickCallCount}: No response, selecting first item "${mockQuickPick.items[0].label}"`);
+              mockQuickPick.selectedItems = [mockQuickPick.items[0]];
+              if (onDidAcceptCallback) {
+                onDidAcceptCallback();
+              }
+            } else {
+              console.warn(`[Headless UI] createQuickPick call #${quickPickCallCount}: No response and no items`);
+              if (onDidHideCallback) {
+                onDidHideCallback();
+              }
+            }
+          }
+        });
+      },
+      hide: () => {},
+      dispose: () => {}
+    };
+
+    return mockQuickPick as vscode.QuickPick<T>;
+  };
+
   // Mock showInformationMessage (auto-accept)
   (vscode.window as any).showInformationMessage = async (
     message: string,
@@ -181,6 +313,8 @@ export function mockHeadlessUI(options: {
   const restore = () => {
     vscode.window.showInputBox = originalShowInputBox;
     vscode.window.showQuickPick = originalShowQuickPick;
+    (vscode.window as any).createInputBox = originalCreateInputBox;
+    (vscode.window as any).createQuickPick = originalCreateQuickPick;
     vscode.window.showInformationMessage = originalShowInformationMessage;
     vscode.window.showErrorMessage = originalShowErrorMessage;
     vscode.window.showWarningMessage = originalShowWarningMessage;

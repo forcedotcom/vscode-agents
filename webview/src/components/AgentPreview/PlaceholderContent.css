@@ -40,7 +40,14 @@ body.vscode-high-contrast .placeholder-icon {
   margin-bottom: 0;
 }
 
-/* Button wrapper to prevent full-width expansion */
+/* Button wrapper for action buttons */
+.placeholder-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .placeholder-content .vscode-button {
   width: auto;
   min-width: auto;

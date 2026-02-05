@@ -1,8 +1,88 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { AgentSource, Agent, PreviewableAgent } from '@salesforce/agents';
 import { SfProject } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
+
+const AI_AUTHORING_BUNDLES_DIR = 'aiAuthoringBundles';
+
+/**
+ * Recursively finds all directories named "aiAuthoringBundles" under a root path.
+ */
+function findAiAuthoringBundlesDirs(rootDir: string): string[] {
+  const results: string[] = [];
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(rootDir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+  for (const entry of entries) {
+    const fullPath = path.join(rootDir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === AI_AUTHORING_BUNDLES_DIR) {
+        results.push(fullPath);
+      }
+      results.push(...findAiAuthoringBundlesDirs(fullPath));
+    }
+  }
+  return results;
+}
+
+/**
+ * Finds local script agents by scanning for aiAuthoringBundles directories under the project.
+ * Does not rely on sfdx-project.json packageDirectories, so newly created .agent files are included.
+ */
+export function findLocalAgentsUnderProject(projectRoot: string): PreviewableAgent[] {
+  const agents: PreviewableAgent[] = [];
+  const bundlesDirs = findAiAuthoringBundlesDirs(projectRoot);
+  for (const bundlesDir of bundlesDirs) {
+    let subdirs: string[];
+    try {
+      subdirs = fs.readdirSync(bundlesDir, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .map(d => path.join(bundlesDir, d.name));
+    } catch {
+      continue;
+    }
+    for (const subdir of subdirs) {
+      const aabName = path.basename(subdir);
+      const agentFile = path.join(subdir, `${aabName}.agent`);
+      try {
+        if (fs.statSync(agentFile).isFile()) {
+          agents.push({
+            source: AgentSource.SCRIPT,
+            aabName,
+            name: aabName,
+            id: undefined
+          });
+        }
+      } catch {
+        // no .agent file in this subdir, skip
+      }
+    }
+  }
+  return agents;
+}
+
+/**
+ * Merges library listPreviewable result with locally discovered script agents.
+ * Adds any local .agent bundles not already in the library list (by aabName).
+ */
+export function mergeWithLocalAgents(
+  projectPath: string,
+  agentsFromLibrary: PreviewableAgent[]
+): PreviewableAgent[] {
+  const localAgents = findLocalAgentsUnderProject(projectPath);
+  const existingAabNames = new Set(
+    agentsFromLibrary
+      .filter(a => a.aabName)
+      .map(a => a.aabName!)
+  );
+  const added = localAgents.filter(a => !existingAabNames.has(a.aabName!));
+  return [...agentsFromLibrary, ...added];
+}
 
 /**
  * Validates that an agent ID is a valid Salesforce Bot ID format

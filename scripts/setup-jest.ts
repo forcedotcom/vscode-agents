@@ -132,6 +132,9 @@ const getMockVSCode = () => {
       Enum: 9,
       Interface: 10
     },
+    QuickInputButtons: {
+      Back: { iconPath: 'back' }
+    },
     window: {
       activeTextEditor: {
         selection: {
@@ -149,6 +152,8 @@ const getMockVSCode = () => {
       showErrorMessage: jest.fn(),
       showInputBox: jest.fn(),
       showQuickPick: jest.fn(),
+      createInputBox: jest.fn(),
+      createQuickPick: jest.fn(),
       setStatusBarMessage: jest.fn(),
       withProgress: jest.fn(),
       createOutputChannel: jest.fn(),

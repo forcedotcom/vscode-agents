@@ -63,8 +63,8 @@ describe('PlaceholderContent', () => {
       const icon = placeholderContent?.querySelector('.placeholder-icon');
       expect(icon).toBeInTheDocument();
 
-      const button = screen.getByRole('button');
-      expect(button).toBeInTheDocument();
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBeGreaterThan(0);
     });
   });
 
@@ -116,31 +116,52 @@ describe('PlaceholderContent', () => {
   });
 
   describe('No Agents State', () => {
-    it('should hide button and show message when no agents are available', () => {
+    it('should show Create Agent button when no agents are available', () => {
       render(<PlaceholderContent hasAgents={false} isLoadingAgents={false} />);
 
       expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
-      expect(screen.getByText(/Create, or activate a published agent to start a simulation/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Create Agent/i })).toBeInTheDocument();
     });
 
-    it('should hide button and message when agents are loading', () => {
+    it('should call createAiAuthoringBundle when Create Agent is clicked', async () => {
+      const user = userEvent.setup();
+      render(<PlaceholderContent hasAgents={false} isLoadingAgents={false} />);
+
+      const createButton = screen.getByRole('button', { name: /Create Agent/i });
+      await user.click(createButton);
+
+      expect(vscodeApi.executeCommand).toHaveBeenCalledWith('salesforcedx-vscode-agents.createAiAuthoringBundle');
+    });
+
+    it('should show Create Agent button when agents are loading (no flicker)', () => {
       render(<PlaceholderContent hasAgents={false} isLoadingAgents={true} />);
 
       expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
-      expect(screen.queryByText(/Create, or activate a published agent to start a simulation/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Create Agent/i })).toBeInTheDocument();
     });
 
-    it('should hide button with default props (no agents, loading)', () => {
+    it('should show Create Agent button with default props (no agents, loading)', () => {
       render(<PlaceholderContent />);
 
       expect(screen.queryByRole('button', { name: /Select Agent/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Create Agent/i })).toBeInTheDocument();
     });
 
-    it('should show button when agents are available and not loading', () => {
+    it('should show both Select Agent and Create Agent buttons when agents are available', () => {
       render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
 
       expect(screen.getByRole('button', { name: /Select Agent/i })).toBeInTheDocument();
-      expect(screen.queryByText(/Create, or activate a published agent to start a simulation/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Create Agent/i })).toBeInTheDocument();
+    });
+
+    it('should call createAiAuthoringBundle when Create Agent is clicked (with agents available)', async () => {
+      const user = userEvent.setup();
+      render(<PlaceholderContent hasAgents={true} isLoadingAgents={false} />);
+
+      const createButton = screen.getByRole('button', { name: /Create Agent/i });
+      await user.click(createButton);
+
+      expect(vscodeApi.executeCommand).toHaveBeenCalledWith('salesforcedx-vscode-agents.createAiAuthoringBundle');
     });
   });
 });

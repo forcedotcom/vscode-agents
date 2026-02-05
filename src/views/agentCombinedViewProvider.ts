@@ -8,7 +8,7 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentViewState } from './agentCombined/state';
 import { WebviewMessageSender, WebviewMessageHandlers } from './agentCombined/handlers';
 import { SessionManager } from './agentCombined/session';
-import { AgentInitializer, getAgentStorageKey } from './agentCombined/agent';
+import { AgentInitializer, getAgentStorageKey, mergeWithLocalAgents } from './agentCombined/agent';
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
 import { getAgentSource } from './agentCombined/agent';
@@ -231,10 +231,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
   /**
    * Refreshes the available agents list
+   * @param selectAgentId Optional agent ID to auto-select after refresh
    */
-  public async refreshAvailableAgents(): Promise<void> {
+  public async refreshAvailableAgents(selectAgentId?: string): Promise<void> {
     // Clear state and update UI immediately (optimistic update)
     this.state.currentAgentId = undefined;
+
+    // Set pending select agent ID if provided (will be used when agents are loaded)
+    this.state.pendingSelectAgentId = selectAgentId;
 
     if (this.webviewView) {
       this.state.currentAgentName = undefined;
@@ -262,7 +266,8 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     try {
       const conn = await CoreExtensionService.getDefaultConnection();
       const project = SfProject.getInstance();
-      return await Agent.listPreviewable(conn, project);
+      const fromLibrary = await Agent.listPreviewable(conn, project);
+      return mergeWithLocalAgents(project.getPath(), fromLibrary);
     } catch (error) {
       console.error('Error getting agents for command palette:', error);
       return [];
