@@ -14,6 +14,10 @@ export interface CodeBlockProps extends React.HTMLAttributes<HTMLDivElement> {
    */
   language?: string;
   /**
+   * Enable syntax highlighting for the given language
+   */
+  highlight?: 'json';
+  /**
    * Whether to show the copy button
    */
   showCopy?: boolean;
@@ -51,7 +55,7 @@ function highlightJson(json: string): string {
  * @public
  */
 export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
-  ({ code, language, showCopy = true, className, ...props }, ref) => {
+  ({ code, language, highlight, showCopy = true, className, ...props }, ref) => {
     const [copied, setCopied] = React.useState(false);
 
     const handleCopy = async () => {
@@ -65,7 +69,7 @@ export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
     };
 
     const showHeader = language || showCopy;
-    const useJsonHighlighting = language === 'json';
+    const useJsonHighlighting = highlight === 'json';
 
     const codeBlockClass = [
       'vscode-code-block',
