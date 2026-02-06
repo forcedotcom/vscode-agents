@@ -12,6 +12,7 @@ import { AgentInitializer, getAgentStorageKey, mergeWithLocalAgents } from './ag
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
 import { getAgentSource } from './agentCombined/agent';
+import { getJsonTokenColors } from '../utils/themeColors';
 
 /**
  * Main orchestrator for the Agent Combined View Provider
@@ -96,6 +97,16 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     // Set HTML content
     webviewView.webview.html = this.getHtmlForWebview();
+
+    // Send editor theme token colors for syntax highlighting
+    this.sendThemeColors();
+    this.context.subscriptions.push(
+      vscode.window.onDidChangeActiveColorTheme(() => this.sendThemeColors())
+    );
+  }
+
+  private sendThemeColors(): void {
+    this.messageSender.sendThemeTokenColors(getJsonTokenColors());
   }
 
   /**

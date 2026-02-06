@@ -86,6 +86,23 @@ class VSCodeApiService {
         handlers.forEach(handler => handler(message.data));
       }
     });
+
+    // Apply editor theme token colors as CSS custom properties for syntax highlighting
+    this.onMessage('themeTokenColors', (colors: Record<string, string | undefined>) => {
+      const root = document.documentElement;
+      const mapping: Record<string, string> = {
+        key: '--json-token-key',
+        string: '--json-token-string',
+        number: '--json-token-number',
+        boolean: '--json-token-boolean',
+        null: '--json-token-null'
+      };
+      for (const [token, prop] of Object.entries(mapping)) {
+        if (colors[token]) {
+          root.style.setProperty(prop, colors[token]!);
+        }
+      }
+    });
   }
 
   // Register a handler for specific message types
