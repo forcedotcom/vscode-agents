@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { AgentSource, Agent } from '@salesforce/agents';
+import { AgentSource, Agent, type BotMetadata } from '@salesforce/agents';
 import { SfProject, SfError } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
@@ -236,8 +236,21 @@ export class WebviewMessageHandlers {
     try {
       const conn = await CoreExtensionService.getDefaultConnection();
       const project = SfProject.getInstance();
-      const fromLibrary = await Agent.listPreviewable(conn, project);
+      const [fromLibrary, botMetadataList] = await Promise.all([
+        Agent.listPreviewable(conn, project),
+        Agent.listRemote(conn).catch(() => [] as BotMetadata[])
+      ]);
       const allAgents = mergeWithLocalAgents(project.getPath(), fromLibrary);
+
+      // Build a map from bot ID to latest version number
+      const versionMap = new Map<string, number>();
+      for (const bot of botMetadataList) {
+        const versions = bot.BotVersions?.records ?? [];
+        if (versions.length > 0) {
+          const latestVersion = versions[versions.length - 1];
+          versionMap.set(bot.Id, latestVersion.VersionNumber);
+        }
+      }
 
       // Map agents - script agents use aabName as id, published agents use id
       const mappedAgents = allAgents
@@ -250,7 +263,8 @@ export class WebviewMessageHandlers {
           return {
             name: agent.name,
             id: agentId,
-            type: agent.source
+            type: agent.source,
+            ...(agent.id && versionMap.has(agent.id) ? { versionNumber: versionMap.get(agent.id) } : {})
           };
         });
 

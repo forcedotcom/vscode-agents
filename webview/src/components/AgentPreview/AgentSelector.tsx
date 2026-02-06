@@ -257,7 +257,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             <optgroup label="Published">
               {publishedAgents.map(agent => (
                 <option key={agent.id} value={agent.id}>
-                  {agent.name}
+                  {agent.name}{agent.versionNumber != null ? ` (v${agent.versionNumber})` : ''}
                 </option>
               ))}
             </optgroup>
@@ -266,7 +266,9 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         {selectedAgentInfo && selectedAgentType && (
           <div className="agent-select-display">
             <span className="agent-name">{selectedAgentInfo.name}</span>
-            <span className="agent-type">({selectedAgentType})</span>
+            <span className="agent-type">
+              ({selectedAgentType}{selectedAgentInfo.versionNumber != null ? ` v${selectedAgentInfo.versionNumber}` : ''})
+            </span>
           </div>
         )}
       </div>
