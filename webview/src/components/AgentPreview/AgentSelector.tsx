@@ -172,9 +172,13 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   };
 
-  // Group agents by type
-  const publishedAgents = agents.filter(agent => agent.type === AgentSource.PUBLISHED);
-  const scriptAgents = agents.filter(agent => agent.type === AgentSource.SCRIPT);
+  // Group agents by type and sort alphabetically
+  const publishedAgents = agents
+    .filter(agent => agent.type === AgentSource.PUBLISHED)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const scriptAgents = agents
+    .filter(agent => agent.type === AgentSource.SCRIPT)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Get the selected agent's details for custom display
   // This will update when agents list loads or selectedAgent changes
