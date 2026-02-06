@@ -14,9 +14,36 @@ export interface CodeBlockProps extends React.HTMLAttributes<HTMLDivElement> {
    */
   language?: string;
   /**
+   * Enable syntax highlighting for the given language
+   */
+  highlight?: 'json';
+  /**
    * Whether to show the copy button
    */
   showCopy?: boolean;
+}
+
+/**
+ * Applies syntax highlighting to a JSON string by wrapping tokens in styled spans.
+ * Uses regex to identify keys, strings, numbers, booleans, and null values.
+ */
+function highlightJson(json: string): string {
+  const escaped = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  return escaped.replace(
+    /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+    (match) => {
+      let cls = 'json-number';
+      if (match.startsWith('"')) {
+        cls = match.endsWith(':') ? 'json-key' : 'json-string';
+      } else if (/^(true|false)$/.test(match)) {
+        cls = 'json-boolean';
+      } else if (match === 'null') {
+        cls = 'json-null';
+      }
+      return `<span class="${cls}">${match}</span>`;
+    }
+  );
 }
 
 /**
@@ -28,7 +55,7 @@ export interface CodeBlockProps extends React.HTMLAttributes<HTMLDivElement> {
  * @public
  */
 export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
-  ({ code, language, showCopy = true, className, ...props }, ref) => {
+  ({ code, language, highlight, showCopy = true, className, ...props }, ref) => {
     const [copied, setCopied] = React.useState(false);
 
     const handleCopy = async () => {
@@ -42,6 +69,7 @@ export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
     };
 
     const showHeader = language || showCopy;
+    const useJsonHighlighting = highlight === 'json';
 
     const codeBlockClass = [
       'vscode-code-block',
@@ -85,7 +113,11 @@ export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
           </div>
         )}
         <pre className="vscode-code-block__content">
-          <code>{code}</code>
+          {useJsonHighlighting ? (
+            <code dangerouslySetInnerHTML={{ __html: highlightJson(code) }} />
+          ) : (
+            <code>{code}</code>
+          )}
         </pre>
       </div>
     );

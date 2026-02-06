@@ -246,6 +246,8 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
   icon,
   isSelected
 }) => {
+  const itemRef = React.useRef<HTMLDivElement>(null);
+
   const getIconContent = () => {
     // If a custom icon is provided, use it
     if (icon) {
@@ -278,11 +280,34 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
   const handleClick = () => {
     if (onClick) {
       onClick();
+      // Scroll the clicked item into view within the trace history list only
+      requestAnimationFrame(() => {
+        const element = itemRef.current;
+        if (!element) return;
+
+        // Find the scrollable container (.trace-history-list)
+        const scrollContainer = element.closest('.trace-history-list');
+        if (!scrollContainer) return;
+
+        // Calculate position relative to the scroll container
+        const elementRect = element.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const scrollTop = scrollContainer.scrollTop;
+
+        // Account for sticky header (approximately 32px)
+        const stickyHeaderOffset = 32;
+        const targetScrollTop = scrollTop + (elementRect.top - containerRect.top) - stickyHeaderOffset;
+
+        scrollContainer.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: 'smooth'
+        });
+      });
     }
   };
 
   return (
-    <div className={itemClass} onClick={handleClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+    <div ref={itemRef} className={itemClass} onClick={handleClick} style={onClick ? { cursor: 'pointer' } : undefined}>
       <div className="vscode-timeline-item__indicator">
         <div className="vscode-timeline-item__icon">{getIconContent()}</div>
         {!isLast && <div className="vscode-timeline-item__line" />}

@@ -208,6 +208,67 @@ body.vscode-high-contrast .trace-history-selector__input::after {
   max-width: 0;
 }
 
+.tracer-info-table__value--copyable {
+  position: relative;
+  padding-right: 28px;
+}
+
+.tracer-info-table__copy-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tracer-info-table__value--copyable:hover .tracer-info-table__copy-btn {
+  opacity: 1;
+}
+
+.tracer-info-table__copy-btn[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 6px);
+  transform: translateY(-50%);
+  padding: 4px 8px;
+  background: var(--vscode-editorWidget-background, #252526);
+  color: var(--vscode-editorWidget-foreground, #cccccc);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  pointer-events: none;
+}
+
+.tracer-info-table__copy-btn[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.5s;
+}
+
+.tracer-info-table__copy-btn--copied {
+  opacity: 1;
+}
+
+.tracer-info-table__copy-btn--copied[data-tooltip]::before {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
 .tracer-scrollable-content {
   flex: 1;
   overflow-y: auto;

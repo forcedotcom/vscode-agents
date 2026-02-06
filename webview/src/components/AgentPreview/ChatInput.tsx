@@ -12,6 +12,7 @@ interface Message {
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   disabled?: boolean;
+  isLoading?: boolean;
   messages?: Message[];
   isLiveMode?: boolean;
 }
@@ -43,7 +44,7 @@ const saveHistory = (history: string[]) => {
 };
 
 const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
-  ({ onSendMessage, disabled = false, isLiveMode = false }, ref) => {
+  ({ onSendMessage, disabled = false, isLoading = false, isLiveMode = false }, ref) => {
     const [message, setMessage] = useState('');
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [userMessageHistory, setUserMessageHistory] = useState<string[]>([]);
@@ -152,11 +153,13 @@ const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
           onChange={e => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
-            disabled
-              ? isLiveMode
-                ? 'Type something to start the live test...'
-                : 'Type something to start the simulation...'
-              : 'Type something to start testing...'
+            isLoading
+              ? ''
+              : disabled
+                ? isLiveMode
+                  ? 'Type something to start the live test...'
+                  : 'Type something to start the simulation...'
+                : 'Type something to test the agent...'
           }
           className="chat-input-field"
           disabled={disabled}

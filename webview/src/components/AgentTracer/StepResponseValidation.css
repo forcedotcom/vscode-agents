@@ -78,7 +78,7 @@
 .step-response-validation-code-block-content pre {
   color: var(--vscode-foreground);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
   margin: 0;
   overflow-x: auto;

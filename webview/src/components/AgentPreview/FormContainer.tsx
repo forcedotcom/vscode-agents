@@ -30,6 +30,7 @@ const FormContainer = forwardRef<ChatInputRef, FormContainerProps>(
           ref={ref}
           onSendMessage={onSendMessage}
           disabled={!sessionActive || isLoading}
+          isLoading={isLoading}
           messages={messages}
           isLiveMode={isLiveMode}
         />

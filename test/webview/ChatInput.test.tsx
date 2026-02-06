@@ -173,6 +173,11 @@ describe('ChatInput', () => {
 
   it('shows default placeholder when enabled', () => {
     render(<ChatInput onSendMessage={jest.fn()} disabled={false} />);
-    expect(screen.getByPlaceholderText('Type something to start testing...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Type something to test the agent...')).toBeInTheDocument();
+  });
+
+  it('hides placeholder when loading', () => {
+    render(<ChatInput onSendMessage={jest.fn()} disabled={true} isLoading={true} />);
+    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '');
   });
 });

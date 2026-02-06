@@ -317,7 +317,7 @@ describe('AgentPreview - Coverage Tests', () => {
       });
 
       // Now find the textarea - it should be enabled and send a message
-      const textarea = screen.getByPlaceholderText(/Type something to start testing/i);
+      const textarea = screen.getByPlaceholderText(/Type something to test the agent/i);
       expect(textarea).not.toBeDisabled();
 
       await user.type(textarea, 'Test message');
@@ -541,7 +541,7 @@ describe('AgentPreview - Coverage Tests', () => {
       });
 
       // Now the textarea should be enabled
-      const textarea = screen.getByPlaceholderText(/Type something to start testing/i);
+      const textarea = screen.getByPlaceholderText(/Type something to test the agent/i);
       expect(textarea).not.toBeDisabled();
 
       // Type and send a message

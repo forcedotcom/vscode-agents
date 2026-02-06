@@ -222,6 +222,11 @@ export class HistoryManager {
         const planId = (trace as any).planId || `plan-${index}`;
         const traceSessionId = (trace as any).sessionId || sessionId || 'unknown';
         const userMessage = this.extractUserMessageFromTrace(trace);
+        const startTime = this.getTraceStartTime(trace);
+        const timestamp =
+          startTime !== Number.MAX_SAFE_INTEGER
+            ? new Date(startTime).toISOString()
+            : new Date().toISOString();
 
         return {
           storageKey: agentStorageKey,
@@ -229,7 +234,7 @@ export class HistoryManager {
           sessionId: traceSessionId,
           planId: planId,
           userMessage: userMessage,
-          timestamp: new Date().toISOString(),
+          timestamp,
           trace: trace
         };
       });
