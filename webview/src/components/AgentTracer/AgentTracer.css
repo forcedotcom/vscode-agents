@@ -66,6 +66,7 @@ body.vscode-high-contrast .tracer-loading .loading-spinner {
   gap: 8px;
   margin: 0 14px 0 8px;
   padding: 5px 0 5px 8px;
+  margin-bottom: 4px;
   flex-shrink: 0;
 }
 

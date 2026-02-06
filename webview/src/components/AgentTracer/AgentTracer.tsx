@@ -531,7 +531,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           <div className="tracer-simple">
             {traceHistory[0]?.sessionId && (
               <div className="tracer-session-id">
-                <span className="tracer-session-id__label">Session</span>
+                <span className="tracer-session-id__label">Session ID</span>
                 <span className="tracer-session-id__value">{traceHistory[0].sessionId}</span>
               </div>
             )}
