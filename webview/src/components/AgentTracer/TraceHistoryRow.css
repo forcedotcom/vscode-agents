@@ -30,7 +30,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 5px 32px 5px 8px;
+  padding: 5px 52px 5px 8px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -44,10 +44,9 @@
   outline: none;
 }
 
-.trace-history-row__json-icon {
+.trace-history-row__action-icon {
   position: absolute;
   top: 50%;
-  right: 8px;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
@@ -61,17 +60,25 @@
   transition: opacity 0.15s ease;
 }
 
-.trace-history-row:hover .trace-history-row__json-icon,
-.trace-history-row--expanded .trace-history-row__json-icon,
-.trace-history-row__json-icon:focus {
+.trace-history-row__json-icon {
+  right: 8px;
+}
+
+.trace-history-row__copy-icon {
+  right: 28px;
+}
+
+.trace-history-row:hover .trace-history-row__action-icon,
+.trace-history-row--expanded .trace-history-row__action-icon,
+.trace-history-row__action-icon:focus {
   opacity: 1;
 }
 
-.trace-history-row__json-icon:focus {
+.trace-history-row__action-icon:focus {
   outline: none;
 }
 
-.trace-history-row__json-icon[data-tooltip]::before {
+.trace-history-row__action-icon[data-tooltip]::before {
   content: attr(data-tooltip);
   position: absolute;
   top: 50%;
@@ -90,7 +97,7 @@
   pointer-events: none;
 }
 
-.trace-history-row__json-icon[data-tooltip]:hover::before {
+.trace-history-row__action-icon[data-tooltip]:hover::before {
   opacity: 1;
   visibility: visible;
   transition-delay: 0.5s;
