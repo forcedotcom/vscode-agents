@@ -240,6 +240,21 @@ export class WebviewMessageHandlers {
         Agent.listPreviewable(conn, project),
         Agent.listRemote(conn).catch(() => [] as BotMetadata[])
       ]);
+      // listPreviewable only returns agents with an active version.
+      // Supplement with agents from listRemote that have no active version (e.g. draft-only).
+      const previewableIds = new Set(fromLibrary.filter(a => a.id).map(a => a.id));
+      for (const bot of botMetadataList) {
+        if (!previewableIds.has(bot.Id)) {
+          fromLibrary.push({
+            name: bot.MasterLabel,
+            source: AgentSource.PUBLISHED,
+            id: bot.Id,
+            developerName: bot.DeveloperName,
+            label: bot.MasterLabel
+          });
+        }
+      }
+
       const allAgents = mergeWithLocalAgents(project.getPath(), fromLibrary);
 
       // Build a map from bot ID to active version number (or highest if none active)
