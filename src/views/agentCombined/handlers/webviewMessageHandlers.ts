@@ -242,13 +242,14 @@ export class WebviewMessageHandlers {
       ]);
       const allAgents = mergeWithLocalAgents(project.getPath(), fromLibrary);
 
-      // Build a map from bot ID to latest version number
+      // Build a map from bot ID to active version number (or highest if none active)
       const versionMap = new Map<string, number>();
       for (const bot of botMetadataList) {
         const versions = bot.BotVersions?.records ?? [];
         if (versions.length > 0) {
-          const latestVersion = versions[versions.length - 1];
-          versionMap.set(bot.Id, latestVersion.VersionNumber);
+          const activeVersion = versions.find(v => v.Status === 'Active');
+          const highestVersion = versions.reduce((max, v) => (v.VersionNumber > max.VersionNumber ? v : max), versions[0]);
+          versionMap.set(bot.Id, (activeVersion ?? highestVersion).VersionNumber);
         }
       }
 
