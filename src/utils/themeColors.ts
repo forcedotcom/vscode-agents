@@ -235,10 +235,18 @@ function findThemePath(themeId: string): string | undefined {
  * Checks semantic token colors first (when enabled), then falls back to TextMate tokenColors.
  */
 export function getJsonTokenColors(): JsonTokenColors {
-  const themeId = vscode.workspace.getConfiguration('workbench').get<string>('colorTheme');
-  if (!themeId) {
+  try {
+    const themeId = vscode.workspace.getConfiguration('workbench')?.get<string>('colorTheme');
+    if (!themeId) {
+      return {};
+    }
+    return resolveThemeColors(themeId);
+  } catch {
     return {};
   }
+}
+
+function resolveThemeColors(themeId: string): JsonTokenColors {
 
   const themePath = findThemePath(themeId);
   if (!themePath) {

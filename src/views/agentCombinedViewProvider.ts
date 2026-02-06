@@ -100,12 +100,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     // Send editor theme token colors for syntax highlighting
     this.sendThemeColors();
-    this.context.subscriptions.push(
-      vscode.window.onDidChangeActiveColorTheme(() => {
-        // Small delay to ensure workbench.colorTheme config reflects the new theme
-        setTimeout(() => this.sendThemeColors(), 100);
-      })
-    );
+    if (vscode.window.onDidChangeActiveColorTheme) {
+      this.context.subscriptions.push(
+        vscode.window.onDidChangeActiveColorTheme(() => {
+          // Small delay to ensure workbench.colorTheme config reflects the new theme
+          setTimeout(() => this.sendThemeColors(), 100);
+        })
+      );
+    }
   }
 
   private sendThemeColors(): void {
