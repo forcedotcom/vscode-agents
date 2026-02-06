@@ -60,31 +60,6 @@ body.vscode-high-contrast .tracer-loading .loading-spinner {
   overflow: hidden;
 }
 
-.tracer-session-id {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 14px 0 8px;
-  padding: 5px 0 5px 8px;
-  margin-bottom: 4px;
-}
-
-.tracer-session-id__label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--vscode-descriptionForeground);
-  flex-shrink: 0;
-}
-
-.tracer-session-id__value {
-  font-size: 11px;
-  font-family: var(--vscode-editor-font-family);
-  color: var(--vscode-foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .trace-history-list {
   flex: 1;
   overflow-y: auto;

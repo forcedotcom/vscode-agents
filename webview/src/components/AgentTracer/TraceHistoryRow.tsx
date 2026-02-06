@@ -113,6 +113,10 @@ export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
           <table className="tracer-info-table">
             <tbody>
               <tr>
+                <td className="tracer-info-table__label">Session ID</td>
+                <td className="tracer-info-table__value">{traceData.sessionId}</td>
+              </tr>
+              <tr>
                 <td className="tracer-info-table__label">Plan ID</td>
                 <td className="tracer-info-table__value">{traceData.planId}</td>
               </tr>

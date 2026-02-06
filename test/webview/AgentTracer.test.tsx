@@ -65,8 +65,8 @@ describe('AgentTracer', () => {
     expect(screen.getByText('First message')).toBeInTheDocument();
     expect(screen.getByText('Second message')).toBeInTheDocument();
 
-    // The latest entry should be expanded by default, showing plan-2
-    expect(screen.getByText('plan-2')).toBeInTheDocument();
+    // The latest entry should be expanded by default, showing session-2
+    expect(screen.getByText('session-2')).toBeInTheDocument();
   });
 
   it('allows expanding and collapsing rows', () => {
@@ -109,7 +109,7 @@ describe('AgentTracer', () => {
     dispatchMessage('traceHistory', { entries: historyEntries });
 
     // Latest entry should be expanded by default
-    expect(screen.getByText('plan-2')).toBeInTheDocument();
+    expect(screen.getByText('session-2')).toBeInTheDocument();
 
     // First entry should be collapsed - click to expand
     const firstRowButton = screen.getByRole('button', { name: /first message/i });
@@ -118,16 +118,16 @@ describe('AgentTracer', () => {
     fireEvent.click(firstRowButton);
     expect(firstRowButton).toHaveAttribute('aria-expanded', 'true');
 
-    // Now plan-1 should be visible
-    expect(screen.getByText('plan-1')).toBeInTheDocument();
+    // Now session-1 should be visible
+    expect(screen.getByText('session-1')).toBeInTheDocument();
 
-    // Both plans should be visible (multi-expand)
-    expect(screen.getByText('plan-2')).toBeInTheDocument();
+    // Both sessions should be visible (multi-expand)
+    expect(screen.getByText('session-2')).toBeInTheDocument();
 
     // Collapse first row
     fireEvent.click(firstRowButton);
     expect(firstRowButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('plan-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('session-1')).not.toBeInTheDocument();
   });
 
   it('auto-expands the latest trace after a new message is sent', () => {
@@ -167,7 +167,7 @@ describe('AgentTracer', () => {
     dispatchMessage('traceHistory', { entries: historyEntries });
 
     // Latest entry should be expanded
-    expect(screen.getByText('plan-2')).toBeInTheDocument();
+    expect(screen.getByText('session-2')).toBeInTheDocument();
 
     // Send a new message
     const newestEntry = {
@@ -188,8 +188,8 @@ describe('AgentTracer', () => {
     dispatchMessage('messageSent', {});
     dispatchMessage('traceHistory', { entries: [...historyEntries, newestEntry] });
 
-    // Now plan-3 should be visible (auto-expanded)
-    expect(screen.getByText('plan-3')).toBeInTheDocument();
+    // Now session-3 should be visible (auto-expanded)
+    expect(screen.getByText('session-3')).toBeInTheDocument();
   });
 
   it('sends an openTraceJson request when the link is clicked', () => {
@@ -346,7 +346,7 @@ describe('AgentTracer', () => {
     dispatchMessage('traceHistory', { entries: historyEntries });
 
     // Should show last entry expanded by default
-    expect(screen.getByText('plan-2')).toBeInTheDocument();
+    expect(screen.getByText('session-2')).toBeInTheDocument();
   });
 
   it('does not open trace json when no current history entry', () => {
@@ -432,7 +432,7 @@ describe('AgentTracer', () => {
     // Latest entry should be expanded by default
     const secondRowButton = screen.getByRole('button', { name: /second/i });
     expect(secondRowButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('plan-2')).toBeInTheDocument();
+    expect(screen.getByText('session-2')).toBeInTheDocument();
 
     // Expand first row as well
     const firstRowButton = screen.getByRole('button', { name: /first/i });
@@ -441,8 +441,8 @@ describe('AgentTracer', () => {
     // Both rows should now be expanded
     expect(firstRowButton).toHaveAttribute('aria-expanded', 'true');
     expect(secondRowButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('plan-1')).toBeInTheDocument();
-    expect(screen.getByText('plan-2')).toBeInTheDocument();
+    expect(screen.getByText('session-1')).toBeInTheDocument();
+    expect(screen.getByText('session-2')).toBeInTheDocument();
   });
 
   it('clicking a step in any row shows the step panel', () => {
