@@ -20,6 +20,29 @@ export interface CodeBlockProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
+ * Applies syntax highlighting to a JSON string by wrapping tokens in styled spans.
+ * Uses regex to identify keys, strings, numbers, booleans, and null values.
+ */
+function highlightJson(json: string): string {
+  const escaped = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  return escaped.replace(
+    /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+    (match) => {
+      let cls = 'json-number';
+      if (match.startsWith('"')) {
+        cls = match.endsWith(':') ? 'json-key' : 'json-string';
+      } else if (/^(true|false)$/.test(match)) {
+        cls = 'json-boolean';
+      } else if (match === 'null') {
+        cls = 'json-null';
+      }
+      return `<span class="${cls}">${match}</span>`;
+    }
+  );
+}
+
+/**
  * The Visual Studio Code code block component.
  *
  * @remarks
@@ -42,6 +65,7 @@ export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
     };
 
     const showHeader = language || showCopy;
+    const useJsonHighlighting = language === 'json';
 
     const codeBlockClass = [
       'vscode-code-block',
@@ -85,7 +109,11 @@ export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(
           </div>
         )}
         <pre className="vscode-code-block__content">
-          <code>{code}</code>
+          {useJsonHighlighting ? (
+            <code dangerouslySetInnerHTML={{ __html: highlightJson(code) }} />
+          ) : (
+            <code>{code}</code>
+          )}
         </pre>
       </div>
     );
