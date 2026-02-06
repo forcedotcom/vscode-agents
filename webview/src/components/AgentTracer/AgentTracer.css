@@ -215,7 +215,7 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 
 .tracer-info-table__copy-btn {
   position: absolute;
-  right: 4px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -257,6 +257,16 @@ body.vscode-high-contrast .trace-history-selector__input::after {
   opacity: 1;
   visibility: visible;
   transition-delay: 0.5s;
+}
+
+.tracer-info-table__copy-btn--copied {
+  opacity: 1;
+}
+
+.tracer-info-table__copy-btn--copied[data-tooltip]::before {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 .tracer-scrollable-content {
