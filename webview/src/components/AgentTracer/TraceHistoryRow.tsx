@@ -79,6 +79,7 @@ export const TraceHistoryRow: React.FC<TraceHistoryRowProps> = ({
       className="tracer-info-table__copy-btn"
       onClick={() => handleCopyValue(value)}
       aria-label="Copy"
+      data-tooltip="Copy"
     >
       <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
         <path d="M1.97333 2.98667L2.98666 1.97333H8.37333L12 5.54667V12.96L10.9867 13.9733H2.98666L1.97333 12.96V2.98667ZM10.9867 5.97333L7.99999 2.98667H2.98666V12.96H10.9867V5.97333ZM0.959994 -9.53674e-07L-5.72205e-06 0.959999V10.9867L0.959994 12V0.959999H7.41333L6.39999 -9.53674e-07H0.959994Z" />
