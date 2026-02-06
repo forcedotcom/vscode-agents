@@ -61,7 +61,10 @@ export class WebviewMessageSender {
     this.postMessage('selectAgent', { agentId, forceRestart, agentSource });
   }
 
-  sendAvailableAgents(agents: Array<{ name: string; id: string; type: string }>, selectedAgentId?: string): void {
+  sendAvailableAgents(
+    agents: Array<{ name: string; id: string; type: string; versionNumber?: number }>,
+    selectedAgentId?: string
+  ): void {
     this.postMessage('availableAgents', {
       agents,
       selectedAgentId: selectedAgentId || this.state.currentAgentId
