@@ -529,13 +529,13 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           </div>
         ) : hasTraceHistory ? (
           <div className="tracer-simple">
-            {traceHistory[0]?.sessionId && (
-              <div className="tracer-session-id">
-                <span className="tracer-session-id__label">Session ID</span>
-                <span className="tracer-session-id__value">{traceHistory[0].sessionId}</span>
-              </div>
-            )}
             <div className="trace-history-list" role="list" aria-label="Trace history">
+              {traceHistory[0]?.sessionId && (
+                <div className="tracer-session-id">
+                  <span className="tracer-session-id__label">Session ID</span>
+                  <span className="tracer-session-id__value">{traceHistory[0].sessionId}</span>
+                </div>
+              )}
               {traceHistory.map((entry, index) => {
                 const { message } = formatHistoryParts(entry, index);
                 const timelineItems = buildTimelineItems(entry.trace, stepIndex =>

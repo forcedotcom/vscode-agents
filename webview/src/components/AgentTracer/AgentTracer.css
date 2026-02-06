@@ -67,7 +67,6 @@ body.vscode-high-contrast .tracer-loading .loading-spinner {
   margin: 0 14px 0 8px;
   padding: 5px 0 5px 8px;
   margin-bottom: 4px;
-  flex-shrink: 0;
 }
 
 .tracer-session-id__label {
