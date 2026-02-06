@@ -215,7 +215,7 @@ body.vscode-high-contrast .trace-history-selector__input::after {
 
 .tracer-info-table__copy-btn {
   position: absolute;
-  right: 6px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
