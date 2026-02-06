@@ -10,13 +10,14 @@ export interface JsonTokenColors {
   null?: string;
 }
 
-// TextMate scopes for JSON tokens, ordered from most to least specific
-const JSON_SCOPE_MAP: Record<keyof JsonTokenColors, string[]> = {
-  key: ['support.type.property-name.json', 'support.type.property-name'],
-  string: ['string.quoted.double.json', 'string.quoted.double', 'string.quoted', 'string'],
-  number: ['constant.numeric.json', 'constant.numeric'],
-  boolean: ['constant.language.boolean.json', 'constant.language.json', 'constant.language'],
-  null: ['constant.language.null.json', 'constant.language.json', 'constant.language']
+// The full TextMate scope for each JSON token type.
+// Theme selectors are matched as prefixes against these (e.g. "string" matches "string.quoted.double.json").
+const JSON_TOKEN_SCOPES: Record<keyof JsonTokenColors, string> = {
+  key: 'support.type.property-name.json',
+  string: 'string.quoted.double.json',
+  number: 'constant.numeric.json',
+  boolean: 'constant.language.json',
+  null: 'constant.language.json'
 };
 
 interface ThemeTokenColor {
@@ -75,25 +76,35 @@ function collectTokenColors(filePath: string, visited = new Set<string>()): Them
 }
 
 /**
- * Finds the best matching foreground color for a list of scope candidates.
- * Tries each candidate from most to least specific, scanning entries in
- * reverse so that later (higher-priority) entries win.
+ * Finds the best matching foreground color for a token scope using TextMate prefix matching.
+ * A theme selector "string" matches token scope "string.quoted.double.json" because it's
+ * a dot-separated prefix. The longest (most specific) matching selector wins. Among entries
+ * with equal specificity, later entries take priority (child theme overrides parent).
  */
-function findColorForScopes(tokenColors: ThemeTokenColor[], scopeCandidates: string[]): string | undefined {
-  for (const candidate of scopeCandidates) {
-    for (let i = tokenColors.length - 1; i >= 0; i--) {
-      const entry = tokenColors[i];
-      if (!entry.scope || !entry.settings?.foreground) {
+function findColorForScope(tokenColors: ThemeTokenColor[], tokenScope: string): string | undefined {
+  let bestColor: string | undefined;
+  let bestLength = 0;
+
+  for (const entry of tokenColors) {
+    if (!entry.scope || !entry.settings?.foreground) {
+      continue;
+    }
+
+    const selectors = Array.isArray(entry.scope) ? entry.scope : [entry.scope];
+    for (const selector of selectors) {
+      const trimmed = selector.trim();
+      if (trimmed.length < bestLength) {
         continue;
       }
-
-      const scopes = Array.isArray(entry.scope) ? entry.scope : [entry.scope];
-      if (scopes.some(s => s.trim() === candidate)) {
-        return entry.settings.foreground;
+      // Exact match or dot-separated prefix match
+      if (tokenScope === trimmed || tokenScope.startsWith(trimmed + '.')) {
+        bestColor = entry.settings.foreground;
+        bestLength = trimmed.length;
       }
     }
   }
-  return undefined;
+
+  return bestColor;
 }
 
 function findThemePath(themeId: string): string | undefined {
@@ -135,8 +146,8 @@ export function getJsonTokenColors(): JsonTokenColors {
   }
 
   const result: JsonTokenColors = {};
-  for (const [token, scopes] of Object.entries(JSON_SCOPE_MAP)) {
-    const color = findColorForScopes(tokenColors, scopes);
+  for (const [token, scope] of Object.entries(JSON_TOKEN_SCOPES)) {
+    const color = findColorForScope(tokenColors, scope);
     if (color) {
       result[token as keyof JsonTokenColors] = color;
     }
