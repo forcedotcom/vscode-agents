@@ -76,16 +76,16 @@ export const registerManageAgentActivationCommand = () => {
         const isActive = hasActiveVersion;
         const hasMixedVersions = hasActiveVersion !== latestIsActive;
 
-        let description = isActive ? '$(check) Active' : '$(circle-slash) Inactive';
-        if (hasMixedVersions) {
-          // Warn user that this agent has mixed version statuses
-          description += ' $(warning) (mixed versions)';
+        let description = `(${bot.DeveloperName})`;
+        if (botVersions.length >= 10) {
+          description += ' $(warning) >10 versions - may not toggle correctly';
+        } else if (hasMixedVersions) {
+          description += ' $(warning) mixed versions';
         }
 
         return {
           label: bot.MasterLabel,
           description,
-          detail: `API Name: ${bot.DeveloperName}`,
           picked: isActive,
           agentId: bot.Id,
           developerName: bot.DeveloperName,
@@ -96,12 +96,67 @@ export const registerManageAgentActivationCommand = () => {
       // Sort by label
       items.sort((a, b) => a.label.localeCompare(b.label));
 
-      // Show multi-select QuickPick
-      const selectedItems = await vscode.window.showQuickPick(items, {
-        canPickMany: true,
-        placeHolder: 'Select agents to activate (unselected will be deactivated)',
-        title: 'Manage Agent Activation',
-        ignoreFocusOut: true
+      // Show custom QuickPick without built-in "Select All" option
+      const selectedItems = await new Promise<AgentQuickPickItem[] | undefined>(resolve => {
+        let resolved = false;
+        const selectedAgentIds = new Set(
+          items.filter(item => item.picked).map(item => item.agentId)
+        );
+
+        const quickPick = vscode.window.createQuickPick<AgentQuickPickItem>();
+        quickPick.title = 'Manage Agent Activation';
+        quickPick.placeholder = 'Toggle agents to activate/deactivate, then confirm';
+        quickPick.ignoreFocusOut = true;
+        quickPick.buttons = [
+          {
+            iconPath: new vscode.ThemeIcon('check'),
+            tooltip: 'Confirm changes'
+          }
+        ];
+
+        const renderItems = () => {
+          const currentActiveId = quickPick.activeItems[0]?.agentId;
+          const newItems: AgentQuickPickItem[] = items.map(item => ({
+            ...item,
+            label: `${selectedAgentIds.has(item.agentId) ? '$(pass-filled)' : '$(circle-large-outline)'} ${item.label}`
+          }));
+          quickPick.items = newItems;
+          if (currentActiveId) {
+            const activeItem = newItems.find(i => i.agentId === currentActiveId);
+            if (activeItem) {
+              quickPick.activeItems = [activeItem];
+            }
+          }
+        };
+
+        renderItems();
+        quickPick.show();
+
+        quickPick.onDidAccept(() => {
+          const active = quickPick.activeItems[0];
+          if (active) {
+            if (selectedAgentIds.has(active.agentId)) {
+              selectedAgentIds.delete(active.agentId);
+            } else {
+              selectedAgentIds.add(active.agentId);
+            }
+            renderItems();
+          }
+        });
+
+        quickPick.onDidTriggerButton(() => {
+          resolved = true;
+          const result = items.filter(item => selectedAgentIds.has(item.agentId));
+          quickPick.dispose();
+          resolve(result);
+        });
+
+        quickPick.onDidHide(() => {
+          quickPick.dispose();
+          if (!resolved) {
+            resolve(undefined);
+          }
+        });
       });
 
       if (!selectedItems) {
@@ -194,10 +249,18 @@ export const registerManageAgentActivationCommand = () => {
               // Find the original bot metadata to log version details
               const botMetadata = botMetadataList.find(b => b.Id === item.agentId);
               const versions = botMetadata?.BotVersions?.records ?? [];
-              const versionStatuses = versions.map((v, idx) => `v${idx + 1}: ${v.Status}`).join(', ');
+              const versionStatuses = versions
+                .map(v => `v${v.VersionNumber}: ${v.Status}`)
+                .join(', ');
               logger.debug(
-                `Agent "${item.label}" has ${versions.length} version(s): [${versionStatuses}]`
+                `Agent "${item.label}" has ${versions.length} version(s) fetched: [${versionStatuses}]`
               );
+              if (versions.length >= 10) {
+                logger.warn(
+                  `Agent "${item.label}" may have more versions than the API returned (limit is 10). ` +
+                    'Activation/deactivation may not work correctly for agents with more than 10 versions.'
+                );
+              }
               logger.debug(`Initializing agent for deactivation: ${item.developerName} (ID: ${item.agentId})`);
 
               const agent = await Agent.init({
