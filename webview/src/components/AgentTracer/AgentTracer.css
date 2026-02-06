@@ -208,6 +208,29 @@ body.vscode-high-contrast .trace-history-selector__input::after {
   max-width: 0;
 }
 
+.tracer-info-table__value--copyable {
+  position: relative;
+}
+
+.tracer-info-table__copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  margin-left: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  vertical-align: middle;
+}
+
+.tracer-info-table__value--copyable:hover .tracer-info-table__copy-btn {
+  opacity: 1;
+}
+
 .tracer-scrollable-content {
   flex: 1;
   overflow-y: auto;
