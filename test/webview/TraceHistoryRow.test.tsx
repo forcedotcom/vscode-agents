@@ -117,12 +117,14 @@ describe('TraceHistoryRow', () => {
   it('does not show content when collapsed', () => {
     render(<TraceHistoryRow {...defaultProps} isExpanded={false} />);
 
+    expect(screen.queryByText('session-123')).not.toBeInTheDocument();
     expect(screen.queryByText('plan-123')).not.toBeInTheDocument();
   });
 
   it('shows content when expanded', () => {
     render(<TraceHistoryRow {...defaultProps} isExpanded={true} />);
 
+    expect(screen.getByText('session-123')).toBeInTheDocument();
     expect(screen.getByText('plan-123')).toBeInTheDocument();
   });
 
