@@ -20,21 +20,84 @@ const JSON_TOKEN_SCOPES: Record<keyof JsonTokenColors, string> = {
   null: 'constant.language.json'
 };
 
+// Semantic token types used by VS Code's JSON language service.
+// Checked with optional ":json" language qualifier, most specific first.
+const JSON_SEMANTIC_TOKENS: Record<keyof JsonTokenColors, string[]> = {
+  key: ['property:json', 'property'],
+  string: ['string:json', 'string'],
+  number: ['number:json', 'number'],
+  boolean: ['keyword:json', 'keyword'],
+  null: ['keyword:json', 'keyword']
+};
+
 interface ThemeTokenColor {
   scope?: string | string[];
   settings?: { foreground?: string; fontStyle?: string };
 }
 
+type SemanticColorValue = string | { foreground?: string; fontStyle?: string };
+
 interface ThemeData {
   include?: string;
   tokenColors?: ThemeTokenColor[];
+  semanticHighlighting?: boolean;
+  semanticTokenColors?: Record<string, SemanticColorValue>;
 }
 
+/**
+ * Strips JSONC comments while respecting string boundaries.
+ * A simple regex can't distinguish comments from "//" inside strings (e.g. URLs),
+ * so we walk the string tracking whether we're inside a quoted string.
+ */
 function stripJsonComments(text: string): string {
-  return text
-    .replace(/\/\/.*$/gm, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/,(\s*[}\]])/g, '$1');
+  let result = '';
+  let i = 0;
+  let inString = false;
+
+  while (i < text.length) {
+    const ch = text[i];
+
+    if (inString) {
+      result += ch;
+      // Skip escaped characters (handles \\, \", etc.)
+      if (ch === '\\') {
+        i++;
+        if (i < text.length) {
+          result += text[i];
+        }
+      } else if (ch === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
+    }
+
+    // Outside a string
+    if (ch === '"') {
+      inString = true;
+      result += ch;
+      i++;
+    } else if (ch === '/' && text[i + 1] === '/') {
+      // Single-line comment — skip to end of line
+      i += 2;
+      while (i < text.length && text[i] !== '\n') {
+        i++;
+      }
+    } else if (ch === '/' && text[i + 1] === '*') {
+      // Multi-line comment — skip to closing */
+      i += 2;
+      while (i < text.length && !(text[i] === '*' && text[i + 1] === '/')) {
+        i++;
+      }
+      i += 2;
+    } else {
+      result += ch;
+      i++;
+    }
+  }
+
+  // Remove trailing commas before } or ]
+  return result.replace(/,(\s*[}\]])/g, '$1');
 }
 
 function loadThemeFile(filePath: string): ThemeData | undefined {
@@ -46,33 +109,48 @@ function loadThemeFile(filePath: string): ThemeData | undefined {
   }
 }
 
+interface CollectedTheme {
+  tokenColors: ThemeTokenColor[];
+  semanticHighlighting?: boolean;
+  semanticTokenColors?: Record<string, SemanticColorValue>;
+}
+
 /**
- * Recursively collects tokenColors from a theme and its includes.
+ * Recursively collects theme data from a theme and its includes.
  * Child entries appear after parent entries so they take priority.
  */
-function collectTokenColors(filePath: string, visited = new Set<string>()): ThemeTokenColor[] {
+function collectThemeData(filePath: string, visited = new Set<string>()): CollectedTheme {
+  const empty: CollectedTheme = { tokenColors: [] };
   if (visited.has(filePath)) {
-    return [];
+    return empty;
   }
   visited.add(filePath);
 
   const theme = loadThemeFile(filePath);
   if (!theme) {
-    return [];
+    return empty;
   }
 
-  let colors: ThemeTokenColor[] = [];
+  let result = empty;
 
   if (theme.include) {
     const includePath = path.resolve(path.dirname(filePath), theme.include);
-    colors = collectTokenColors(includePath, visited);
+    result = collectThemeData(includePath, visited);
   }
 
   if (theme.tokenColors) {
-    colors = [...colors, ...theme.tokenColors];
+    result.tokenColors = [...result.tokenColors, ...theme.tokenColors];
   }
 
-  return colors;
+  // Semantic colors: child theme entries override parent
+  if (theme.semanticTokenColors) {
+    result.semanticTokenColors = { ...result.semanticTokenColors, ...theme.semanticTokenColors };
+  }
+  if (theme.semanticHighlighting !== undefined) {
+    result.semanticHighlighting = theme.semanticHighlighting;
+  }
+
+  return result;
 }
 
 /**
@@ -107,6 +185,33 @@ function findColorForScope(tokenColors: ThemeTokenColor[], tokenScope: string): 
   return bestColor;
 }
 
+/**
+ * Extracts the foreground color from a semantic token color value.
+ */
+function getSemanticForeground(value: SemanticColorValue): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return value.foreground;
+}
+
+/**
+ * Finds a semantic token color for a JSON token type.
+ * Tries language-specific (":json") selectors first, then generic ones.
+ */
+function findSemanticColor(
+  semanticTokenColors: Record<string, SemanticColorValue>,
+  candidates: string[]
+): string | undefined {
+  for (const candidate of candidates) {
+    const value = semanticTokenColors[candidate];
+    if (value) {
+      return getSemanticForeground(value);
+    }
+  }
+  return undefined;
+}
+
 function findThemePath(themeId: string): string | undefined {
   for (const ext of vscode.extensions.all) {
     const themes = ext.packageJSON?.contributes?.themes as
@@ -127,7 +232,7 @@ function findThemePath(themeId: string): string | undefined {
 
 /**
  * Reads the active VS Code color theme and extracts token colors for JSON syntax elements.
- * Returns colors that match the editor's actual syntax highlighting.
+ * Checks semantic token colors first (when enabled), then falls back to TextMate tokenColors.
  */
 export function getJsonTokenColors(): JsonTokenColors {
   const themeId = vscode.workspace.getConfiguration('workbench').get<string>('colorTheme');
@@ -140,17 +245,25 @@ export function getJsonTokenColors(): JsonTokenColors {
     return {};
   }
 
-  const tokenColors = collectTokenColors(themePath);
-  if (tokenColors.length === 0) {
-    return {};
-  }
-
+  const themeData = collectThemeData(themePath);
   const result: JsonTokenColors = {};
-  for (const [token, scope] of Object.entries(JSON_TOKEN_SCOPES)) {
-    const color = findColorForScope(tokenColors, scope);
-    if (color) {
-      result[token as keyof JsonTokenColors] = color;
+
+  for (const token of Object.keys(JSON_TOKEN_SCOPES) as Array<keyof JsonTokenColors>) {
+    // Semantic colors take priority when the theme has semantic highlighting enabled
+    if (themeData.semanticHighlighting && themeData.semanticTokenColors) {
+      const semanticColor = findSemanticColor(themeData.semanticTokenColors, JSON_SEMANTIC_TOKENS[token]);
+      if (semanticColor) {
+        result[token] = semanticColor;
+        continue;
+      }
+    }
+
+    // Fall back to TextMate tokenColors
+    const tmColor = findColorForScope(themeData.tokenColors, JSON_TOKEN_SCOPES[token]);
+    if (tmColor) {
+      result[token] = tmColor;
     }
   }
+
   return result;
 }
