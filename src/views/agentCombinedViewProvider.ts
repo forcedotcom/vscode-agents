@@ -8,10 +8,9 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { AgentViewState } from './agentCombined/state';
 import { WebviewMessageSender, WebviewMessageHandlers } from './agentCombined/handlers';
 import { SessionManager } from './agentCombined/session';
-import { AgentInitializer, getAgentStorageKey, mergeWithLocalAgents } from './agentCombined/agent';
+import { AgentInitializer, getAgentStorageKey, getAgentSource } from './agentCombined/agent';
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
-import { getAgentSource } from './agentCombined/agent';
 
 /**
  * Main orchestrator for the Agent Combined View Provider
@@ -266,8 +265,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     try {
       const conn = await CoreExtensionService.getDefaultConnection();
       const project = SfProject.getInstance();
-      const fromLibrary = await Agent.listPreviewable(conn, project);
-      return mergeWithLocalAgents(project.getPath(), fromLibrary);
+      return await Agent.listPreviewable(conn, project);
     } catch (error) {
       console.error('Error getting agents for command palette:', error);
       return [];

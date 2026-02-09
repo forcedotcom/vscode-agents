@@ -10,7 +10,7 @@ import type { SessionManager } from '../session';
 import type { HistoryManager } from '../history';
 import type { ApexDebugManager } from '../debugging';
 import { Logger } from '../../../utils/logger';
-import { getAgentSource, mergeWithLocalAgents } from '../agent';
+import { getAgentSource } from '../agent';
 
 /**
  * Handles all incoming messages from the webview
@@ -236,8 +236,7 @@ export class WebviewMessageHandlers {
     try {
       const conn = await CoreExtensionService.getDefaultConnection();
       const project = SfProject.getInstance();
-      const fromLibrary = await Agent.listPreviewable(conn, project);
-      const allAgents = mergeWithLocalAgents(project.getPath(), fromLibrary);
+      const allAgents = await Agent.listPreviewable(conn, project);
 
       // Map agents - script agents use aabName as id, published agents use id
       const mappedAgents = allAgents
