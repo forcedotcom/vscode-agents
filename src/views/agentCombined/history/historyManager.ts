@@ -62,7 +62,7 @@ export class HistoryManager {
   /**
    * Extracts the start time from a trace's UserInputStep for sorting
    */
-  private getTraceStartTime(trace: unknown): number {
+  private getTraceStartTime(trace: unknown): number | undefined {
     try {
       const traceObj = trace as { plan?: Array<{ type?: string; startExecutionTime?: number }> };
       if (traceObj?.plan && Array.isArray(traceObj.plan)) {
@@ -74,7 +74,7 @@ export class HistoryManager {
     } catch (error) {
       // Fall through to default
     }
-    return Number.MAX_SAFE_INTEGER; // Put traces without timestamps at the end
+    return undefined;
   }
 
   /**
@@ -212,8 +212,8 @@ export class HistoryManager {
 
       // Sort traces by startExecutionTime from UserInputStep (oldest first)
       const sortedTraces = [...(history.traces || [])].sort((a, b) => {
-        const timeA = this.getTraceStartTime(a);
-        const timeB = this.getTraceStartTime(b);
+        const timeA = this.getTraceStartTime(a) ?? Infinity;
+        const timeB = this.getTraceStartTime(b) ?? Infinity;
         return timeA - timeB;
       });
 
@@ -223,10 +223,9 @@ export class HistoryManager {
         const traceSessionId = (trace as any).sessionId || sessionId || 'unknown';
         const userMessage = this.extractUserMessageFromTrace(trace);
         const startTime = this.getTraceStartTime(trace);
-        const timestamp =
-          startTime !== Number.MAX_SAFE_INTEGER
-            ? new Date(startTime).toISOString()
-            : new Date().toISOString();
+        const timestamp = startTime
+          ? new Date(startTime).toISOString()
+          : new Date().toISOString();
 
         return {
           storageKey: agentStorageKey,

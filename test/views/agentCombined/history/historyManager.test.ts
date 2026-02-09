@@ -83,7 +83,7 @@ describe('HistoryManager', () => {
       expect(result).toBe(2000);
     });
 
-    it('should return MAX_SAFE_INTEGER when no UserInputStep exists', () => {
+    it('should return undefined when no UserInputStep exists', () => {
       const trace = {
         plan: [
           { type: 'SessionInitialStateStep', startExecutionTime: 1000 },
@@ -92,28 +92,28 @@ describe('HistoryManager', () => {
       };
 
       const result = (historyManager as any).getTraceStartTime(trace);
-      expect(result).toBe(Number.MAX_SAFE_INTEGER);
+      expect(result).toBeUndefined();
     });
 
-    it('should return MAX_SAFE_INTEGER when plan is missing', () => {
+    it('should return undefined when plan is missing', () => {
       const trace = { type: 'PlanSuccessResponse' };
 
       const result = (historyManager as any).getTraceStartTime(trace);
-      expect(result).toBe(Number.MAX_SAFE_INTEGER);
+      expect(result).toBeUndefined();
     });
 
-    it('should return MAX_SAFE_INTEGER when trace is null', () => {
+    it('should return undefined when trace is null', () => {
       const result = (historyManager as any).getTraceStartTime(null);
-      expect(result).toBe(Number.MAX_SAFE_INTEGER);
+      expect(result).toBeUndefined();
     });
 
-    it('should return MAX_SAFE_INTEGER when UserInputStep has no startExecutionTime', () => {
+    it('should return undefined when UserInputStep has no startExecutionTime', () => {
       const trace = {
         plan: [{ type: 'UserInputStep', message: 'hello' }]
       };
 
       const result = (historyManager as any).getTraceStartTime(trace);
-      expect(result).toBe(Number.MAX_SAFE_INTEGER);
+      expect(result).toBeUndefined();
     });
   });
 
@@ -226,8 +226,8 @@ describe('HistoryManager', () => {
 
       // Sort using the same logic as historyManager
       const sortedTraces = [...traces].sort((a, b) => {
-        const timeA = (historyManager as any).getTraceStartTime(a);
-        const timeB = (historyManager as any).getTraceStartTime(b);
+        const timeA = (historyManager as any).getTraceStartTime(a) ?? Infinity;
+        const timeB = (historyManager as any).getTraceStartTime(b) ?? Infinity;
         return timeA - timeB;
       });
 
@@ -249,8 +249,8 @@ describe('HistoryManager', () => {
       ];
 
       const sortedTraces = [...traces].sort((a, b) => {
-        const timeA = (historyManager as any).getTraceStartTime(a);
-        const timeB = (historyManager as any).getTraceStartTime(b);
+        const timeA = (historyManager as any).getTraceStartTime(a) ?? Infinity;
+        const timeB = (historyManager as any).getTraceStartTime(b) ?? Infinity;
         return timeA - timeB;
       });
 
