@@ -249,6 +249,9 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
    * @param selectAgentId Optional agent ID to auto-select after refresh
    */
   public async refreshAvailableAgents(selectAgentId?: string): Promise<void> {
+    // Force re-read of sfdx-project.json so new packageDirectories are picked up
+    SfProject.clearInstances();
+
     // Clear state and update UI immediately (optimistic update)
     this.state.currentAgentId = undefined;
 
