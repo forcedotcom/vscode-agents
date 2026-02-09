@@ -123,7 +123,7 @@ export class WebviewMessageHandlers {
   }
 
   private async handleStartSession(message: AgentMessage): Promise<void> {
-    const data = message.data as { agentId?: string; isLiveMode?: boolean; agentSource?: string } | undefined;
+    const data = message.data as { agentId?: string; isLiveMode?: boolean; agentSource?: AgentSource } | undefined;
     const agentId = data?.agentId || this.state.currentAgentId;
 
     if (!agentId || typeof agentId !== 'string') {
@@ -131,7 +131,7 @@ export class WebviewMessageHandlers {
     }
 
     // Determine agent source - prefer passed value, then state, then fetch
-    let agentSource = (data?.agentSource as AgentSource) ?? this.state.currentAgentSource;
+    let agentSource = data?.agentSource ?? this.state.currentAgentSource;
     if (!agentSource) {
       agentSource = await getAgentSource(agentId);
     }
@@ -223,11 +223,11 @@ export class WebviewMessageHandlers {
   }
 
   private async handleLoadAgentHistory(message: AgentMessage): Promise<void> {
-    const data = message.data as { agentId?: string; agentSource?: string } | undefined;
+    const data = message.data as { agentId?: string; agentSource?: AgentSource } | undefined;
     const agentId = data?.agentId;
     if (agentId && typeof agentId === 'string') {
       // Use passed agentSource if available to avoid expensive listPreviewable call
-      const agentSource = (data?.agentSource as AgentSource) ?? (await getAgentSource(agentId));
+      const agentSource = data?.agentSource ?? (await getAgentSource(agentId));
       await this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
     }
   }
@@ -313,12 +313,12 @@ export class WebviewMessageHandlers {
   }
 
   private async handleSetSelectedAgentId(message: AgentMessage): Promise<void> {
-    const data = message.data as { agentId?: string; agentSource?: string } | undefined;
+    const data = message.data as { agentId?: string; agentSource?: AgentSource } | undefined;
     const agentId = data?.agentId;
     if (agentId && typeof agentId === 'string' && agentId !== '') {
       this.state.currentAgentId = agentId;
       // Use passed agentSource if available to avoid expensive listPreviewable call
-      this.state.currentAgentSource = (data?.agentSource as AgentSource) ?? (await getAgentSource(agentId));
+      this.state.currentAgentSource = data?.agentSource ?? (await getAgentSource(agentId));
       await this.state.setAgentSelected(true);
       await this.state.setResetAgentViewAvailable(false);
       await this.state.setSessionErrorState(false);

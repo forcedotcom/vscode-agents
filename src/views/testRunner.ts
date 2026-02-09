@@ -129,7 +129,7 @@ export class AgentTestRunner {
       const lifecycle = await Lifecycle.getInstance();
       channelService.clear();
       channelService.showChannelOutput();
-      const tester = new AgentTester(await CoreExtensionService.getDefaultConnection() as any);
+      const tester = new AgentTester(await CoreExtensionService.getDefaultConnection());
       channelService.appendLine(`Starting ${test.name} tests: ${new Date().toLocaleString()}`);
       vscode.window.withProgress(
         {

@@ -199,9 +199,9 @@ export class SessionManager {
       if (this.state.agentInstance && this.state.sessionId) {
         const isAgentSimulate = agentSource === AgentSource.SCRIPT;
         if (isAgentSimulate) {
-          await (this.state.agentInstance.preview as any).end();
+          await this.state.agentInstance.preview.end();
         } else {
-          await this.state.agentInstance.preview.end(this.state.sessionId, 'UserRequest');
+          await this.state.agentInstance.preview.end('UserRequest');
         }
 
         try {

@@ -206,7 +206,7 @@ export class HistoryManager {
         // Extract sessionId from the most recent trace if available
         if (history.traces && history.traces.length > 0) {
           const mostRecentTrace = history.traces[history.traces.length - 1];
-          sessionId = (mostRecentTrace as any).sessionId;
+          sessionId = mostRecentTrace.sessionId;
         }
       }
 
@@ -219,13 +219,11 @@ export class HistoryManager {
 
       const agentStorageKey = getAgentStorageKey(agentId, agentSource);
       const entries = sortedTraces.map((trace, index) => {
-        const planId = (trace as any).planId || `plan-${index}`;
-        const traceSessionId = (trace as any).sessionId || sessionId || 'unknown';
+        const planId = trace.planId || `plan-${index}`;
+        const traceSessionId = trace.sessionId || sessionId || 'unknown';
         const userMessage = this.extractUserMessageFromTrace(trace);
         const startTime = this.getTraceStartTime(trace);
-        const timestamp = startTime
-          ? new Date(startTime).toISOString()
-          : new Date().toISOString();
+        const timestamp = startTime ? new Date(startTime).toISOString() : new Date().toISOString();
 
         return {
           storageKey: agentStorageKey,
@@ -241,8 +239,8 @@ export class HistoryManager {
       return entries;
     } catch (error) {
       // NoSessionFound is expected for new agents with no previous sessions - don't log as error
-      const isExpectedError = error instanceof Error &&
-        (error.name === 'NoSessionFound' || error.message.includes('No sessions found'));
+      const isExpectedError =
+        error instanceof Error && (error.name === 'NoSessionFound' || error.message.includes('No sessions found'));
       if (!isExpectedError) {
         console.error('Could not load trace history:', error);
       }
@@ -272,8 +270,8 @@ export class HistoryManager {
       return transcriptEntries || [];
     } catch (err) {
       // NoSessionFound is expected for new agents with no previous sessions - don't log as error
-      const isExpectedError = err instanceof Error &&
-        (err.name === 'NoSessionFound' || err.message.includes('No sessions found'));
+      const isExpectedError =
+        err instanceof Error && (err.name === 'NoSessionFound' || err.message.includes('No sessions found'));
       if (!isExpectedError) {
         console.error('Could not load conversation history:', err);
       }

@@ -102,7 +102,7 @@ export class AgentInitializer {
             connection: conn,
             aabName,
             project: project
-          } as any);
+          });
           this.state.agentInstance = agent;
           return agent as ScriptAgent;
         }
@@ -130,7 +130,7 @@ export class AgentInitializer {
   async initializePublishedAgent(agentId: string, conn: Connection, project: SfProject): Promise<ProductionAgent> {
     const agent = await Agent.init({
       connection: conn,
-      project: project as any,
+      project: project,
       apiNameOrId: agentId
     });
 

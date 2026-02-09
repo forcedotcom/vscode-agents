@@ -44,13 +44,13 @@ function serializer(replacer: unknown, cycleReplacer?: unknown) {
       ~thisPos ? stack.splice(thisPos + 1) : stack.push(this);
       ~thisPos ? keys.splice(thisPos, Number.POSITIVE_INFINITY, key) : keys.push(key);
       // @ts-expect-error because `this` is not typed
-      if (stack.includes(value)) value = (cycleReplacer as any).call(this, key, value);
+      if (stack.includes(value)) value = cycleReplacer.call(this, key, value);
     } else {
       stack.push(value);
     }
 
     // @ts-expect-error because `this` is not typed
-    return replacer ? (replacer as any).call(this, key, value) : value;
+    return replacer ? replacer.call(this, key, value) : value;
   };
 }
 
