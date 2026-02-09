@@ -293,14 +293,14 @@ describe('createAiAuthoringBundle', () => {
     // Verify telemetry
     expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.createAiAuthoringBundle);
 
-    // Verify agent script was created
+    // Verify agent script was created (description derived from name)
     expect(createAgentScriptSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         agentSpec: expect.objectContaining({
           name: 'My Test Agent',
           developerName: 'MyTestAgent',
           agentType: 'customer',
-          role: 'Test Role'
+          role: 'My Test Agent description'
         }),
         project: mockProject,
         bundleApiName: 'MyTestAgent',
@@ -336,7 +336,8 @@ describe('createAiAuthoringBundle', () => {
         project: mockProject,
         agentSpec: expect.objectContaining({
           name: 'My Test Agent',
-          developerName: 'MyTestAgent'
+          developerName: 'MyTestAgent',
+          role: 'My Test Agent description'
         }),
         bundleApiName: 'MyTestAgent',
         outputDir: expect.any(String)
@@ -609,13 +610,14 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify createAuthoringBundle was called with correct parameters
+    // Description is derived from name
     expect(createAgentScriptSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         agentSpec: expect.objectContaining({
           name: 'Test Agent',
           developerName: 'TestAgent',
           agentType: 'customer',
-          role: 'TestRole'
+          role: 'Test Agent description'
         }),
         project: mockProject,
         outputDir: expect.any(String),
@@ -648,7 +650,8 @@ describe('createAiAuthoringBundle', () => {
     expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toEqual(
       expect.objectContaining({
         name: 'Test Agent',
-        developerName: 'TestAgent'
+        developerName: 'TestAgent',
+        role: 'Test Agent description'
       })
     );
   });
@@ -669,7 +672,8 @@ describe('createAiAuthoringBundle', () => {
         project: mockProject,
         agentSpec: expect.objectContaining({
           name: 'New Agent',
-          developerName: 'NewAgent'
+          developerName: 'NewAgent',
+          role: 'New Agent description'
         }),
         bundleApiName: 'NewAgent',
         outputDir: expect.any(String)
@@ -746,7 +750,8 @@ describe('createAiAuthoringBundle', () => {
     expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toEqual(
       expect.objectContaining({
         name: 'Test Agent',
-        developerName: 'TestAgent'
+        developerName: 'TestAgent',
+        role: 'Test Agent description'
       })
     );
   });
