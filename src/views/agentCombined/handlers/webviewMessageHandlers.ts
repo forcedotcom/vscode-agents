@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { AgentSource, Agent } from '@salesforce/agents';
+import { AgentSource, Agent, type BotMetadata } from '@salesforce/agents';
 import { SfProject, SfError } from '@salesforce/core';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
@@ -236,8 +236,37 @@ export class WebviewMessageHandlers {
     try {
       const conn = await CoreExtensionService.getDefaultConnection();
       const project = SfProject.getInstance();
-      const fromLibrary = await Agent.listPreviewable(conn, project);
+      const [fromLibrary, botMetadataList] = await Promise.all([
+        Agent.listPreviewable(conn, project),
+        Agent.listRemote(conn).catch(() => [] as BotMetadata[])
+      ]);
+      // listPreviewable only returns agents with an active version.
+      // Supplement with agents from listRemote that have no active version (e.g. draft-only).
+      const previewableIds = new Set(fromLibrary.filter(a => a.id).map(a => a.id));
+      for (const bot of botMetadataList) {
+        if (!previewableIds.has(bot.Id)) {
+          fromLibrary.push({
+            name: bot.MasterLabel,
+            source: AgentSource.PUBLISHED,
+            id: bot.Id,
+            developerName: bot.DeveloperName,
+            label: bot.MasterLabel
+          });
+        }
+      }
+
       const allAgents = mergeWithLocalAgents(project.getPath(), fromLibrary);
+
+      // Build a map from bot ID to active version number (or highest if none active)
+      const versionMap = new Map<string, number>();
+      for (const bot of botMetadataList) {
+        const versions = bot.BotVersions?.records ?? [];
+        if (versions.length > 0) {
+          const activeVersion = versions.find(v => v.Status === 'Active');
+          const highestVersion = versions.reduce((max, v) => (v.VersionNumber > max.VersionNumber ? v : max), versions[0]);
+          versionMap.set(bot.Id, (activeVersion ?? highestVersion).VersionNumber);
+        }
+      }
 
       // Map agents - script agents use aabName as id, published agents use id
       const mappedAgents = allAgents
@@ -250,7 +279,8 @@ export class WebviewMessageHandlers {
           return {
             name: agent.name,
             id: agentId,
-            type: agent.source
+            type: agent.source,
+            ...(agent.id && versionMap.has(agent.id) ? { versionNumber: versionMap.get(agent.id) } : {})
           };
         });
 

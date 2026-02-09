@@ -2,6 +2,7 @@ export enum Commands {
   openAgentInOrg = 'salesforcedx-vscode-agents.openAgentInOrg',
   activateAgent = 'salesforcedx-vscode-agents.activateAgent',
   deactivateAgent = 'salesforcedx-vscode-agents.deactivateAgent',
+  manageAgentActivation = 'salesforcedx-vscode-agents.manageAgentActivation',
   validateAgent = 'salesforcedx-vscode-agents.validateAgent',
   previewAgent = 'salesforcedx-vscode-agents.previewAgent',
   publishAgent = 'salesforcedx-vscode-agents.publishAgent',

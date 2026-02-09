@@ -8,6 +8,19 @@ import { CoreExtensionService } from '../../../services/coreExtensionService';
 const AI_AUTHORING_BUNDLES_DIR = 'aiAuthoringBundles';
 
 /**
+ * Reads the agent_label from a .agent DSL file.
+ */
+function readAgentLabel(agentFilePath: string): string | undefined {
+  try {
+    const content = fs.readFileSync(agentFilePath, 'utf-8');
+    const match = content.match(/agent_label:\s*"([^"]+)"/);
+    return match?.[1];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Recursively finds all directories named "aiAuthoringBundles" under a root path.
  */
 function findAiAuthoringBundlesDirs(rootDir: string): string[] {
@@ -51,10 +64,11 @@ export function findLocalAgentsUnderProject(projectRoot: string): PreviewableAge
       const agentFile = path.join(subdir, `${aabName}.agent`);
       try {
         if (fs.statSync(agentFile).isFile()) {
+          const label = readAgentLabel(agentFile);
           agents.push({
             source: AgentSource.SCRIPT,
             aabName,
-            name: aabName,
+            name: label || aabName,
             id: undefined
           });
         }

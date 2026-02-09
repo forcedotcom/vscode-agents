@@ -84,6 +84,7 @@ export async function activate(context: vscode.ExtensionContext) {
     disposables.push(commands.registerOpenAgentInOrgCommand());
     disposables.push(commands.registerActivateAgentCommand());
     disposables.push(commands.registerDeactivateAgentCommand());
+    disposables.push(commands.registerManageAgentActivationCommand());
     disposables.push(commands.registerValidateAgentCommand());
     disposables.push(commands.registerPreviewAgentCommand());
     disposables.push(commands.registerPublishAgentCommand());
