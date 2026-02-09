@@ -114,7 +114,10 @@ export const registerPublishAgentCommand = () => {
             });
 
             try {
-              await agent.publish();
+              await agent.publish(
+                  vscode.workspace
+                  .getConfiguration('salesforce.agentforceDX')
+                  .get<boolean>('skipRetrieve', false));
             } finally {
               // Clean up event listeners
               lifecycle.removeAllListeners('scopedPreRetrieve');
