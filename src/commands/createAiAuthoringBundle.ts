@@ -237,7 +237,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             break; // Done with wizard
           }
         } else if (step === 3) {
-          // Step 2 (cont): Choose spec file (only if Custom selected)
+          // Choose spec file (only if Custom selected)
           const specFileItems = specFiles.map(file => ({ label: file }));
           const result = await showQuickPickWithBack(specFileItems, {
             title: 'Create Agent (Step 2 of 2)',
