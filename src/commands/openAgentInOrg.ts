@@ -27,11 +27,13 @@ export const registerOpenAgentInOrgCommand = () => {
     // If no agent name from context, prompt user to select
     if (!agentName) {
       const project = SfProject.getInstance();
-      const agents = await Agent.list(project as any);
+      const agents = await Agent.list(project);
       if (agents.length === 0) {
         vscode.window.showErrorMessage(`Couldn't find any agents in the current DX project.`);
         logger.error("Couldn't find any agents in the current DX project.");
-        logger.debug('Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.');
+        logger.debug(
+          'Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.'
+        );
         return;
       }
       // we need to prompt the user which agent to open

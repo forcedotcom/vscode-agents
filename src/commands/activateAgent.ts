@@ -60,7 +60,7 @@ export const registerActivateAgentCommand = () => {
 
       // Clear previous output
       logger.clear();
-      
+
       logger.debug(`Activating agent ${agentName}...`);
 
       await vscode.window.withProgress(
@@ -79,8 +79,8 @@ export const registerActivateAgentCommand = () => {
           // Create Agent instance and activate it
           // For published agents, filePath is optional
           const agent = await Agent.init({
-            connection: org.getConnection() as any,
-            project: project as any,
+            connection: org.getConnection(),
+            project: project,
             apiNameOrId: agentName
           });
 

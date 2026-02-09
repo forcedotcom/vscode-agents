@@ -71,7 +71,7 @@ export const registerDeactivateAgentCommand = () => {
 
       // Clear previous output
       logger.clear();
-      
+
       logger.debug(`Deactivating agent ${agentName}...`);
 
       await vscode.window.withProgress(
@@ -90,8 +90,8 @@ export const registerDeactivateAgentCommand = () => {
           // Create Agent instance and deactivate it
           // For published agents, filePath is optional
           const agent = await Agent.init({
-            connection: org.getConnection() as any,
-            project: project as any,
+            connection: org.getConnection(),
+            project: project,
             apiNameOrId: agentName
           });
 
