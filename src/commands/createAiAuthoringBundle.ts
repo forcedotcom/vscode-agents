@@ -237,7 +237,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             break; // Done with wizard
           }
         } else if (step === 3) {
-          // Step 3: Choose spec file (only if Custom selected)
+          // Choose spec file (only if Custom selected)
           const specFileItems = specFiles.map(file => ({ label: file }));
           const result = await showQuickPickWithBack(specFileItems, {
             title: 'Create Agent (Step 2 of 2)',
@@ -279,12 +279,10 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
           await ScriptAgent.createAuthoringBundle({
             project,
-            agentSpec: spec
-              ? {
-                  ...(YAML.parse(readFileSync(spec, 'utf8')) as AgentJobSpec),
-                  ...{ name, developerName: apiName }
-                }
-              : undefined,
+            agentSpec: {
+              ...(spec ? (YAML.parse(readFileSync(spec, 'utf8')) as AgentJobSpec) : {}),
+              ...{ name, developerName: apiName, role: `${name} description` }
+            } as AgentJobSpec & { name: string; developerName: string },
             bundleApiName: apiName,
             outputDir: targetDir
           });
