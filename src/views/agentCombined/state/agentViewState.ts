@@ -15,7 +15,6 @@ export class AgentViewState {
   private _currentAgentSource?: AgentSource;
   private _currentPlanId?: string;
   private _currentUserMessage?: string;
-
   // Session state
   private _isSessionActive = false;
   private _isSessionStarting = false;

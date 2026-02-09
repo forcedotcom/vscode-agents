@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { AgentViewState } from '../state/agentViewState';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
+import type { JsonTokenColors } from '../../../utils/themeColors';
 
 /**
  * Handles all outgoing messages to the webview
@@ -122,6 +123,10 @@ export class WebviewMessageSender {
     this.postMessage('refreshAgents');
   }
 
+  // Theme colors for syntax highlighting
+  sendThemeTokenColors(colors: JsonTokenColors): void {
+    this.postMessage('themeTokenColors', colors);
+  }
 
   // Helper method to strip HTML tags
   private stripHtmlTags(text: string): string {

@@ -12,6 +12,7 @@ import { AgentInitializer, getAgentStorageKey, mergeWithLocalAgents } from './ag
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
 import { getAgentSource } from './agentCombined/agent';
+import { getJsonTokenColors } from '../utils/themeColors';
 
 /**
  * Main orchestrator for the Agent Combined View Provider
@@ -96,6 +97,21 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
     // Set HTML content
     webviewView.webview.html = this.getHtmlForWebview();
+
+    // Send editor theme token colors for syntax highlighting
+    this.sendThemeColors();
+    if (vscode.window.onDidChangeActiveColorTheme) {
+      this.context.subscriptions.push(
+        vscode.window.onDidChangeActiveColorTheme(() => {
+          // Small delay to ensure workbench.colorTheme config reflects the new theme
+          setTimeout(() => this.sendThemeColors(), 100);
+        })
+      );
+    }
+  }
+
+  private sendThemeColors(): void {
+    this.messageSender.sendThemeTokenColors(getJsonTokenColors());
   }
 
   /**
@@ -412,4 +428,5 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const agentSource = this.state.currentAgentSource ?? (await getAgentSource(this.state.currentAgentId));
     await this.historyManager.clearHistory(this.state.currentAgentId, agentSource);
   }
+
 }
