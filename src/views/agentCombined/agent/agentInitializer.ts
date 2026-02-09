@@ -54,10 +54,10 @@ export class AgentInitializer {
     // 3. A path with a "local:" prefix (from Agent.listPreviewable) - strip the prefix
     // 4. Just the name of the authoring bundle (aabName)
     let aabDirectory: string;
-    
+
     // Strip "local:" prefix if present (agents library may return paths with this prefix)
     const normalizedPath = filePath.startsWith('local:') ? filePath.substring(6) : filePath;
-    
+
     try {
       // Check if filePath is a directory
       const stats = await fs.stat(normalizedPath);
@@ -109,15 +109,16 @@ export class AgentInitializer {
         aabDirectory = path.resolve(authoringBundle);
       }
     }
-    
+
     // Extract just the name (basename) from the directory path
     const aabName = path.basename(aabDirectory);
-    
+
     const agent = await Agent.init({
       connection: conn,
       aabName,
       project: project
-    } as any);
+    });
+    agent.preview.setMockMode(_isLiveMode ? 'Live Test' : 'Mock');
 
     this.state.agentInstance = agent;
     return agent as ScriptAgent;
@@ -126,11 +127,7 @@ export class AgentInitializer {
   /**
    * Initializes a published agent
    */
-  async initializePublishedAgent(
-    agentId: string,
-    conn: Connection,
-    project: SfProject
-  ): Promise<ProductionAgent> {
+  async initializePublishedAgent(agentId: string, conn: Connection, project: SfProject): Promise<ProductionAgent> {
     const agent = await Agent.init({
       connection: conn,
       project: project as any,

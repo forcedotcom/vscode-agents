@@ -597,7 +597,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
             ]}
           />
           <div className="tracer-step-data-panel__content">
-            <CodeBlock code={selectedStepData!} showCopy={false} />
+            <CodeBlock code={selectedStepData!} highlight="json" showCopy={false} />
           </div>
         </div>
       )}

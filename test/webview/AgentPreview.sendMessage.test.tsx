@@ -76,8 +76,9 @@ describe('AgentPreview send message guard', () => {
 
     messageHandlers.get('sessionStarted')?.({ content: 'hello' });
 
+    // Wait for React to re-render with agentConnected=true so handleSendMessage updates
     await waitFor(() => {
-      expect(mockVscodeApi.sendChatMessage).not.toHaveBeenCalled();
+      expect(formPropsRef.current?.sessionActive).toBe(true);
     });
 
     formPropsRef.current.onSendMessage('Hello agent');

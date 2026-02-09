@@ -86,6 +86,36 @@ class VSCodeApiService {
         handlers.forEach(handler => handler(message.data));
       }
     });
+
+    // Apply editor theme token colors as CSS custom properties for syntax highlighting.
+    // Uses a <style> tag instead of inline styles so VS Code theme resets don't wipe them.
+    this.onMessage('themeTokenColors', (colors: Record<string, string | undefined>) => {
+      let styleEl = document.getElementById('json-theme-colors') as HTMLStyleElement | null;
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'json-theme-colors';
+        document.head.appendChild(styleEl);
+      }
+
+      const mapping: Record<string, string> = {
+        key: '--json-token-key',
+        string: '--json-token-string',
+        number: '--json-token-number',
+        boolean: '--json-token-boolean',
+        null: '--json-token-null'
+      };
+
+      const props: string[] = [];
+      for (const [token, prop] of Object.entries(mapping)) {
+        if (colors[token]) {
+          props.push(`${prop}: ${colors[token]};`);
+        }
+      }
+
+      // Replace entire content — clears old theme colors and falls back to
+      // --vscode-debugTokenExpression-* when the new theme has no match
+      styleEl.textContent = props.length > 0 ? `:root { ${props.join(' ')} }` : '';
+    });
   }
 
   // Register a handler for specific message types
