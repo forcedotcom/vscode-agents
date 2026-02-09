@@ -279,12 +279,10 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
           await ScriptAgent.createAuthoringBundle({
             project,
-            agentSpec: spec
-              ? {
-                  ...(YAML.parse(readFileSync(spec, 'utf8')) as AgentJobSpec),
-                  ...{ name, developerName: apiName }
-                }
-              : undefined,
+            agentSpec: {
+              ...(spec ? (YAML.parse(readFileSync(spec, 'utf8')) as AgentJobSpec) : {}),
+              ...{ name, developerName: apiName }
+            } as AgentJobSpec & { name: string; developerName: string },
             bundleApiName: apiName,
             outputDir: targetDir
           });

@@ -330,15 +330,18 @@ describe('createAiAuthoringBundle', () => {
     const handler = commandSpy.mock.calls[0][1];
     await handler();
 
-    // createAuthoringBundle called without agentSpec
+    // createAuthoringBundle called with name/developerName even without spec file
     expect(createAgentScriptSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         project: mockProject,
+        agentSpec: expect.objectContaining({
+          name: 'My Test Agent',
+          developerName: 'MyTestAgent'
+        }),
         bundleApiName: 'MyTestAgent',
         outputDir: expect.any(String)
       })
     );
-    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
   });
 
   it('cancels when user cancels spec type selection', async () => {
@@ -640,9 +643,14 @@ describe('createAiAuthoringBundle', () => {
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
       expect.stringMatching(/\[warn\].*No agent spec directory found/)
     );
-    // Should show Default Template only and call createAuthoringBundle without agentSpec
+    // Should show Default Template only and call createAuthoringBundle with name/developerName
     expect(createAgentScriptSpy).toHaveBeenCalled();
-    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
+    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toEqual(
+      expect.objectContaining({
+        name: 'Test Agent',
+        developerName: 'TestAgent'
+      })
+    );
   });
 
   it('calls createAuthoringBundle without agentSpec when Default Template is selected', async () => {
@@ -659,11 +667,14 @@ describe('createAiAuthoringBundle', () => {
     expect(createAgentScriptSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         project: mockProject,
+        agentSpec: expect.objectContaining({
+          name: 'New Agent',
+          developerName: 'NewAgent'
+        }),
         bundleApiName: 'NewAgent',
         outputDir: expect.any(String)
       })
     );
-    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
     expect(readFileSync).not.toHaveBeenCalled();
   });
 
@@ -731,7 +742,12 @@ describe('createAiAuthoringBundle', () => {
 
     // Should have called createQuickPick 3 times
     expect(createQuickPickSpy).toHaveBeenCalledTimes(3);
-    // Should have created bundle without agentSpec (default selected)
-    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toBeUndefined();
+    // Should have created bundle with name/developerName (default selected, no spec file)
+    expect(createAgentScriptSpy.mock.calls[0][0].agentSpec).toEqual(
+      expect.objectContaining({
+        name: 'Test Agent',
+        developerName: 'TestAgent'
+      })
+    );
   });
 });
