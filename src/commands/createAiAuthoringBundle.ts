@@ -276,7 +276,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
                 return 'API name cannot be over 80 characters.';
               }
               if (!/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(value)) {
-                return 'Invalid API name.';
+                return 'Invalid API name';
               }
               return null;
             }
