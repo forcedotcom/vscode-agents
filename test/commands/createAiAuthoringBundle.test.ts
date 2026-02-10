@@ -259,8 +259,8 @@ describe('createAiAuthoringBundle', () => {
     jest.restoreAllMocks();
   });
 
-  const defaultSpecTypeItem = { label: 'Default template (recommended)', description: 'Start with a ready-to-use Agent Script template', isCustom: false };
-  const customSpecTypeItem = { label: 'From YAML spec (advanced)', description: 'Generate Agent Script from an existing YAML spec', isCustom: true };
+  const defaultSpecTypeItem = { label: 'Default template (Recommended)', description: 'Start with a ready-to-use Agent Script template.', isCustom: false };
+  const customSpecTypeItem = { label: 'From an agent spec YAML file (Advanced)', description: 'Generate an Agent Script file from an existing agent spec YAML file.', isCustom: true };
 
   it('registers the command', () => {
     registerCreateAiAuthoringBundleCommand();

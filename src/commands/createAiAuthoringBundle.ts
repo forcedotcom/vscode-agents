@@ -163,20 +163,20 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           )
           .map(([fileName]) => fileName);
       } catch (error) {
-        logger.warn(`No agent spec directory found at ${specsDir}`);
+        logger.warn(`No agent spec directory found at ${specsDir}.`);
       }
 
       const specTypeItems: SpecTypePickItem[] = [
         {
-          label: 'Default template (recommended)',
-          description: 'Start with a ready-to-use Agent Script template',
+          label: 'Default template (Recommended)',
+          description: 'Start with a ready-to-use Agent Script template.',
           isCustom: false
         },
         ...(specFiles.length > 0
           ? [
               {
-                label: 'From YAML spec (advanced)',
-                description: 'Generate Agent Script from an existing YAML spec',
+                label: 'From an agent spec YAML file (Advanced)',
+                description: 'Generate an Agent Script file from an existing agent spec YAML file.',
                 isCustom: true
               }
             ]
@@ -195,7 +195,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Step 1: Select template type
           const result = await showQuickPickWithBack(specTypeItems, {
             title: 'Create Agent',
-            placeholder: 'Select agent template',
+            placeholder: 'Select an agent template',
             showBack: false
           });
 
@@ -215,7 +215,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const specFileItems = specFiles.map(file => ({ label: file }));
           const result = await showQuickPickWithBack(specFileItems, {
             title: 'Create Agent',
-            placeholder: 'Select agent YAML spec',
+            placeholder: 'Select the agent spec YAML file',
             showBack: true
           });
 
@@ -232,13 +232,13 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Step 3: Enter name
           const result = await showInputBoxWithBack({
             title: 'Create Agent',
-            prompt: 'Enter agent name',
+            prompt: 'Enter the agent name',
             placeholder: 'Agent name',
             value: name,
             showBack: true,
             validateInput: value => {
               if (!value) {
-                return 'Agent name is required';
+                return 'Agent name is required.';
               }
               if (value.trim().length === 0) {
                 return "Agent name can't be empty.";
@@ -261,7 +261,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const generatedApiName = generateApiName(name!);
           const result = await showInputBoxWithBack({
             title: 'Create Agent',
-            prompt: 'Enter agent API name',
+            prompt: 'Enter the agent API name',
             placeholder: 'API name',
             value: apiName ?? generatedApiName,
             showBack: true,
@@ -276,7 +276,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
                 return 'API name cannot be over 80 characters.';
               }
               if (!/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(value)) {
-                return 'Invalid API name';
+                return 'Invalid API name.';
               }
               return null;
             }
