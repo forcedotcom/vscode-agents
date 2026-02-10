@@ -91,10 +91,10 @@ tools: []`;
       fs.rmSync(expectedBundleDir, { recursive: true, force: true });
     }
 
-    // Wizard flow: 1) name input, 2) spec type selection, 3) spec file selection
+    // Wizard flow: 1) template type selection, 2) spec file selection, 3) name input, 4) API name input
     const mockedUI = mockHeadlessUI({
-      inputBoxResponses: [bundleName],
-      quickPickResponses: ['From Spec File (Advanced)', 'test-agent-spec.yaml']
+      quickPickResponses: ['From an agent spec YAML file (Advanced)', 'test-agent-spec.yaml'],
+      inputBoxResponses: [bundleName, bundleName]
     });
 
     try {
@@ -164,10 +164,10 @@ tools: []`;
       fs.rmSync(expectedBundleDir, { recursive: true, force: true });
     }
 
-    // Select "Default Template (Recommended)" (first quick pick item) by passing its label
+    // Select "Default template (Recommended)" (first quick pick item) by passing its label
     const mockedUI = mockHeadlessUI({
-      inputBoxResponses: [bundleName],
-      quickPickResponses: ['Default Template (Recommended)']
+      quickPickResponses: ['Default template (Recommended)'],
+      inputBoxResponses: [bundleName, bundleName]
     });
 
     try {

@@ -163,20 +163,20 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           )
           .map(([fileName]) => fileName);
       } catch (error) {
-        logger.warn(`No agent spec directory found at ${specsDir}`);
+        logger.warn(`No agent spec directory found at ${specsDir}.`);
       }
 
       const specTypeItems: SpecTypePickItem[] = [
         {
-          label: 'Default Template (Recommended)',
-          description: 'Start with a ready-to-use Agent Script',
+          label: 'Default template (Recommended)',
+          description: 'Start with a ready-to-use Agent Script template.',
           isCustom: false
         },
         ...(specFiles.length > 0
           ? [
               {
-                label: 'From Spec File (Advanced)',
-                description: 'Generate Agent Script from an existing YAML spec',
+                label: 'From an agent spec YAML file (Advanced)',
+                description: 'Generate an Agent Script file from an existing agent spec YAML file.',
                 isCustom: true
               }
             ]
@@ -186,39 +186,36 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       // Multi-step wizard with back navigation
       let step = 1;
       let name: string | undefined;
+      let apiName: string | undefined;
       let selectedType: SpecTypePickItem | undefined;
       let spec: string | undefined;
 
       while (step > 0) {
         if (step === 1) {
-          // Step 1: Enter bundle name
-          const result = await showInputBoxWithBack({
-            title: 'Create Agent (Step 1 of 2)',
-            prompt: 'Enter a name for the new agent',
-            placeholder: 'Agent Name',
-            value: name,
-            showBack: false,
-            validateInput: value => {
-              if (!value) {
-                return 'Bundle name is required';
-              }
-              if (value.trim().length === 0) {
-                return "Bundle name can't be empty.";
-              }
-              return null;
-            }
+          // Step 1: Select template type
+          const result = await showQuickPickWithBack(specTypeItems, {
+            title: 'Create Agent',
+            placeholder: 'Select an agent template',
+            showBack: false
           });
 
           if (result === undefined) {
             return; // User cancelled
           }
-          name = result;
-          step = 2;
+          selectedType = result as SpecTypePickItem;
+
+          if (selectedType.isCustom) {
+            step = 2;
+          } else {
+            spec = undefined;
+            step = 3; // Skip to name input
+          }
         } else if (step === 2) {
-          // Step 2: Choose spec type
-          const result = await showQuickPickWithBack(specTypeItems, {
-            title: 'Create Agent (Step 2 of 2)',
-            placeholder: 'Select the type of agent spec to use',
+          // Step 2: Select spec file (only if "From YAML spec" was selected)
+          const specFileItems = specFiles.map(file => ({ label: file }));
+          const result = await showQuickPickWithBack(specFileItems, {
+            title: 'Create Agent',
+            placeholder: 'Select the agent spec YAML file',
             showBack: true
           });
 
@@ -229,50 +226,87 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           if (result === undefined) {
             return; // User cancelled
           }
-          selectedType = result;
-
-          if (selectedType.isCustom) {
-            step = 3;
-          } else {
-            break; // Done with wizard
-          }
+          spec = path.join(specsDir, result.label);
+          step = 3;
         } else if (step === 3) {
-          // Choose spec file (only if Custom selected)
-          const specFileItems = specFiles.map(file => ({ label: file }));
-          const result = await showQuickPickWithBack(specFileItems, {
-            title: 'Create Agent (Step 2 of 2)',
-            placeholder: 'Choose a spec to generate your Agent Script',
-            showBack: true
+          // Step 3: Enter name
+          const result = await showInputBoxWithBack({
+            title: 'Create Agent',
+            prompt: 'Enter the agent name',
+            placeholder: 'Agent name',
+            value: name,
+            showBack: true,
+            validateInput: value => {
+              if (!value) {
+                return 'Agent name is required.';
+              }
+              if (value.trim().length === 0) {
+                return "Agent name can't be empty.";
+              }
+              return null;
+            }
           });
 
           if (result === 'back') {
-            step = 2;
+            step = selectedType?.isCustom ? 2 : 1;
             continue;
           }
           if (result === undefined) {
             return; // User cancelled
           }
-          spec = path.join(specsDir, result.label);
+          name = result;
+          step = 4;
+        } else if (step === 4) {
+          // Step 4: Enter API name
+          const generatedApiName = generateApiName(name!);
+          const result = await showInputBoxWithBack({
+            title: 'Create Agent',
+            prompt: 'Enter the agent API name',
+            placeholder: 'API name',
+            value: apiName ?? generatedApiName,
+            showBack: true,
+            validateInput: value => {
+              if (value === '') {
+                if (/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(generatedApiName)) {
+                  return null; // Empty accepted, uses default
+                }
+                return 'Invalid generated API name. Please enter a valid API name.';
+              }
+              if (value.length > 80) {
+                return 'API name cannot be over 80 characters.';
+              }
+              if (!/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(value)) {
+                return 'Invalid API name.';
+              }
+              return null;
+            }
+          });
+
+          if (result === 'back') {
+            step = 3;
+            continue;
+          }
+          if (result === undefined) {
+            return; // User cancelled
+          }
+          apiName = result || generatedApiName;
           break; // Done with wizard
         }
       }
 
-      if (!name) {
+      if (!name || !apiName) {
         return;
       }
-
-      // Generate API name from the regular name
-      const apiName = generateApiName(name);
 
       // Show progress
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Generating authoring bundle: ${apiName}...`,
+          title: `Generating agent: ${apiName}`,
           cancellable: false
         },
         async progress => {
-          progress.report({ message: 'Creating authoring bundle structure...', increment: 50 });
+          progress.report({ message: 'Creating agent structure...', increment: 50 });
           await new Promise(resolve => setTimeout(resolve, 300));
 
           progress.report({ message: 'Generating Agent Script file...' });
@@ -298,12 +332,12 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Refresh agent list and auto-select the newly created agent
           await vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', apiName);
 
-          vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
+          vscode.window.showInformationMessage(`Agent "${name}" was generated successfully.`);
         }
       );
     } catch (error) {
       const sfError = SfError.wrap(error);
-      const errorMessage = `Failed to generate authoring bundle: ${sfError.message}`;
+      const errorMessage = `Failed to generate agent: ${sfError.message}`;
       logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('createAiAuthoringBundle_failed', errorMessage);
