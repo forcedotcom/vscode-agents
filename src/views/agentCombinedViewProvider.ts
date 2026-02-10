@@ -316,18 +316,10 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Saves the current conversation session using the saved export directory.
-   * Prompts for folder selection only on first use.
+   * Saves the current conversation session, always prompting for a location.
+   * The folder picker defaults to the previously selected directory.
    */
   public async exportConversation(): Promise<void> {
-    await this.doExportConversation(false);
-  }
-
-  /**
-   * Saves the current conversation session, always prompting for a new location.
-   * Updates the saved export directory with the new selection.
-   */
-  public async exportConversationAs(): Promise<void> {
     await this.doExportConversation(true);
   }
 
