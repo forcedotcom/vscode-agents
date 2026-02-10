@@ -316,26 +316,14 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Saves the current conversation session using the saved export directory.
-   * Prompts for folder selection only on first use.
+   * Saves the current conversation session, always prompting for a location.
+   * The folder picker defaults to the previously selected directory.
    */
   public async exportConversation(): Promise<void> {
-    await this.doExportConversation(false);
+    await this.doExportConversation();
   }
 
-  /**
-   * Saves the current conversation session, always prompting for a new location.
-   * Updates the saved export directory with the new selection.
-   */
-  public async exportConversationAs(): Promise<void> {
-    await this.doExportConversation(true);
-  }
-
-  /**
-   * Core export logic shared between Save and Save As
-   * @param forcePrompt - If true, always show folder picker (Save As behavior)
-   */
-  private async doExportConversation(forcePrompt: boolean): Promise<void> {
+  private async doExportConversation(): Promise<void> {
     const agentId = this.state.currentAgentId;
     const agentSource = this.state.currentAgentSource;
 
@@ -344,37 +332,27 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // Check for saved export directory (skip if forcePrompt is true)
-    let targetDirectory = forcePrompt ? undefined : this.state.getExportDirectory();
+    const savedDir = this.state.getExportDirectory();
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const defaultUri = savedDir
+      ? vscode.Uri.file(savedDir)
+      : workspaceFolder?.uri;
 
-    // If no saved directory or forcePrompt, prompt user to select one
-    if (!targetDirectory) {
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      const savedDir = this.state.getExportDirectory();
-      const defaultUri = savedDir
-        ? vscode.Uri.file(savedDir)
-        : workspaceFolder
-          ? vscode.Uri.joinPath(workspaceFolder.uri, 'sessions')
-          : undefined;
+    const selectedFolder = await vscode.window.showOpenDialog({
+      canSelectFiles: false,
+      canSelectFolders: true,
+      canSelectMany: false,
+      openLabel: 'Save Chat History',
+      title: 'Select folder to save chat history',
+      defaultUri
+    });
 
-      const selectedFolder = await vscode.window.showOpenDialog({
-        canSelectFiles: false,
-        canSelectFolders: true,
-        canSelectMany: false,
-        openLabel: 'Save Chat History',
-        title: 'Select folder to save chat history',
-        defaultUri
-      });
-
-      if (!selectedFolder || selectedFolder.length === 0) {
-        return; // User cancelled
-      }
-
-      targetDirectory = selectedFolder[0].fsPath;
-
-      // Save the selected directory for future exports
-      await this.state.setExportDirectory(targetDirectory);
+    if (!selectedFolder || selectedFolder.length === 0) {
+      return; // User cancelled
     }
+
+    const targetDirectory = selectedFolder[0].fsPath;
+    await this.state.setExportDirectory(targetDirectory);
 
     try {
       // If there's an active session, use the library's saveSession method

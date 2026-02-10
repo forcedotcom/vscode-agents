@@ -110,6 +110,12 @@ describe('AgentCombinedViewProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Restore Uri mocks (resetMocks: true clears the implementations from jest.mock factory)
+    (vscode.Uri.file as jest.Mock).mockImplementation((p: string) => ({ fsPath: p }));
+    (vscode.Uri.joinPath as jest.Mock).mockImplementation((base: any, ...segments: string[]) => ({
+      fsPath: require('path').join(base.fsPath || base, ...segments)
+    }));
+
     // Ensure channelService is mocked before creating provider
     const mockChannelService = {
       appendLine: jest.fn(),
@@ -127,6 +133,11 @@ describe('AgentCombinedViewProvider', () => {
         update: jest.fn().mockResolvedValue(undefined),
         keys: jest.fn().mockReturnValue([]),
         setKeysForSync: jest.fn()
+      },
+      workspaceState: {
+        get: jest.fn().mockReturnValue(undefined),
+        update: jest.fn().mockResolvedValue(undefined),
+        keys: jest.fn().mockReturnValue([])
       }
     } as any;
 
@@ -233,6 +244,147 @@ describe('AgentCombinedViewProvider', () => {
       expect(agents).toEqual([]);
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('exportConversation', () => {
+    const setupAgentState = () => {
+      const state = (provider as any).state;
+      state.currentAgentId = 'test-agent-id';
+      state.currentAgentSource = AgentSource.PUBLISHED;
+    };
+
+    it('should show warning when no agent is selected', async () => {
+      await provider.exportConversation();
+      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No agent selected to save session.');
+      expect(vscode.window.showOpenDialog).not.toHaveBeenCalled();
+    });
+
+    it('should always show the folder picker', async () => {
+      setupAgentState();
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue(undefined);
+
+      await provider.exportConversation();
+
+      expect(vscode.window.showOpenDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          canSelectFiles: false,
+          canSelectFolders: true,
+          canSelectMany: false,
+          openLabel: 'Save Chat History',
+          title: 'Select folder to save chat history'
+        })
+      );
+    });
+
+    it('should default to workspace root when no previous directory saved', async () => {
+      setupAgentState();
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue(undefined);
+
+      await provider.exportConversation();
+
+      expect(vscode.window.showOpenDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultUri: { fsPath: '/workspace' }
+        })
+      );
+    });
+
+    it('should default to previously saved directory when available', async () => {
+      setupAgentState();
+      (provider as any).state.getExportDirectory = jest.fn().mockReturnValue('/saved/directory');
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue(undefined);
+
+      await provider.exportConversation();
+
+      expect(vscode.window.showOpenDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultUri: { fsPath: '/saved/directory' }
+        })
+      );
+    });
+
+    it('should save selected directory for future use', async () => {
+      setupAgentState();
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([
+        { fsPath: '/new/export/path' }
+      ]);
+
+      const { getAllHistory } = require('@salesforce/agents/lib/utils');
+      getAllHistory.mockResolvedValue({ metadata: { sessionId: 'session-1' } });
+      const { getHistoryDir } = require('@salesforce/agents/lib/utils');
+      getHistoryDir.mockResolvedValue('/source/dir');
+
+      await provider.exportConversation();
+
+      expect(mockContext.workspaceState.update).toHaveBeenCalledWith(
+        'agentforceDX.lastExportDirectory',
+        '/new/export/path'
+      );
+    });
+
+    it('should do nothing when user cancels the picker', async () => {
+      setupAgentState();
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue(undefined);
+
+      await provider.exportConversation();
+
+      expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
+      expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
+    });
+
+    it('should copy session directory for inactive sessions', async () => {
+      setupAgentState();
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([
+        { fsPath: '/export/path' }
+      ]);
+
+      const { getAllHistory, getHistoryDir } = require('@salesforce/agents/lib/utils');
+      getAllHistory.mockResolvedValue({ metadata: { sessionId: 'session-123' } });
+      getHistoryDir.mockResolvedValue('/source/session/dir');
+
+      const fs = require('fs');
+
+      await provider.exportConversation();
+
+      expect(fs.promises.mkdir).toHaveBeenCalledWith(
+        path.join('/export/path', 'test-agent-id', 'session_session-123'),
+        { recursive: true }
+      );
+      expect(fs.promises.cp).toHaveBeenCalledWith(
+        '/source/session/dir',
+        path.join('/export/path', 'test-agent-id', 'session_session-123'),
+        { recursive: true }
+      );
+      expect(vscode.window.showInformationMessage).toHaveBeenCalled();
+    });
+
+    it('should show warning when no history is found', async () => {
+      setupAgentState();
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([
+        { fsPath: '/export/path' }
+      ]);
+
+      const { getAllHistory } = require('@salesforce/agents/lib/utils');
+      getAllHistory.mockResolvedValue({ metadata: {} });
+
+      await provider.exportConversation();
+
+      expect(vscode.window.showWarningMessage).toHaveBeenCalledWith('No conversation history found to save.');
+    });
+
+    it('should show error message when export fails', async () => {
+      setupAgentState();
+      (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([
+        { fsPath: '/export/path' }
+      ]);
+
+      const { getAllHistory } = require('@salesforce/agents/lib/utils');
+      getAllHistory.mockRejectedValue(new Error('Read failed'));
+
+      await provider.exportConversation();
+
+      expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Failed to save conversation: Read failed');
     });
   });
 

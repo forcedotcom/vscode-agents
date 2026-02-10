@@ -222,7 +222,6 @@ export class AgentViewState {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:hasAgents', hasAgents);
   }
 
-  // Export directory persistence (per-project using workspaceState)
   getExportDirectory(): string | undefined {
     return this.context.workspaceState.get<string>(AgentViewState.EXPORT_DIR_KEY);
   }
