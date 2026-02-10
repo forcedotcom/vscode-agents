@@ -233,7 +233,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const result = await showInputBoxWithBack({
             title: 'Create Agent',
             prompt: 'Enter agent name',
-            placeholder: 'Agent Name',
+            placeholder: 'Agent name',
             value: name,
             showBack: true,
             validateInput: value => {
@@ -262,7 +262,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const result = await showInputBoxWithBack({
             title: 'Create Agent',
             prompt: 'Enter agent API name',
-            placeholder: 'API Name',
+            placeholder: 'API name',
             value: apiName ?? generatedApiName,
             showBack: true,
             validateInput: value => {
