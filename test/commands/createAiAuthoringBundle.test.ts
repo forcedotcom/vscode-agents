@@ -485,7 +485,7 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify error was shown
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to generate authoring bundle'));
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to generate agent'));
   });
 
   it('displays error message in output channel', async () => {
@@ -508,7 +508,7 @@ describe('createAiAuthoringBundle', () => {
 
     // Verify error message is displayed in channel
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/\[error\].*Failed to generate authoring bundle/)
+      expect.stringMatching(/\[error\].*Failed to generate agent/)
     );
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
       expect.stringMatching(/\[error\].*Details: API connection timeout/)
@@ -537,12 +537,12 @@ describe('createAiAuthoringBundle', () => {
 
     // Verify fallback message is displayed
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/\[error\].*Failed to generate authoring bundle/)
+      expect.stringMatching(/\[error\].*Failed to generate agent/)
     );
-    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to generate authoring bundle'));
+    expect(showErrorMessageSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to generate agent'));
   });
 
-  it('validates bundle name is not empty', async () => {
+  it('validates agent name is not empty', async () => {
     readDirectorySpy.mockResolvedValue([]);
 
     // Step 1: Select template type

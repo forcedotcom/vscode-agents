@@ -195,7 +195,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Step 1: Select template type
           const result = await showQuickPickWithBack(specTypeItems, {
             title: 'Create Agent',
-            placeholder: 'Select authoring bundle template',
+            placeholder: 'Select agent template',
             showBack: false
           });
 
@@ -215,7 +215,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const specFileItems = specFiles.map(file => ({ label: file }));
           const result = await showQuickPickWithBack(specFileItems, {
             title: 'Create Agent',
-            placeholder: 'Select authoring bundle YAML spec',
+            placeholder: 'Select agent YAML spec',
             showBack: true
           });
 
@@ -232,16 +232,16 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Step 3: Enter name
           const result = await showInputBoxWithBack({
             title: 'Create Agent',
-            prompt: 'Enter authoring bundle name',
+            prompt: 'Enter agent name',
             placeholder: 'Agent Name',
             value: name,
             showBack: true,
             validateInput: value => {
               if (!value) {
-                return 'Bundle name is required';
+                return 'Agent name is required';
               }
               if (value.trim().length === 0) {
-                return "Bundle name can't be empty.";
+                return "Agent name can't be empty.";
               }
               return null;
             }
@@ -261,7 +261,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           const generatedApiName = generateApiName(name!);
           const result = await showInputBoxWithBack({
             title: 'Create Agent',
-            prompt: 'Enter authoring bundle API name',
+            prompt: 'Enter agent API name',
             placeholder: 'API Name',
             value: apiName ?? generatedApiName,
             showBack: true,
@@ -299,11 +299,11 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Generating authoring bundle: ${apiName}`,
+          title: `Generating agent: ${apiName}`,
           cancellable: false
         },
         async progress => {
-          progress.report({ message: 'Creating authoring bundle structure...', increment: 50 });
+          progress.report({ message: 'Creating agent structure...', increment: 50 });
           await new Promise(resolve => setTimeout(resolve, 300));
 
           progress.report({ message: 'Generating Agent Script file...' });
@@ -329,12 +329,12 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           // Refresh agent list and auto-select the newly created agent
           await vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', apiName);
 
-          vscode.window.showInformationMessage(`Authoring bundle "${name}" was generated successfully.`);
+          vscode.window.showInformationMessage(`Agent "${name}" was generated successfully.`);
         }
       );
     } catch (error) {
       const sfError = SfError.wrap(error);
-      const errorMessage = `Failed to generate authoring bundle: ${sfError.message}`;
+      const errorMessage = `Failed to generate agent: ${sfError.message}`;
       logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('createAiAuthoringBundle_failed', errorMessage);
