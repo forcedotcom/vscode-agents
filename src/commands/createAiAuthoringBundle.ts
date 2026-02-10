@@ -267,7 +267,10 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             showBack: true,
             validateInput: value => {
               if (value === '') {
-                return null; // Empty accepted, uses default
+                if (/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(generatedApiName)) {
+                  return null; // Empty accepted, uses default
+                }
+                return 'Invalid generated API name. Please enter a valid API name.';
               }
               if (value.length > 80) {
                 return 'API name cannot be over 80 characters.';
