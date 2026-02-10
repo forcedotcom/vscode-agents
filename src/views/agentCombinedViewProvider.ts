@@ -323,10 +323,6 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     await this.doExportConversation();
   }
 
-  /**
-   * Core export logic shared between Save and Save As
-   * @param forcePrompt - If true, always show folder picker (Save As behavior)
-   */
   private async doExportConversation(): Promise<void> {
     const agentId = this.state.currentAgentId;
     const agentSource = this.state.currentAgentSource;
@@ -336,14 +332,19 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    const savedDir = this.state.getExportDirectory();
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    const defaultUri = savedDir
+      ? vscode.Uri.file(savedDir)
+      : workspaceFolder?.uri;
+
     const selectedFolder = await vscode.window.showOpenDialog({
       canSelectFiles: false,
       canSelectFolders: true,
       canSelectMany: false,
       openLabel: 'Save Chat History',
       title: 'Select folder to save chat history',
-      defaultUri: workspaceFolder?.uri
+      defaultUri
     });
 
     if (!selectedFolder || selectedFolder.length === 0) {
@@ -351,6 +352,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     }
 
     const targetDirectory = selectedFolder[0].fsPath;
+    await this.state.setExportDirectory(targetDirectory);
 
     try {
       // If there's an active session, use the library's saveSession method
