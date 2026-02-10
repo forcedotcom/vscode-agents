@@ -168,14 +168,14 @@ export const registerCreateAiAuthoringBundleCommand = () => {
 
       const specTypeItems: SpecTypePickItem[] = [
         {
-          label: 'Default Template (Recommended)',
-          description: 'Start with a ready-to-use Agent Script',
+          label: 'Default template (recommended)',
+          description: 'Start with a ready-to-use Agent Script template',
           isCustom: false
         },
         ...(specFiles.length > 0
           ? [
               {
-                label: 'From Spec File (Advanced)',
+                label: 'From YAML spec (advanced)',
                 description: 'Generate Agent Script from an existing YAML spec',
                 isCustom: true
               }
@@ -186,18 +186,56 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       // Multi-step wizard with back navigation
       let step = 1;
       let name: string | undefined;
+      let apiName: string | undefined;
       let selectedType: SpecTypePickItem | undefined;
       let spec: string | undefined;
 
       while (step > 0) {
         if (step === 1) {
-          // Step 1: Enter bundle name
+          // Step 1: Select template type
+          const result = await showQuickPickWithBack(specTypeItems, {
+            title: 'Create Agent',
+            placeholder: 'Select authoring bundle template',
+            showBack: false
+          });
+
+          if (result === undefined) {
+            return; // User cancelled
+          }
+          selectedType = result as SpecTypePickItem;
+
+          if (selectedType.isCustom) {
+            step = 2;
+          } else {
+            spec = undefined;
+            step = 3; // Skip to name input
+          }
+        } else if (step === 2) {
+          // Step 2: Select spec file (only if "From YAML spec" was selected)
+          const specFileItems = specFiles.map(file => ({ label: file }));
+          const result = await showQuickPickWithBack(specFileItems, {
+            title: 'Create Agent',
+            placeholder: 'Select authoring bundle YAML spec',
+            showBack: true
+          });
+
+          if (result === 'back') {
+            step = 1;
+            continue;
+          }
+          if (result === undefined) {
+            return; // User cancelled
+          }
+          spec = path.join(specsDir, result.label);
+          step = 3;
+        } else if (step === 3) {
+          // Step 3: Enter name
           const result = await showInputBoxWithBack({
-            title: 'Create Agent (Step 1 of 2)',
-            prompt: 'Enter a name for the new agent',
+            title: 'Create Agent',
+            prompt: 'Enter authoring bundle name',
             placeholder: 'Agent Name',
             value: name,
-            showBack: false,
+            showBack: true,
             validateInput: value => {
               if (!value) {
                 return 'Bundle name is required';
@@ -209,66 +247,59 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             }
           });
 
+          if (result === 'back') {
+            step = selectedType?.isCustom ? 2 : 1;
+            continue;
+          }
           if (result === undefined) {
             return; // User cancelled
           }
           name = result;
-          step = 2;
-        } else if (step === 2) {
-          // Step 2: Choose spec type
-          const result = await showQuickPickWithBack(specTypeItems, {
-            title: 'Create Agent (Step 2 of 2)',
-            placeholder: 'Select the type of agent spec to use',
-            showBack: true
+          step = 4;
+        } else if (step === 4) {
+          // Step 4: Enter API name
+          const generatedApiName = generateApiName(name!);
+          const result = await showInputBoxWithBack({
+            title: 'Create Agent',
+            prompt: 'Enter authoring bundle API name',
+            placeholder: 'API Name',
+            value: apiName ?? generatedApiName,
+            showBack: true,
+            validateInput: value => {
+              if (value === '') {
+                return null; // Empty accepted, uses default
+              }
+              if (value.length > 80) {
+                return 'API name cannot be over 80 characters.';
+              }
+              if (!/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(value)) {
+                return 'Invalid API name.';
+              }
+              return null;
+            }
           });
 
           if (result === 'back') {
-            step = 1;
-            continue;
-          }
-          if (result === undefined) {
-            return; // User cancelled
-          }
-          selectedType = result;
-
-          if (selectedType.isCustom) {
             step = 3;
-          } else {
-            break; // Done with wizard
-          }
-        } else if (step === 3) {
-          // Choose spec file (only if Custom selected)
-          const specFileItems = specFiles.map(file => ({ label: file }));
-          const result = await showQuickPickWithBack(specFileItems, {
-            title: 'Create Agent (Step 2 of 2)',
-            placeholder: 'Choose a spec to generate your Agent Script',
-            showBack: true
-          });
-
-          if (result === 'back') {
-            step = 2;
             continue;
           }
           if (result === undefined) {
             return; // User cancelled
           }
-          spec = path.join(specsDir, result.label);
+          apiName = result || generatedApiName;
           break; // Done with wizard
         }
       }
 
-      if (!name) {
+      if (!name || !apiName) {
         return;
       }
-
-      // Generate API name from the regular name
-      const apiName = generateApiName(name);
 
       // Show progress
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Generating authoring bundle: ${apiName}...`,
+          title: `Generating authoring bundle: ${apiName}`,
           cancellable: false
         },
         async progress => {

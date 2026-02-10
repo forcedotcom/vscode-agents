@@ -259,8 +259,8 @@ describe('createAiAuthoringBundle', () => {
     jest.restoreAllMocks();
   });
 
-  const defaultSpecTypeItem = { label: 'Default Template (Recommended)', description: 'Start with a ready-to-use Agent Script', isCustom: false };
-  const customSpecTypeItem = { label: 'From Spec File (Advanced)', description: 'Generate Agent Script from an existing YAML spec', isCustom: true };
+  const defaultSpecTypeItem = { label: 'Default template (recommended)', description: 'Start with a ready-to-use Agent Script template', isCustom: false };
+  const customSpecTypeItem = { label: 'From YAML spec (advanced)', description: 'Generate Agent Script from an existing YAML spec', isCustom: true };
 
   it('registers the command', () => {
     registerCreateAiAuthoringBundleCommand();
@@ -280,11 +280,13 @@ describe('createAiAuthoringBundle', () => {
     // Mock agent script generation
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    // Mock the input/picker sequence: name input, spec type selection, spec file selection
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('My Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test-spec.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('My Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('MyTestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -309,8 +311,38 @@ describe('createAiAuthoringBundle', () => {
     );
   });
 
+  it('cancels when user cancels template selection', async () => {
+    readDirectorySpy.mockResolvedValue([['test-spec.yaml', vscode.FileType.File]]);
+
+    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(undefined)); // Cancel at step 1
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    expect(createAgentScriptSpy).not.toHaveBeenCalled();
+  });
+
   it('cancels when user cancels name input', async () => {
+    readDirectorySpy.mockResolvedValue([]);
+
+    // Wizard: template type (default only) → cancel at name
+    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
     createInputBoxSpy.mockReturnValueOnce(createMockInputBox(undefined));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    expect(createAgentScriptSpy).not.toHaveBeenCalled();
+  });
+
+  it('cancels when user cancels API name input', async () => {
+    readDirectorySpy.mockResolvedValue([]);
+    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox(undefined)); // Cancel at API name
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -323,8 +355,11 @@ describe('createAiAuthoringBundle', () => {
     readDirectorySpy.mockResolvedValue([]); // No spec files
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('My Test Agent'));
+    // Wizard: template type (default only) → name → API name
     createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('My Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('MyTestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -345,23 +380,10 @@ describe('createAiAuthoringBundle', () => {
     );
   });
 
-  it('cancels when user cancels spec type selection', async () => {
-    readDirectorySpy.mockResolvedValue([['test-spec.yaml', vscode.FileType.File]]);
-
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('My Test Agent'));
-    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(undefined)); // User cancelled
-
-    registerCreateAiAuthoringBundleCommand();
-    const handler = commandSpy.mock.calls[0][1];
-    await handler();
-
-    expect(createAgentScriptSpy).not.toHaveBeenCalled();
-  });
-
   it('cancels when user cancels spec file selection', async () => {
     readDirectorySpy.mockResolvedValue([['test-spec.yaml', vscode.FileType.File]]);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('My Test Agent'));
+    // Wizard: template type (custom) → cancel at spec file
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick(undefined)); // User cancelled file selection
@@ -385,10 +407,13 @@ describe('createAiAuthoringBundle', () => {
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('My Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test-spec.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('My Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('MyTestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -403,10 +428,13 @@ describe('createAiAuthoringBundle', () => {
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('My Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('My Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('MyTestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -421,10 +449,13 @@ describe('createAiAuthoringBundle', () => {
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -441,10 +472,13 @@ describe('createAiAuthoringBundle', () => {
     // Mock createAuthoringBundle to throw error
     createAgentScriptSpy.mockRejectedValue(new Error('API Error'));
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -460,10 +494,13 @@ describe('createAiAuthoringBundle', () => {
     // Mock createAgentScript to throw error
     createAgentScriptSpy.mockRejectedValue(new Error('API connection timeout'));
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -486,10 +523,13 @@ describe('createAiAuthoringBundle', () => {
     const emptyError = new Error('');
     createAgentScriptSpy.mockRejectedValue(emptyError);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -503,7 +543,12 @@ describe('createAiAuthoringBundle', () => {
   });
 
   it('validates bundle name is not empty', async () => {
-    // Create a mock that captures the validation
+    readDirectorySpy.mockResolvedValue([]);
+
+    // Step 1: Select template type
+    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+
+    // Step 3: Create a mock InputBox that captures the validation then cancels
     let capturedValidation: ((value: string) => string | null) | undefined;
 
     createInputBoxSpy.mockImplementation(() => {
@@ -563,10 +608,13 @@ describe('createAiAuthoringBundle', () => {
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -581,10 +629,13 @@ describe('createAiAuthoringBundle', () => {
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('My Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('My Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('MyTestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -600,10 +651,13 @@ describe('createAiAuthoringBundle', () => {
     (readFileSync as jest.Mock).mockReturnValue('agentType: customer\nrole: TestRole');
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -634,8 +688,11 @@ describe('createAiAuthoringBundle', () => {
     readDirectorySpy.mockRejectedValue(new Error('Directory not found'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type (default only) → name → API name
     createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -660,8 +717,11 @@ describe('createAiAuthoringBundle', () => {
     readDirectorySpy.mockResolvedValue([['custom.yaml', vscode.FileType.File]]);
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('New Agent'));
+    // Wizard: template type (default) → name → API name
     createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('New Agent'))
+      .mockReturnValueOnce(createMockInputBox('NewAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -690,10 +750,13 @@ describe('createAiAuthoringBundle', () => {
     readFileSpy.mockResolvedValue(new TextEncoder().encode('agentType: customer'));
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Wizard: template type → spec file → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -704,24 +767,25 @@ describe('createAiAuthoringBundle', () => {
     expect(showTextDocumentSpy).toHaveBeenCalled();
   });
 
-  it('navigates back from spec type selection to name input', async () => {
-    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+  it('navigates back from name input to template selection', async () => {
+    readDirectorySpy.mockResolvedValue([]);
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    // First: enter name, then back from spec type, then enter name again, then select default
-    createInputBoxSpy
-      .mockReturnValueOnce(createMockInputBox('First Name'))
-      .mockReturnValueOnce(createMockInputBox('Second Name'));
+    // Flow: template → name (back) → template → name → API name
     createQuickPickSpy
-      .mockReturnValueOnce(createMockQuickPick(undefined, true)) // Back button pressed
+      .mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem))
       .mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox(undefined, true)) // Back from name
+      .mockReturnValueOnce(createMockInputBox('Second Name'))
+      .mockReturnValueOnce(createMockInputBox('SecondName'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
     await handler();
 
-    // Should have called createInputBox twice (once initially, once after back)
-    expect(createInputBoxSpy).toHaveBeenCalledTimes(2);
+    // Should have called createQuickPick twice (once initially, once after back)
+    expect(createQuickPickSpy).toHaveBeenCalledTimes(2);
     // Final name should be 'Second Name'
     expect(createAgentScriptSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -730,15 +794,18 @@ describe('createAiAuthoringBundle', () => {
     );
   });
 
-  it('navigates back from spec file selection to spec type selection', async () => {
+  it('navigates back from spec file selection to template selection', async () => {
     readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
     createAgentScriptSpy.mockResolvedValue(undefined);
 
-    createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+    // Flow: template (custom) → spec file (back) → template (default) → name → API name
     createQuickPickSpy
       .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem)) // Select custom
       .mockReturnValueOnce(createMockQuickPick(undefined, true)) // Back from file selection
       .mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem)); // Select default instead
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
 
     registerCreateAiAuthoringBundleCommand();
     const handler = commandSpy.mock.calls[0][1];
@@ -754,5 +821,105 @@ describe('createAiAuthoringBundle', () => {
         role: 'Test Agent description'
       })
     );
+  });
+
+  it('navigates back from API name input to name input', async () => {
+    readDirectorySpy.mockResolvedValue([]);
+    createAgentScriptSpy.mockResolvedValue(undefined);
+
+    // Flow: template → name → API name (back) → name → API name
+    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('First Name'))
+      .mockReturnValueOnce(createMockInputBox(undefined, true)) // Back from API name
+      .mockReturnValueOnce(createMockInputBox('Second Name'))
+      .mockReturnValueOnce(createMockInputBox('SecondName'));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Should have created bundle with the second name
+    expect(createAgentScriptSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentSpec: expect.objectContaining({
+          name: 'Second Name',
+          developerName: 'SecondName'
+        }),
+        bundleApiName: 'SecondName'
+      })
+    );
+  });
+
+  it('uses custom API name when provided by user', async () => {
+    readDirectorySpy.mockResolvedValue([]);
+    createAgentScriptSpy.mockResolvedValue(undefined);
+
+    // Wizard: template type → name → custom API name
+    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('My Agent'))
+      .mockReturnValueOnce(createMockInputBox('CustomApiName'));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    expect(createAgentScriptSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentSpec: expect.objectContaining({
+          developerName: 'CustomApiName'
+        }),
+        bundleApiName: 'CustomApiName'
+      })
+    );
+  });
+
+  it('uses generated API name when user accepts empty value', async () => {
+    readDirectorySpy.mockResolvedValue([]);
+    createAgentScriptSpy.mockResolvedValue(undefined);
+
+    // Wizard: template type → name → empty API name (uses generated default)
+    createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox('My Agent'))
+      .mockReturnValueOnce(createMockInputBox(''));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Should use generated API name (mock strips spaces: 'My Agent' → 'MyAgent')
+    expect(createAgentScriptSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentSpec: expect.objectContaining({
+          developerName: 'MyAgent'
+        }),
+        bundleApiName: 'MyAgent'
+      })
+    );
+  });
+
+  it('navigates back from name to spec file when YAML spec was selected', async () => {
+    readDirectorySpy.mockResolvedValue([['test.yaml', vscode.FileType.File]]);
+    createAgentScriptSpy.mockResolvedValue(undefined);
+
+    // Flow: template (custom) → spec file → name (back) → spec file → name → API name
+    createQuickPickSpy
+      .mockReturnValueOnce(createMockQuickPick(customSpecTypeItem))
+      .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }))
+      .mockReturnValueOnce(createMockQuickPick({ label: 'test.yaml' }));
+    createInputBoxSpy
+      .mockReturnValueOnce(createMockInputBox(undefined, true)) // Back from name to spec file
+      .mockReturnValueOnce(createMockInputBox('Test Agent'))
+      .mockReturnValueOnce(createMockInputBox('TestAgent'));
+
+    registerCreateAiAuthoringBundleCommand();
+    const handler = commandSpy.mock.calls[0][1];
+    await handler();
+
+    // Should have shown spec file picker twice
+    expect(createQuickPickSpy).toHaveBeenCalledTimes(3);
+    expect(createAgentScriptSpy).toHaveBeenCalled();
   });
 });
