@@ -922,4 +922,132 @@ describe('createAiAuthoringBundle', () => {
     expect(createQuickPickSpy).toHaveBeenCalledTimes(3);
     expect(createAgentScriptSpy).toHaveBeenCalled();
   });
+
+  describe('duplicate API name validation', () => {
+    it('shows validation error when API name already exists', async () => {
+      // First call: specs dir (no specs), second call: aiAuthoringBundles dir with existing agent
+      readDirectorySpy
+        .mockResolvedValueOnce([]) // specs dir
+        .mockResolvedValueOnce([['ExistingAgent', vscode.FileType.Directory]]); // aiAuthoringBundles dir
+
+      createAgentScriptSpy.mockResolvedValue(undefined);
+
+      // Step 1: Select default template
+      createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+
+      // Step 3: Enter name
+      createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+
+      // Step 4: Capture the validator from the API name input box
+      let capturedValidator: ((value: string) => string | null) | undefined;
+      createInputBoxSpy.mockImplementationOnce(() => {
+        const mockBox = createMockInputBox(undefined); // Cancel after capturing
+        const originalOnDidChangeValue = mockBox.onDidChangeValue;
+        mockBox.onDidChangeValue = (callback: (value: string) => void) => {
+          capturedValidator = (value: string) => {
+            callback(value);
+            return mockBox.validationMessage ?? null;
+          };
+          originalOnDidChangeValue(callback);
+        };
+        return mockBox;
+      });
+
+      registerCreateAiAuthoringBundleCommand();
+      const handler = commandSpy.mock.calls[0][1];
+      await handler();
+
+      expect(capturedValidator).toBeDefined();
+      expect(capturedValidator!('ExistingAgent')).toBe('An agent with this API name already exists.');
+      expect(capturedValidator!('UniqueAgent')).toBeNull();
+    });
+
+    it('performs case-insensitive duplicate detection', async () => {
+      readDirectorySpy
+        .mockResolvedValueOnce([]) // specs dir
+        .mockResolvedValueOnce([['MyAgent', vscode.FileType.Directory]]); // aiAuthoringBundles
+
+      createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+      createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+
+      let capturedValidator: ((value: string) => string | null) | undefined;
+      createInputBoxSpy.mockImplementationOnce(() => {
+        const mockBox = createMockInputBox(undefined);
+        const originalOnDidChangeValue = mockBox.onDidChangeValue;
+        mockBox.onDidChangeValue = (callback: (value: string) => void) => {
+          capturedValidator = (value: string) => {
+            callback(value);
+            return mockBox.validationMessage ?? null;
+          };
+          originalOnDidChangeValue(callback);
+        };
+        return mockBox;
+      });
+
+      registerCreateAiAuthoringBundleCommand();
+      const handler = commandSpy.mock.calls[0][1];
+      await handler();
+
+      expect(capturedValidator).toBeDefined();
+      expect(capturedValidator!('myagent')).toBe('An agent with this API name already exists.');
+      expect(capturedValidator!('MYAGENT')).toBe('An agent with this API name already exists.');
+    });
+
+    it('shows validation error when generated API name already exists and user accepts empty value', async () => {
+      (generateApiName as jest.Mock).mockReturnValue('TestAgent');
+
+      readDirectorySpy
+        .mockResolvedValueOnce([]) // specs dir
+        .mockResolvedValueOnce([['TestAgent', vscode.FileType.Directory]]); // aiAuthoringBundles
+
+      createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+      createInputBoxSpy.mockReturnValueOnce(createMockInputBox('Test Agent'));
+
+      let capturedValidator: ((value: string) => string | null) | undefined;
+      createInputBoxSpy.mockImplementationOnce(() => {
+        const mockBox = createMockInputBox(undefined);
+        const originalOnDidChangeValue = mockBox.onDidChangeValue;
+        mockBox.onDidChangeValue = (callback: (value: string) => void) => {
+          capturedValidator = (value: string) => {
+            callback(value);
+            return mockBox.validationMessage ?? null;
+          };
+          originalOnDidChangeValue(callback);
+        };
+        return mockBox;
+      });
+
+      registerCreateAiAuthoringBundleCommand();
+      const handler = commandSpy.mock.calls[0][1];
+      await handler();
+
+      expect(capturedValidator).toBeDefined();
+      // Empty value means "use generated name", which already exists
+      expect(capturedValidator!('')).toBe('An agent with this API name already exists.');
+    });
+
+    it('allows creation when aiAuthoringBundles directory does not exist', async () => {
+      readDirectorySpy
+        .mockResolvedValueOnce([]) // specs dir
+        .mockRejectedValueOnce(new Error('Directory not found')); // aiAuthoringBundles dir doesn't exist
+
+      createAgentScriptSpy.mockResolvedValue(undefined);
+
+      createQuickPickSpy.mockReturnValueOnce(createMockQuickPick(defaultSpecTypeItem));
+      createInputBoxSpy
+        .mockReturnValueOnce(createMockInputBox('Test Agent'))
+        .mockReturnValueOnce(createMockInputBox('TestAgent'));
+
+      registerCreateAiAuthoringBundleCommand();
+      const handler = commandSpy.mock.calls[0][1];
+      await handler();
+
+      // Should proceed without errors — no duplicates when directory doesn't exist
+      expect(createAgentScriptSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bundleApiName: 'TestAgent'
+        })
+      );
+    });
+  });
 });
