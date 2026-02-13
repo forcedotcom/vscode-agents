@@ -230,8 +230,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
     try {
       const availableAgents = await provider.getAgentsForCommandPalette();
-      const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT);
-      const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED);
+      const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT).sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
+      const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED).sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
 
       const allAgents: Array<{
         label: string;
