@@ -43,6 +43,7 @@ async function main(): Promise<void> {
     // Extension dependencies that need to be installed
     const extensionDependencies = [
       'salesforce.salesforcedx-vscode-core',
+      'salesforce.salesforcedx-vscode-org',
       'salesforce.salesforcedx-vscode-apex-replay-debugger',
       'salesforce.agent-script-language-client'
     ];

@@ -88,6 +88,7 @@
   },
   "extensionDependencies": [
     "salesforce.salesforcedx-vscode-core",
+    "salesforce.salesforcedx-vscode-org",
     "salesforce.salesforcedx-vscode-apex-replay-debugger",
     "salesforce.agent-script-language-client"
   ],
@@ -112,6 +113,7 @@
     ],
     "extensionPack": [
       "salesforce.salesforcedx-vscode-core",
+      "salesforce.salesforcedx-vscode-org",
       "salesforce.salesforcedx-vscode-apex-replay-debugger",
       "salesforce.agent-script-language-client"
     ],
