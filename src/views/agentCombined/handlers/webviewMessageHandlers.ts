@@ -247,7 +247,7 @@ export class WebviewMessageHandlers {
             throw new Error(`Agent ${agent.name} is missing both id and aabName`);
           }
           return {
-            name: agent.name,
+            name: (agent.developerName ?? agent.aabName) as string,
             id: agentId,
             type: agent.source
           };
