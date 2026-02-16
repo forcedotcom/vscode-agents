@@ -29,8 +29,8 @@ Chat with your agents directly in VS Code to test how they respond to user input
 
 You can use these two modes when previewing an agent from its Agent Script file:
 
-- Simulated mode : Uses only the Agent Script file to converse, and it simulates (or mocks) all the actions. This mode is particularly useful if the Apex classes, flows, or prompt templates that implement the actions aren't yet available. 
-- Live mode : Uses the actual Apex classes, flows, and prompt templates in your development org in the agent preview.  You can use the Apex Replay Debugger to debug your Apex classes when using live mode.
+- Simulated mode: Uses only the Agent Script file to converse, and it simulates (or mocks) all the actions. This mode is particularly useful if the Apex classes, flows, or prompt templates that implement the actions aren't yet available. 
+- Live mode: Uses the actual Apex classes, flows, and prompt templates in your development org in the agent preview.  You can use the Apex Replay Debugger to debug your Apex classes when using live mode.
 
 See [Preview and Debug an Agent](https://developer.salesforce.com/docs/einstein/genai/guide/agent-dx-nga-preview.html) for details. 
 
