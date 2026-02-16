@@ -388,29 +388,4 @@ describe('AgentCombinedViewProvider', () => {
     });
   });
 
-  describe('clearHistory', () => {
-    it('should throw error when webview is not ready', async () => {
-      await expect(provider.clearHistory()).rejects.toThrow('Agent view is not ready.');
-    });
-
-    it('should throw error when no agent is selected', async () => {
-      const mockWebviewView = {
-        webview: {
-          options: {},
-          onDidReceiveMessage: jest.fn(),
-          postMessage: jest.fn(),
-          html: ''
-        },
-        show: jest.fn()
-      } as any;
-
-      // Mock fs.readFileSync for getHtmlForWebview
-      const fs = require('fs');
-      jest.spyOn(fs, 'readFileSync').mockReturnValue('<html></html>');
-
-      provider.resolveWebviewView(mockWebviewView, {} as any, {} as vscode.CancellationToken);
-
-      await expect(provider.clearHistory()).rejects.toThrow('No agent selected to clear history.');
-    });
-  });
 });

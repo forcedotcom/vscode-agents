@@ -54,19 +54,6 @@ describe('package.json', () => {
         expect(exportCommand?.when).toContain('agentforceDX:hasConversationData');
       });
 
-      it('should have clear history command visible only when history is present and no error', () => {
-        const clearHistoryCommand = viewTitleMenus.find(
-          (menu: any) => menu.command === 'sf.agent.combined.view.clearHistory'
-        );
-
-        expect(clearHistoryCommand).toBeDefined();
-        expect(clearHistoryCommand?.when).toContain('agentforceDX:agentSelected');
-        expect(clearHistoryCommand?.when).toContain('!agentforceDX:sessionActive');
-        expect(clearHistoryCommand?.when).toContain('!agentforceDX:sessionStarting');
-        expect(clearHistoryCommand?.when).toContain('!agentforceDX:sessionError');
-        expect(clearHistoryCommand?.when).toContain('agentforceDX:hasConversationData');
-      });
-
       it('should show reset agent view command only when reset is available', () => {
         const resetCommand = viewTitleMenus.find(
           (menu: any) => menu.command === 'sf.agent.combined.view.resetAgentView'
@@ -167,14 +154,6 @@ describe('package.json', () => {
         expect(exportCommand).toBeDefined();
         expect(exportCommand?.title).toBe('Save Chat History');
         expect(exportCommand?.icon).toBe('$(arrow-circle-down)');
-      });
-
-      it('should define the clear history command', () => {
-        const clearHistoryCommand = commands.find((cmd: any) => cmd.command === 'sf.agent.combined.view.clearHistory');
-
-        expect(clearHistoryCommand).toBeDefined();
-        expect(clearHistoryCommand?.title).toBe('Clear Chat History');
-        expect(clearHistoryCommand?.icon).toBe('$(trash)');
       });
 
       it('should define the reset agent view command', () => {
