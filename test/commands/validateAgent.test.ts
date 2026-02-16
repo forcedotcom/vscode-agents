@@ -217,7 +217,7 @@ describe('validateAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringMatching(/\[error\] Agent validation failed with 2 error\(s\)/)
       );
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('1. [ParserError]'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('\t1. [ParserError]'));
 
       expect(diagnosticCollectionMock.clear).not.toHaveBeenCalled();
       expect(diagnosticCollectionMock.set).toHaveBeenCalledTimes(1);

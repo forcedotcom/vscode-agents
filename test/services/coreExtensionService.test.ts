@@ -128,7 +128,7 @@ describe('CoreExtensionService', () => {
     await CoreExtensionService.loadDependencies(mockContext);
 
     // ColoredChannelService creates its own channel with language support
-    expect(window.createOutputChannel).toHaveBeenCalledWith('Agentforce DX Extension', 'afdx-log');
+    expect(window.createOutputChannel).toHaveBeenCalledWith('Agentforce DX', 'afdx-log');
     expect(telemetrySpy).toHaveBeenCalledWith('AgentforceDX');
     expect(workspaceSpy).toHaveBeenCalledWith(false);
   });

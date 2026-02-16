@@ -222,7 +222,8 @@ describe('publishAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringMatching(/\[error\].*Agent validation failed with 2 error\(s\)/)
       );
-      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[ParserError]'));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\t\d+\. \[ParserError\]/));
+      expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\t\d+\. \[LexerError\]/));
       expect(progressReportSpy).toHaveBeenCalledWith({
         message: 'Validation failed with 2 error(s).'
       });

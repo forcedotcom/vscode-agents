@@ -87,7 +87,11 @@ export const registerPublishAgentCommand = () => {
                 .join(EOL);
 
               logger.error(`Agent validation failed with ${validateResponse.errors.length} error(s)`);
-              logger.appendLine(errorMessages);
+              errorMessages.split(EOL).forEach((errorLine, index) => {
+                if (errorLine.trim()) {
+                  logger.errorDetail(`${index + 1}. ${errorLine}`);
+                }
+              });
 
               progress.report({ message: `Validation failed with ${validateResponse.errors.length} error(s).` });
 
