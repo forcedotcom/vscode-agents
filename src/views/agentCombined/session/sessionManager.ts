@@ -105,7 +105,7 @@ export class SessionManager {
       if (
         this.state.currentAgentSource === AgentSource.SCRIPT &&
         err instanceof SfError &&
-        err.message.includes('Failed to compile agent script')
+        err.message.includes('error compiling')
       ) {
         const sfError = err as SfError;
         const detailedError = this.logCompilationError(sfError);
@@ -322,9 +322,8 @@ export class SessionManager {
    * Logs compilation error details for script agents
    */
   private logCompilationError(sfError: SfError): string {
-    this.logger.error('Failed to compile agent script');
+    this.logger.error('Failed to compile agent script', sfError);
     this.logger.errorDetail(sfError.name);
-    this.logger.error('', sfError);
     return `Failed to compile agent script${EOL}${sfError.name}`;
   }
 

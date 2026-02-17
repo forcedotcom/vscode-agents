@@ -282,7 +282,7 @@ describe('SessionManager', () => {
         const mockAgentInstance = {
           name: 'TestAgent',
           preview: {
-            start: jest.fn().mockRejectedValue(new Error('Failed to compile agent script'))
+            start: jest.fn().mockRejectedValue(new Error('error compiling'))
           }
         };
         mockAgentInitializer.initializeScriptAgent.mockResolvedValue(mockAgentInstance);
@@ -301,7 +301,7 @@ describe('SessionManager', () => {
 
       it('should log SfError compilation error details', async () => {
         // Setup SfError scenario
-        const sfError = new Error('Failed to compile agent script');
+        const sfError = new Error('error compiling');
         sfError.name = 'CompilationError';
 
         mockState.currentAgentSource = AgentSource.SCRIPT;
