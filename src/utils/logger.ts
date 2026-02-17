@@ -21,7 +21,7 @@ export type LogLevel = 'error' | 'warn' | 'debug';
 
 /**
  * Formats a log message with timestamp and status indicator
- * Format: [YYYY-MM-MM DD:MM:SS.sss] [STATUS] message
+ * Format: [DD-MM-YYYY HH:MM:SS.sss] [STATUS] message
  */
 function formatLogMessage(level: LogLevel, message: string): string {
   const timestamp = new Date().toLocaleString('en-US', {
