@@ -257,6 +257,19 @@ export const registerCreateAiAuthoringBundleCommand = () => {
           name = result;
           step = 4;
         } else if (step === 4) {
+          // Fetch existing agent API names for duplicate validation
+          let existingAgentNames = new Set<string>();
+          try {
+            const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.file(aiAuthoringBundlesDir));
+            existingAgentNames = new Set(
+              entries
+                .filter(([, type]) => type === vscode.FileType.Directory)
+                .map(([dirName]) => dirName.toLowerCase())
+            );
+          } catch {
+            // Directory may not exist yet, which is fine — no duplicates possible
+          }
+
           // Step 4: Enter API name
           const generatedApiName = generateApiName(name!);
           const result = await showInputBoxWithBack({
@@ -268,6 +281,9 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             validateInput: value => {
               if (value === '') {
                 if (/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(generatedApiName)) {
+                  if (existingAgentNames.has(generatedApiName.toLowerCase())) {
+                    return 'An agent with this API name already exists.';
+                  }
                   return null; // Empty accepted, uses default
                 }
                 return 'Invalid generated API name. Please enter a valid API name.';
@@ -277,6 +293,9 @@ export const registerCreateAiAuthoringBundleCommand = () => {
               }
               if (!/^[A-Za-z][A-Za-z0-9_]*[A-Za-z0-9]+$/.test(value)) {
                 return 'Invalid API name.';
+              }
+              if (existingAgentNames.has(value.toLowerCase())) {
+                return 'An agent with this API name already exists.';
               }
               return null;
             }
