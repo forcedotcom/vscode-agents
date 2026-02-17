@@ -230,8 +230,8 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
     try {
       const availableAgents = await provider.getAgentsForCommandPalette();
-      const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT);
-      const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED);
+      const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT).sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
+      const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED).sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
 
       const allAgents: Array<{
         label: string;
@@ -245,7 +245,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         allAgents.push({ label: 'Agent Script', kind: vscode.QuickPickItemKind.Separator });
         allAgents.push(
           ...scriptAgents.map(agent => ({
-            label: agent.name,
+            label: (agent.developerName ?? agent.aabName) as string,
             description: agent.id ? path.basename(agent.id) : undefined,
             // For script agents, use aabName to match what the webview expects
             id: agent.aabName || agent.id,
@@ -258,7 +258,7 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
         allAgents.push({ label: 'Published', kind: vscode.QuickPickItemKind.Separator });
         allAgents.push(
           ...publishedAgents.map(agent => ({
-            label: agent.name,
+            label: (agent.developerName ?? agent.aabName) as string,
             id: agent.id,
             source: agent.source
           }))
