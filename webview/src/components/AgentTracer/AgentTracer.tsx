@@ -278,11 +278,15 @@ export const buildTimelineItems = (
     const description = getStepDescription(step);
     const hasData = step && (step.data || step.message || step.reason || step.function);
 
+    // Add badge for FunctionStep (Apex actions)
+    const badge = stepType === 'FunctionStep' ? 'Apex' : undefined;
+
     return {
       status,
       label,
       description,
       icon,
+      badge,
       onClick: hasData ? () => onSelect(index) : undefined
     };
   });
