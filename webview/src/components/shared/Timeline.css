@@ -73,10 +73,23 @@
 }
 
 .vscode-timeline-item__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 500;
   line-height: 16px;
   color: var(--vscode-foreground);
   font-size: calc(var(--vscode-font-size) - 1px);
+}
+
+.vscode-timeline-item__badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0px 4px;
+  border-radius: 2px;
+  background-color: var(--vscode-descriptionForeground);
+  color: var(--vscode-editor-background);
 }
 
 .vscode-timeline-item__description {

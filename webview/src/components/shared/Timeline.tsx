@@ -48,6 +48,10 @@ export interface TimelineItemProps {
    * Optional icon name to display instead of status-based icon
    */
   icon?: TimelineIconName;
+  /**
+   * Optional badge/pill text to display next to the label
+   */
+  badge?: string;
 }
 
 export interface TimelineProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -244,7 +248,8 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
   onClick,
   isLast,
   icon,
-  isSelected
+  isSelected,
+  badge
 }) => {
   const itemRef = React.useRef<HTMLDivElement>(null);
 
@@ -315,12 +320,18 @@ const TimelineItem: React.FC<TimelineItemInternalProps> = ({
       <div className="vscode-timeline-item__content">
         {href ? (
           <a href={href} className="vscode-timeline-item__link">
-            <div className="vscode-timeline-item__label">{label}</div>
+            <div className="vscode-timeline-item__label">
+              {label}
+              {badge && <span className="vscode-timeline-item__badge">{badge}</span>}
+            </div>
             {description && <div className="vscode-timeline-item__description">{description}</div>}
           </a>
         ) : (
           <>
-            <div className="vscode-timeline-item__label">{label}</div>
+            <div className="vscode-timeline-item__label">
+              {label}
+              {badge && <span className="vscode-timeline-item__badge">{badge}</span>}
+            </div>
             {description && <div className="vscode-timeline-item__description">{description}</div>}
           </>
         )}
