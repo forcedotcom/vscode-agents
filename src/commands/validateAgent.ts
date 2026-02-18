@@ -98,8 +98,8 @@ export const registerValidateAgentCommand = () => {
             // Also show in output channel
             logger.error(`Agent validation failed with ${response.errors.length} error(s)`);
             response.errors.forEach((error: CompilationError, index: number) => {
-              logger.appendLine(`${index + 1}. [${error.errorType}] Line ${error.lineStart}:${error.colStart}`);
-              logger.appendLine(`   ${error.description}`);
+              logger.errorDetail(`${index + 1}. [${error.errorType}] Line ${error.lineStart}:${error.colStart}`);
+              logger.errorDetail(`   ${error.description}`);
             });
 
             // Update progress message to show failure

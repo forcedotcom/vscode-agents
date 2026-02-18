@@ -92,7 +92,7 @@ export class CoreExtensionService {
       throw new Error(CHANNEL_SERVICE_NOT_FOUND);
     }
     // Initialize extension channel for general extension logging with syntax highlighting
-    CoreExtensionService.channelService = new ColoredChannelService('Agentforce DX Extension');
+    CoreExtensionService.channelService = new ColoredChannelService('Agentforce DX');
     // Initialize test channel for agent test output (keep original for test output formatting)
     CoreExtensionService.testChannelService = channelService.getInstance('Agentforce DX Tests');
   }

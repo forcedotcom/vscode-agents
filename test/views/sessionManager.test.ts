@@ -19,7 +19,7 @@ import { AgentSource } from '@salesforce/agents';
 // Mock VS Code
 jest.mock('vscode', () => ({
   commands: {
-    executeCommand: jest.fn()
+    executeCommand: jest.fn().mockResolvedValue(undefined)
   },
   window: {
     showInformationMessage: jest.fn(),
@@ -92,6 +92,7 @@ describe('SessionManager', () => {
       isLiveMode: false,
       pendingStartAgentId: undefined,
       pendingStartAgentSource: undefined,
+      sessionStartOperationId: 1, // Match the return value of beginSessionStart
       setSessionActive: jest.fn().mockResolvedValue(undefined),
       setSessionStarting: jest.fn().mockResolvedValue(undefined),
       setResetAgentViewAvailable: jest.fn().mockResolvedValue(undefined),
@@ -208,6 +209,125 @@ describe('SessionManager', () => {
       await sessionManager.restartSession();
 
       expect(mockState.setSessionActive).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('logging integration', () => {
+    describe('session start logging', () => {
+      beforeEach(() => {
+        // Reset all mocks
+        jest.clearAllMocks();
+
+        // Setup for successful session start
+        mockState.currentAgentName = 'TestAgent';
+        mockState.currentAgentId = 'test-agent-id';
+        mockState.currentAgentSource = AgentSource.SCRIPT;
+        mockState.sessionId = ''; // Will be set during session start
+        mockState.sessionStartOperationId = 1; // Match the session start ID
+
+        // Mock the agent instance that will be created by initializeScriptAgent
+        const mockAgentInstance = {
+          name: 'TestAgent', // Match the currentAgentName we set in the state
+          preview: {
+            start: jest.fn().mockResolvedValue({
+              sessionId: 'test-session-123',
+              messages: [{ type: 'Inform', message: 'Session started successfully' }]
+            })
+          }
+        };
+
+        // Mock initializeScriptAgent to set the agent instance
+        mockAgentInitializer.initializeScriptAgent.mockResolvedValue(mockAgentInstance);
+        mockState.agentInstance = mockAgentInstance;
+      });
+
+      it('should log live mode session start when starting session successfully', async () => {
+        const mockWebview = {}; // Mock webview object
+        await sessionManager.startSession('test-agent-id', AgentSource.SCRIPT, true, mockWebview);
+
+        expect(mockChannelService.appendLine).toHaveBeenCalled();
+        // Check for debug level logging
+        expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[debug]'));
+        expect(mockChannelService.appendLine).toHaveBeenCalledWith(
+          expect.stringContaining('Live test session started for agent TestAgent. SessionId: test-session-123')
+        );
+      });
+
+      it('should log simulation mode session start when starting session successfully', async () => {
+        const mockWebview = {}; // Mock webview object
+        await sessionManager.startSession('test-agent-id', AgentSource.SCRIPT, false, mockWebview);
+
+        // Check that appendLine was called (logging happened)
+        expect(mockChannelService.appendLine).toHaveBeenCalled();
+        // Check for debug level logging
+        expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[debug]'));
+        expect(mockChannelService.appendLine).toHaveBeenCalledWith(
+          expect.stringContaining('Simulation session started for agent TestAgent. SessionId: test-session-123')
+        );
+      });
+    });
+
+    describe('compilation error logging', () => {
+      beforeEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it('should log compilation error when script session fails during compilation', async () => {
+        // Setup error scenario
+        mockState.currentAgentSource = AgentSource.SCRIPT;
+        mockState.currentAgentName = 'TestAgent';
+        mockState.sessionStartOperationId = 1; // Match the session start ID
+
+        // Mock initializeScriptAgent to set up agent instance that will fail
+        const mockAgentInstance = {
+          name: 'TestAgent',
+          preview: {
+            start: jest.fn().mockRejectedValue(new Error('error compiling'))
+          }
+        };
+        mockAgentInitializer.initializeScriptAgent.mockResolvedValue(mockAgentInstance);
+        mockState.agentInstance = mockAgentInstance;
+
+        const mockWebview = {}; // Mock webview object
+
+        // Start session (error will be handled internally)
+        await sessionManager.startSession('test-agent-id', AgentSource.SCRIPT, false, mockWebview);
+
+        // Check that appendLine was called (error logging happened)
+        expect(mockChannelService.appendLine).toHaveBeenCalled();
+        // Check for error level logging
+        expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[error]'));
+      });
+
+      it('should log SfError compilation error details', async () => {
+        // Setup SfError scenario
+        const sfError = new Error('error compiling');
+        sfError.name = 'CompilationError';
+
+        mockState.currentAgentSource = AgentSource.SCRIPT;
+        mockState.currentAgentName = 'TestAgent';
+        mockState.sessionStartOperationId = 1; // Match the session start ID
+        // Mock initializeScriptAgent to set up agent instance that will fail with SfError
+        const mockAgentInstance = {
+          name: 'TestAgent',
+          preview: {
+            start: jest.fn().mockRejectedValue(sfError)
+          }
+        };
+        mockAgentInitializer.initializeScriptAgent.mockResolvedValue(mockAgentInstance);
+        mockState.agentInstance = mockAgentInstance;
+
+        const mockWebview = {}; // Mock webview object
+
+        // Start session (SfError will be handled internally)
+        await sessionManager.startSession('test-agent-id', AgentSource.SCRIPT, false, mockWebview);
+
+        // Check that appendLine was called (error logging happened)
+        expect(mockChannelService.appendLine).toHaveBeenCalled();
+        // Check for error level logging
+        expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[error]'));
+        expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/^\tCompilationError$/));
+      });
     });
   });
 });

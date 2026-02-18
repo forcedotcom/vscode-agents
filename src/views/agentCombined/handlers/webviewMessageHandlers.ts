@@ -162,7 +162,9 @@ export class WebviewMessageHandlers {
       throw new Error('Invalid message: expected a string.');
     }
 
-    this.logger.debug('Sending message to agent preview');
+    this.logger.debug(
+      `Sending message to agent preview. AgentName: ${this.state.currentAgentName}, SessionId: ${this.state.sessionId}`
+    );
 
     const response = await this.state.agentInstance.preview.send(userMessage);
 
@@ -171,7 +173,9 @@ export class WebviewMessageHandlers {
     this.state.currentUserMessage = userMessage;
 
     this.messageSender.sendMessageSent(lastMessage?.message);
-    this.logger.debug('Received response from agent preview');
+    this.logger.debug(
+      `Received response from agent preview. AgentName: ${this.state.currentAgentName}, SessionId: ${this.state.sessionId}, PlanId: ${this.state.currentPlanId}`
+    );
 
     // Load and send trace data after sending message
     if (this.state.currentAgentId && this.state.currentAgentSource) {

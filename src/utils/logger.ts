@@ -21,14 +21,18 @@ export type LogLevel = 'error' | 'warn' | 'debug';
 
 /**
  * Formats a log message with timestamp and status indicator
- * Format: [HH:MM:SS] [STATUS] message
+ * Format: [MM-DD-YYYY HH:MM:SS.sss] [STATUS] message
  */
 function formatLogMessage(level: LogLevel, message: string): string {
-  const timestamp = new Date().toLocaleTimeString('en-US', {
-    hour12: false,
+  const timestamp = new Date().toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    fractionalSecondDigits: 3,
+    hour12: false
   });
 
   const statusMap: Record<LogLevel, string> = {
@@ -113,6 +117,14 @@ export class Logger {
    */
   appendLine(message: string): void {
     this.channelService.appendLine(message);
+  }
+
+  /**
+   * Log additional error details as continuation of previous error message
+   */
+  errorDetail(message: string): void {
+    const indent = '\t'; // Single tab for clean indentation
+    this.channelService.appendLine(`${indent}${message}`);
   }
 
   /**

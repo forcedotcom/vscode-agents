@@ -81,6 +81,7 @@ export class SessionManager {
       ensureActive();
       this.state.sessionId = session.sessionId;
       this.state.sessionAgentId = agentId;
+      this.logSessionStarted(isLiveMode);
 
       // Load history
       await this.historyManager.loadAndSendTraceHistory(agentId, agentSource);
@@ -104,11 +105,10 @@ export class SessionManager {
       if (
         this.state.currentAgentSource === AgentSource.SCRIPT &&
         err instanceof SfError &&
-        err.message.includes('Failed to compile agent script')
+        err.message.includes('error compiling')
       ) {
         const sfError = err as SfError;
-        const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
-        this.logger.error(detailedError, sfError);
+        const detailedError = this.logCompilationError(sfError);
         this.messageSender.sendCompilationError(detailedError);
         await this.state.setSessionStarting(false);
         await this.state.setResetAgentViewAvailable(true);
@@ -134,6 +134,8 @@ export class SessionManager {
     await this.state.setSessionActive(false);
     await this.state.setSessionStarting(false);
 
+    const agentName = this.state.currentAgentName;
+    const sessionId = this.state.sessionId;
     if (this.state.agentInstance && this.state.sessionId) {
       // Restore connection before clearing agent references
       try {
@@ -148,7 +150,7 @@ export class SessionManager {
       this.messageSender.sendSessionEnded();
     }
 
-    this.logger.debug('Simulation ended');
+    this.logger.debug(`Simulation ended. AgentName: ${agentName}, SessionId: ${sessionId}`);
 
     if (sessionWasStarting && restoreViewCallback) {
       await restoreViewCallback();
@@ -241,6 +243,7 @@ export class SessionManager {
       ensureActive();
       this.state.sessionId = session.sessionId;
       this.state.sessionAgentId = agentId;
+      this.logSessionStarted(isLiveMode);
 
       await this.completeRestart(session, 'Agent session recompiled and restarted.', ensureActive);
       this.state.pendingStartAgentId = undefined;
@@ -257,8 +260,7 @@ export class SessionManager {
         error.message.includes('Failed to compile agent script')
       ) {
         const sfError = error as SfError;
-        const detailedError = `Failed to compile agent script${EOL}${sfError.name}`;
-        this.logger.error(detailedError, sfError);
+        const detailedError = this.logCompilationError(sfError);
         this.messageSender.sendCompilationError(detailedError);
         await this.state.setSessionStarting(false);
         await this.state.setResetAgentViewAvailable(true);
@@ -303,6 +305,26 @@ export class SessionManager {
     await this.state.setConversationDataAvailable(true);
 
     this.logger.debug(logMessage);
+  }
+
+  /**
+   * Logs session start information with agent details
+   */
+  private logSessionStarted(isLiveMode: boolean | undefined): void {
+    const isLive = isLiveMode ?? false;
+    this.logger.debug(
+      (isLive ? 'Live test session started' : 'Simulation session started') +
+        ` for agent ${this.state.currentAgentName}. SessionId: ${this.state.sessionId}`
+    );
+  }
+
+  /**
+   * Logs compilation error details for script agents
+   */
+  private logCompilationError(sfError: SfError): string {
+    this.logger.error('Failed to compile agent script', sfError);
+    this.logger.errorDetail(sfError.name);
+    return `Failed to compile agent script${EOL}${sfError.name}`;
   }
 
   /**
@@ -357,7 +379,6 @@ export class SessionManager {
         }
       },
       (data: { message?: string }) => {
-        this.logger.debug('Simulation session started');
         const modeMessage = determinedLiveMode ? 'Starting live test...' : 'Starting simulation...';
         this.messageSender.sendSimulationStarting(data.message || modeMessage);
       }
