@@ -1,3 +1,9 @@
+# [1.7.0](https://github.com/salesforcecli/vsode-agents/compare/v1.6.0...v1.7.0) (2026-02-18)
+
+### Features
+
+- GA Release
+
 # [1.6.0](https://github.com/salesforcecli/vsode-agents/compare/v1.5.1...v1.6.0) (2025-12-11)
 
 ### Bug Fixes
