@@ -148,7 +148,7 @@ const STEP_ICONS: Record<string, TimelineIconName> = {
   ReasoningStep: 'search',
   PlannerResponseStep: 'agent',
   UpdateTopicStep: 'tag',
-  FunctionStep: 'run-all'
+  FunctionStep: 'action'
 };
 
 // Get the description/subtitle for a step based on its type
@@ -278,15 +278,11 @@ export const buildTimelineItems = (
     const description = getStepDescription(step);
     const hasData = step && (step.data || step.message || step.reason || step.function);
 
-    // Add badge for FunctionStep (Apex actions)
-    const badge = stepType === 'FunctionStep' ? 'Apex' : undefined;
-
     return {
       status,
       label,
       description,
       icon,
-      badge,
       onClick: hasData ? () => onSelect(index) : undefined
     };
   });
