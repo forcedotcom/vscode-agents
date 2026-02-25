@@ -1,11 +1,8 @@
 ## [1.7.1](https://github.com/salesforcecli/vsode-agents/compare/v1.7.0...v1.7.1) (2026-02-25)
 
-
 ### Bug Fixes
 
-* bump deps ([5cf07df](https://github.com/salesforcecli/vsode-agents/commit/5cf07dfe522b37edcef5c8b6f5129db267beae1b))
-
-
+- bump deps ([5cf07df](https://github.com/salesforcecli/vsode-agents/commit/5cf07dfe522b37edcef5c8b6f5129db267beae1b))
 
 # [1.7.0](https://github.com/salesforcecli/vsode-agents/compare/v1.6.0...v1.7.0) (2026-02-18)
 
