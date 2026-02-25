@@ -1,5 +1,86 @@
 # Publishing a New Version
 
+## Automated Release Process (Recommended)
+
+The release process is now automated based on conventional commits. When PRs with `feat:` or `fix:` commits are merged to main, a draft release is automatically created.
+
+### Overview
+
+- **`feat:`** commits trigger a **minor** version bump (e.g., 1.7.0 → 1.8.0)
+- **`fix:`** commits trigger a **patch** version bump (e.g., 1.7.0 → 1.7.1)
+- Other commit types (`chore:`, `docs:`, etc.) do not trigger releases
+
+### Step 1: Merge PRs to Main
+
+Ensure all commits in your PR follow the [conventional commit format](https://www.conventionalcommits.org/):
+- `feat: add new feature` - for new features (minor version bump)
+- `fix: resolve bug` - for bug fixes (patch version bump)
+
+### Step 2: Automatic Detection and Draft Release
+
+When your PR is merged to main, the system automatically:
+1. ✅ Detects feat/fix commits since the last release
+2. ✅ Determines the version bump type
+3. ✅ Runs all tests (unit, integration, build)
+4. ✅ Builds VSIX artifacts
+5. ✅ Generates changelog using conventional-changelog
+6. ✅ Bumps version in package.json and package-lock.json
+7. ✅ Generates SHA256 checksums
+8. ✅ Commits changes back to main
+9. ✅ Creates a git tag
+10. ✅ Creates a **draft** GitHub Release with instructions
+11. ✅ Sends Slack notification to the team
+
+**Note:** You will receive a Slack notification when the draft release is created.
+
+### Step 3: Review Draft Release
+
+1. Go to the [Releases page](https://github.com/forcedotcom/vscode-agents/releases)
+2. Find the draft release (it will be at the top with a "Draft" label)
+3. Review the auto-generated changelog
+4. Verify that all changes are accurately described
+
+### Step 4: Edit Changelog (Optional)
+
+You can edit the changelog before publishing in two ways:
+
+#### Option A: Edit GitHub Release Description
+- Click "Edit" button on the draft release
+- Modify the changelog section in the release notes
+- Click "Save draft"
+- The edited version will be used for marketplace listings
+
+#### Option B: Edit CHANGELOG.md File
+- Edit the `CHANGELOG.md` file in the repository
+- Commit and push your changes to main
+- The changes are already in the repo and will be included in future releases
+- Then publish the draft release when ready
+
+**Recommendation:** Work with your technical writer to polish the changelog before publishing.
+
+### Step 5: Publish Release
+
+Once you're satisfied with the changelog:
+1. Click the **"Publish release"** button on the draft release
+2. The system will automatically:
+   - ✅ Publish to Microsoft VS Code Marketplace
+   - ✅ Publish to Open VSX Registry
+   - ✅ Send success notification to Slack
+
+### Step 6: Verify Publication
+
+After publishing, verify the extension is available:
+- [Microsoft Marketplace](https://marketplace.visualstudio.com/items?itemName=Salesforce.salesforcedx-vscode-agents)
+- [Open VSX Registry](https://open-vsx.org/extension/salesforce/salesforcedx-vscode-agents)
+
+It may take a few minutes for the marketplaces to update.
+
+---
+
+## Manual Release Process (Fallback)
+
+⚠️ **Note:** The manual process below is deprecated and kept only as a fallback for emergency releases. Use the automated process above for normal releases.
+
 ### Part I: Initiating a New Release
 
 This part will create a new release branch, generate a changelog, and start a release PR to merge back the release branch into the main branch.
