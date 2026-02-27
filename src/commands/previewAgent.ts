@@ -11,7 +11,9 @@ export const registerPreviewAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.previewAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
-    telemetryService.sendCommandEvent(Commands.previewAgent);
+    const commandName = Commands.previewAgent;
+    const hrstart = process.hrtime();
+    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file path from the context menu
     const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;

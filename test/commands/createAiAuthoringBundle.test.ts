@@ -293,7 +293,11 @@ describe('createAiAuthoringBundle', () => {
     await handler();
 
     // Verify telemetry
-    expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.createAiAuthoringBundle);
+    expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(
+      Commands.createAiAuthoringBundle,
+      expect.any(Array),
+      { commandName: Commands.createAiAuthoringBundle }
+    );
 
     // Verify agent script was created (description derived from name)
     expect(createAgentScriptSpy).toHaveBeenCalledWith(

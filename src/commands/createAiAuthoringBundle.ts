@@ -112,7 +112,9 @@ export const registerCreateAiAuthoringBundleCommand = () => {
   return vscode.commands.registerCommand(Commands.createAiAuthoringBundle, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
-    telemetryService.sendCommandEvent(Commands.createAiAuthoringBundle);
+    const commandName = Commands.createAiAuthoringBundle;
+    const hrstart = process.hrtime();
+    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Clear previous output
     logger.clear();
