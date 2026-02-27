@@ -177,7 +177,11 @@ describe('validateAgent', () => {
       expect(Agent.init).toHaveBeenCalled();
       expect(mockAgentInstance.compile).toHaveBeenCalled();
       expect(diagnosticCollectionMock.clear).toHaveBeenCalled();
-      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.validateAgent);
+      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(
+        Commands.validateAgent,
+        expect.any(Array),
+        { commandName: Commands.validateAgent }
+      );
     });
 
     it('shows diagnostics when compilation fails', async () => {
@@ -233,7 +237,11 @@ describe('validateAgent', () => {
 
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed with 2 error(s).' });
       expect(executeCommandSpy).toHaveBeenCalledWith('workbench.action.problems.focus');
-      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.validateAgent);
+      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(
+        Commands.validateAgent,
+        expect.any(Array),
+        { commandName: Commands.validateAgent }
+      );
     });
 
     // Note: Test for compilation errors with multiple errors was removed due to
