@@ -1,3 +1,17 @@
+# [1.8.0](https://github.com/salesforcecli/vsode-agents/compare/v1.7.1...v1.8.0) (2026-02-27)
+
+
+### Bug Fixes
+
+* update tests for changes ([3ce51db](https://github.com/salesforcecli/vsode-agents/commit/3ce51db85290f5cce04e8b7afde8cf7cb31547d7))
+
+
+### Features
+
+* add telemetry properties for PDP event ([c6983ad](https://github.com/salesforcecli/vsode-agents/commit/c6983adfa4a1038d157aa04b67dc5d245e1bf079))
+
+
+
 ## [1.7.1](https://github.com/salesforcecli/vsode-agents/compare/v1.7.0...v1.7.1) (2026-02-25)
 
 ### Bug Fixes
