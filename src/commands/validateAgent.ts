@@ -28,7 +28,9 @@ export const registerValidateAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.validateAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
-    telemetryService.sendCommandEvent(Commands.validateAgent);
+    const commandName = Commands.validateAgent;
+    const hrstart = process.hrtime();
+    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file path from the context menu
     const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;

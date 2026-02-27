@@ -11,7 +11,9 @@ export const registerDeactivateAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.deactivateAgent, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
-    telemetryService.sendCommandEvent(Commands.deactivateAgent);
+    const commandName = Commands.deactivateAgent;
+    const hrstart = process.hrtime();
+    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file or directory path from the context menu
     const targetPath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
