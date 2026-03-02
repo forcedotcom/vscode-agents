@@ -45,11 +45,6 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version from package.json: $VERSION"
 
-  output-release-version:
-    runs-on: ubuntu-latest
-    needs: [get-release-version]
-    steps:
-      - run: echo "Publishing version ${{ needs.get-release-version.outputs.release-version }}"
   ctc-open:
     needs: [get-release-version]
     uses: salesforcecli/github-workflows/.github/workflows/ctcOpen.yml@main

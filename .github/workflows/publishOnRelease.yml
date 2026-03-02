@@ -31,30 +31,64 @@ jobs:
 
   publish-openvsx:
     name: Publish to Open VSX Registry
-    needs: [extract-version, publish-vscode]
+    needs: [extract-version]
     uses: ./.github/workflows/publishOpenVSX.yml
     secrets: inherit
     with:
       release-version: ${{ needs.extract-version.outputs.version }}
 
   notify-published:
-    name: Notify Release Published
+    name: Notify Release Status
     needs: [extract-version, publish-vscode, publish-openvsx]
-    if: success()
+    if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Send Slack notification
+      - name: Determine status
+        id: status
+        run: |
+          VSCODE_STATUS="${{ needs.publish-vscode.result }}"
+          OPENVSX_STATUS="${{ needs.publish-openvsx.result }}"
+
+          # Determine overall status and icon
+          if [ "$VSCODE_STATUS" = "success" ] && [ "$OPENVSX_STATUS" = "success" ]; then
+            echo "icon=✅" >> $GITHUB_OUTPUT
+            echo "title=Release v${{ needs.extract-version.outputs.version }} Published Successfully" >> $GITHUB_OUTPUT
+            echo "webhook=${{ secrets.CLI_TEAM_SLACK_WEBHOOK_URL }}" >> $GITHUB_OUTPUT
+          elif [ "$VSCODE_STATUS" = "success" ] || [ "$OPENVSX_STATUS" = "success" ]; then
+            echo "icon=⚠️" >> $GITHUB_OUTPUT
+            echo "title=Release v${{ needs.extract-version.outputs.version }} Partially Published" >> $GITHUB_OUTPUT
+            echo "webhook=${{ secrets.CLI_ALERTS_SLACK_WEBHOOK }}" >> $GITHUB_OUTPUT
+          else
+            echo "icon=❌" >> $GITHUB_OUTPUT
+            echo "title=Release v${{ needs.extract-version.outputs.version }} Publishing Failed" >> $GITHUB_OUTPUT
+            echo "webhook=${{ secrets.CLI_ALERTS_SLACK_WEBHOOK }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Format status for each marketplace
+          if [ "$VSCODE_STATUS" = "success" ]; then
+            echo "vscode_text=✅ *VS Code Marketplace:* Published" >> $GITHUB_OUTPUT
+          else
+            echo "vscode_text=❌ *VS Code Marketplace:* Failed" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$OPENVSX_STATUS" = "success" ]; then
+            echo "openvsx_text=✅ *Open VSX:* Published" >> $GITHUB_OUTPUT
+          else
+            echo "openvsx_text=❌ *Open VSX:* Failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send notification
         uses: slackapi/slack-github-action@v1.22.0
         with:
           payload: |
             {
-              "text": "✅ Release v${{ needs.extract-version.outputs.version }} published successfully",
+              "text": "${{ steps.status.outputs.icon }} ${{ steps.status.outputs.title }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Release v${{ needs.extract-version.outputs.version }} Published* :rocket:"
+                    "text": "*${{ steps.status.outputs.title }}* ${{ steps.status.outputs.icon }}"
                   }
                 },
                 {
@@ -66,47 +100,18 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*VS Code Marketplace:*\n<https://marketplace.visualstudio.com/items?itemName=Salesforce.salesforcedx-vscode-agents|View Extension>"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Open VSX:*\n<https://open-vsx.org/extension/salesforce/salesforcedx-vscode-agents|View Extension>"
+                      "text": "<${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}|View Workflow Run>"
                     }
                   ]
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.CLI_TEAM_SLACK_WEBHOOK_URL }}
-
-  notify-failure:
-    name: Notify Publish Failure
-    needs: [extract-version, publish-vscode, publish-openvsx]
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send failure notification
-        uses: slackapi/slack-github-action@v1.22.0
-        with:
-          payload: |
-            {
-              "text": "❌ Failed to publish release v${{ needs.extract-version.outputs.version }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Release v${{ needs.extract-version.outputs.version }} Publishing Failed* :x:"
-                  }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Check the <${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}|workflow run> for details."
+                    "text": "${{ steps.status.outputs.vscode_text }}\n${{ steps.status.outputs.openvsx_text }}"
                   }
                 }
               ]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.CLI_ALERTS_SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ steps.status.outputs.webhook }}

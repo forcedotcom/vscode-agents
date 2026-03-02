@@ -72,18 +72,10 @@ jobs:
             echo "No releasable commits found, skipping release"
           fi
 
-  run-tests:
-    name: Run Tests and Build
-    needs: [detect-releasable-commits]
-    if: needs.detect-releasable-commits.outputs.should-release == 'true'
-    uses: ./.github/workflows/buildAndTest.yml
-    secrets: inherit
-    with:
-      label: ${{ needs.detect-releasable-commits.outputs.current-version }}
-
   generate-changelog-and-version:
     name: Generate Changelog and Bump Version
-    needs: [detect-releasable-commits, run-tests]
+    needs: [detect-releasable-commits]
+    if: needs.detect-releasable-commits.outputs.should-release == 'true'
     runs-on: ubuntu-latest
     outputs:
       new-version: ${{ steps.get-new-version.outputs.version }}
@@ -174,10 +166,45 @@ jobs:
           npm run prettier
           git add CHANGELOG.md
 
-      - name: Download VSIX artifacts
+      - name: Commit version bump and changelog
+        run: |
+          git add package.json
+          git commit -m "chore: release v${{ steps.get-new-version.outputs.version }} [skip ci]"
+          git push origin main
+
+  build-and-test:
+    name: Build and Test with New Version
+    needs: [generate-changelog-and-version]
+    uses: ./.github/workflows/buildAndTest.yml
+    secrets: inherit
+    with:
+      branch-name: main
+      label: ${{ needs.generate-changelog-and-version.outputs.new-version }}
+
+  generate-sha256:
+    name: Generate SHA256 Checksums
+    needs: [generate-changelog-and-version, build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.IDEE_GH_TOKEN }}
+
+      - uses: ./.github/actions/gitConfig
+        with:
+          email: ${{ secrets.IDEE_GH_EMAIL }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Download VSIX artifacts with new version
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.detect-releasable-commits.outputs.current-version }}
+          name: ${{ needs.generate-changelog-and-version.outputs.new-version }}
           path: ./artifacts
 
       - name: Generate SHA256 checksums
@@ -186,20 +213,23 @@ jobs:
           cat ./sha/SHA-1.md SHA256 ./sha/SHA-2.md > SHA256.md
           rm ./SHA256
 
-      - name: Run prettier on SHA256
+      - name: Configure Git for private repo access
+        run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Install dependencies and run prettier
         run: |
+          npm ci
           npm run prettier
           git add SHA256.md
 
-      - name: Commit version bump and changelog
+      - name: Commit SHA256
         run: |
-          git add package.json
-          git commit -m "chore: release v${{ steps.get-new-version.outputs.version }} [skip ci]"
+          git commit -m "chore: updated SHA256 v${{ needs.generate-changelog-and-version.outputs.new-version }} [skip ci]"
           git push origin main
 
   create-tag:
     name: Create Git Tag
-    needs: [generate-changelog-and-version]
+    needs: [generate-changelog-and-version, generate-sha256]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -220,7 +250,7 @@ jobs:
 
   create-and-publish-release:
     name: Create and Publish Release
-    needs: [generate-changelog-and-version, create-tag, detect-releasable-commits]
+    needs: [generate-changelog-and-version, create-tag]
     runs-on: ubuntu-latest
     outputs:
       release-url: ${{ steps.create-release.outputs.url }}
@@ -234,7 +264,7 @@ jobs:
       - name: Download VSIX artifacts
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.detect-releasable-commits.outputs.current-version }}
+          name: ${{ needs.generate-changelog-and-version.outputs.new-version }}
           path: ./artifacts
 
       - name: Extract changelog for this version
