@@ -104,7 +104,28 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      - name: Generate changelog and bump version
+      - name: Bump version based on commit type
+        run: |
+          CURRENT_VERSION="${{ needs.detect-releasable-commits.outputs.current-version }}"
+          BUMP_TYPE="${{ needs.detect-releasable-commits.outputs.bump-type }}"
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "Bump type: $BUMP_TYPE"
+
+          # Use npm version to bump the version
+          if [ "$BUMP_TYPE" = "minor" ]; then
+            npm version minor --no-git-tag-version
+          elif [ "$BUMP_TYPE" = "patch" ]; then
+            npm version patch --no-git-tag-version
+          else
+            echo "Error: Unknown bump type: $BUMP_TYPE"
+            exit 1
+          fi
+
+          NEW_VERSION=$(node -pe "require('./package.json').version")
+          echo "Bumped to: $NEW_VERSION"
+
+      - name: Generate changelog
         uses: TriPSs/conventional-changelog-action@v4.1.1
         with:
           git-user-name: svc-idee-bot
@@ -115,9 +136,8 @@ jobs:
           skip-tag: true
           skip-on-empty: false
           output-file: CHANGELOG.md
-          skip-commit: true # We'll commit manually to include SHA256
-          version-file: package.json
-          version-path: version
+          skip-commit: true
+          skip-version-file: true
 
       - name: Get new version
         id: get-new-version
