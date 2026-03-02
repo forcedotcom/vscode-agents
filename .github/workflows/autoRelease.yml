@@ -1,0 +1,267 @@
+name: Automated Release
+run-name: Automated release triggered by ${{ github.triggering_actor }} pushing to main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  detect-releasable-commits:
+    name: Detect Releasable Commits
+    runs-on: ubuntu-latest
+    outputs:
+      should-release: ${{ steps.check-commits.outputs.should-release }}
+      bump-type: ${{ steps.check-commits.outputs.bump-type }}
+      current-version: ${{ steps.get-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for tags
+          token: ${{ secrets.IDEE_GH_TOKEN }}
+
+      - name: Get current version
+        id: get-version
+        run: |
+          VERSION=$(node -pe "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No tags found, will check all commits"
+            LATEST_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "latest-tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Check for feat/fix commits
+        id: check-commits
+        run: |
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest-tag }}"
+
+          # Get commits since last tag
+          COMMITS=$(git log $LATEST_TAG..HEAD --pretty=format:"%s")
+
+          echo "Commits since $LATEST_TAG:"
+          echo "$COMMITS"
+
+          # Check for feat or fix commits
+          HAS_FEAT=$(echo "$COMMITS" | grep -c "^feat:" || true)
+          HAS_FIX=$(echo "$COMMITS" | grep -c "^fix:" || true)
+
+          echo "Found $HAS_FEAT feat commits"
+          echo "Found $HAS_FIX fix commits"
+
+          # Determine if we should release and what type
+          if [ "$HAS_FEAT" -gt 0 ]; then
+            echo "should-release=true" >> $GITHUB_OUTPUT
+            echo "bump-type=minor" >> $GITHUB_OUTPUT
+            echo "Will create MINOR release (feat commits found)"
+          elif [ "$HAS_FIX" -gt 0 ]; then
+            echo "should-release=true" >> $GITHUB_OUTPUT
+            echo "bump-type=patch" >> $GITHUB_OUTPUT
+            echo "Will create PATCH release (fix commits found)"
+          else
+            echo "should-release=false" >> $GITHUB_OUTPUT
+            echo "bump-type=none" >> $GITHUB_OUTPUT
+            echo "No releasable commits found, skipping release"
+          fi
+
+  run-tests:
+    name: Run Tests and Build
+    needs: [detect-releasable-commits]
+    if: needs.detect-releasable-commits.outputs.should-release == 'true'
+    uses: ./.github/workflows/buildAndTest.yml
+    secrets: inherit
+    with:
+      label: ${{ needs.detect-releasable-commits.outputs.current-version }}
+
+  generate-changelog-and-version:
+    name: Generate Changelog and Bump Version
+    needs: [detect-releasable-commits, run-tests]
+    runs-on: ubuntu-latest
+    outputs:
+      new-version: ${{ steps.get-new-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.IDEE_GH_TOKEN }}
+
+      - uses: ./.github/actions/gitConfig
+        with:
+          email: ${{ secrets.IDEE_GH_EMAIL }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Generate changelog and bump version
+        uses: TriPSs/conventional-changelog-action@v4.1.1
+        with:
+          git-user-name: svc-idee-bot
+          git-user-email: svc_idee_bot@salesforce.com
+          github-token: ${{ secrets.IDEE_GH_TOKEN }}
+          git-branch: main
+          input-file: CHANGELOG.md
+          skip-tag: true
+          skip-on-empty: false
+          output-file: CHANGELOG.md
+          skip-commit: true # We'll commit manually to include SHA256
+
+      - name: Get new version
+        id: get-new-version
+        run: |
+          VERSION=$(node -pe "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $VERSION"
+
+      - name: Configure Git for private repo access
+        run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Update package-lock.json
+        run: |
+          npm ci
+          git add package-lock.json
+
+      - name: Run prettier on CHANGELOG
+        run: |
+          npm run prettier
+          git add CHANGELOG.md
+
+      - name: Download VSIX artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.detect-releasable-commits.outputs.current-version }}
+          path: ./artifacts
+
+      - name: Generate SHA256 checksums
+        run: |
+          find ./artifacts -name '*.vsix' -exec shasum -a 256 {} \; >> ./SHA256
+          cat ./sha/SHA-1.md SHA256 ./sha/SHA-2.md > SHA256.md
+          rm ./SHA256
+
+      - name: Run prettier on SHA256
+        run: |
+          npm run prettier
+          git add SHA256.md
+
+      - name: Commit version bump and changelog
+        run: |
+          git add package.json
+          git commit -m "chore: release v${{ steps.get-new-version.outputs.version }} [skip ci]"
+          git push origin main
+
+  create-tag:
+    name: Create Git Tag
+    needs: [generate-changelog-and-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.IDEE_GH_TOKEN }}
+
+      - uses: ./.github/actions/gitConfig
+        with:
+          email: ${{ secrets.IDEE_GH_EMAIL }}
+
+      - name: Create and push tag
+        run: |
+          git tag v${{ needs.generate-changelog-and-version.outputs.new-version }}
+          git push origin v${{ needs.generate-changelog-and-version.outputs.new-version }}
+
+  create-and-publish-release:
+    name: Create and Publish Release
+    needs: [generate-changelog-and-version, create-tag, detect-releasable-commits]
+    runs-on: ubuntu-latest
+    outputs:
+      release-url: ${{ steps.create-release.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.IDEE_GH_TOKEN }}
+
+      - name: Download VSIX artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.detect-releasable-commits.outputs.current-version }}
+          path: ./artifacts
+
+      - name: Extract changelog for this version
+        id: extract-changelog
+        run: |
+          VERSION="${{ needs.generate-changelog-and-version.outputs.new-version }}"
+
+          # Extract the section for this version from CHANGELOG.md
+          # This gets everything between the version header and the next version header
+          CHANGELOG_SECTION=$(awk '/^# \['$VERSION'\]/,/^# \[/{if(/^# \['$VERSION'\]/)p=1;if(/^# \[/ && !/^# \['$VERSION'\]/)p=0;if(p)print}' CHANGELOG.md)
+
+          # If extraction failed, use a fallback
+          if [ -z "$CHANGELOG_SECTION" ]; then
+            CHANGELOG_SECTION="See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details."
+          fi
+
+          # Save to file
+          echo "$CHANGELOG_SECTION" > changelog-section.md
+
+      - name: Create release notes
+        run: |
+          cat > release-notes.md << 'EOF'
+          # Release v${{ needs.generate-changelog-and-version.outputs.new-version }}
+
+          This is an automated release based on conventional commits merged to main.
+
+          This release has been automatically published to:
+          - ✅ Microsoft VS Code Marketplace
+          - ✅ Open VSX Registry
+
+          ---
+
+          ## Changelog
+
+          EOF
+
+          cat changelog-section.md >> release-notes.md
+
+          cat >> release-notes.md << 'EOF'
+
+          ---
+
+          **Artifacts:** VSIX files are attached to this release.
+          EOF
+
+      - name: Create and publish release
+        id: create-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.IDEE_GH_TOKEN }}
+        run: |
+          RELEASE_OUTPUT=$(gh release create v${{ needs.generate-changelog-and-version.outputs.new-version }} \
+            ./artifacts/*.vsix \
+            --title "Release v${{ needs.generate-changelog-and-version.outputs.new-version }}" \
+            --notes-file release-notes.md)
+
+          echo "url=$RELEASE_OUTPUT" >> $GITHUB_OUTPUT
+          echo "Release created and published: $RELEASE_OUTPUT"
+
+  notify-release-published:
+    name: Notify Release Published
+    needs: [generate-changelog-and-version, create-and-publish-release]
+    uses: ./.github/workflows/slackNotification.yml
+    secrets: inherit
+    with:
+      title: "🚀 Release v${{ needs.generate-changelog-and-version.outputs.new-version }} published automatically"
+      type: notification
+      notification: "Release published at ${{ needs.create-and-publish-release.outputs.release-url }} - publishing to marketplaces is now in progress"

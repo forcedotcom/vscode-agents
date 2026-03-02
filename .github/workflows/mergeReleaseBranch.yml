@@ -1,3 +1,8 @@
+# ⚠️ DEPRECATED: This workflow is deprecated in favor of the automated release process.
+# It is kept as a fallback for emergency releases.
+# See CONTRIBUTING/publishing.md for the new automated process.
+# This workflow will be removed in a future update.
+
 name: Merge Release Branch
 run-name: ${{ github.triggering_actor }} is running Merge Release Branch from the '${{ github.ref_name }}' branch
 on:

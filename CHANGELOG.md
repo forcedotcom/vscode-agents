@@ -1,3 +1,9 @@
+## [1.8.1](https://github.com/salesforcecli/vsode-agents/compare/v1.8.0...v1.8.1) (2026-03-02)
+
+### Bug Fixes
+
+- using claude, build new auto CI system ([00fd532](https://github.com/salesforcecli/vsode-agents/commit/00fd532a9dbfaa75e472260a282785572ed1b593))
+
 # [1.8.0](https://github.com/salesforcecli/vsode-agents/compare/v1.7.1...v1.8.0) (2026-02-27)
 
 ### Bug Fixes
