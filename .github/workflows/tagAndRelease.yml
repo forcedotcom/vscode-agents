@@ -66,9 +66,19 @@ jobs:
       - uses: ./.github/actions/gitConfig
         with:
           email: ${{ secrets.IDEE_GH_EMAIL }}
-      - run: |
-          git tag v${{ env.RELEASE_VERSION }}
-          git push origin v${{ env.RELEASE_VERSION }}
+      - name: Create and push tag
+        run: |
+          VERSION="v${{ env.RELEASE_VERSION }}"
+
+          # Check if tag already exists
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Error: Tag $VERSION already exists!"
+            echo "Cannot create a duplicate tag. Please ensure the version has been bumped correctly."
+            exit 1
+          fi
+
+          git tag "$VERSION"
+          git push origin "$VERSION"
 
   githubRelease:
     needs: ['gitTag']

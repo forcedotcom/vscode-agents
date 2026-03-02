@@ -50,9 +50,6 @@ export const registerValidateAgentCommand = () => {
     // Clear previous output
     logger.clear();
 
-    // Log SF_TEST_API setting value
-    logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
-
     // Show progress notification with spinner
     await vscode.window.withProgress(
       {

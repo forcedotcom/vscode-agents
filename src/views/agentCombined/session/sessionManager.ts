@@ -373,7 +373,6 @@ export class SessionManager {
         if (data.error) {
           this.messageSender.sendCompilationError(data.error);
         } else {
-          this.logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
           this.logger.debug('Compilation endpoint called');
           this.messageSender.sendCompilationStarting(data.message);
         }

@@ -116,6 +116,8 @@ jobs:
           skip-on-empty: false
           output-file: CHANGELOG.md
           skip-commit: true # We'll commit manually to include SHA256
+          version-file: package.json
+          version-path: version
 
       - name: Get new version
         id: get-new-version
@@ -123,6 +125,21 @@ jobs:
           VERSION=$(node -pe "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "New version: $VERSION"
+
+          # Verify the version was actually bumped
+          CURRENT_VERSION="${{ needs.detect-releasable-commits.outputs.current-version }}"
+          if [ "$VERSION" = "$CURRENT_VERSION" ]; then
+            echo "Error: Version was not bumped! Still at $VERSION"
+            echo "This might indicate that conventional-changelog-action failed to update package.json"
+            exit 1
+          fi
+
+          # Check if tag already exists
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Error: Tag v$VERSION already exists!"
+            echo "The version bump did not create a new version."
+            exit 1
+          fi
 
       - name: Configure Git for private repo access
         run: git config --global --add url."https://${{ secrets.IDEE_GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
