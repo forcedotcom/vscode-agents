@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/salesforcecli/vsode-agents/compare/v1.8.1...v1.8.2) (2026-03-02)
+
+### Bug Fixes
+
+- for release ([fb0ed99](https://github.com/salesforcecli/vsode-agents/commit/fb0ed99ca8ad6585ae51952a30e84d2f8f70f397))
+- try fixing CI ([ba00729](https://github.com/salesforcecli/vsode-agents/commit/ba00729fb90d5f335fd1686ae7c0c50cdc4b8098))
+
 ## [1.8.1](https://github.com/salesforcecli/vsode-agents/compare/v1.8.0...v1.8.1) (2026-03-02)
 
 ### Bug Fixes
