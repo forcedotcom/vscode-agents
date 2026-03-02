@@ -2,6 +2,16 @@
 
 ### Bug Fixes
 
+- correct version bump logic and prevent duplicate tags ([13c43a7](https://github.com/salesforcecli/vsode-agents/commit/13c43a7167b09da8159eb9d22606a9935a7e0684))
+- manually bump version before changelog generation ([d36448e](https://github.com/salesforcecli/vsode-agents/commit/d36448ee5deef22adaf8507e2dbf12968c33cd48))
+- remove SF_TEST_API setting ([62a05fa](https://github.com/salesforcecli/vsode-agents/commit/62a05fa2d32122e35cacad887850a0da362cde65))
+- revert manual version bump to let auto-release workflow handle versioning ([1a4aae3](https://github.com/salesforcecli/vsode-agents/commit/1a4aae38532cb1753a6eb39e697171e4637a7dc5))
+- using claude, build new auto CI system ([00fd532](https://github.com/salesforcecli/vsode-agents/commit/00fd532a9dbfaa75e472260a282785572ed1b593))
+
+## [1.8.1](https://github.com/salesforcecli/vsode-agents/compare/v1.8.0...v1.8.1) (2026-03-02)
+
+### Bug Fixes
+
 - using claude, build new auto CI system ([00fd532](https://github.com/salesforcecli/vsode-agents/commit/00fd532a9dbfaa75e472260a282785572ed1b593))
 
 # [1.8.0](https://github.com/salesforcecli/vsode-agents/compare/v1.7.1...v1.8.0) (2026-02-27)
