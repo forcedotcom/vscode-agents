@@ -1,3 +1,8 @@
+# ⚠️ DEPRECATED: This workflow is deprecated in favor of the automated release process.
+# It is kept as a fallback for emergency releases.
+# See CONTRIBUTING/publishing.md for the new automated process.
+# This workflow will be removed in a future update.
+
 name: Initiate New Release
 run-name: ${{ github.triggering_actor }} is initiating a new release from '${{ github.ref_name }}' branch
 on:

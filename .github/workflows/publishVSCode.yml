@@ -2,11 +2,49 @@ name: Publish in Microsoft Marketplace
 run-name: ${{ github.triggering_actor }} is publishing in Microsoft Marketplace from ${{ github.ref_name }}
 on:
   workflow_dispatch: #  Button for publishing from input branch in case there is a failure on the release.
+  workflow_call: # Called by publishOnRelease.yml for automated releases
+    inputs:
+      release-version:
+        description: Version to publish (optional, will detect from branch if not provided)
+        required: false
+        type: string
 
 jobs:
   get-release-version:
-    uses: ./.github/workflows/getReleaseVersion.yml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    outputs:
+      release-version: ${{ steps.determine-version.outputs.version }}
+    steps:
+      - name: Determine version
+        id: determine-version
+        run: |
+          if [ -n "${{ inputs.release-version }}" ]; then
+            echo "version=${{ inputs.release-version }}" >> $GITHUB_OUTPUT
+            echo "Using provided version: ${{ inputs.release-version }}"
+          else
+            echo "No version provided, will detect from package.json"
+          fi
+
+      - name: Checkout (if version not provided)
+        if: inputs.release-version == ''
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.IDEE_GH_TOKEN }}
+
+      - name: Setup Node.js (if version not provided)
+        if: inputs.release-version == ''
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Extract version from package.json (if version not provided)
+        if: inputs.release-version == ''
+        run: |
+          VERSION=$(node -pe "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version from package.json: $VERSION"
+
   output-release-version:
     runs-on: ubuntu-latest
     needs: [get-release-version]

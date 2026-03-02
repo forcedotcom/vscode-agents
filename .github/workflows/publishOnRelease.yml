@@ -1,0 +1,112 @@
+name: Publish on Release
+run-name: Publishing release ${{ github.event.release.tag_name }}
+
+on:
+  release:
+    types: [released] # Only when published, not created as draft
+
+jobs:
+  extract-version:
+    name: Extract Version from Tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+    steps:
+      - name: Extract version
+        id: extract
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          # Remove 'v' prefix if present (e.g., v1.8.0 -> 1.8.0)
+          VERSION="${TAG_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION from tag: $TAG_NAME"
+
+  publish-vscode:
+    name: Publish to VS Code Marketplace
+    needs: [extract-version]
+    uses: ./.github/workflows/publishVSCode.yml
+    secrets: inherit
+    with:
+      release-version: ${{ needs.extract-version.outputs.version }}
+
+  publish-openvsx:
+    name: Publish to Open VSX Registry
+    needs: [extract-version, publish-vscode]
+    uses: ./.github/workflows/publishOpenVSX.yml
+    secrets: inherit
+    with:
+      release-version: ${{ needs.extract-version.outputs.version }}
+
+  notify-published:
+    name: Notify Release Published
+    needs: [extract-version, publish-vscode, publish-openvsx]
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          payload: |
+            {
+              "text": "✅ Release v${{ needs.extract-version.outputs.version }} published successfully",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Release v${{ needs.extract-version.outputs.version }} Published* :rocket:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*GitHub Release:*\n<${{ github.event.release.html_url }}|View Release>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*VS Code Marketplace:*\n<https://marketplace.visualstudio.com/items?itemName=Salesforce.salesforcedx-vscode-agents|View Extension>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Open VSX:*\n<https://open-vsx.org/extension/salesforce/salesforcedx-vscode-agents|View Extension>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.CLI_TEAM_SLACK_WEBHOOK_URL }}
+
+  notify-failure:
+    name: Notify Publish Failure
+    needs: [extract-version, publish-vscode, publish-openvsx]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send failure notification
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          payload: |
+            {
+              "text": "❌ Failed to publish release v${{ needs.extract-version.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Release v${{ needs.extract-version.outputs.version }} Publishing Failed* :x:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Check the <${{ github.event.repository.html_url }}/actions/runs/${{ github.run_id }}|workflow run> for details."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.CLI_ALERTS_SLACK_WEBHOOK }}
