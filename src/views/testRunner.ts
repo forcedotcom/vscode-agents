@@ -123,7 +123,9 @@ export class AgentTestRunner {
   public async runAgentTest(test: AgentTestGroupNode) {
     const channelService = CoreExtensionService.getTestChannelService();
     const telemetryService = CoreExtensionService.getTelemetryService();
-    telemetryService.sendCommandEvent('RunAgentTest');
+    const commandName = 'RunAgentTest';
+    const hrstart = process.hrtime();
+    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
     try {
       const configAggregator = await ConfigAggregator.create();
       const lifecycle = await Lifecycle.getInstance();

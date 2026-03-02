@@ -11,7 +11,9 @@ export const registerOpenAgentInOrgCommand = () => {
   return vscode.commands.registerCommand(Commands.openAgentInOrg, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
-    telemetryService.sendCommandEvent(Commands.openAgentInOrg);
+    const commandName = Commands.openAgentInOrg;
+    const hrstart = process.hrtime();
+    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
 
     let agentName: string | undefined;
 

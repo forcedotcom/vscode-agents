@@ -132,7 +132,11 @@ describe('publishAgent', () => {
 
       expect(errorMessageSpy).toHaveBeenCalledWith('No .agent file selected.');
       expect(progressSpy).not.toHaveBeenCalled();
-      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.publishAgent);
+      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(
+        Commands.publishAgent,
+        expect.any(Array),
+        { commandName: Commands.publishAgent }
+      );
     });
 
     it('shows error when file is not a .agent file', async () => {
@@ -184,7 +188,11 @@ describe('publishAgent', () => {
       expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Agent published successfully.', increment: 100 });
       expect(lifecycleMock.removeAllListeners).toHaveBeenCalledWith('scopedPreRetrieve');
       expect(lifecycleMock.removeAllListeners).toHaveBeenCalledWith('scopedPostRetrieve');
-      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(Commands.publishAgent);
+      expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(
+        Commands.publishAgent,
+        expect.any(Array),
+        { commandName: Commands.publishAgent }
+      );
     });
 
     it('handles compilation failure', async () => {
