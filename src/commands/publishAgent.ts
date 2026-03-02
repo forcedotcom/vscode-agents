@@ -46,9 +46,7 @@ export const registerPublishAgentCommand = () => {
 
       // Clear previous output
       logger.clear();
-      
-      // Log SF_TEST_API setting value
-      logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
+
       // Log SF_SKIP_RETRIEVE setting value
       logger.debug(`SF_SKIP_RETRIEVE = ${process.env.SF_SKIP_RETRIEVE ?? 'false'}`);
       logger.debug(`Publishing agent ${fileName}...`);

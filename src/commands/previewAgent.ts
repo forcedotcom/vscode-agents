@@ -26,9 +26,6 @@ export const registerPreviewAgentCommand = () => {
     // Clear previous output
     logger.clear();
 
-    // Log SF_TEST_API setting value
-    logger.debug(`SF_TEST_API = ${process.env.SF_TEST_API ?? 'false'}`);
-
     try {
       // Open the Agent Preview panel
       const provider = AgentCombinedViewProvider.getInstance();
