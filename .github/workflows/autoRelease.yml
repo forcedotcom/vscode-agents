@@ -181,8 +181,8 @@ jobs:
           git tag v${{ needs.generate-changelog-and-version.outputs.new-version }}
           git push origin v${{ needs.generate-changelog-and-version.outputs.new-version }}
 
-  create-draft-release:
-    name: Create Draft Release
+  create-and-publish-release:
+    name: Create and Publish Release
     needs: [generate-changelog-and-version, create-tag, detect-releasable-commits]
     runs-on: ubuntu-latest
     outputs:
@@ -222,33 +222,11 @@ jobs:
           cat > release-notes.md << 'EOF'
           # Release v${{ needs.generate-changelog-and-version.outputs.new-version }}
 
-          ## 📋 Manual Approval Required
+          This is an automated release based on conventional commits merged to main.
 
-          This is an automated release draft based on conventional commits merged to main.
-
-          ### To Approve This Release:
-
-          1. **Review the changelog below** - ensure all changes are accurately described
-          2. **Edit this release description** if needed - click "Edit" button above
-          3. **Publish the release** - click "Publish release" button when ready
-
-          Publishing this release will automatically:
-          - ✅ Publish extension to Microsoft VS Code Marketplace
-          - ✅ Publish extension to Open VSX Registry
-          - ✅ Send notifications to Slack
-
-          ### To Edit the Changelog:
-
-          **Option A: Edit here (GitHub Release)**
-          - Click "Edit" button above
-          - Modify the changelog section below
-          - Save changes
-          - The edited version will be used for marketplace listings
-
-          **Option B: Edit CHANGELOG.md file**
-          - Edit [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) in the repository
-          - Commit and push changes to main
-          - The changes will be reflected in the repository
+          This release has been automatically published to:
+          - ✅ Microsoft VS Code Marketplace
+          - ✅ Open VSX Registry
 
           ---
 
@@ -265,26 +243,25 @@ jobs:
           **Artifacts:** VSIX files are attached to this release.
           EOF
 
-      - name: Create draft release
+      - name: Create and publish release
         id: create-release
         env:
           GITHUB_TOKEN: ${{ secrets.IDEE_GH_TOKEN }}
         run: |
           RELEASE_OUTPUT=$(gh release create v${{ needs.generate-changelog-and-version.outputs.new-version }} \
             ./artifacts/*.vsix \
-            --draft \
             --title "Release v${{ needs.generate-changelog-and-version.outputs.new-version }}" \
             --notes-file release-notes.md)
 
           echo "url=$RELEASE_OUTPUT" >> $GITHUB_OUTPUT
-          echo "Draft release created: $RELEASE_OUTPUT"
+          echo "Release created and published: $RELEASE_OUTPUT"
 
-  notify-draft-created:
-    name: Notify Draft Release Created
-    needs: [generate-changelog-and-version, create-draft-release]
+  notify-release-published:
+    name: Notify Release Published
+    needs: [generate-changelog-and-version, create-and-publish-release]
     uses: ./.github/workflows/slackNotification.yml
     secrets: inherit
     with:
-      title: "🚀 Draft release v${{ needs.generate-changelog-and-version.outputs.new-version }} created and ready for review"
+      title: "🚀 Release v${{ needs.generate-changelog-and-version.outputs.new-version }} published automatically"
       type: notification
-      notification: "Draft release created at ${{ needs.create-draft-release.outputs.release-url }}"
+      notification: "Release published at ${{ needs.create-and-publish-release.outputs.release-url }} - publishing to marketplaces is now in progress"
