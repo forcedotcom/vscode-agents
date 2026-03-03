@@ -4,7 +4,7 @@ import { Commands } from '../enums/commands';
 import { SfProject, ConfigAggregator, Org, SfError } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAgentNameFromPath } from './agentUtils';
+import { getAgentNameFromPath, getVersionNumberFromFileName } from './agentUtils';
 import { Logger } from '../utils/logger';
 
 export const registerActivateAgentCommand = () => {
@@ -60,15 +60,22 @@ export const registerActivateAgentCommand = () => {
       const project = SfProject.getInstance();
       const agentName = await getAgentNameFromPath(targetPath);
 
+      // Determine if we're activating a specific version
+      let versionNumber: number | undefined;
+      if (stat.type === vscode.FileType.File && fileName.endsWith('.botVersion-meta.xml')) {
+        versionNumber = getVersionNumberFromFileName(fileName);
+      }
+
       // Clear previous output
       logger.clear();
 
-      logger.debug(`Activating agent ${agentName}...`);
+      const versionInfo = versionNumber !== undefined ? ` (version ${versionNumber})` : '';
+      logger.debug(`Activating agent ${agentName}${versionInfo}...`);
 
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Activating agent: ${agentName}...`,
+          title: `Activating agent: ${agentName}${versionInfo}...`,
           cancellable: false
         },
         async () => {
@@ -86,9 +93,11 @@ export const registerActivateAgentCommand = () => {
             apiNameOrId: agentName
           });
 
-          await agent.activate();
+          await agent.activate(versionNumber);
 
-          vscode.window.showInformationMessage(`Agent "${agentName}" was activated successfully.`);
+          vscode.window.showInformationMessage(
+            `Agent "${agentName}"${versionInfo} was activated successfully.`
+          );
         }
       );
     } catch (error) {

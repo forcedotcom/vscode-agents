@@ -263,8 +263,15 @@
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@1"
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/",
+          "group": "agent@1",
+          "title": "%salesforcedx-vscode-agents.activateAgentLatest%"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "group": "agent@1",
+          "title": "%salesforcedx-vscode-agents.activateAgentVersion%"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
@@ -295,8 +302,15 @@
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
-          "group": "agent@1"
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/",
+          "group": "agent@1",
+          "title": "%salesforcedx-vscode-agents.activateAgentLatest%"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "group": "agent@1",
+          "title": "%salesforcedx-vscode-agents.activateAgentVersion%"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
