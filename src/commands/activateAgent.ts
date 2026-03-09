@@ -7,8 +7,8 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath, getVersionNumberFromFileName } from './agentUtils';
 import { Logger } from '../utils/logger';
 
-export const registerActivateAgentCommand = () => {
-  return vscode.commands.registerCommand(Commands.activateAgent, async (uri?: vscode.Uri) => {
+// Shared handler for all activate agent commands
+const activateAgentHandler = async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.activateAgent;
@@ -107,5 +107,19 @@ export const registerActivateAgentCommand = () => {
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_activation_failed', errorMessage);
     }
-  });
+};
+
+// Register the original command (for backwards compatibility and command palette)
+export const registerActivateAgentCommand = () => {
+  return vscode.commands.registerCommand(Commands.activateAgent, activateAgentHandler);
+};
+
+// Register the "Activate Latest Version" command (for .bot-meta.xml files)
+export const registerActivateAgentLatestCommand = () => {
+  return vscode.commands.registerCommand(Commands.activateAgentLatest, activateAgentHandler);
+};
+
+// Register the "Activate This Version" command (for .botVersion-meta.xml files)
+export const registerActivateAgentVersionCommand = () => {
+  return vscode.commands.registerCommand(Commands.activateAgentVersion, activateAgentHandler);
 };
