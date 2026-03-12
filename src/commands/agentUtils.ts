@@ -18,6 +18,16 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 /**
+ * Extracts the version number from a botVersion filename.
+ * For example, 'v1.botVersion-meta.xml' returns 1, 'v31.botVersion-meta.xml' returns 31.
+ * Returns undefined if the filename doesn't match the pattern.
+ */
+export function getVersionNumberFromFileName(fileName: string): number | undefined {
+  const match = fileName.match(/^v(\d+)\.botVersion-meta\.xml$/);
+  return match ? parseInt(match[1], 10) : undefined;
+}
+
+/**
  * Gets the agent name from a directory path or file path.
  * Handles both file selections and directory selections.
  */

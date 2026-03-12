@@ -4,11 +4,11 @@ import { Commands } from '../enums/commands';
 import { SfProject, ConfigAggregator, Org, SfError } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAgentNameFromPath } from './agentUtils';
+import { getAgentNameFromPath, getVersionNumberFromFileName } from './agentUtils';
 import { Logger } from '../utils/logger';
 
-export const registerActivateAgentCommand = () => {
-  return vscode.commands.registerCommand(Commands.activateAgent, async (uri?: vscode.Uri) => {
+// Shared handler for all activate agent commands
+const activateAgentHandler = async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.activateAgent;
@@ -60,15 +60,22 @@ export const registerActivateAgentCommand = () => {
       const project = SfProject.getInstance();
       const agentName = await getAgentNameFromPath(targetPath);
 
+      // Determine if we're activating a specific version
+      let versionNumber: number | undefined;
+      if (stat.type === vscode.FileType.File && fileName.endsWith('.botVersion-meta.xml')) {
+        versionNumber = getVersionNumberFromFileName(fileName);
+      }
+
       // Clear previous output
       logger.clear();
 
-      logger.debug(`Activating agent ${agentName}...`);
+      const versionInfo = versionNumber !== undefined ? ` (version ${versionNumber})` : '';
+      logger.debug(`Activating agent ${agentName}${versionInfo}...`);
 
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Activating agent: ${agentName}...`,
+          title: `Activating agent: ${agentName}${versionInfo}...`,
           cancellable: false
         },
         async () => {
@@ -86,9 +93,11 @@ export const registerActivateAgentCommand = () => {
             apiNameOrId: agentName
           });
 
-          await agent.activate();
+          await agent.activate(versionNumber);
 
-          vscode.window.showInformationMessage(`Agent "${agentName}" was activated successfully.`);
+          vscode.window.showInformationMessage(
+            `Agent "${agentName}"${versionInfo} was activated successfully.`
+          );
         }
       );
     } catch (error) {
@@ -98,5 +107,19 @@ export const registerActivateAgentCommand = () => {
       vscode.window.showErrorMessage(errorMessage);
       telemetryService.sendException('agent_activation_failed', errorMessage);
     }
-  });
+};
+
+// Register the original command (for backwards compatibility and command palette)
+export const registerActivateAgentCommand = () => {
+  return vscode.commands.registerCommand(Commands.activateAgent, activateAgentHandler);
+};
+
+// Register the "Activate Latest Version" command (for .bot-meta.xml files)
+export const registerActivateAgentLatestCommand = () => {
+  return vscode.commands.registerCommand(Commands.activateAgentLatest, activateAgentHandler);
+};
+
+// Register the "Activate This Version" command (for .botVersion-meta.xml files)
+export const registerActivateAgentVersionCommand = () => {
+  return vscode.commands.registerCommand(Commands.activateAgentVersion, activateAgentHandler);
 };
