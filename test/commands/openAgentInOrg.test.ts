@@ -60,7 +60,7 @@ describe('registerOpenAgentInOrgCommand', () => {
     expect(progressSpy).toHaveBeenCalled();
     expect(projectSpy).toHaveBeenCalled();
     expect(quickPickSpy).toHaveBeenCalledWith(['Agent1', 'Agent2'], { placeHolder: 'Agent name (type to search)' });
-    expect(sync).toHaveBeenCalledWith('sf', ['org', 'open', 'agent', '--name', [{ title: 'Agent1' }]]);
+    expect(sync).toHaveBeenCalledWith('sf', ['org', 'open', 'agent', '--api-name', [{ title: 'Agent1' }]]);
   });
 
   it('shows error message when command fails', async () => {
@@ -96,7 +96,9 @@ describe('registerOpenAgentInOrgCommand', () => {
     await commandSpy.mock.calls[0][1]();
 
     expect(errorMessageSpy).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Couldn't find any agents in the current DX project/));
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/\[error\].*Couldn't find any agents in the current DX project/)
+    );
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
       expect.stringMatching(/\[debug\].*Suggestion: Retrieve your agent metadata/)
     );
@@ -123,6 +125,6 @@ describe('registerOpenAgentInOrgCommand', () => {
 
     expect(agentUtils.getAgentNameFromPath).toHaveBeenCalledWith('/path/to/AgentFromPath.agent');
     expect(quickPickSpy).not.toHaveBeenCalled(); // Should not show picker
-    expect(sync).toHaveBeenCalledWith('sf', ['org', 'open', 'agent', '--name', 'AgentFromPath']);
+    expect(sync).toHaveBeenCalledWith('sf', ['org', 'open', 'agent', '--api-name', 'AgentFromPath']);
   });
 });

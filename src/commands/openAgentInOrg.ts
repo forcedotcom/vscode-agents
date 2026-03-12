@@ -54,7 +54,7 @@ export const registerOpenAgentInOrgCommand = () => {
       },
       async progress => {
         progress.report({ message: 'Opening agent in the default org...' });
-        const result = sync('sf', ['org', 'open', 'agent', '--name', agentName]);
+        const result = sync('sf', ['org', 'open', 'agent', '--api-name', agentName]);
         if (result.status !== 0) {
           vscode.window.showErrorMessage(`Unable to open agent: ${result.stderr.toString()}`);
           telemetryService.sendException('sf_command_failed', `stderr: ${result.stderr.toString()}`);
