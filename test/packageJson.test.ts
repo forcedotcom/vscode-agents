@@ -90,6 +90,42 @@ describe('package.json', () => {
       });
     });
 
+    describe('explorer context menus for activate/deactivate', () => {
+      const explorerContext = packageJson.contributes.menus['explorer/context'];
+
+      const activateMenu = explorerContext.find(
+        (menu: any) => menu.command === 'salesforcedx-vscode-agents.activateAgent'
+      );
+      const deactivateMenu = explorerContext.find(
+        (menu: any) => menu.command === 'salesforcedx-vscode-agents.deactivateAgent'
+      );
+
+      it('should show activate on .bot-meta.xml files', () => {
+        expect(activateMenu?.when).toContain('.bot-meta\\.xml');
+      });
+
+      it('should show activate on .botVersion-meta.xml files', () => {
+        expect(activateMenu?.when).toContain('.botVersion-meta\\.xml');
+      });
+
+      it('should show activate on .genAiPlannerBundle files', () => {
+        expect(activateMenu?.when).toContain('.genAiPlannerBundle');
+      });
+
+      it('should show activate on folders under bots/', () => {
+        expect(activateMenu?.when).toMatch(/explorerResourceIsFolder.*bots/);
+      });
+
+      it('should show activate on folders under botVersions/', () => {
+        expect(activateMenu?.when).toMatch(/explorerResourceIsFolder.*botVersions/);
+      });
+
+      it('should show deactivate on folders under bots/ and botVersions/', () => {
+        expect(deactivateMenu?.when).toMatch(/explorerResourceIsFolder.*bots/);
+        expect(deactivateMenu?.when).toMatch(/explorerResourceIsFolder.*botVersions/);
+      });
+    });
+
     describe('restart submenu', () => {
       const restartSubmenu = packageJson.contributes.menus['sf.agent.combined.view.restartMenu'];
 
