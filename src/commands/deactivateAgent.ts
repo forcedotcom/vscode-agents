@@ -18,6 +18,7 @@ export const registerDeactivateAgentCommand = () => {
     try {
       const { conn, project } = await getConnectionAndProject();
       let agentName: string;
+      let apiNameOrId: string;
 
       if (!uri) {
         // Command palette - show activated agents
@@ -39,7 +40,8 @@ export const registerDeactivateAgentCommand = () => {
         if (!picked) {
           return;
         }
-        agentName = picked.agentId;
+        agentName = picked.label;
+        apiNameOrId = picked.agentId;
       } else {
         // Context menu - validate the file/directory
         const targetPath = uri.fsPath;
@@ -74,6 +76,7 @@ export const registerDeactivateAgentCommand = () => {
         }
 
         agentName = await getAgentNameFromPath(targetPath);
+        apiNameOrId = agentName;
       }
 
       const confirmation = await vscode.window.showWarningMessage(
@@ -99,7 +102,7 @@ export const registerDeactivateAgentCommand = () => {
           const agent = await Agent.init({
             connection: conn,
             project: project,
-            apiNameOrId: agentName
+            apiNameOrId
           });
 
           await agent.deactivate();

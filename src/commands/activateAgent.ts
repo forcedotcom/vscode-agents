@@ -7,9 +7,9 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath, getConnectionAndProject, getPublishedAgents } from './agentUtils';
 import { Logger } from '../utils/logger';
 
-type VersionPickerItem = vscode.QuickPickItem & { action: 'activate' | 'deactivate'; versionNumber?: number };
+export type VersionPickerItem = vscode.QuickPickItem & { action: 'activate' | 'deactivate'; versionNumber?: number };
 
-function buildVersionPickerItems(
+export function buildVersionPickerItems(
   versions: Array<{ VersionNumber: number; Status: string }>,
   options?: { includeDeactivate?: boolean }
 ): VersionPickerItem[] {
@@ -22,7 +22,7 @@ function buildVersionPickerItems(
       versionNumber: v.VersionNumber
     }));
 
-  if (options?.includeDeactivate !== false) {
+  if (options?.includeDeactivate === true) {
     items.push(
       { label: '', kind: vscode.QuickPickItemKind.Separator, action: 'deactivate' as const },
       { label: 'Deactivate', action: 'deactivate' as const }
@@ -69,6 +69,7 @@ export const registerActivateAgentCommand = () => {
     try {
       const { conn, project } = await getConnectionAndProject();
       let agentName: string;
+      let apiNameOrId: string;
 
       if (!uri) {
         // Command palette - show deactivated agents
@@ -90,7 +91,8 @@ export const registerActivateAgentCommand = () => {
         if (!picked) {
           return;
         }
-        agentName = picked.agentId;
+        agentName = picked.label;
+        apiNameOrId = picked.agentId;
       } else {
         // Context menu - validate the file/directory
         const targetPath = uri.fsPath;
@@ -125,6 +127,7 @@ export const registerActivateAgentCommand = () => {
         }
 
         agentName = await getAgentNameFromPath(targetPath);
+        apiNameOrId = agentName;
       }
 
       logger.clear();
@@ -132,7 +135,7 @@ export const registerActivateAgentCommand = () => {
       const agent = await Agent.init({
         connection: conn,
         project: project,
-        apiNameOrId: agentName
+        apiNameOrId
       });
 
       const botMetadata = await agent.getBotMetadata();

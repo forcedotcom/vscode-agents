@@ -12,6 +12,7 @@ import { AgentInitializer, getAgentStorageKey, getAgentSource } from './agentCom
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
 import { getJsonTokenColors } from '../utils/themeColors';
+import { buildVersionPickerItems } from '../commands/activateAgent';
 
 /**
  * Main orchestrator for the Agent Combined View Provider
@@ -346,18 +347,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const versionItems: (vscode.QuickPickItem & { action: 'activate' | 'deactivate'; versionNumber?: number })[] = [
-      ...cachedVersions
-        .sort((a, b) => b.VersionNumber - a.VersionNumber)
-        .map(v => ({
-          label: `Version ${v.VersionNumber}`,
-          description: v.Status === 'Active' ? '(Active)' : '',
-          action: 'activate' as const,
-          versionNumber: v.VersionNumber
-        })),
-      { label: '', kind: vscode.QuickPickItemKind.Separator, action: 'deactivate' as const },
-      { label: 'Deactivate', action: 'deactivate' as const }
-    ];
+    const versionItems = buildVersionPickerItems(cachedVersions, { includeDeactivate: true });
 
     const picked = await vscode.window.showQuickPick(versionItems, {
       placeHolder: 'Select a version to activate'
