@@ -16,15 +16,36 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
+import { Agent } from '@salesforce/agents';
 
-/**
- * Extracts the version number from a botVersion filename.
- * For example, 'v1.botVersion-meta.xml' returns 1, 'v31.botVersion-meta.xml' returns 31.
- * Returns undefined if the filename doesn't match the pattern.
- */
-export function getVersionNumberFromFileName(fileName: string): number | undefined {
-  const match = fileName.match(/^v(\d+)\.botVersion-meta\.xml$/);
-  return match ? parseInt(match[1], 10) : undefined;
+const UNSUPPORTED_AGENTS = ['Copilot_for_Salesforce'];
+
+export interface PublishedAgentInfo {
+  name: string;
+  id: string;
+  isActivated: boolean;
+}
+
+export async function getConnectionAndProject() {
+  const configAggregator = await ConfigAggregator.create();
+  const org = await Org.create({
+    aliasOrUsername: configAggregator.getPropertyValue<string>('target-org') ?? 'undefined'
+  });
+  return { conn: org.getConnection(), project: SfProject.getInstance() };
+}
+
+export async function getPublishedAgents(
+  conn: ReturnType<Org['getConnection']>
+): Promise<PublishedAgentInfo[]> {
+  const agents = await Agent.listRemote(conn);
+  return agents
+    .filter(a => !a.IsDeleted && !UNSUPPORTED_AGENTS.includes(a.DeveloperName))
+    .map(a => ({
+      name: a.DeveloperName,
+      id: a.Id,
+      isActivated: a.BotVersions.records.some(v => v.Status === 'Active' && !v.IsDeleted)
+    }));
 }
 
 /**
