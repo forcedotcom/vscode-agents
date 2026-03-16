@@ -28,7 +28,8 @@ jest.mock('vscode', () => ({
     file: (fsPath: string) => ({ fsPath })
   },
   ProgressLocation: { Notification: 1 },
-  FileType: { File: 1, Directory: 2 }
+  FileType: { File: 1, Directory: 2 },
+  QuickPickItemKind: { Separator: -1, Default: 0 }
 }));
 
 jest.mock('@salesforce/core', () => ({
@@ -187,7 +188,7 @@ describe('activateAgent command', () => {
     );
   });
 
-  it('auto-selects when only one version exists', async () => {
+  it('shows picker even with one version so deactivate is available', async () => {
     const mockActivate = jest.fn().mockResolvedValue({ VersionNumber: 1 });
     const mockAgent = {
       activate: mockActivate,
@@ -202,13 +203,19 @@ describe('activateAgent command', () => {
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
     setupOrgMocks();
 
+    quickPickSpy.mockResolvedValue({ label: 'Version 1', action: 'activate', versionNumber: 1 });
+
     const handler = registerAndGetHandler();
     const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
     await handler(uri);
 
-    expect(quickPickSpy).not.toHaveBeenCalled();
+    expect(quickPickSpy).toHaveBeenCalled();
+    const pickerItems = quickPickSpy.mock.calls[0][0];
+    expect(pickerItems).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'Version 1', action: 'activate' }),
+      expect.objectContaining({ label: 'Deactivate', action: 'deactivate' })
+    ]));
     expect(mockActivate).toHaveBeenCalledWith(1);
-    expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" v1 activated.');
   });
 
   it('shows version picker when multiple versions exist', async () => {
@@ -230,7 +237,7 @@ describe('activateAgent command', () => {
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
     setupOrgMocks();
 
-    quickPickSpy.mockResolvedValue({ label: 'Version 3', versionNumber: 3 });
+    quickPickSpy.mockResolvedValue({ label: 'Version 3', action: 'activate', versionNumber: 3 });
 
     const handler = registerAndGetHandler();
     const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
@@ -238,9 +245,10 @@ describe('activateAgent command', () => {
 
     expect(quickPickSpy).toHaveBeenCalledWith(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Version 3', description: '' }),
-        expect.objectContaining({ label: 'Version 2', description: '(Active)' }),
-        expect.objectContaining({ label: 'Version 1', description: '' })
+        expect.objectContaining({ label: 'Version 3', description: '', action: 'activate' }),
+        expect.objectContaining({ label: 'Version 2', description: '(Active)', action: 'activate' }),
+        expect.objectContaining({ label: 'Version 1', description: '', action: 'activate' }),
+        expect.objectContaining({ label: 'Deactivate', action: 'deactivate' })
       ]),
       expect.objectContaining({ placeHolder: 'Select a version to activate for "TestAgent"' })
     );
@@ -273,6 +281,64 @@ describe('activateAgent command', () => {
     await handler(uri);
 
     expect(mockActivate).not.toHaveBeenCalled();
+  });
+
+  it('deactivates agent when deactivate option is picked', async () => {
+    const mockDeactivate = jest.fn().mockResolvedValue({});
+    const mockAgent = {
+      activate: jest.fn(),
+      deactivate: mockDeactivate,
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: {
+          records: [
+            { VersionNumber: 1, Status: 'Active' },
+            { VersionNumber: 2, Status: 'Inactive' }
+          ]
+        }
+      })
+    };
+    (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
+    (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
+    setupOrgMocks();
+
+    quickPickSpy.mockResolvedValue({ label: 'Deactivate', action: 'deactivate' });
+
+    const handler = registerAndGetHandler();
+    const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
+    await handler(uri);
+
+    expect(mockDeactivate).toHaveBeenCalled();
+    expect(mockAgent.activate).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" was deactivated.');
+  });
+
+  it('always shows deactivate option in version picker', async () => {
+    const mockAgent = {
+      activate: jest.fn().mockResolvedValue({ VersionNumber: 1 }),
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: {
+          records: [
+            { VersionNumber: 1, Status: 'Inactive' },
+            { VersionNumber: 2, Status: 'Inactive' }
+          ]
+        }
+      })
+    };
+    (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
+    (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
+    setupOrgMocks();
+
+    quickPickSpy.mockResolvedValue({ label: 'Version 1', action: 'activate', versionNumber: 1 });
+
+    const handler = registerAndGetHandler();
+    const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
+    await handler(uri);
+
+    const pickerItems = quickPickSpy.mock.calls[0][0];
+    const deactivateItem = pickerItems.find((item: any) => item.action === 'deactivate' && item.label === 'Deactivate');
+    expect(deactivateItem).toBeDefined();
   });
 
   it('shows error when no versions found', async () => {
@@ -312,12 +378,17 @@ describe('activateAgent command', () => {
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
     setupOrgMocks();
 
+    quickPickSpy.mockResolvedValue({ label: 'Version 2', action: 'activate', versionNumber: 2 });
+
     const handler = registerAndGetHandler();
     const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
     await handler(uri);
 
-    // Should auto-select since only one non-deleted version
-    expect(quickPickSpy).not.toHaveBeenCalled();
+    // Deleted version should not appear in picker
+    const pickerItems = quickPickSpy.mock.calls[0][0];
+    const versionItems = pickerItems.filter((item: any) => item.action === 'activate');
+    expect(versionItems).toHaveLength(1);
+    expect(versionItems[0].versionNumber).toBe(2);
     expect(mockActivate).toHaveBeenCalledWith(2);
   });
 });

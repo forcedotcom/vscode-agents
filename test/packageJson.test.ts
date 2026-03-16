@@ -64,6 +64,41 @@ describe('package.json', () => {
         expect(resetCommand?.when).toContain('agentforceDX:agentSelected');
       });
 
+      it('should show activate agent button when no agent is selected', () => {
+        const activateNoSelection = viewTitleMenus.find(
+          (menu: any) => menu.command === 'salesforcedx-vscode-agents.activateAgent'
+        );
+
+        expect(activateNoSelection).toBeDefined();
+        expect(activateNoSelection?.when).toContain('!agentforceDX:agentSelected');
+        expect(activateNoSelection?.when).toContain('!agentforceDX:sessionActive');
+        expect(activateNoSelection?.when).toContain('!agentforceDX:sessionStarting');
+        expect(activateNoSelection?.group).toBe('navigation@0');
+      });
+
+      it('should show create agent button before activate agent button', () => {
+        const createAgent = viewTitleMenus.find(
+          (menu: any) => menu.command === 'salesforcedx-vscode-agents.createAiAuthoringBundle'
+        );
+        const activateAgent = viewTitleMenus.find(
+          (menu: any) => menu.command === 'salesforcedx-vscode-agents.activateAgent'
+        );
+
+        expect(createAgent?.group).toBe('navigation@-1');
+        expect(activateAgent?.group).toBe('navigation@0');
+      });
+
+      it('should show activate version button only when a published agent is selected', () => {
+        const activateVersion = viewTitleMenus.find(
+          (menu: any) => menu.command === 'sf.agent.combined.view.activateVersion'
+        );
+
+        expect(activateVersion).toBeDefined();
+        expect(activateVersion?.when).toContain('agentforceDX:agentSelected');
+        expect(activateVersion?.when).toContain('!agentforceDX:isScriptAgent');
+        expect(activateVersion?.when).toContain('!agentforceDX:sessionActive');
+      });
+
       it('should ensure restart and refresh agent commands are mutually exclusive', () => {
         const restartSubmenu = viewTitleMenus.find((menu: any) => menu.submenu === 'sf.agent.combined.view.restartMenu');
         const refreshAgentsCommand = viewTitleMenus.find(
