@@ -66,8 +66,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const disposables: vscode.Disposable[] = [];
     disposables.push(commands.registerOpenAgentInOrgCommand());
     disposables.push(commands.registerActivateAgentCommand());
-    disposables.push(commands.registerActivateAgentLatestCommand());
-    disposables.push(commands.registerActivateAgentVersionCommand());
     disposables.push(commands.registerDeactivateAgentCommand());
     disposables.push(commands.registerValidateAgentCommand());
     disposables.push(commands.registerPreviewAgentCommand());
@@ -461,6 +459,17 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.debugStop', async () => {
       await provider.toggleDebugMode();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.activateVersion', async () => {
+      try {
+        await provider.activateVersion();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to activate version: ${errorMessage}`);
+      }
     })
   );
 

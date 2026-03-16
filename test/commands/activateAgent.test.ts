@@ -3,7 +3,7 @@ const vscode = require('vscode') as typeof import('vscode');
 import { Commands } from '../../src/enums/commands';
 import { registerActivateAgentCommand } from '../../src/commands/activateAgent';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
-import { getAgentNameFromPath } from '../../src/commands/agentUtils';
+import { getAgentNameFromPath, getConnectionAndProject, getPublishedAgents } from '../../src/commands/agentUtils';
 import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 
@@ -11,6 +11,7 @@ jest.mock('vscode', () => ({
   window: {
     showErrorMessage: jest.fn(),
     showInformationMessage: jest.fn(),
+    showQuickPick: jest.fn(),
     withProgress: jest.fn(),
     activeTextEditor: undefined
   },
@@ -20,7 +21,8 @@ jest.mock('vscode', () => ({
     }
   },
   commands: {
-    registerCommand: jest.fn()
+    registerCommand: jest.fn(),
+    executeCommand: jest.fn().mockResolvedValue(undefined)
   },
   Uri: {
     file: (fsPath: string) => ({ fsPath })
@@ -40,20 +42,24 @@ jest.mock('@salesforce/core', () => ({
 
 jest.mock('@salesforce/agents', () => ({
   Agent: {
-    init: jest.fn()
-  }
+    init: jest.fn(),
+    listRemote: jest.fn()
+  },
+  ProductionAgent: jest.fn()
 }));
 
 jest.mock('../../src/commands/agentUtils', () => ({
   getAgentNameFromPath: jest.fn(),
   getAgentNameFromFile: jest.fn(),
-  getVersionNumberFromFileName: jest.requireActual('../../src/commands/agentUtils').getVersionNumberFromFileName
+  getConnectionAndProject: jest.fn(),
+  getPublishedAgents: jest.fn()
 }));
 
 describe('activateAgent command', () => {
   let registerSpy: jest.SpyInstance;
   let errorSpy: jest.SpyInstance;
   let infoSpy: jest.SpyInstance;
+  let quickPickSpy: jest.SpyInstance;
   let withProgressSpy: jest.SpyInstance;
   let telemetryMock: { sendCommandEvent: jest.Mock; sendException: jest.Mock };
   let channelMock: { appendLine: jest.Mock; showChannelOutput: jest.Mock; clear: jest.Mock };
@@ -62,6 +68,13 @@ describe('activateAgent command', () => {
     registerActivateAgentCommand();
     expect(registerSpy).toHaveBeenCalledWith(Commands.activateAgent, expect.any(Function));
     return registerSpy.mock.calls[0][1] as (uri?: vscodeTypes.Uri) => Promise<void>;
+  };
+
+  const mockConn = {};
+  const mockProject = {};
+
+  const setupOrgMocks = () => {
+    (getConnectionAndProject as jest.Mock).mockResolvedValue({ conn: mockConn, project: mockProject });
   };
 
   beforeEach(() => {
@@ -81,6 +94,7 @@ describe('activateAgent command', () => {
     registerSpy = jest.spyOn(vscode.commands, 'registerCommand');
     errorSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
     infoSpy = jest.spyOn(vscode.window, 'showInformationMessage').mockImplementation();
+    quickPickSpy = jest.spyOn(vscode.window, 'showQuickPick').mockImplementation();
     withProgressSpy = jest.spyOn(vscode.window, 'withProgress').mockImplementation(async (_opts, task) => {
       return task({ report: jest.fn() }, {} as vscodeTypes.CancellationToken);
     });
@@ -90,7 +104,6 @@ describe('activateAgent command', () => {
       get: () => undefined
     });
 
-    // Mock SfProject.getInstance
     (SfProject.getInstance as jest.Mock).mockReturnValue({});
   });
 
@@ -103,13 +116,58 @@ describe('activateAgent command', () => {
     expect(registerSpy).toHaveBeenCalledWith(Commands.activateAgent, expect.any(Function));
   });
 
-  it('shows an error when no file is selected', async () => {
+  it('shows deactivated agent picker when no file is selected', async () => {
+    setupOrgMocks();
+    const mockActivate = jest.fn().mockResolvedValue({ VersionNumber: 1 });
+    const mockAgent = {
+      activate: mockActivate,
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: {
+          records: [{ VersionNumber: 1, Status: 'Inactive' }]
+        }
+      })
+    };
+    (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
+    (getPublishedAgents as jest.Mock).mockResolvedValue([
+      { name: 'MyAgent', id: 'agent1', isActivated: false },
+      { name: 'ActiveAgent', id: 'agent2', isActivated: true }
+    ]);
+    quickPickSpy.mockResolvedValue({ label: 'MyAgent', agentId: 'agent1' });
+
     const handler = registerAndGetHandler();
     await handler();
-    expect(errorSpy).toHaveBeenCalledWith('No agent file or directory selected.');
+
+    // Should only show deactivated agents
+    expect(quickPickSpy).toHaveBeenCalledWith(
+      [expect.objectContaining({ label: 'MyAgent', agentId: 'agent1' })],
+      expect.objectContaining({ placeHolder: 'Select a deactivated agent to activate' })
+    );
+  });
+
+  it('shows message when no published agents found', async () => {
+    setupOrgMocks();
+    (getPublishedAgents as jest.Mock).mockResolvedValue([]);
+
+    const handler = registerAndGetHandler();
+    await handler();
+
+    expect(infoSpy).toHaveBeenCalledWith('No published agents found in the org.');
+  });
+
+  it('shows message when all agents are already active', async () => {
+    setupOrgMocks();
+    (getPublishedAgents as jest.Mock).mockResolvedValue([
+      { name: 'Agent1', id: 'agent1', isActivated: true }
+    ]);
+
+    const handler = registerAndGetHandler();
+    await handler();
+
+    expect(infoSpy).toHaveBeenCalledWith('All published agents are already active.');
   });
 
   it('validates unsupported file extensions', async () => {
+    setupOrgMocks();
     const handler = registerAndGetHandler();
     const uri = { fsPath: '/tmp/foo.txt' } as vscodeTypes.Uri;
     await handler(uri);
@@ -119,6 +177,7 @@ describe('activateAgent command', () => {
   });
 
   it('validates unsupported directories', async () => {
+    setupOrgMocks();
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.Directory });
     const handler = registerAndGetHandler();
     const uri = { fsPath: '/tmp/random-folder' } as vscodeTypes.Uri;
@@ -128,72 +187,137 @@ describe('activateAgent command', () => {
     );
   });
 
-  it('activates agent without version when called on .bot-meta.xml file', async () => {
-    const mockActivate = jest.fn().mockResolvedValue({});
+  it('auto-selects when only one version exists', async () => {
+    const mockActivate = jest.fn().mockResolvedValue({ VersionNumber: 1 });
     const mockAgent = {
-      activate: mockActivate
+      activate: mockActivate,
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: {
+          records: [{ VersionNumber: 1, Status: 'Inactive' }]
+        }
+      })
     };
     (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
     (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
-
-    const mockOrg = { getConnection: jest.fn().mockReturnValue({}) };
-    (Org.create as jest.Mock).mockResolvedValue(mockOrg);
-    (ConfigAggregator.create as jest.Mock).mockResolvedValue({
-      getPropertyValue: jest.fn().mockReturnValue('test-org')
-    });
+    setupOrgMocks();
 
     const handler = registerAndGetHandler();
     const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
     await handler(uri);
 
-    expect(mockActivate).toHaveBeenCalledWith(undefined);
-    expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" was activated successfully.');
+    expect(quickPickSpy).not.toHaveBeenCalled();
+    expect(mockActivate).toHaveBeenCalledWith(1);
+    expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" v1 activated.');
   });
 
-  it('activates agent with version number when called on .botVersion-meta.xml file', async () => {
-    const mockActivate = jest.fn().mockResolvedValue({});
+  it('shows version picker when multiple versions exist', async () => {
+    const mockActivate = jest.fn().mockResolvedValue({ VersionNumber: 3 });
     const mockAgent = {
-      activate: mockActivate
+      activate: mockActivate,
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: {
+          records: [
+            { VersionNumber: 1, Status: 'Inactive' },
+            { VersionNumber: 2, Status: 'Active' },
+            { VersionNumber: 3, Status: 'Inactive' }
+          ]
+        }
+      })
     };
     (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
     (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
+    setupOrgMocks();
 
-    const mockOrg = { getConnection: jest.fn().mockReturnValue({}) };
-    (Org.create as jest.Mock).mockResolvedValue(mockOrg);
-    (ConfigAggregator.create as jest.Mock).mockResolvedValue({
-      getPropertyValue: jest.fn().mockReturnValue('test-org')
-    });
+    quickPickSpy.mockResolvedValue({ label: 'Version 3', versionNumber: 3 });
 
     const handler = registerAndGetHandler();
-    const uri = { fsPath: '/tmp/botVersions/TestAgent/v5.botVersion-meta.xml' } as vscodeTypes.Uri;
+    const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
     await handler(uri);
 
-    expect(mockActivate).toHaveBeenCalledWith(5);
-    expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" (version 5) was activated successfully.');
+    expect(quickPickSpy).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Version 3', description: '' }),
+        expect.objectContaining({ label: 'Version 2', description: '(Active)' }),
+        expect.objectContaining({ label: 'Version 1', description: '' })
+      ]),
+      expect.objectContaining({ placeHolder: 'Select a version to activate for "TestAgent"' })
+    );
+    expect(mockActivate).toHaveBeenCalledWith(3);
+    expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" v3 activated.');
   });
 
-  it('activates agent with version 0 when called on v0.botVersion-meta.xml file', async () => {
-    const mockActivate = jest.fn().mockResolvedValue({});
+  it('does nothing when user cancels version picker', async () => {
+    const mockActivate = jest.fn();
     const mockAgent = {
-      activate: mockActivate
+      activate: mockActivate,
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: {
+          records: [
+            { VersionNumber: 1, Status: 'Inactive' },
+            { VersionNumber: 2, Status: 'Active' }
+          ]
+        }
+      })
     };
     (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
     (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
     (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
+    setupOrgMocks();
 
-    const mockOrg = { getConnection: jest.fn().mockReturnValue({}) };
-    (Org.create as jest.Mock).mockResolvedValue(mockOrg);
-    (ConfigAggregator.create as jest.Mock).mockResolvedValue({
-      getPropertyValue: jest.fn().mockReturnValue('test-org')
-    });
+    quickPickSpy.mockResolvedValue(undefined);
 
     const handler = registerAndGetHandler();
-    const uri = { fsPath: '/tmp/botVersions/TestAgent/v0.botVersion-meta.xml' } as vscodeTypes.Uri;
+    const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
     await handler(uri);
 
-    expect(mockActivate).toHaveBeenCalledWith(0);
-    expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" (version 0) was activated successfully.');
+    expect(mockActivate).not.toHaveBeenCalled();
+  });
+
+  it('shows error when no versions found', async () => {
+    const mockAgent = {
+      activate: jest.fn(),
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: { records: [] }
+      })
+    };
+    (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
+    (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
+    setupOrgMocks();
+
+    const handler = registerAndGetHandler();
+    const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
+    await handler(uri);
+
+    expect(errorSpy).toHaveBeenCalledWith('No versions found for agent "TestAgent".');
+  });
+
+  it('filters out deleted versions', async () => {
+    const mockActivate = jest.fn().mockResolvedValue({ VersionNumber: 2 });
+    const mockAgent = {
+      activate: mockActivate,
+      getBotMetadata: jest.fn().mockResolvedValue({
+        BotVersions: {
+          records: [
+            { VersionNumber: 1, Status: 'Inactive', IsDeleted: true },
+            { VersionNumber: 2, Status: 'Inactive' }
+          ]
+        }
+      })
+    };
+    (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
+    (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
+    setupOrgMocks();
+
+    const handler = registerAndGetHandler();
+    const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
+    await handler(uri);
+
+    // Should auto-select since only one non-deleted version
+    expect(quickPickSpy).not.toHaveBeenCalled();
+    expect(mockActivate).toHaveBeenCalledWith(2);
   });
 });

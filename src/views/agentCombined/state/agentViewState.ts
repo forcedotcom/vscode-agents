@@ -23,6 +23,10 @@ export class AgentViewState {
   private _pendingStartAgentSource?: AgentSource;
   private _pendingSelectAgentId?: string;
 
+  // Version state
+  private _currentAgentActiveVersion?: number;
+  private _agentVersionsCache = new Map<string, Array<{ VersionNumber: number; Status: string }>>();
+
   // Mode state
   private _isApexDebuggingEnabled = false;
   private _isLiveMode = false;
@@ -102,6 +106,14 @@ export class AgentViewState {
     return this._pendingSelectAgentId;
   }
 
+  get currentAgentActiveVersion(): number | undefined {
+    return this._currentAgentActiveVersion;
+  }
+
+  get agentVersionsCache(): Map<string, Array<{ VersionNumber: number; Status: string }>> {
+    return this._agentVersionsCache;
+  }
+
   get isApexDebuggingEnabled(): boolean {
     return this._isApexDebuggingEnabled;
   }
@@ -153,6 +165,10 @@ export class AgentViewState {
     this._pendingStartAgentSource = value;
   }
 
+  set currentAgentActiveVersion(value: number | undefined) {
+    this._currentAgentActiveVersion = value;
+  }
+
   set pendingSelectAgentId(value: string | undefined) {
     this._pendingSelectAgentId = value;
   }
@@ -183,6 +199,7 @@ export class AgentViewState {
   async setAgentSelected(selected: boolean): Promise<void> {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:agentSelected', selected);
     if (!selected) {
+      this._currentAgentActiveVersion = undefined;
       await this.setResetAgentViewAvailable(false);
       await this.setSessionErrorState(false);
       await this.setConversationDataAvailable(false);
@@ -236,6 +253,7 @@ export class AgentViewState {
     this._sessionId = Date.now().toString();
     this._sessionAgentId = undefined;
     this._currentAgentName = undefined;
+    this._currentAgentActiveVersion = undefined;
     this._currentPlanId = undefined;
     this._currentUserMessage = undefined;
     this._pendingStartAgentId = undefined;

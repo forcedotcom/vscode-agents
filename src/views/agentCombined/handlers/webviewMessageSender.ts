@@ -62,11 +62,16 @@ export class WebviewMessageSender {
     this.postMessage('selectAgent', { agentId, forceRestart, agentSource });
   }
 
-  sendAvailableAgents(agents: Array<{ name: string; id: string; type: string }>, selectedAgentId?: string): void {
+  sendAvailableAgents(agents: Array<{ name: string; id: string; type: string; activeVersion?: number }>, selectedAgentId?: string): void {
     this.postMessage('availableAgents', {
       agents,
       selectedAgentId: selectedAgentId || this.state.currentAgentId
     });
+  }
+
+  // Agent version info
+  sendAgentVersionInfo(agentId: string, activeVersion?: number): void {
+    this.postMessage('agentVersionInfo', { agentId, activeVersion });
   }
 
   // History messages

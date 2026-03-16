@@ -257,9 +257,43 @@ export class WebviewMessageHandlers {
           };
         });
 
+      // Fetch versions for all published agents in parallel and cache them
+      const publishedAgents = mappedAgents.filter(a => a.type === AgentSource.PUBLISHED);
+      const versionMap = new Map<string, number>();
+      this.state.agentVersionsCache.clear();
+      if (publishedAgents.length > 0) {
+        const versionResults = await Promise.allSettled(
+          publishedAgents.map(async a => {
+            const agent = await Agent.init({ connection: conn, project, apiNameOrId: a.id });
+            const meta = await agent.getBotMetadata();
+            const versions = meta.BotVersions.records
+              .filter((v: { IsDeleted?: boolean }) => !v.IsDeleted)
+              .map((v: { VersionNumber: number; Status: string }) => ({
+                VersionNumber: v.VersionNumber,
+                Status: v.Status
+              }));
+            const active = versions.find((v: { Status: string }) => v.Status === 'Active');
+            return { id: a.id, versions, activeVersion: active?.VersionNumber as number | undefined };
+          })
+        );
+        for (const result of versionResults) {
+          if (result.status === 'fulfilled') {
+            this.state.agentVersionsCache.set(result.value.id, result.value.versions);
+            if (result.value.activeVersion !== undefined) {
+              versionMap.set(result.value.id, result.value.activeVersion);
+            }
+          }
+        }
+      }
+
+      const agentsWithVersions = mappedAgents.map(a => ({
+        ...a,
+        activeVersion: versionMap.get(a.id)
+      }));
+
       // Use pendingSelectAgentId if available (e.g., after creating a new agent), otherwise currentAgentId
       const selectAgentId = this.state.pendingSelectAgentId || this.state.currentAgentId;
-      this.messageSender.sendAvailableAgents(mappedAgents, selectAgentId);
+      this.messageSender.sendAvailableAgents(agentsWithVersions, selectAgentId);
 
       // Update context for command visibility
       await this.state.setHasAgents(mappedAgents.length > 0);
@@ -331,6 +365,7 @@ export class WebviewMessageHandlers {
     } else {
       this.state.currentAgentId = undefined;
       this.state.currentAgentSource = undefined;
+      this.state.currentAgentActiveVersion = undefined;
       await this.state.setAgentSelected(false);
       await this.state.setConversationDataAvailable(false);
     }
@@ -346,5 +381,18 @@ export class WebviewMessageHandlers {
 
   private async handleGetInitialLiveMode(): Promise<void> {
     this.messageSender.sendLiveMode(this.state.isLiveMode);
+  }
+
+  async fetchAndSendActiveVersion(agentId: string): Promise<void> {
+    const conn = await CoreExtensionService.getDefaultConnection();
+    const project = SfProject.getInstance();
+    const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+    const botMetadata = await agent.getBotMetadata();
+    const activeRecord = botMetadata.BotVersions.records.find(
+      (v: { Status: string; IsDeleted?: boolean }) => v.Status === 'Active' && !v.IsDeleted
+    );
+    const activeVersion = activeRecord?.VersionNumber as number | undefined;
+    this.state.currentAgentActiveVersion = activeVersion;
+    this.messageSender.sendAgentVersionInfo(agentId, activeVersion);
   }
 }

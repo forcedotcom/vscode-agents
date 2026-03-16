@@ -316,6 +316,81 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * Re-fetches and sends the active version info for the currently selected agent.
+   * Used to sync the panel after an external activation (e.g. context menu).
+   */
+  public refreshActiveVersion(): void {
+    const agentId = this.state.currentAgentId;
+    if (!agentId || !this.messageHandlers) {
+      return;
+    }
+    this.messageHandlers.fetchAndSendActiveVersion(agentId).catch(err => {
+      console.error('Error refreshing active version:', err);
+    });
+  }
+
+  /**
+   * Shows a QuickPick to select and activate a version for the current published agent
+   */
+  public async activateVersion(): Promise<void> {
+    const agentId = this.state.currentAgentId;
+    if (!agentId) {
+      vscode.window.showErrorMessage('No agent selected.');
+      return;
+    }
+
+    // Use cached versions from the agent list load for instant picker
+    const cachedVersions = this.state.agentVersionsCache.get(agentId);
+    if (!cachedVersions || cachedVersions.length === 0) {
+      vscode.window.showErrorMessage('No versions found for this agent.');
+      return;
+    }
+
+    const items = cachedVersions
+      .sort((a, b) => b.VersionNumber - a.VersionNumber)
+      .map(v => ({
+        label: `Version ${v.VersionNumber}`,
+        description: v.Status === 'Active' ? '(Active)' : '',
+        versionNumber: v.VersionNumber
+      }));
+
+    const picked = await vscode.window.showQuickPick(items, {
+      placeHolder: 'Select a version to activate'
+    });
+
+    if (!picked) {
+      return;
+    }
+
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `Activating version ${picked.versionNumber}...`,
+        cancellable: false
+      },
+      async () => {
+        const conn = await CoreExtensionService.getDefaultConnection();
+        const project = SfProject.getInstance();
+        const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+        const result = await agent.activate(picked.versionNumber);
+        const activatedVersion = result.VersionNumber as number;
+
+        // Update cache to reflect the new active version
+        const versions = this.state.agentVersionsCache.get(agentId);
+        if (versions) {
+          for (const v of versions) {
+            v.Status = v.VersionNumber === activatedVersion ? 'Active' : 'Inactive';
+          }
+        }
+
+        this.state.currentAgentActiveVersion = activatedVersion;
+        this.messageSender.sendAgentVersionInfo(agentId, activatedVersion);
+        vscode.window.showInformationMessage(`Version ${activatedVersion} activated.`);
+      }
+    );
+  }
+
+  /**
    * Saves the current conversation session, always prompting for a location.
    * The folder picker defaults to the previously selected directory.
    */

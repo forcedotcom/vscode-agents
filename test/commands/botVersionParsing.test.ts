@@ -16,7 +16,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { getAgentNameFromFile, getAgentNameFromPath, getVersionNumberFromFileName } from '../../src/commands/agentUtils';
+import { getAgentNameFromFile, getAgentNameFromPath } from '../../src/commands/agentUtils';
 
 describe('Bot Version File System Lookup', () => {
   beforeEach(() => {
@@ -141,48 +141,6 @@ describe('Bot Version File System Lookup', () => {
   it('should return filename as-is for unrecognized file types', async () => {
     const botName = await getAgentNameFromFile('someRandomFile.xml', path.join('path', 'to', 'someRandomFile.xml'));
     expect(botName).toBe('someRandomFile.xml');
-  });
-});
-
-describe('Version Number Extraction', () => {
-  it('should extract version number from v0.botVersion-meta.xml', () => {
-    const version = getVersionNumberFromFileName('v0.botVersion-meta.xml');
-    expect(version).toBe(0);
-  });
-
-  it('should extract version number from v1.botVersion-meta.xml', () => {
-    const version = getVersionNumberFromFileName('v1.botVersion-meta.xml');
-    expect(version).toBe(1);
-  });
-
-  it('should extract version number from v31.botVersion-meta.xml', () => {
-    const version = getVersionNumberFromFileName('v31.botVersion-meta.xml');
-    expect(version).toBe(31);
-  });
-
-  it('should extract version number from v123.botVersion-meta.xml', () => {
-    const version = getVersionNumberFromFileName('v123.botVersion-meta.xml');
-    expect(version).toBe(123);
-  });
-
-  it('should return undefined for non-botVersion files', () => {
-    const version = getVersionNumberFromFileName('TestAgent.bot-meta.xml');
-    expect(version).toBeUndefined();
-  });
-
-  it('should return undefined for incorrectly formatted version files', () => {
-    const version = getVersionNumberFromFileName('v1.bot-meta.xml');
-    expect(version).toBeUndefined();
-  });
-
-  it('should return undefined for files without version prefix', () => {
-    const version = getVersionNumberFromFileName('1.botVersion-meta.xml');
-    expect(version).toBeUndefined();
-  });
-
-  it('should return undefined for files with non-numeric version', () => {
-    const version = getVersionNumberFromFileName('vABC.botVersion-meta.xml');
-    expect(version).toBeUndefined();
   });
 });
 

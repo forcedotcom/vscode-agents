@@ -134,6 +134,18 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
       }
     );
 
+    const disposeVersionInfo = vscodeApi.onMessage(
+      'agentVersionInfo',
+      (data: { agentId: string; activeVersion?: number }) => {
+        if (data.agentId === selectedAgentRef.current) {
+          // Update the activeVersion on the matching agent in the list
+          setAgents(prev =>
+            prev.map(a => (a.id === data.agentId ? { ...a, activeVersion: data.activeVersion } : a))
+          );
+        }
+      }
+    );
+
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
       setIsLoading(true);
       // Clear the current selection and messages
@@ -148,6 +160,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
 
     return () => {
       disposeAvailableAgents();
+      disposeVersionInfo();
       disposeRefreshAgents();
     };
     // Note: selectedAgent is accessed via ref to avoid re-fetching agents on every selection change
@@ -183,7 +196,9 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     selectedAgentInfo?.type === AgentSource.SCRIPT
       ? 'Agent Script'
       : selectedAgentInfo?.type === AgentSource.PUBLISHED
-        ? 'Published'
+        ? selectedAgentInfo.activeVersion !== undefined
+          ? `Published, v${selectedAgentInfo.activeVersion}`
+          : 'Published'
         : null;
 
   // Notify parent of selected agent info changes
