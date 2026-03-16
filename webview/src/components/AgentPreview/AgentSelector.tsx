@@ -272,7 +272,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
             <optgroup label="Published">
               {publishedAgents.map(agent => (
                 <option key={agent.id} value={agent.id}>
-                  {agent.name}
+                  {agent.name}{agent.activeVersion !== undefined ? ` (v${agent.activeVersion})` : ''}
                 </option>
               ))}
             </optgroup>

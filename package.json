@@ -181,6 +181,11 @@
         {
           "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
           "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView && !agentforceDX:agentSelected",
+          "group": "navigation@-1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView && !agentforceDX:agentSelected",
           "group": "navigation@0"
         },
         {
@@ -512,7 +517,8 @@
       },
       {
         "command": "salesforcedx-vscode-agents.activateAgent",
-        "title": "%salesforcedx-vscode-agents.activateAgent%"
+        "title": "%salesforcedx-vscode-agents.activateAgent%",
+        "icon": "$(versions)"
       },
       {
         "command": "sf.agent.combined.view.activateVersion",
