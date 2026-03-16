@@ -7,14 +7,29 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath, getConnectionAndProject, getPublishedAgents } from './agentUtils';
 import { Logger } from '../utils/logger';
 
-function buildVersionPickerItems(versions: Array<{ VersionNumber: number; Status: string }>) {
-  return versions
+type VersionPickerItem = vscode.QuickPickItem & { action: 'activate' | 'deactivate'; versionNumber?: number };
+
+function buildVersionPickerItems(
+  versions: Array<{ VersionNumber: number; Status: string }>,
+  options?: { includeDeactivate?: boolean }
+): VersionPickerItem[] {
+  const items: VersionPickerItem[] = versions
     .sort((a, b) => b.VersionNumber - a.VersionNumber)
     .map(v => ({
       label: `Version ${v.VersionNumber}`,
       description: v.Status === 'Active' ? '(Active)' : '',
+      action: 'activate' as const,
       versionNumber: v.VersionNumber
     }));
+
+  if (options?.includeDeactivate !== false) {
+    items.push(
+      { label: '', kind: vscode.QuickPickItemKind.Separator, action: 'deactivate' as const },
+      { label: 'Deactivate', action: 'deactivate' as const }
+    );
+  }
+
+  return items;
 }
 
 async function activateWithProgress(
@@ -37,8 +52,8 @@ async function activateWithProgress(
         `Agent "${agentName}" v${result.VersionNumber} activated.`
       );
 
-      // Refresh the panel's agent list to reflect the new activation state
-      void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents');
+      // Refresh the panel's agent list and select the activated agent
+      void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', agentName);
     }
   );
 }
@@ -130,22 +145,31 @@ export const registerActivateAgentCommand = () => {
         return;
       }
 
-      let selectedVersion: number;
-
-      if (versions.length === 1) {
-        selectedVersion = versions[0].VersionNumber;
-      } else {
-        const picked = await vscode.window.showQuickPick(
-          buildVersionPickerItems(versions),
-          { placeHolder: `Select a version to activate for "${agentName}"` }
-        );
-        if (!picked) {
-          return;
-        }
-        selectedVersion = picked.versionNumber;
+      const picked = await vscode.window.showQuickPick(
+        buildVersionPickerItems(versions, { includeDeactivate: !!uri }),
+        { placeHolder: `Select a version to activate for "${agentName}"` }
+      );
+      if (!picked) {
+        return;
       }
 
-      await activateWithProgress(agent, agentName, selectedVersion, logger);
+      if (picked.action === 'deactivate') {
+        logger.debug(`Deactivating agent ${agentName}...`);
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Deactivating agent: ${agentName}...`,
+            cancellable: false
+          },
+          async () => {
+            await agent.deactivate();
+            vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated.`);
+            void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', agentName);
+          }
+        );
+      } else {
+        await activateWithProgress(agent, agentName, picked.versionNumber!, logger);
+      }
     } catch (error) {
       const sfError = SfError.wrap(error);
       const errorMessage = `Failed to activate agent: ${sfError.message}`;

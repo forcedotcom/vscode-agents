@@ -346,19 +346,55 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const items = cachedVersions
-      .sort((a, b) => b.VersionNumber - a.VersionNumber)
-      .map(v => ({
-        label: `Version ${v.VersionNumber}`,
-        description: v.Status === 'Active' ? '(Active)' : '',
-        versionNumber: v.VersionNumber
-      }));
+    const versionItems: (vscode.QuickPickItem & { action: 'activate' | 'deactivate'; versionNumber?: number })[] = [
+      ...cachedVersions
+        .sort((a, b) => b.VersionNumber - a.VersionNumber)
+        .map(v => ({
+          label: `Version ${v.VersionNumber}`,
+          description: v.Status === 'Active' ? '(Active)' : '',
+          action: 'activate' as const,
+          versionNumber: v.VersionNumber
+        })),
+      { label: '', kind: vscode.QuickPickItemKind.Separator, action: 'deactivate' as const },
+      { label: 'Deactivate', action: 'deactivate' as const }
+    ];
 
-    const picked = await vscode.window.showQuickPick(items, {
+    const picked = await vscode.window.showQuickPick(versionItems, {
       placeHolder: 'Select a version to activate'
     });
 
     if (!picked) {
+      return;
+    }
+
+    if (picked.action === 'deactivate') {
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Deactivating agent...',
+          cancellable: false
+        },
+        async () => {
+          const conn = await CoreExtensionService.getDefaultConnection();
+          const project = SfProject.getInstance();
+          const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+          await agent.deactivate();
+
+          // Update cache
+          const versions = this.state.agentVersionsCache.get(agentId);
+          if (versions) {
+            for (const v of versions) {
+              v.Status = 'Inactive';
+            }
+          }
+
+          this.state.currentAgentActiveVersion = undefined;
+          this.state.pendingSelectAgentId = agentId;
+          this.messageSender.sendAgentVersionInfo(agentId, undefined);
+          this.messageSender.sendRefreshAgents();
+          vscode.window.showInformationMessage('Agent deactivated.');
+        }
+      );
       return;
     }
 
@@ -372,7 +408,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
         const conn = await CoreExtensionService.getDefaultConnection();
         const project = SfProject.getInstance();
         const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
-        const result = await agent.activate(picked.versionNumber);
+        const result = await agent.activate(picked.versionNumber!);
         const activatedVersion = result.VersionNumber as number;
 
         // Update cache to reflect the new active version
@@ -385,6 +421,7 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
 
         this.state.currentAgentActiveVersion = activatedVersion;
         this.messageSender.sendAgentVersionInfo(agentId, activatedVersion);
+        this.messageSender.sendRefreshAgents();
         vscode.window.showInformationMessage(`Version ${activatedVersion} activated.`);
       }
     );
