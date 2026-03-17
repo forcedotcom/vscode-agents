@@ -125,7 +125,7 @@ export class AgentTestRunner {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const commandName = 'RunAgentTest';
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
     try {
       const configAggregator = await ConfigAggregator.create();
       const lifecycle = await Lifecycle.getInstance();
@@ -203,7 +203,7 @@ export class AgentTestRunner {
       void Lifecycle.getInstance().emit('AGENT_TEST_POLLING_EVENT', { status: 'ERROR' });
       this.testOutline.getTestGroup(test.name)?.updateOutcome('ERROR', true);
       channelService.appendLine(`Error running test: ${error.message}`);
-      telemetryService.sendException(error.name, error.message);
+      telemetryService?.sendException(error.name, error.message);
     }
   }
 

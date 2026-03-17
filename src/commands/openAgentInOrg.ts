@@ -13,7 +13,7 @@ export const registerOpenAgentInOrgCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.openAgentInOrg;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     let agentName: string | undefined;
 
@@ -42,7 +42,7 @@ export const registerOpenAgentInOrgCommand = () => {
       agentName = await vscode.window.showQuickPick(agents, { placeHolder: 'Agent name (type to search)' });
 
       if (!agentName) {
-        telemetryService.sendException('no_agent_selected', 'No Agent selected');
+        telemetryService?.sendException('no_agent_selected', 'No Agent selected');
         return;
       }
     }
@@ -57,7 +57,7 @@ export const registerOpenAgentInOrgCommand = () => {
         const result = sync('sf', ['org', 'open', 'agent', '--api-name', agentName]);
         if (result.status !== 0) {
           vscode.window.showErrorMessage(`Unable to open agent: ${result.stderr.toString()}`);
-          telemetryService.sendException('sf_command_failed', `stderr: ${result.stderr.toString()}`);
+          telemetryService?.sendException('sf_command_failed', `stderr: ${result.stderr.toString()}`);
         } else {
           vscode.window.showInformationMessage('Agent was opened successfully in the default org.');
         }

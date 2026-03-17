@@ -30,14 +30,14 @@ export const registerValidateAgentCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.validateAgent;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file path from the context menu
     const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
 
     if (!filePath) {
       vscode.window.showErrorMessage('No .agent file selected.');
-      telemetryService.sendException('validateAgent_failed', 'No .agent file selected.');
+      telemetryService?.sendException('validateAgent_failed', 'No .agent file selected.');
       return;
     }
 
@@ -132,7 +132,7 @@ export const registerValidateAgentCommand = () => {
 
           // Show error message for unexpected errors
           vscode.window.showErrorMessage(`Agent validation failed: ${sfError.message}`);
-          telemetryService.sendException('validateAgent_failed', sfError.message);
+          telemetryService?.sendException('validateAgent_failed', sfError.message);
         }
       }
     );

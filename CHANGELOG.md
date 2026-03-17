@@ -1,3 +1,9 @@
+# [1.9.0](https://github.com/salesforcecli/vsode-agents/compare/v1.8.2...v1.9.0) (2026-03-17)
+
+### Features
+
+- add graceful degradation when extension dependencies unavailable ([1e360cf](https://github.com/salesforcecli/vsode-agents/commit/1e360cff056e9364daf781fc1cc5866ee10ce2cc))
+
 ## [1.8.2](https://github.com/salesforcecli/vsode-agents/compare/v1.8.1...v1.8.2) (2026-03-02)
 
 ### Bug Fixes
