@@ -84,7 +84,9 @@
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {}",
     "reformat": "node scripts/reformat-with-prettier.js"
   },
-  "extensionDependencies": [],
+  "extensionDependencies": [
+    "salesforce.salesforcedx-vscode-core"
+  ],
   "activationEvents": [
     "workspaceContains:sfdx-project.json"
   ],
