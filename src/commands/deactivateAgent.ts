@@ -13,7 +13,7 @@ export const registerDeactivateAgentCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.deactivateAgent;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     try {
       const { conn, project } = await getConnectionAndProject();
@@ -117,7 +117,7 @@ export const registerDeactivateAgentCommand = () => {
       const errorMessage = `Failed to deactivate agent: ${sfError.message}`;
       logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
-      telemetryService.sendException('agent_deactivation_failed', errorMessage);
+      telemetryService?.sendException('agent_deactivation_failed', errorMessage);
     }
   });
 };

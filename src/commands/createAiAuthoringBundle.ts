@@ -114,7 +114,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.createAiAuthoringBundle;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Clear previous output
     logger.clear();
@@ -361,7 +361,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       const errorMessage = `Failed to generate agent: ${sfError.message}`;
       logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
-      telemetryService.sendException('createAiAuthoringBundle_failed', errorMessage);
+      telemetryService?.sendException('createAiAuthoringBundle_failed', errorMessage);
     }
   });
 };
