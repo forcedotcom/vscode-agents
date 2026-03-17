@@ -73,29 +73,43 @@ describe('CoreExtensionService', () => {
   });
 
   afterEach(() => {
-    // Reset the initialized state
+    // Reset the initialized state and service instances
     (CoreExtensionService as any).initialized = false;
+    (CoreExtensionService as any).channelService = undefined;
+    (CoreExtensionService as any).testChannelService = undefined;
+    (CoreExtensionService as any).telemetryService = undefined;
+    (CoreExtensionService as any).workspaceContext = undefined;
     jest.restoreAllMocks();
   });
 
-  it('should throw error if core extension is not found', async () => {
+  it('should gracefully handle when core extension is not found', async () => {
     (extensions.getExtension as jest.Mock).mockReturnValue(null);
-    await expect(CoreExtensionService.loadDependencies(mockContext)).rejects.toThrow(CORE_EXTENSION_NOT_FOUND);
+    // Should not throw - will initialize fallback services
+    await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
+    // Channel service should be available (fallback)
+    expect(CoreExtensionService.getChannelService()).toBeDefined();
+    // Telemetry service should be undefined (no fallback)
+    expect(CoreExtensionService.getTelemetryService()).toBeUndefined();
   });
 
-  it('should throw error if core extension version is below minimum required', async () => {
+  it('should gracefully handle when core extension version is below minimum required', async () => {
     (satisfies as jest.Mock).mockReturnValue(false);
-    await expect(CoreExtensionService.loadDependencies(mockContext)).rejects.toThrow();
+    // Should not throw - will initialize fallback services
+    await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
   });
 
-  it('should throw error if ChannelService is not found', async () => {
+  it('should gracefully handle when ChannelService is not found', async () => {
     delete (mockExtension.exports.services as any).ChannelService;
-    await expect(CoreExtensionService.loadDependencies(mockContext)).rejects.toThrow(CHANNEL_SERVICE_NOT_FOUND);
+    // Should not throw - will use fallback ColoredChannelService
+    await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
+    expect(CoreExtensionService.getChannelService()).toBeDefined();
   });
 
-  it('should throw error if TelemetryService is not found', async () => {
+  it('should gracefully handle when TelemetryService is not found', async () => {
     delete (mockExtension.exports.services as any).TelemetryService;
-    await expect(CoreExtensionService.loadDependencies(mockContext)).rejects.toThrow(TELEMETRY_SERVICE_NOT_FOUND);
+    // Should not throw - telemetry will just be undefined
+    await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
+    expect(CoreExtensionService.getTelemetryService()).toBeUndefined();
   });
 
   it('should return core extension version', () => {
@@ -106,12 +120,14 @@ describe('CoreExtensionService', () => {
     expect(CoreExtensionService.isAboveMinimumRequiredVersion('60.13.0', '60.14.0')).toBe(true);
   });
 
-  it('should throw error if getting channel service before initialization', () => {
+  it('should throw error if getting channel service before any initialization attempt', () => {
+    // getChannelService should throw only if service was never created at all
     expect(() => CoreExtensionService.getChannelService()).toThrow(NOT_INITIALIZED_ERROR);
   });
 
-  it('should throw error if getting telemetry service before initialization', () => {
-    expect(() => CoreExtensionService.getTelemetryService()).toThrow(NOT_INITIALIZED_ERROR);
+  it('should return undefined if getting telemetry service before initialization', () => {
+    // getTelemetryService now returns undefined instead of throwing
+    expect(CoreExtensionService.getTelemetryService()).toBeUndefined();
   });
 
   it('should initialize channel/ telemetry/ workspace services', async () => {
@@ -149,7 +165,7 @@ describe('CoreExtensionService', () => {
     expect(CoreExtensionService.isInitialized).toBe(true);
   });
 
-  it('should throw error if WorkspaceContext is not found', async () => {
+  it('should gracefully handle when WorkspaceContext is not found', async () => {
     const mockChannelService = { appendLine: jest.fn() };
     const mockTelemetryService = { sendCommandEvent: jest.fn(), initializeService: jest.fn() };
 
@@ -164,7 +180,8 @@ describe('CoreExtensionService', () => {
       }
     });
 
-    await expect(CoreExtensionService.loadDependencies(mockContext)).rejects.toThrow(WORKSPACE_CONTEXT_NOT_FOUND);
+    // Should not throw - will fall back to creating connection directly when needed
+    await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
   });
 
   it('should throw error when getting core extension version if extension not found', () => {
@@ -236,8 +253,11 @@ describe('CoreExtensionService', () => {
     expect(mockWorkspaceContext.getConnection).toHaveBeenCalled();
   });
 
-  it('should throw error when getting default connection before initialization', async () => {
-    await expect(CoreExtensionService.getDefaultConnection()).rejects.toThrow(NOT_INITIALIZED_ERROR);
+  it('should attempt to create connection directly when getting default connection before initialization', async () => {
+    // When not initialized, should try to create connection via ConfigAggregator
+    // This will fail in test environment without mocking, but error message will include
+    // both NOT_INITIALIZED_ERROR prefix and more specific info about what went wrong
+    await expect(CoreExtensionService.getDefaultConnection()).rejects.toThrow();
   });
 
   it('should not reinitialize if already initialized', async () => {

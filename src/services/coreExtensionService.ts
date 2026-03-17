@@ -20,7 +20,7 @@ import { ChannelService } from '../types';
 import { TelemetryService } from '../types/TelemetryService';
 import { CoreExtensionApi } from '../types/CoreExtension';
 import { WorkspaceContext } from '../types/WorkspaceContext';
-import { Connection } from '@salesforce/core';
+import { Connection, ConfigAggregator, Org } from '@salesforce/core';
 import { ColoredChannelService } from '../utils/coloredChannelService';
 
 export interface OrgChangeEvent {
@@ -48,13 +48,21 @@ export class CoreExtensionService {
 
   static async loadDependencies(context: ExtensionContext): Promise<void> {
     if (!CoreExtensionService.initialized) {
-      const coreExtensionApi = CoreExtensionService.validateCoreExtension();
+      try {
+        const coreExtensionApi = CoreExtensionService.validateCoreExtension();
 
-      CoreExtensionService.initializeChannelService(coreExtensionApi?.services.ChannelService);
-      CoreExtensionService.initializeTelemetryService(coreExtensionApi?.services.TelemetryService, context);
-      CoreExtensionService.initializeWorkspaceContext(coreExtensionApi?.services.WorkspaceContext);
+        CoreExtensionService.initializeChannelService(coreExtensionApi?.services.ChannelService);
+        CoreExtensionService.initializeTelemetryService(coreExtensionApi?.services.TelemetryService, context);
+        CoreExtensionService.initializeWorkspaceContext(coreExtensionApi?.services.WorkspaceContext);
 
-      CoreExtensionService.initialized = true;
+        CoreExtensionService.initialized = true;
+      } catch (error) {
+        console.warn('[CoreExtensionService] Failed to initialize core extension dependencies:', error);
+        // Initialize fallback services so extension can still function
+        CoreExtensionService.channelService = new ColoredChannelService('Agentforce DX');
+        CoreExtensionService.testChannelService = new ColoredChannelService('Agentforce DX Tests');
+        // Leave telemetryService and workspaceContext undefined - commands will handle gracefully
+      }
     }
   }
 
@@ -122,14 +130,16 @@ export class CoreExtensionService {
   }
 
   static getChannelService(): ChannelService {
-    if (CoreExtensionService.initialized) {
+    // Return channel service even if not fully initialized - we have a fallback
+    if (CoreExtensionService.channelService) {
       return CoreExtensionService.channelService;
     }
     throw new Error(NOT_INITIALIZED_ERROR);
   }
 
   static getTestChannelService(): ChannelService {
-    if (CoreExtensionService.initialized) {
+    // Return test channel service even if not fully initialized - we have a fallback
+    if (CoreExtensionService.testChannelService) {
       return CoreExtensionService.testChannelService;
     }
     throw new Error(NOT_INITIALIZED_ERROR);
@@ -139,14 +149,24 @@ export class CoreExtensionService {
     if (CoreExtensionService.initialized) {
       return await CoreExtensionService.workspaceContext.getConnection();
     }
-    throw new Error(NOT_INITIALIZED_ERROR);
+    // Fallback: create connection directly when core extension is not available
+    try {
+      const configAggregator = await ConfigAggregator.create();
+      const targetOrg = configAggregator.getPropertyValue<string>('target-org');
+      if (!targetOrg) {
+        throw new Error('No default org configured. Set a default org with: sf config set target-org=<username>');
+      }
+      const org = await Org.create({ aliasOrUsername: targetOrg });
+      return org.getConnection();
+    } catch (error) {
+      throw new Error(`${NOT_INITIALIZED_ERROR}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
-  static getTelemetryService(): TelemetryService {
-    if (CoreExtensionService.initialized) {
-      return CoreExtensionService.telemetryService;
-    }
-    throw new Error(NOT_INITIALIZED_ERROR);
+  static getTelemetryService(): TelemetryService | undefined {
+    // Return telemetry service if available, undefined otherwise
+    // Commands should check for undefined and skip telemetry calls
+    return CoreExtensionService.telemetryService;
   }
 
   static getOnOrgChangeEvent(): Event<OrgChangeEvent> {

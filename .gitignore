@@ -17,6 +17,9 @@ out/
 # Artifacts
 *.vsix
 
+# Integration test debug log (optional debug file)
+.afdx-activation-debug.log
+
 # Test files
 junit-*.xml
 *-tests.xml

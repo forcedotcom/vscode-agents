@@ -13,7 +13,7 @@ export const registerActivateAgentCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.activateAgent;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file or directory path from the context menu
     const targetPath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
@@ -96,7 +96,7 @@ export const registerActivateAgentCommand = () => {
       const errorMessage = `Failed to activate agent: ${sfError.message}`;
       logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
-      telemetryService.sendException('agent_activation_failed', errorMessage);
+      telemetryService?.sendException('agent_activation_failed', errorMessage);
     }
   });
 };
