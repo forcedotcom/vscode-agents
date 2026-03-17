@@ -84,12 +84,7 @@
     "vsix:install-insiders": "find ./ -name '*.vsix' -exec code-insiders --install-extension {}",
     "reformat": "node scripts/reformat-with-prettier.js"
   },
-  "extensionDependencies": [
-    "salesforce.salesforcedx-vscode-core",
-    "salesforce.salesforcedx-vscode-org",
-    "salesforce.salesforcedx-vscode-apex-replay-debugger",
-    "salesforce.agent-script-language-client"
-  ],
+  "extensionDependencies": [],
   "activationEvents": [
     "workspaceContains:sfdx-project.json"
   ],

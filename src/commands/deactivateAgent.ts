@@ -13,7 +13,7 @@ export const registerDeactivateAgentCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.deactivateAgent;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file or directory path from the context menu
     const targetPath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
@@ -107,7 +107,7 @@ export const registerDeactivateAgentCommand = () => {
       const errorMessage = `Failed to deactivate agent: ${sfError.message}`;
       logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
-      telemetryService.sendException('agent_deactivation_failed', errorMessage);
+      telemetryService?.sendException('agent_deactivation_failed', errorMessage);
     }
   });
 };

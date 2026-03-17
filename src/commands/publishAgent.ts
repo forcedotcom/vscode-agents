@@ -24,7 +24,7 @@ export const registerPublishAgentCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.publishAgent;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file path from the context menu
     const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
@@ -137,7 +137,7 @@ export const registerPublishAgentCommand = () => {
             progress.report({ message: 'Failed' });
 
             vscode.window.showErrorMessage(`Failed to publish agent: ${sfError.message}`);
-            telemetryService.sendException('agent_publish_failed', sfError.message);
+            telemetryService?.sendException('agent_publish_failed', sfError.message);
           }
         }
       );
@@ -146,7 +146,7 @@ export const registerPublishAgentCommand = () => {
       const errorMessage = `Failed to publish agent: ${sfError.message}`;
       logger.error(errorMessage, sfError);
       vscode.window.showErrorMessage(errorMessage);
-      telemetryService.sendException('agent_publish_failed', errorMessage);
+      telemetryService?.sendException('agent_publish_failed', errorMessage);
     }
   });
 };

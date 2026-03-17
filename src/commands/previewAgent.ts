@@ -13,7 +13,7 @@ export const registerPreviewAgentCommand = () => {
     const logger = new Logger(CoreExtensionService.getChannelService());
     const commandName = Commands.previewAgent;
     const hrstart = process.hrtime();
-    telemetryService.sendCommandEvent(commandName, hrstart, { commandName });
+    telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     // Get the file path from the context menu
     const filePath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
@@ -31,7 +31,7 @@ export const registerPreviewAgentCommand = () => {
       const provider = AgentCombinedViewProvider.getInstance();
       if (!provider) {
         vscode.window.showErrorMessage('Failed to get Agent Preview provider.');
-        telemetryService.sendException('previewAgent_failed', 'Failed to get Agent Preview provider.');
+        telemetryService?.sendException('previewAgent_failed', 'Failed to get Agent Preview provider.');
         return;
       }
 
@@ -107,7 +107,7 @@ export const registerPreviewAgentCommand = () => {
     } catch (e) {
       const sfError = SfError.wrap(e);
       logger.error('Error previewing the .agent file', sfError);
-      telemetryService.sendException('previewAgent_failed', sfError.message);
+      telemetryService?.sendException('previewAgent_failed', sfError.message);
     }
   });
 };
