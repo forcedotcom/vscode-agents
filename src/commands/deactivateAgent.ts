@@ -109,7 +109,7 @@ export const registerDeactivateAgentCommand = () => {
           vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
 
           // Refresh the panel's agent list to reflect the new deactivation state
-          void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', agentName);
+          void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents');
         }
       );
     } catch (error) {

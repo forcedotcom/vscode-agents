@@ -35,6 +35,7 @@ export function buildVersionPickerItems(
 async function activateWithProgress(
   agent: ProductionAgent,
   agentName: string,
+  agentId: string,
   versionNumber: number,
   logger: Logger
 ): Promise<void> {
@@ -53,7 +54,7 @@ async function activateWithProgress(
       );
 
       // Refresh the panel's agent list and select the activated agent
-      void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', agentName);
+      void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', agentId);
     }
   );
 }
@@ -72,21 +73,21 @@ export const registerActivateAgentCommand = () => {
       let apiNameOrId: string;
 
       if (!uri) {
-        // Command palette - show deactivated agents
+        // Command palette - show only deactivated agents
         const agents = await getPublishedAgents(conn);
         const deactivated = agents.filter(a => !a.isActivated);
 
         if (deactivated.length === 0) {
-          const msg = agents.length === 0
-            ? 'No published agents found in the org.'
-            : 'All published agents are already active.';
-          vscode.window.showInformationMessage(msg);
+          vscode.window.showInformationMessage('No deactivated agents found in the org.');
           return;
         }
 
         const picked = await vscode.window.showQuickPick(
-          deactivated.map(a => ({ label: a.name, agentId: a.id })),
-          { placeHolder: 'Select a deactivated agent to activate' }
+          deactivated.map(a => ({
+            label: a.name,
+            agentId: a.id
+          })),
+          { placeHolder: 'Select an agent to activate' }
         );
         if (!picked) {
           return;
@@ -139,6 +140,7 @@ export const registerActivateAgentCommand = () => {
       });
 
       const botMetadata = await agent.getBotMetadata();
+      const agentId = botMetadata.Id;
       const versions = botMetadata.BotVersions.records.filter(
         (v: { IsDeleted?: boolean }) => !v.IsDeleted
       );
@@ -149,7 +151,7 @@ export const registerActivateAgentCommand = () => {
       }
 
       const picked = await vscode.window.showQuickPick(
-        buildVersionPickerItems(versions, { includeDeactivate: !!uri }),
+        buildVersionPickerItems(versions, { includeDeactivate: true }),
         { placeHolder: `Select a version to activate for "${agentName}"` }
       );
       if (!picked) {
@@ -157,6 +159,15 @@ export const registerActivateAgentCommand = () => {
       }
 
       if (picked.action === 'deactivate') {
+        const confirmation = await vscode.window.showWarningMessage(
+          `Are you sure you want to deactivate agent "${agentName}"?`,
+          { modal: true },
+          'Deactivate'
+        );
+        if (confirmation !== 'Deactivate') {
+          return;
+        }
+
         logger.debug(`Deactivating agent ${agentName}...`);
         await vscode.window.withProgress(
           {
@@ -167,11 +178,11 @@ export const registerActivateAgentCommand = () => {
           async () => {
             await agent.deactivate();
             vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated.`);
-            void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents', agentName);
+            void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents');
           }
         );
       } else {
-        await activateWithProgress(agent, agentName, picked.versionNumber!, logger);
+        await activateWithProgress(agent, agentName, agentId, picked.versionNumber!, logger);
       }
     } catch (error) {
       const sfError = SfError.wrap(error);

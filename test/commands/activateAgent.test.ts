@@ -11,6 +11,7 @@ jest.mock('vscode', () => ({
   window: {
     showErrorMessage: jest.fn(),
     showInformationMessage: jest.fn(),
+    showWarningMessage: jest.fn(),
     showQuickPick: jest.fn(),
     withProgress: jest.fn(),
     activeTextEditor: undefined
@@ -61,6 +62,7 @@ describe('activateAgent command', () => {
   let errorSpy: jest.SpyInstance;
   let infoSpy: jest.SpyInstance;
   let quickPickSpy: jest.SpyInstance;
+  let warningSpy: jest.SpyInstance;
   let withProgressSpy: jest.SpyInstance;
   let telemetryMock: { sendCommandEvent: jest.Mock; sendException: jest.Mock };
   let channelMock: { appendLine: jest.Mock; showChannelOutput: jest.Mock; clear: jest.Mock };
@@ -96,6 +98,7 @@ describe('activateAgent command', () => {
     errorSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
     infoSpy = jest.spyOn(vscode.window, 'showInformationMessage').mockImplementation();
     quickPickSpy = jest.spyOn(vscode.window, 'showQuickPick').mockImplementation();
+    warningSpy = jest.spyOn(vscode.window, 'showWarningMessage').mockImplementation();
     withProgressSpy = jest.spyOn(vscode.window, 'withProgress').mockImplementation(async (_opts, task) => {
       return task({ report: jest.fn() }, {} as vscodeTypes.CancellationToken);
     });
@@ -117,12 +120,13 @@ describe('activateAgent command', () => {
     expect(registerSpy).toHaveBeenCalledWith(Commands.activateAgent, expect.any(Function));
   });
 
-  it('shows deactivated agent picker when no file is selected', async () => {
+  it('shows only deactivated agents in picker when no file is selected', async () => {
     setupOrgMocks();
     const mockActivate = jest.fn().mockResolvedValue({ VersionNumber: 1 });
     const mockAgent = {
       activate: mockActivate,
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: {
           records: [{ VersionNumber: 1, Status: 'Inactive' }]
         }
@@ -138,24 +142,26 @@ describe('activateAgent command', () => {
     const handler = registerAndGetHandler();
     await handler();
 
-    // Should only show deactivated agents
+    // Should show only deactivated agents
     expect(quickPickSpy).toHaveBeenCalledWith(
-      [expect.objectContaining({ label: 'MyAgent', agentId: 'agent1' })],
-      expect.objectContaining({ placeHolder: 'Select a deactivated agent to activate' })
+      [
+        expect.objectContaining({ label: 'MyAgent', agentId: 'agent1' })
+      ],
+      expect.objectContaining({ placeHolder: 'Select an agent to activate' })
     );
   });
 
-  it('shows message when no published agents found', async () => {
+  it('shows message when no deactivated agents found', async () => {
     setupOrgMocks();
     (getPublishedAgents as jest.Mock).mockResolvedValue([]);
 
     const handler = registerAndGetHandler();
     await handler();
 
-    expect(infoSpy).toHaveBeenCalledWith('No published agents found in the org.');
+    expect(infoSpy).toHaveBeenCalledWith('No deactivated agents found in the org.');
   });
 
-  it('shows message when all agents are already active', async () => {
+  it('shows message when only active agents exist', async () => {
     setupOrgMocks();
     (getPublishedAgents as jest.Mock).mockResolvedValue([
       { name: 'Agent1', id: 'agent1', isActivated: true }
@@ -164,7 +170,8 @@ describe('activateAgent command', () => {
     const handler = registerAndGetHandler();
     await handler();
 
-    expect(infoSpy).toHaveBeenCalledWith('All published agents are already active.');
+    expect(infoSpy).toHaveBeenCalledWith('No deactivated agents found in the org.');
+    expect(quickPickSpy).not.toHaveBeenCalled();
   });
 
   it('validates unsupported file extensions', async () => {
@@ -193,6 +200,7 @@ describe('activateAgent command', () => {
     const mockAgent = {
       activate: mockActivate,
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: {
           records: [{ VersionNumber: 1, Status: 'Inactive' }]
         }
@@ -223,6 +231,7 @@ describe('activateAgent command', () => {
     const mockAgent = {
       activate: mockActivate,
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: {
           records: [
             { VersionNumber: 1, Status: 'Inactive' },
@@ -254,6 +263,9 @@ describe('activateAgent command', () => {
     );
     expect(mockActivate).toHaveBeenCalledWith(3);
     expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" v3 activated.');
+    expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+      'sf.agent.combined.view.refreshAgents', '0Xx000000000001'
+    );
   });
 
   it('does nothing when user cancels version picker', async () => {
@@ -261,6 +273,7 @@ describe('activateAgent command', () => {
     const mockAgent = {
       activate: mockActivate,
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: {
           records: [
             { VersionNumber: 1, Status: 'Inactive' },
@@ -289,6 +302,7 @@ describe('activateAgent command', () => {
       activate: jest.fn(),
       deactivate: mockDeactivate,
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: {
           records: [
             { VersionNumber: 1, Status: 'Active' },
@@ -303,20 +317,58 @@ describe('activateAgent command', () => {
     setupOrgMocks();
 
     quickPickSpy.mockResolvedValue({ label: 'Deactivate', action: 'deactivate' });
+    warningSpy.mockResolvedValue('Deactivate');
 
     const handler = registerAndGetHandler();
     const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
     await handler(uri);
 
+    expect(warningSpy).toHaveBeenCalledWith(
+      'Are you sure you want to deactivate agent "TestAgent"?',
+      { modal: true },
+      'Deactivate'
+    );
     expect(mockDeactivate).toHaveBeenCalled();
     expect(mockAgent.activate).not.toHaveBeenCalled();
     expect(infoSpy).toHaveBeenCalledWith('Agent "TestAgent" was deactivated.');
+    expect(vscode.commands.executeCommand).toHaveBeenCalledWith(
+      'sf.agent.combined.view.refreshAgents'
+    );
+  });
+
+  it('does not deactivate when user cancels confirmation', async () => {
+    const mockDeactivate = jest.fn();
+    const mockAgent = {
+      activate: jest.fn(),
+      deactivate: mockDeactivate,
+      getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
+        BotVersions: {
+          records: [{ VersionNumber: 1, Status: 'Active' }]
+        }
+      })
+    };
+    (Agent.init as jest.Mock).mockResolvedValue(mockAgent);
+    (getAgentNameFromPath as jest.Mock).mockResolvedValue('TestAgent');
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({ type: vscode.FileType.File });
+    setupOrgMocks();
+
+    quickPickSpy.mockResolvedValue({ label: 'Deactivate', action: 'deactivate' });
+    warningSpy.mockResolvedValue(undefined); // User cancelled
+
+    const handler = registerAndGetHandler();
+    const uri = { fsPath: '/tmp/TestAgent.bot-meta.xml' } as vscodeTypes.Uri;
+    await handler(uri);
+
+    expect(warningSpy).toHaveBeenCalled();
+    expect(mockDeactivate).not.toHaveBeenCalled();
   });
 
   it('always shows deactivate option in version picker', async () => {
     const mockAgent = {
       activate: jest.fn().mockResolvedValue({ VersionNumber: 1 }),
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: {
           records: [
             { VersionNumber: 1, Status: 'Inactive' },
@@ -345,6 +397,7 @@ describe('activateAgent command', () => {
     const mockAgent = {
       activate: jest.fn(),
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: { records: [] }
       })
     };
@@ -365,6 +418,7 @@ describe('activateAgent command', () => {
     const mockAgent = {
       activate: mockActivate,
       getBotMetadata: jest.fn().mockResolvedValue({
+        Id: '0Xx000000000001',
         BotVersions: {
           records: [
             { VersionNumber: 1, Status: 'Inactive', IsDeleted: true },
