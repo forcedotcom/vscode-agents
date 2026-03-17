@@ -58,6 +58,12 @@
     "ts-jest": "^29.4.5",
     "typescript": "^5.9.3"
   },
+  "overrides": {
+    "mocha": {
+      "serialize-javascript": "^7.0.3",
+      "diff": "^8.0.3"
+    }
+  },
   "scripts": {
     "postinstall": "npm run install:combined",
     "install:combined": "cd webview && npm install",
