@@ -151,7 +151,7 @@ export const registerActivateAgentCommand = () => {
       }
 
       const picked = await vscode.window.showQuickPick(
-        buildVersionPickerItems(versions, { includeDeactivate: true }),
+        buildVersionPickerItems(versions, { includeDeactivate: !!uri }),
         { placeHolder: `Select a version to activate for "${agentName}"` }
       );
       if (!picked) {
