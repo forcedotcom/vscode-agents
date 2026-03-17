@@ -1,3 +1,9 @@
+## [1.9.1](https://github.com/salesforcecli/vsode-agents/compare/v1.9.0...v1.9.1) (2026-03-17)
+
+### Bug Fixes
+
+- fixes flag name for latest CLI ([e6a58b9](https://github.com/salesforcecli/vsode-agents/commit/e6a58b99c077ceebd69d7d2b76c619903743ce6d))
+
 # [1.9.0](https://github.com/salesforcecli/vsode-agents/compare/v1.8.2...v1.9.0) (2026-03-17)
 
 ### Features
