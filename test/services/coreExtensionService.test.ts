@@ -83,6 +83,7 @@ describe('CoreExtensionService', () => {
   });
 
   it('should gracefully handle when core extension is not found', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
     (extensions.getExtension as jest.Mock).mockReturnValue(null);
     // Should not throw - will initialize fallback services
     await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
@@ -90,26 +91,33 @@ describe('CoreExtensionService', () => {
     expect(CoreExtensionService.getChannelService()).toBeDefined();
     // Telemetry service should be undefined (no fallback)
     expect(CoreExtensionService.getTelemetryService()).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalled();
   });
 
   it('should gracefully handle when core extension version is below minimum required', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
     (satisfies as jest.Mock).mockReturnValue(false);
     // Should not throw - will initialize fallback services
     await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
+    expect(warnSpy).toHaveBeenCalled();
   });
 
   it('should gracefully handle when ChannelService is not found', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
     delete (mockExtension.exports.services as any).ChannelService;
     // Should not throw - will use fallback ColoredChannelService
     await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
     expect(CoreExtensionService.getChannelService()).toBeDefined();
+    expect(warnSpy).toHaveBeenCalled();
   });
 
   it('should gracefully handle when TelemetryService is not found', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
     delete (mockExtension.exports.services as any).TelemetryService;
     // Should not throw - telemetry will just be undefined
     await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
     expect(CoreExtensionService.getTelemetryService()).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalled();
   });
 
   it('should return core extension version', () => {
@@ -123,6 +131,26 @@ describe('CoreExtensionService', () => {
   it('should throw error if getting channel service before any initialization attempt', () => {
     // getChannelService should throw only if service was never created at all
     expect(() => CoreExtensionService.getChannelService()).toThrow(NOT_INITIALIZED_ERROR);
+  });
+
+  it('should throw error if getting test channel service before any initialization attempt', () => {
+    expect(() => CoreExtensionService.getTestChannelService()).toThrow(NOT_INITIALIZED_ERROR);
+  });
+
+  it('should return test channel service after initialization', async () => {
+    channelServiceInstance.getInstance = jest.fn().mockReturnValue({ appendLine: jest.fn() });
+
+    jest.spyOn(CoreExtensionService as any, 'validateCoreExtension').mockReturnValue({
+      services: {
+        ChannelService: channelServiceInstance,
+        TelemetryService: telemetryServiceInstance,
+        WorkspaceContext: workspaceContextInstance
+      }
+    });
+
+    await CoreExtensionService.loadDependencies(mockContext);
+    const service = CoreExtensionService.getTestChannelService();
+    expect(service).toBeDefined();
   });
 
   it('should return undefined if getting telemetry service before initialization', () => {
@@ -181,7 +209,9 @@ describe('CoreExtensionService', () => {
     });
 
     // Should not throw - will fall back to creating connection directly when needed
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
     await expect(CoreExtensionService.loadDependencies(mockContext)).resolves.not.toThrow();
+    expect(warnSpy).toHaveBeenCalled();
   });
 
   it('should throw error when getting core extension version if extension not found', () => {
