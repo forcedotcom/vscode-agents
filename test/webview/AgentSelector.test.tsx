@@ -92,7 +92,7 @@ describe('AgentSelector', () => {
     it('should group agents by type with Published first', async () => {
       const agents: AgentInfo[] = [
         { id: 'script1', name: 'ScriptAgent1', type: 'script' },
-        { id: 'pub1', name: 'PublishedAgent1', type: 'published' },
+        { id: 'pub1', name: 'PublishedAgent1', type: 'published', activeVersion: 3 },
         { id: 'script2', name: 'ScriptAgent2', type: 'script' },
         { id: 'pub2', name: 'PublishedAgent2', type: 'published' }
       ];
@@ -114,11 +114,30 @@ describe('AgentSelector', () => {
       expect(publishedGroup).toBeInTheDocument();
       expect(scriptGroup).toBeInTheDocument();
 
-      // Check that agents are in the correct groups
-      expect(screen.getByRole('option', { name: 'PublishedAgent1' })).toBeInTheDocument();
+      // Check that agents are in the correct groups with version info
+      expect(screen.getByRole('option', { name: 'PublishedAgent1 (v3)' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: 'PublishedAgent2' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: 'ScriptAgent1' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: 'ScriptAgent2' })).toBeInTheDocument();
+    });
+
+    it('should show active version in dropdown for published agents', async () => {
+      const agents: AgentInfo[] = [
+        { id: 'pub1', name: 'AgentA', type: 'published', activeVersion: 5 },
+        { id: 'pub2', name: 'AgentB', type: 'published' },
+        { id: 'pub3', name: 'AgentC', type: 'published', activeVersion: 1 }
+      ];
+
+      render(<AgentSelector selectedAgent="" onAgentChange={jest.fn()} />);
+
+      const availableAgentsHandler = messageHandlers.get('availableAgents');
+      availableAgentsHandler!({ agents });
+
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'AgentA (v5)' })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: 'AgentB' })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: 'AgentC (v1)' })).toBeInTheDocument();
+      });
     });
 
     it('should display only Published group when no script agents exist', async () => {

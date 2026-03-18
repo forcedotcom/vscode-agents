@@ -37,6 +37,7 @@ export interface AgentInfo {
   name: string;
   id: string;
   type: AgentSource;
+  activeVersion?: number;
 }
 
 export interface TraceHistoryMessageEntry {

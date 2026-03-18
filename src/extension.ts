@@ -462,5 +462,16 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
     })
   );
 
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.activateVersion', async () => {
+      try {
+        await provider.activateVersion();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to activate version: ${errorMessage}`);
+      }
+    })
+  );
+
   return vscode.Disposable.from(...disposables);
 };

@@ -180,6 +180,16 @@
         {
           "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
           "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView && !agentforceDX:agentSelected",
+          "group": "navigation@-1"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.activateAgent",
+          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView && !agentforceDX:agentSelected",
+          "group": "navigation@0"
+        },
+        {
+          "command": "sf.agent.combined.view.activateVersion",
+          "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:isScriptAgent && !agentforceDX:sessionActive && !agentforceDX:sessionStarting",
           "group": "navigation@0"
         },
         {
@@ -262,12 +272,12 @@
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || explorerResourceIsFolder && resourcePath =~ /bots\\/|botVersions\\//",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || explorerResourceIsFolder && resourcePath =~ /bots\\/|botVersions\\//",
           "group": "agent@1"
         },
         {
@@ -294,12 +304,12 @@
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || explorerResourceIsFolder && resourcePath =~ /bots\\/|botVersions\\//",
           "group": "agent@1"
         },
         {
           "command": "salesforcedx-vscode-agents.deactivateAgent",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || explorerResourceIsFolder && resourcePath =~ /bots\\/|botVersions\\//",
           "group": "agent@1"
         },
         {
@@ -363,11 +373,15 @@
       },
       {
         "command": "salesforcedx-vscode-agents.activateAgent",
-        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
+        "when": "sf:project_opened"
+      },
+      {
+        "command": "sf.agent.combined.view.activateVersion",
+        "when": "false"
       },
       {
         "command": "salesforcedx-vscode-agents.deactivateAgent",
-        "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/"
+        "when": "sf:project_opened"
       },
       {
         "command": "sf.agent.selectAndRun",
@@ -502,7 +516,13 @@
       },
       {
         "command": "salesforcedx-vscode-agents.activateAgent",
-        "title": "%salesforcedx-vscode-agents.activateAgent%"
+        "title": "%salesforcedx-vscode-agents.activateAgent%",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "sf.agent.combined.view.activateVersion",
+        "title": "Activate Version",
+        "icon": "$(versions)"
       },
       {
         "command": "salesforcedx-vscode-agents.deactivateAgent",

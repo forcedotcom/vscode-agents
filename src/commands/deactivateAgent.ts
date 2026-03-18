@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Commands } from '../enums/commands';
-import { SfProject, ConfigAggregator, Org, SfError } from '@salesforce/core';
+import { SfError } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAgentNameFromPath } from './agentUtils';
+import { getAgentNameFromPath, getConnectionAndProject, getPublishedAgents } from './agentUtils';
 import { Logger } from '../utils/logger';
 
 export const registerDeactivateAgentCommand = () => {
@@ -15,52 +15,70 @@ export const registerDeactivateAgentCommand = () => {
     const hrstart = process.hrtime();
     telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
-    // Get the file or directory path from the context menu
-    const targetPath = uri?.fsPath || vscode.window.activeTextEditor?.document.fileName;
-
-    if (!targetPath) {
-      vscode.window.showErrorMessage('No agent file or directory selected.');
-      return;
-    }
-
     try {
-      // Check if it's a valid target (file or directory)
-      const stat = await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
-      const fileName = path.basename(targetPath);
+      const { conn, project } = await getConnectionAndProject();
+      let agentName: string;
+      let apiNameOrId: string;
 
-      // Validate that this is a supported context
-      if (stat.type === vscode.FileType.File) {
-        if (
-          !fileName.endsWith('.bot-meta.xml') &&
-          !fileName.endsWith('.botVersion-meta.xml') &&
-          !fileName.endsWith('.genAiPlannerBundle')
-        ) {
-          vscode.window.showErrorMessage(
-            'You can use this command on only bot, botVersion, or genAiPlannerBundle metadata files.'
-          );
+      if (!uri) {
+        // Command palette - show activated agents
+        const agents = await getPublishedAgents(conn);
+        const activated = agents.filter(a => a.isActivated);
+
+        if (activated.length === 0) {
+          const msg = agents.length === 0
+            ? 'No published agents found in the org.'
+            : 'No published agents are currently active.';
+          vscode.window.showInformationMessage(msg);
           return;
         }
-      } else if (stat.type === vscode.FileType.Directory) {
-        // For directories, we accept them if they're in a bots or botVersions path structure
-        if (
-          !targetPath.includes('bots') &&
-          !targetPath.includes('botVersions') &&
-          !targetPath.includes('genAiPlannerBundles')
-        ) {
-          vscode.window.showErrorMessage(
-            'You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.'
-          );
+
+        const picked = await vscode.window.showQuickPick(
+          activated.map(a => ({ label: a.name, agentId: a.id })),
+          { placeHolder: 'Select an active agent to deactivate' }
+        );
+        if (!picked) {
           return;
         }
+        agentName = picked.label;
+        apiNameOrId = picked.agentId;
       } else {
-        vscode.window.showErrorMessage('Invalid file or directory selection.');
-        return;
+        // Context menu - validate the file/directory
+        const targetPath = uri.fsPath;
+        const stat = await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
+        const fileName = path.basename(targetPath);
+
+        if (stat.type === vscode.FileType.File) {
+          if (
+            !fileName.endsWith('.bot-meta.xml') &&
+            !fileName.endsWith('.botVersion-meta.xml') &&
+            !fileName.endsWith('.genAiPlannerBundle')
+          ) {
+            vscode.window.showErrorMessage(
+              'You can use this command on only bot, botVersion, or genAiPlannerBundle metadata files.'
+            );
+            return;
+          }
+        } else if (stat.type === vscode.FileType.Directory) {
+          if (
+            !targetPath.includes('bots') &&
+            !targetPath.includes('botVersions') &&
+            !targetPath.includes('genAiPlannerBundles')
+          ) {
+            vscode.window.showErrorMessage(
+              'You can use this command on only directories that contain bot, botVersion, or genAiPlannerBundle metadata files.'
+            );
+            return;
+          }
+        } else {
+          vscode.window.showErrorMessage('Invalid file or directory selection.');
+          return;
+        }
+
+        agentName = await getAgentNameFromPath(targetPath);
+        apiNameOrId = agentName;
       }
 
-      const project = SfProject.getInstance();
-      const agentName = await getAgentNameFromPath(targetPath);
-
-      // Confirm deactivation with user
       const confirmation = await vscode.window.showWarningMessage(
         `Are you sure you want to deactivate agent "${agentName}"?`,
         { modal: true },
@@ -71,9 +89,7 @@ export const registerDeactivateAgentCommand = () => {
         return;
       }
 
-      // Clear previous output
       logger.clear();
-
       logger.debug(`Deactivating agent ${agentName}...`);
 
       await vscode.window.withProgress(
@@ -83,23 +99,17 @@ export const registerDeactivateAgentCommand = () => {
           cancellable: false
         },
         async () => {
-          // Get connection to the org
-          const configAggregator = await ConfigAggregator.create();
-          const org = await Org.create({
-            aliasOrUsername: configAggregator.getPropertyValue<string>('target-org') ?? 'undefined'
-          });
-
-          // Create Agent instance and deactivate it
-          // For published agents, filePath is optional
           const agent = await Agent.init({
-            connection: org.getConnection(),
+            connection: conn,
             project: project,
-            apiNameOrId: agentName
+            apiNameOrId
           });
 
           await agent.deactivate();
-
           vscode.window.showInformationMessage(`Agent "${agentName}" was deactivated successfully.`);
+
+          // Refresh the panel's agent list to reflect the new deactivation state
+          void vscode.commands.executeCommand('sf.agent.combined.view.refreshAgents');
         }
       );
     } catch (error) {

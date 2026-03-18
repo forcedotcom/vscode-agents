@@ -12,6 +12,7 @@ import { AgentInitializer, getAgentStorageKey, getAgentSource } from './agentCom
 import { HistoryManager } from './agentCombined/history';
 import { ApexDebugManager } from './agentCombined/debugging';
 import { getJsonTokenColors } from '../utils/themeColors';
+import { buildVersionPickerItems } from '../commands/activateAgent';
 
 /**
  * Main orchestrator for the Agent Combined View Provider
@@ -313,6 +314,107 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
     const agentId = this.state.currentAgentId;
     const agentSource = this.state.currentAgentSource ?? (await getAgentSource(agentId));
     void this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
+  }
+
+  /**
+   * Re-fetches and sends the active version info for the currently selected agent.
+   * Used to sync the panel after an external activation (e.g. context menu).
+   */
+  public refreshActiveVersion(): void {
+    const agentId = this.state.currentAgentId;
+    if (!agentId || !this.messageHandlers) {
+      return;
+    }
+    this.messageHandlers.fetchAndSendActiveVersion(agentId).catch(err => {
+      console.error('Error refreshing active version:', err);
+    });
+  }
+
+  /**
+   * Shows a QuickPick to select and activate a version for the current published agent
+   */
+  public async activateVersion(): Promise<void> {
+    const agentId = this.state.currentAgentId;
+    if (!agentId) {
+      vscode.window.showErrorMessage('No agent selected.');
+      return;
+    }
+
+    // Use cached versions from the agent list load for instant picker
+    const cachedVersions = this.state.agentVersionsCache.get(agentId);
+    if (!cachedVersions || cachedVersions.length === 0) {
+      vscode.window.showErrorMessage('No versions found for this agent.');
+      return;
+    }
+
+    const versionItems = buildVersionPickerItems(cachedVersions, { includeDeactivate: true });
+
+    const picked = await vscode.window.showQuickPick(versionItems, {
+      placeHolder: 'Select a version to activate'
+    });
+
+    if (!picked) {
+      return;
+    }
+
+    if (picked.action === 'deactivate') {
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Deactivating agent...',
+          cancellable: false
+        },
+        async () => {
+          const conn = await CoreExtensionService.getDefaultConnection();
+          const project = SfProject.getInstance();
+          const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+          await agent.deactivate();
+
+          // Update cache
+          const versions = this.state.agentVersionsCache.get(agentId);
+          if (versions) {
+            for (const v of versions) {
+              v.Status = 'Inactive';
+            }
+          }
+
+          this.state.currentAgentActiveVersion = undefined;
+          this.state.pendingSelectAgentId = agentId;
+          this.messageSender.sendAgentVersionInfo(agentId, undefined);
+          this.messageSender.sendRefreshAgents();
+          vscode.window.showInformationMessage('Agent deactivated.');
+        }
+      );
+      return;
+    }
+
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `Activating version ${picked.versionNumber}...`,
+        cancellable: false
+      },
+      async () => {
+        const conn = await CoreExtensionService.getDefaultConnection();
+        const project = SfProject.getInstance();
+        const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+        const result = await agent.activate(picked.versionNumber!);
+        const activatedVersion = result.VersionNumber as number;
+
+        // Update cache to reflect the new active version
+        const versions = this.state.agentVersionsCache.get(agentId);
+        if (versions) {
+          for (const v of versions) {
+            v.Status = v.VersionNumber === activatedVersion ? 'Active' : 'Inactive';
+          }
+        }
+
+        this.state.currentAgentActiveVersion = activatedVersion;
+        this.messageSender.sendAgentVersionInfo(agentId, activatedVersion);
+        this.messageSender.sendRefreshAgents();
+        vscode.window.showInformationMessage(`Version ${activatedVersion} activated.`);
+      }
+    );
   }
 
   /**

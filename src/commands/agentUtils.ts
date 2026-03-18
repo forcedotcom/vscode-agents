@@ -16,6 +16,37 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
+import { Agent } from '@salesforce/agents';
+
+const UNSUPPORTED_AGENTS = ['Copilot_for_Salesforce'];
+
+export interface PublishedAgentInfo {
+  name: string;
+  id: string;
+  isActivated: boolean;
+}
+
+export async function getConnectionAndProject() {
+  const configAggregator = await ConfigAggregator.create();
+  const org = await Org.create({
+    aliasOrUsername: configAggregator.getPropertyValue<string>('target-org') ?? 'undefined'
+  });
+  return { conn: org.getConnection(), project: SfProject.getInstance() };
+}
+
+export async function getPublishedAgents(
+  conn: ReturnType<Org['getConnection']>
+): Promise<PublishedAgentInfo[]> {
+  const agents = await Agent.listRemote(conn);
+  return agents
+    .filter(a => !a.IsDeleted && !UNSUPPORTED_AGENTS.includes(a.DeveloperName))
+    .map(a => ({
+      name: a.DeveloperName,
+      id: a.Id,
+      isActivated: a.BotVersions.records.some(v => v.Status === 'Active' && !v.IsDeleted)
+    }));
+}
 
 /**
  * Gets the agent name from a directory path or file path.
