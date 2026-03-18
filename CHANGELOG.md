@@ -12,6 +12,20 @@
 - add palette picker for deactivate command ([b04b90d](https://github.com/salesforcecli/vsode-agents/commit/b04b90d3fdec41a6806ae5f5f3dedcdefeea1ada))
 - consolidate activate agent into single command with version picker ([2850eb1](https://github.com/salesforcecli/vsode-agents/commit/2850eb135eba945367340bad105cf9e7f436ffbf))
 
+# [1.10.0](https://github.com/salesforcecli/vsode-agents/compare/v1.9.1...v1.10.0) (2026-03-18)
+
+### Bug Fixes
+
+- activate specific version ([236a716](https://github.com/salesforcecli/vsode-agents/commit/236a716df5ffe22739ab5e72b352124bcf195df7))
+- show only deactivated agents in activate command palette ([7edebd7](https://github.com/salesforcecli/vsode-agents/commit/7edebd74b0f0e8fc0d176ba44a5d506b1ef7cdbd))
+
+### Features
+
+- add activate toolbar button when no agent selected and show version in dropdown ([cc1699b](https://github.com/salesforcecli/vsode-agents/commit/cc1699bf3e32c95cbc4c79b06d0a4c6ed501e0ab))
+- add deactivate option to version picker and improve post-action refresh ([a9b3251](https://github.com/salesforcecli/vsode-agents/commit/a9b32516f5522b58dda83cae477f984717e8761b))
+- add palette picker for deactivate command ([b04b90d](https://github.com/salesforcecli/vsode-agents/commit/b04b90d3fdec41a6806ae5f5f3dedcdefeea1ada))
+- consolidate activate agent into single command with version picker ([2850eb1](https://github.com/salesforcecli/vsode-agents/commit/2850eb135eba945367340bad105cf9e7f436ffbf))
+
 ## [1.9.1](https://github.com/salesforcecli/vsode-agents/compare/v1.9.0...v1.9.1) (2026-03-17)
 
 ### Bug Fixes
