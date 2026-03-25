@@ -71,6 +71,16 @@ describe('registerOpenAgentInOrgCommand', () => {
     expect(errorMessageSpy).toHaveBeenCalledWith('Unable to open agent: Error opening agent');
   });
 
+  it('handles exception when sf CLI cannot be executed', async () => {
+    (sync as jest.Mock).mockImplementation(() => {
+      throw new Error('spawn sf ENOENT');
+    });
+    registerOpenAgentInOrgCommand();
+    await commandSpy.mock.calls[0][1]();
+
+    expect(errorMessageSpy).toHaveBeenCalledWith('Failed to execute sf CLI: spawn sf ENOENT');
+  });
+
   it('handles error when getting agent name from path', async () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     jest.spyOn(agentUtils, 'getAgentNameFromPath').mockRejectedValue(new Error('Invalid path'));
