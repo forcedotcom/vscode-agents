@@ -235,7 +235,7 @@ describe('validateAgent', () => {
         ])
       );
 
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed with 2 error(s).' });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Validation failed with 2 error(s)' });
       expect(executeCommandSpy).toHaveBeenCalledWith('workbench.action.problems.focus');
       expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(
         Commands.validateAgent,

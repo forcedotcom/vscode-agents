@@ -180,12 +180,12 @@ describe('publishAgent', () => {
         expect.stringMatching(/\[debug\].*Metadata retrieved successfully/)
       );
       expect(infoMessageSpy).toHaveBeenCalledWith('Agent "TestAgent" was published successfully.');
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Initializing agent...', increment: 0 });
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Validating agent...', increment: 20 });
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Publishing agent...', increment: 50 });
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata...', increment: 70 });
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved successfully', increment: 90 });
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Agent published successfully.', increment: 100 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Initializing', increment: 0 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Validating', increment: 20 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Publishing', increment: 50 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata', increment: 70 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved', increment: 90 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Published successfully', increment: 100 });
       expect(lifecycleMock.removeAllListeners).toHaveBeenCalledWith('scopedPreRetrieve');
       expect(lifecycleMock.removeAllListeners).toHaveBeenCalledWith('scopedPostRetrieve');
       expect(fakeTelemetryInstance.sendCommandEvent).toHaveBeenCalledWith(
@@ -233,7 +233,7 @@ describe('publishAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\t\d+\. \[ParserError\]/));
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\t\d+\. \[LexerError\]/));
       expect(progressReportSpy).toHaveBeenCalledWith({
-        message: 'Validation failed with 2 error(s).'
+        message: 'Validation failed with 2 error(s)'
       });
       expect(errorMessageSpy).toHaveBeenCalledWith(
         'Agent validation failed with 2 error(s). See the Problems panel for details.'
@@ -264,7 +264,7 @@ describe('publishAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringMatching(/\[error\].*Details: Publish failed: Connection timeout/)
       );
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed' });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Publish failed' });
       expect(errorMessageSpy).toHaveBeenCalledWith('Failed to publish agent: Publish failed: Connection timeout');
       expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith(
         'agent_publish_failed',
@@ -298,7 +298,7 @@ describe('publishAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringMatching(/\[error\].*SOAP API does not support JWT-based access tokens/)
       );
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Failed' });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Publish failed' });
       expect(errorMessageSpy).toHaveBeenCalledWith(
         expect.stringContaining('Failed to publish agent: SOAP API does not support JWT-based access tokens')
       );
@@ -373,8 +373,8 @@ describe('publishAgent', () => {
       expect(lifecycleMock.on).toHaveBeenCalledWith('scopedPostRetrieve', expect.any(Function));
 
       // Verify progress updates from lifecycle events
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata...', increment: 70 });
-      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved successfully', increment: 90 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Retrieving metadata', increment: 70 });
+      expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Metadata retrieved', increment: 90 });
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringMatching(/\[debug\].*Retrieving metadata from org/)
       );
