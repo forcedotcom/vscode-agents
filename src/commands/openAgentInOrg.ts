@@ -69,7 +69,9 @@ export const registerOpenAgentInOrgCommand = () => {
         } catch (error) {
           // Handle cases where the sf CLI command itself fails to execute (not installed, not in PATH, etc.)
           const errorMessage = error instanceof Error ? error.message : String(error);
-          vscode.window.showErrorMessage(`Failed to execute sf CLI: ${errorMessage}`);
+          vscode.window.showErrorMessage(
+            `Failed to execute sf CLI: try running this command directly in a terminal: "sf org open agent --api-name ${agentName}"`
+          );
           telemetryService?.sendException('sf_command_execution_failed', errorMessage);
         }
       }
