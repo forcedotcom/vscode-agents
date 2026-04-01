@@ -54,7 +54,7 @@ export const registerPublishAgentCommand = () => {
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Publishing agent: ${fileName}...`,
+          title: `Publish: ${fileName}`,
           cancellable: false
         },
         async progress => {
@@ -63,7 +63,7 @@ export const registerPublishAgentCommand = () => {
             const connection = await CoreExtensionService.getDefaultConnection();
 
             // Initialize agent instance using Agent.init()
-            progress.report({ message: 'Initializing agent...', increment: 0 });
+            progress.report({ message: 'Initializing', increment: 0 });
             // Extract just the name (basename) from the directory containing the .agent file
             const aabDirectory = path.resolve(path.dirname(filePath));
             const aabName = path.basename(aabDirectory);
@@ -74,7 +74,7 @@ export const registerPublishAgentCommand = () => {
             });
 
             // Step 1: Validate the agent first
-            progress.report({ message: 'Validating agent...', increment: 20 });
+            progress.report({ message: 'Validating', increment: 20 });
             const validateResponse = await agent.compile();
 
             // Check if validation failed
@@ -93,7 +93,7 @@ export const registerPublishAgentCommand = () => {
                 }
               });
 
-              progress.report({ message: `Validation failed with ${validateResponse.errors.length} error(s).` });
+              progress.report({ message: `Validation failed with ${validateResponse.errors.length} error(s)` });
 
               vscode.window.showErrorMessage(
                 `Agent validation failed with ${validateResponse.errors.length} error(s). See the Problems panel for details.`
@@ -102,18 +102,18 @@ export const registerPublishAgentCommand = () => {
             }
 
             // Step 2: Publish the agent
-            progress.report({ message: 'Publishing agent...', increment: 50 });
+            progress.report({ message: 'Publishing', increment: 50 });
 
             const lifecycle = Lifecycle.getInstance();
 
             // Register event listeners
             lifecycle.on('scopedPreRetrieve', async () => {
-              progress.report({ message: 'Retrieving metadata...', increment: 70 });
+              progress.report({ message: 'Retrieving metadata', increment: 70 });
               logger.debug('Retrieving metadata from org...');
             });
 
             lifecycle.on('scopedPostRetrieve', async () => {
-              progress.report({ message: 'Metadata retrieved successfully', increment: 90 });
+              progress.report({ message: 'Metadata retrieved', increment: 90 });
               logger.debug('Metadata retrieved successfully.');
             });
 
@@ -128,13 +128,13 @@ export const registerPublishAgentCommand = () => {
               lifecycle.removeAllListeners('scopedPostRetrieve');
             }
 
-            progress.report({ message: 'Agent published successfully.', increment: 100 });
+            progress.report({ message: 'Published successfully', increment: 100 });
             vscode.window.showInformationMessage(`Agent "${fileName}" was published successfully.`);
           } catch (publishError) {
             const sfError = SfError.wrap(publishError);
             logger.error('Agent publish failed', sfError);
 
-            progress.report({ message: 'Failed' });
+            progress.report({ message: 'Publish failed' });
 
             vscode.window.showErrorMessage(`Failed to publish agent: ${sfError.message}`);
             telemetryService?.sendException('agent_publish_failed', sfError.message);

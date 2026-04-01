@@ -44,7 +44,7 @@ async function activateWithProgress(
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: `Activating agent: ${agentName} v${versionNumber}...`,
+      title: `Activate Agent: ${agentName} v${versionNumber}`,
       cancellable: false
     },
     async () => {
@@ -172,7 +172,7 @@ export const registerActivateAgentCommand = () => {
         await vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Deactivating agent: ${agentName}...`,
+            title: `Deactivate Agent: ${agentName}`,
             cancellable: false
           },
           async () => {

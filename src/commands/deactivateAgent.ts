@@ -95,7 +95,7 @@ export const registerDeactivateAgentCommand = () => {
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Deactivating agent: ${agentName}...`,
+          title: `Deactivate Agent: ${agentName}`,
           cancellable: false
         },
         async () => {

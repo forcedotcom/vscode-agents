@@ -323,14 +323,14 @@ export const registerCreateAiAuthoringBundleCommand = () => {
       await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: `Generating agent: ${apiName}`,
+          title: `Generate Agent: ${apiName}`,
           cancellable: false
         },
         async progress => {
-          progress.report({ message: 'Creating agent structure...', increment: 50 });
+          progress.report({ message: 'Creating structure', increment: 50 });
           await new Promise(resolve => setTimeout(resolve, 300));
 
-          progress.report({ message: 'Generating Agent Script file...' });
+          progress.report({ message: 'Generating script file' });
 
           await ScriptAgent.createAuthoringBundle({
             project,
@@ -342,7 +342,7 @@ export const registerCreateAiAuthoringBundleCommand = () => {
             outputDir: targetDir
           });
 
-          progress.report({ message: 'Complete!', increment: 100 });
+          progress.report({ message: 'Created successfully', increment: 100 });
 
           // Open the agent file
           // Agent.createAuthoringBundle creates the file at outputDir/aiAuthoringBundles/bundleApiName/bundleApiName.agent

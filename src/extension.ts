@@ -43,11 +43,9 @@ export async function activate(context: vscode.ExtensionContext) {
       })
       .catch((err: Error) => console.error('Error loading core dependencies:', err));
 
-    // Validate CLI installation in the background
-    validateCLI().catch((err: Error) => {
-      console.error('CLI validation failed:', err.message);
-      vscode.window.showErrorMessage(`Failed to validate Salesforce CLI and the plugin-agent. ${err.message}`);
-    });
+    // Note: CLI validation has been removed from activation to avoid false positives
+    // during startup. Commands will fail with appropriate error messages if the
+    // sf CLI or agent plugin is not installed.
 
     // Initialize diagnostic collection for agent validation
     initializeDiagnosticCollection(context);
@@ -153,25 +151,6 @@ const registerTestView = async (): Promise<vscode.Disposable> => {
   return vscode.Disposable.from(...testViewItems);
 };
 
-const validateCLI = async () => {
-  try {
-    const { exec } = await import('child_process');
-    const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-      exec('sf version --verbose --json', (error, stdout, stderr) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve({ stdout, stderr });
-        }
-      });
-    });
-    if (!stdout.includes('agent')) {
-      throw new Error('sf CLI + plugin-agent installed required');
-    }
-  } catch {
-    throw new Error('Failed to validate sf CLI and plugin-agent installation');
-  }
-};
 
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation

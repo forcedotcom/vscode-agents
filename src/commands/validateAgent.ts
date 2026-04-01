@@ -54,10 +54,11 @@ export const registerValidateAgentCommand = () => {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'Validating agent...',
+        title: 'Validate Agent',
         cancellable: false
       },
       async progress => {
+        progress.report({ message: 'Validating' });
         let agent: any = undefined;
         try {
           const connection = await CoreExtensionService.getDefaultConnection();
@@ -102,7 +103,7 @@ export const registerValidateAgentCommand = () => {
             });
 
             // Update progress message to show failure
-            progress.report({ message: `Failed with ${response.errors.length} error(s).` });
+            progress.report({ message: `Validation failed with ${response.errors.length} error(s)` });
 
             // Wait a moment so user can see the failure message
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -114,7 +115,7 @@ export const registerValidateAgentCommand = () => {
             diagnosticCollection.clear();
 
             // Update progress message to show success
-            progress.report({ message: 'Successful!', increment: 100 });
+            progress.report({ message: 'Validation successful', increment: 100 });
 
             // Keep the success message visible for a moment
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -127,7 +128,7 @@ export const registerValidateAgentCommand = () => {
           logger.error('Agent validation failed', sfError);
 
           // Update progress to show error
-          progress.report({ message: 'Failed' });
+          progress.report({ message: 'Validation failed' });
           await new Promise(resolve => setTimeout(resolve, 2000));
 
           // Show error message for unexpected errors

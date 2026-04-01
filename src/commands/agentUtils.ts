@@ -104,8 +104,11 @@ export async function getAgentNameFromFile(fileName: string, filePath: string): 
 
   // For genAiPlannerBundle files, extract agent name from filename
   if (fileName.endsWith('.genAiPlannerBundle')) {
-    // Remove the .genAiPlannerBundle extension and Planner suffix
-    return fileName.replace('.genAiPlannerBundle', '');
+    // Remove the .genAiPlannerBundle extension
+    let agentName = fileName.replace('.genAiPlannerBundle', '');
+    // Remove version suffix (e.g., _v1, _v2, etc.)
+    agentName = agentName.replace(/_v\d+$/, '');
+    return agentName;
   }
 
   // For bot version metadata files, find the corresponding .bot-meta.xml file in the same directory

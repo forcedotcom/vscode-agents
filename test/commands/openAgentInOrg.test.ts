@@ -71,6 +71,22 @@ describe('registerOpenAgentInOrgCommand', () => {
     expect(errorMessageSpy).toHaveBeenCalledWith('Unable to open agent: Error opening agent');
   });
 
+  it('handles exception when sf CLI cannot be executed', async () => {
+    quickPickSpy.mockResolvedValue('Agent1');
+    (sync as jest.Mock).mockImplementation(() => {
+      throw new Error('spawn sf ENOENT');
+    });
+    registerOpenAgentInOrgCommand();
+    await commandSpy.mock.calls[0][1]();
+
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/\[error].*Failed to execute sf CLI: spawn sf ENOENT/)
+    );
+    expect(errorMessageSpy).toHaveBeenCalledWith(
+      'Failed to execute sf CLI: try running this command directly in a terminal: "sf org open agent --api-name Agent1"'
+    );
+  });
+
   it('handles error when getting agent name from path', async () => {
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
     jest.spyOn(agentUtils, 'getAgentNameFromPath').mockRejectedValue(new Error('Invalid path'));
@@ -97,10 +113,10 @@ describe('registerOpenAgentInOrgCommand', () => {
 
     expect(errorMessageSpy).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/\[error\].*Couldn't find any agents in the current DX project/)
+      expect.stringMatching(/\[error].*Couldn't find any agents in the current DX project/)
     );
     expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/\[debug\].*Suggestion: Retrieve your agent metadata/)
+      expect.stringMatching(/\[debug].*Suggestion: Retrieve your agent metadata/)
     );
     expect(progressSpy).not.toHaveBeenCalled(); // Should not proceed
   });

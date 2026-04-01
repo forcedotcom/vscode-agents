@@ -50,16 +50,30 @@ export const registerOpenAgentInOrgCommand = () => {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
+        title: 'Open Agent in Org',
         cancellable: true
       },
       async progress => {
-        progress.report({ message: 'Opening agent in the default org...' });
-        const result = sync('sf', ['org', 'open', 'agent', '--api-name', agentName]);
-        if (result.status !== 0) {
-          vscode.window.showErrorMessage(`Unable to open agent: ${result.stderr.toString()}`);
-          telemetryService?.sendException('sf_command_failed', `stderr: ${result.stderr.toString()}`);
-        } else {
-          vscode.window.showInformationMessage('Agent was opened successfully in the default org.');
+        progress.report({ message: `Opening ${agentName}` });
+
+        try {
+          const result = sync('sf', ['org', 'open', 'agent', '--api-name', agentName]);
+
+          if (result.status !== 0) {
+            const errorOutput = result.stderr.toString();
+            vscode.window.showErrorMessage(`Unable to open agent: ${errorOutput}`);
+            telemetryService?.sendException('sf_command_failed', `stderr: ${errorOutput}`);
+          } else {
+            vscode.window.showInformationMessage('Agent was opened successfully in the default org.');
+          }
+        } catch (error) {
+          // Handle cases where the sf CLI command itself fails to execute (not installed, not in PATH, etc.)
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error(`Failed to execute sf CLI: ${errorMessage}`);
+          vscode.window.showErrorMessage(
+            `Failed to execute sf CLI: try running this command directly in a terminal: "sf org open agent --api-name ${agentName}"`
+          );
+          telemetryService?.sendException('sf_command_execution_failed', errorMessage);
         }
       }
     );

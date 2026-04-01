@@ -64,6 +64,28 @@ describe('Bot Version File System Lookup', () => {
     expect(botName).toBe('MyAgent');
   });
 
+  it('should strip version suffix from genAiPlannerBundle files', async () => {
+    const botName = await getAgentNameFromFile(
+      'Local_Info_Agent_v1.genAiPlannerBundle',
+      path.join('path', 'to', 'Local_Info_Agent_v1.genAiPlannerBundle')
+    );
+    expect(botName).toBe('Local_Info_Agent');
+  });
+
+  it('should handle genAiPlannerBundle files with multiple version formats', async () => {
+    const botName1 = await getAgentNameFromFile(
+      'TestAgent_v2.genAiPlannerBundle',
+      path.join('path', 'to', 'TestAgent_v2.genAiPlannerBundle')
+    );
+    expect(botName1).toBe('TestAgent');
+
+    const botName2 = await getAgentNameFromFile(
+      'Another_Agent_v10.genAiPlannerBundle',
+      path.join('path', 'to', 'Another_Agent_v10.genAiPlannerBundle')
+    );
+    expect(botName2).toBe('Another_Agent');
+  });
+
   it('should handle case when no .bot-meta.xml file is found', async () => {
     const mockFilePath = path.join(
       'path',
