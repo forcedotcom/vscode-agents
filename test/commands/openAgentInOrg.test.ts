@@ -79,6 +79,9 @@ describe('registerOpenAgentInOrgCommand', () => {
     registerOpenAgentInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
+    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+      expect.stringMatching(/\[error].*Failed to execute sf CLI: spawn sf ENOENT/)
+    );
     expect(errorMessageSpy).toHaveBeenCalledWith(
       'Failed to execute sf CLI: try running this command directly in a terminal: "sf org open agent --api-name Agent1"'
     );
