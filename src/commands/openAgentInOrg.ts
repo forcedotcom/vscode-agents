@@ -49,10 +49,11 @@ export const registerOpenAgentInOrgCommand = () => {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
+        title: 'Open Agent in Org',
         cancellable: true
       },
       async progress => {
-        progress.report({ message: 'Opening agent in the default org...' });
+        progress.report({ message: `Opening ${agentName}` });
 
         try {
           // Get org connection

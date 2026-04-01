@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/salesforcecli/vsode-agents/compare/v1.11.0...v1.11.1) (2026-04-01)
+
+### Bug Fixes
+
+- fix open agent on GAPB ([a0c4704](https://github.com/salesforcecli/vsode-agents/commit/a0c4704b95806a8eb2b15372c10dc10175fa201c))
+- move CLI check to after command errors ([3eb64e1](https://github.com/salesforcecli/vsode-agents/commit/3eb64e13a85ed7a609b3499b33aa59e315038e3b))
+
 # [1.10.0](https://github.com/salesforcecli/vsode-agents/compare/v1.9.1...v1.10.0) (2026-03-18)
 
 ### Bug Fixes

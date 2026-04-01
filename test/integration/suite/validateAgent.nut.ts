@@ -230,11 +230,11 @@ start_agent topic_selector:
       const progressReports = mockedUI.progressReports();
       
       assert.ok(progressTitles.length > 0, 'Progress should have been shown');
-      assert.ok(progressTitles.some(title => title.includes('Validating agent')), 'Progress title should include "Validating agent"');
+      assert.ok(progressTitles.some(title => title.includes('Validate Agent')), 'Progress title should include "Validate Agent"');
 
       if (shouldSucceed) {
         assert.ok(
-          progressReports.some(report => report.message?.includes('Successful')),
+          progressReports.some(report => report.message?.includes('successful')),
           'Progress should show success message'
         );
       } else {
