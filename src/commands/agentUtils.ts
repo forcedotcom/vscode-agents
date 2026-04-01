@@ -53,6 +53,12 @@ export async function getPublishedAgents(
  * Handles both file selections and directory selections.
  */
 export async function getAgentNameFromPath(targetPath: string): Promise<string> {
+  // First check if this is in a genAiPlannerBundles directory
+  const plannerBundleAgentName = getAgentNameFromPlannerBundlePath(targetPath);
+  if (plannerBundleAgentName) {
+    return plannerBundleAgentName;
+  }
+
   const stat = await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
 
   if (stat.type === vscode.FileType.Directory) {
@@ -63,6 +69,41 @@ export async function getAgentNameFromPath(targetPath: string): Promise<string> 
     const fileName = path.basename(targetPath);
     return getAgentNameFromFile(fileName, targetPath);
   }
+}
+
+/**
+ * Extracts the agent name from a path within the genAiPlannerBundles directory.
+ * Handles files/directories at any depth within genAiPlannerBundles.
+ *
+ * @param targetPath - The path to check
+ * @returns The agent name if the path is within genAiPlannerBundles, or null otherwise
+ *
+ * Examples:
+ * - force-app/main/default/genAiPlannerBundles/MyAgent.genAiPlannerBundle -> MyAgent
+ * - force-app/main/default/genAiPlannerBundles/MyAgent/file.txt -> MyAgent
+ * - force-app/main/default/genAiPlannerBundles/MyAgent/subdir/file.txt -> MyAgent
+ */
+function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
+  const pathParts = targetPath.split(path.sep);
+  const plannerBundlesIndex = pathParts.findIndex(part => part === 'genAiPlannerBundles');
+
+  if (plannerBundlesIndex === -1 || plannerBundlesIndex >= pathParts.length - 1) {
+    // Not in genAiPlannerBundles directory, or genAiPlannerBundles is the last part
+    return null;
+  }
+
+  // The agent name is the first item after genAiPlannerBundles
+  let agentIdentifier = pathParts[plannerBundlesIndex + 1];
+
+  // If it's a .genAiPlannerBundle file, remove the extension
+  if (agentIdentifier.endsWith('.genAiPlannerBundle')) {
+    agentIdentifier = agentIdentifier.replace('.genAiPlannerBundle', '');
+  }
+
+  // Always remove version suffix (e.g., _v1, _v2, _v33, etc.) from directory or file names
+  agentIdentifier = agentIdentifier.replace(/_v\d+$/, '');
+
+  return agentIdentifier;
 }
 
 /**

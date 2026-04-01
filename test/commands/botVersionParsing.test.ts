@@ -276,4 +276,69 @@ describe('Directory Path Handling', () => {
 
     consoleWarnSpy.mockRestore();
   });
+
+  it('should extract agent name from genAiPlannerBundle file path', async () => {
+    const mockFilePath = '/Users/test/project/force-app/main/default/genAiPlannerBundles/MyAgent.genAiPlannerBundle';
+
+    const agentName = await getAgentNameFromPath(mockFilePath);
+    expect(agentName).toBe('MyAgent');
+  });
+
+  it('should extract agent name from genAiPlannerBundle file with version suffix', async () => {
+    const mockFilePath =
+      '/Users/test/project/force-app/main/default/genAiPlannerBundles/MyAgent_v2.genAiPlannerBundle';
+
+    const agentName = await getAgentNameFromPath(mockFilePath);
+    expect(agentName).toBe('MyAgent');
+  });
+
+  it('should extract agent name from directory under genAiPlannerBundles', async () => {
+    const mockDirPath = '/Users/test/project/force-app/main/default/genAiPlannerBundles/MyAgent';
+
+    const agentName = await getAgentNameFromPath(mockDirPath);
+    expect(agentName).toBe('MyAgent');
+  });
+
+  it('should extract agent name from versioned directory under genAiPlannerBundles', async () => {
+    const mockDirPath = '/Users/test/project/force-app/main/default/genAiPlannerBundles/Local_Info_Agent_v33';
+
+    const agentName = await getAgentNameFromPath(mockDirPath);
+    expect(agentName).toBe('Local_Info_Agent');
+  });
+
+  it('should extract agent name from file nested under genAiPlannerBundles agent directory', async () => {
+    const mockFilePath =
+      '/Users/test/project/force-app/main/default/genAiPlannerBundles/MyAgent/instructions/someFile.txt';
+
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({
+      type: vscode.FileType.File
+    });
+
+    const agentName = await getAgentNameFromPath(mockFilePath);
+    expect(agentName).toBe('MyAgent');
+  });
+
+  it('should extract agent name from deeply nested file under genAiPlannerBundles', async () => {
+    const mockFilePath =
+      '/Users/test/project/force-app/main/default/genAiPlannerBundles/MyAgent/subdir/nested/file.json';
+
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({
+      type: vscode.FileType.File
+    });
+
+    const agentName = await getAgentNameFromPath(mockFilePath);
+    expect(agentName).toBe('MyAgent');
+  });
+
+  it('should extract agent name from file in versioned directory under genAiPlannerBundles', async () => {
+    const mockFilePath =
+      '/Users/test/project/force-app/main/default/genAiPlannerBundles/Local_Info_Agent_v6/agentGraph/someFile.txt';
+
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({
+      type: vscode.FileType.File
+    });
+
+    const agentName = await getAgentNameFromPath(mockFilePath);
+    expect(agentName).toBe('Local_Info_Agent');
+  });
 });

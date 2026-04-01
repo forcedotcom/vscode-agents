@@ -288,7 +288,7 @@
         },
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/ || resourcePath =~ /genAiPlannerBundles/",
           "group": "agent@2"
         }
       ],
@@ -325,7 +325,7 @@
         },
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
-          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/",
+          "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/ || resourcePath =~ /genAiPlannerBundles/",
           "group": "agent@2"
         }
       ],
