@@ -1,15 +1,10 @@
 import * as vscode from 'vscode';
 import { registerOpenAgentInOrgCommand } from '../../src/commands/openAgentInOrg';
 import { Commands } from '../../src/enums/commands';
-import { SfProject } from '@salesforce/core';
-import { sync } from 'cross-spawn';
+import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { Agent } from '@salesforce/agents';
 import * as agentUtils from '../../src/commands/agentUtils';
-
-jest.mock('cross-spawn', () => ({
-  sync: jest.fn()
-}));
 
 describe('registerOpenAgentInOrgCommand', () => {
   let commandSpy: jest.SpyInstance;
@@ -17,6 +12,10 @@ describe('registerOpenAgentInOrgCommand', () => {
   let quickPickSpy: jest.SpyInstance;
   let progressSpy: jest.SpyInstance;
   let errorMessageSpy: jest.SpyInstance;
+  let openExternalSpy: jest.SpyInstance;
+  let configAggregatorSpy: jest.SpyInstance;
+  let orgCreateSpy: jest.SpyInstance;
+
   const fakeTelemetryInstance: any = {
     sendException: jest.fn(),
     sendCommandEvent: jest.fn()
@@ -26,9 +25,29 @@ describe('registerOpenAgentInOrgCommand', () => {
     showChannelOutput: jest.fn(),
     clear: jest.fn()
   };
+  let mockConnection: any;
+  let mockConfigAggregator: any;
+  let mockOrg: any;
+
   beforeEach(() => {
+    // Reset mocks
+    mockConnection = {
+      instanceUrl: 'https://test.salesforce.com',
+      singleRecordQuery: jest.fn().mockResolvedValue({ Id: '0XxD60000004Cj2KAE' })
+    };
+    mockConfigAggregator = {
+      getPropertyValue: jest.fn().mockReturnValue('test-org')
+    };
+    mockOrg = {
+      getConnection: jest.fn().mockReturnValue(mockConnection),
+      getFrontDoorUrl: jest.fn().mockResolvedValue('https://test.salesforce.com/secur/frontdoor.jsp?otp=xxx&startURL=yyy')
+    };
+
     jest.spyOn(CoreExtensionService, 'getTelemetryService').mockReturnValue(fakeTelemetryInstance);
     jest.spyOn(CoreExtensionService, 'getChannelService').mockReturnValue(fakeChannelService);
+
+    configAggregatorSpy = jest.spyOn(ConfigAggregator, 'create').mockResolvedValue(mockConfigAggregator as any);
+    orgCreateSpy = jest.spyOn(Org, 'create').mockResolvedValue(mockOrg as any);
 
     jest.spyOn(Agent, 'list').mockResolvedValue(['Agent1', 'Agent2']);
 
@@ -36,12 +55,12 @@ describe('registerOpenAgentInOrgCommand', () => {
     projectSpy = jest.spyOn(SfProject, 'getInstance').mockReturnValue({
       getDefaultPackage: jest.fn().mockReturnValue({ fullPath: '/fake/path' })
     } as unknown as SfProject);
-    quickPickSpy = jest.spyOn(vscode.window, 'showQuickPick').mockResolvedValue([{ title: 'Agent1' }] as any);
+    quickPickSpy = jest.spyOn(vscode.window, 'showQuickPick').mockResolvedValue('Agent1' as any);
     errorMessageSpy = jest.spyOn(vscode.window, 'showErrorMessage').mockImplementation();
+    openExternalSpy = jest.spyOn(vscode.env, 'openExternal').mockResolvedValue(true);
     progressSpy = jest
       .spyOn(vscode.window, 'withProgress')
       .mockImplementation((_options, task) => task({ report: jest.fn() }, {} as vscode.CancellationToken));
-    (sync as jest.Mock).mockReturnValue({ status: 0 });
   });
 
   afterEach(() => {
@@ -60,15 +79,33 @@ describe('registerOpenAgentInOrgCommand', () => {
     expect(progressSpy).toHaveBeenCalled();
     expect(projectSpy).toHaveBeenCalled();
     expect(quickPickSpy).toHaveBeenCalledWith(['Agent1', 'Agent2'], { placeHolder: 'Agent name (type to search)' });
-    expect(sync).toHaveBeenCalledWith('sf', ['org', 'open', 'agent', '--api-name', [{ title: 'Agent1' }]]);
+    expect(configAggregatorSpy).toHaveBeenCalled();
+    expect(mockConfigAggregator.getPropertyValue).toHaveBeenCalledWith('target-org');
+    expect(orgCreateSpy).toHaveBeenCalledWith(expect.objectContaining({ aliasOrUsername: expect.any(String) }));
+    expect(mockConnection.singleRecordQuery).toHaveBeenCalledWith(
+      "SELECT Id FROM BotDefinition WHERE DeveloperName='Agent1'",
+      { tooling: false }
+    );
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AiCopilot/copilotStudio.app#/copilot/builder?copilotId=0XxD60000004Cj2KAE');
+    expect(openExternalSpy).toHaveBeenCalledWith('https://test.salesforce.com/secur/frontdoor.jsp?otp=xxx&startURL=yyy');
   });
 
-  it('shows error message when command fails', async () => {
-    (sync as jest.Mock).mockReturnValue({ status: 1, stderr: Buffer.from('Error opening agent') });
+  it('shows error message when agent not found in org', async () => {
+    mockConnection.singleRecordQuery.mockResolvedValue({ Id: null });
     registerOpenAgentInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
-    expect(errorMessageSpy).toHaveBeenCalledWith('Unable to open agent: Error opening agent');
+    expect(errorMessageSpy).toHaveBeenCalledWith('Agent "Agent1" not found in org.');
+    expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith('agent_not_found', 'Agent "Agent1" not found in org');
+  });
+
+  it('shows error message when opening agent fails', async () => {
+    mockOrg.getFrontDoorUrl.mockRejectedValue(new Error('Connection error'));
+    registerOpenAgentInOrgCommand();
+    await commandSpy.mock.calls[0][1]();
+
+    expect(errorMessageSpy).toHaveBeenCalledWith('Unable to open agent: Connection error');
+    expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith('open_agent_failed', 'Connection error');
   });
 
   it('handles error when getting agent name from path', async () => {
@@ -116,15 +153,21 @@ describe('registerOpenAgentInOrgCommand', () => {
   });
 
   it('uses agent name from path when uri is provided', async () => {
-    jest.spyOn(agentUtils, 'getAgentNameFromPath').mockResolvedValue('AgentFromPath');
+    jest.spyOn(agentUtils, 'getAgentNameFromPath').mockResolvedValue('Agent2');
+    mockConnection.singleRecordQuery.mockResolvedValue({ Id: '0XxD60000004Cj3KAE' });
 
-    const mockUri = { fsPath: '/path/to/AgentFromPath.agent' } as vscode.Uri;
+    const mockUri = { fsPath: '/path/to/Agent2.bot-meta.xml' } as vscode.Uri;
 
     registerOpenAgentInOrgCommand();
     await commandSpy.mock.calls[0][1](mockUri);
 
-    expect(agentUtils.getAgentNameFromPath).toHaveBeenCalledWith('/path/to/AgentFromPath.agent');
+    expect(agentUtils.getAgentNameFromPath).toHaveBeenCalledWith('/path/to/Agent2.bot-meta.xml');
     expect(quickPickSpy).not.toHaveBeenCalled(); // Should not show picker
-    expect(sync).toHaveBeenCalledWith('sf', ['org', 'open', 'agent', '--api-name', 'AgentFromPath']);
+    expect(mockConnection.singleRecordQuery).toHaveBeenCalledWith(
+      "SELECT Id FROM BotDefinition WHERE DeveloperName='Agent2'",
+      { tooling: false }
+    );
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AiCopilot/copilotStudio.app#/copilot/builder?copilotId=0XxD60000004Cj3KAE');
+    expect(openExternalSpy).toHaveBeenCalled();
   });
 });
