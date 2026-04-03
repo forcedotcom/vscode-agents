@@ -16,7 +16,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
+import { ConfigAggregator, Org, SfProject } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 
 const UNSUPPORTED_AGENTS = ['Copilot_for_Salesforce'];
@@ -35,9 +35,7 @@ export async function getConnectionAndProject() {
   return { conn: org.getConnection(), project: SfProject.getInstance() };
 }
 
-export async function getPublishedAgents(
-  conn: ReturnType<Org['getConnection']>
-): Promise<PublishedAgentInfo[]> {
+export async function getPublishedAgents(conn: ReturnType<Org['getConnection']>): Promise<PublishedAgentInfo[]> {
   const agents = await Agent.listRemote(conn);
   return agents
     .filter(a => !a.IsDeleted && !UNSUPPORTED_AGENTS.includes(a.DeveloperName))
@@ -57,6 +55,12 @@ export async function getAgentNameFromPath(targetPath: string): Promise<string> 
   const plannerBundleAgentName = getAgentNameFromPlannerBundlePath(targetPath);
   if (plannerBundleAgentName) {
     return plannerBundleAgentName;
+  }
+
+  // Then check if this is in an aiAuthoringBundles directory
+  const authoringBundleAgentName = getAgentNameFromAuthoringBundlePath(targetPath);
+  if (authoringBundleAgentName) {
+    return authoringBundleAgentName;
   }
 
   const stat = await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
@@ -104,6 +108,31 @@ function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
   agentIdentifier = agentIdentifier.replace(/_v\d+$/, '');
 
   return agentIdentifier;
+}
+
+/**
+ * Extracts the agent name from a path within the aiAuthoringBundles directory.
+ * Handles files/directories at any depth within aiAuthoringBundles.
+ *
+ * @param targetPath - The path to check
+ * @returns The agent name if the path is within aiAuthoringBundles, or null otherwise
+ *
+ * Examples:
+ * - force-app/main/default/aiAuthoringBundles/MyAgent/MyAgent.agent -> MyAgent
+ * - force-app/main/default/aiAuthoringBundles/MyAgent/ -> MyAgent
+ * - force-app/main/default/aiAuthoringBundles/MyAgent/instructions.txt -> MyAgent
+ */
+function getAgentNameFromAuthoringBundlePath(targetPath: string): string | null {
+  const pathParts = targetPath.split(path.sep);
+  const authoringBundlesIndex = pathParts.findIndex(part => part === 'aiAuthoringBundles');
+
+  if (authoringBundlesIndex === -1 || authoringBundlesIndex >= pathParts.length - 1) {
+    // Not in aiAuthoringBundles directory, or aiAuthoringBundles is the last part
+    return null;
+  }
+
+  // The agent name is the first item after aiAuthoringBundles (the directory name)
+  return pathParts[authoringBundlesIndex + 1];
 }
 
 /**

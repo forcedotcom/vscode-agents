@@ -25,7 +25,6 @@ import { AgentSource } from '@salesforce/agents';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
-import { initializeDiagnosticCollection } from './commands/validateAgent';
 
 // Export the provider instance for testing purposes
 let agentCombinedViewProviderInstance: AgentCombinedViewProvider | undefined;
@@ -43,12 +42,8 @@ export async function activate(context: vscode.ExtensionContext) {
       })
       .catch((err: Error) => console.error('Error loading core dependencies:', err));
 
-    // Note: CLI validation has been removed from activation to avoid false positives
-    // during startup. Commands will fail with appropriate error messages if the
-    // sf CLI or agent plugin is not installed.
-
     // Initialize diagnostic collection for agent validation
-    initializeDiagnosticCollection(context);
+    commands.initializeDiagnosticCollection(context);
 
     // Initialize and watch SF_SKIP_RETRIEVE setting
     const updateSkipRetrieveEnv = () => {
@@ -59,10 +54,10 @@ export async function activate(context: vscode.ExtensionContext) {
     // Set initial value
     updateSkipRetrieveEnv();
 
-
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
     disposables.push(commands.registerOpenAgentInOrgCommand());
+    disposables.push(commands.registerOpenAuthoringBundleInOrgCommand());
     disposables.push(commands.registerActivateAgentCommand());
     disposables.push(commands.registerDeactivateAgentCommand());
     disposables.push(commands.registerValidateAgentCommand());
@@ -151,7 +146,6 @@ const registerTestView = async (): Promise<vscode.Disposable> => {
   return vscode.Disposable.from(...testViewItems);
 };
 
-
 const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Disposable => {
   // Register webview to be disposed on extension deactivation
   const provider = new AgentCombinedViewProvider(context);
@@ -192,8 +186,12 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
     try {
       const availableAgents = await provider.getAgentsForCommandPalette();
-      const scriptAgents = availableAgents.filter(agent => agent.source === AgentSource.SCRIPT).sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
-      const publishedAgents = availableAgents.filter(agent => agent.source === AgentSource.PUBLISHED).sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
+      const scriptAgents = availableAgents
+        .filter(agent => agent.source === AgentSource.SCRIPT)
+        .sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
+      const publishedAgents = availableAgents
+        .filter(agent => agent.source === AgentSource.PUBLISHED)
+        .sort((a, b) => (a.developerName ?? a.aabName ?? '').localeCompare(b.developerName ?? b.aabName ?? ''));
 
       const allAgents: Array<{
         label: string;
@@ -372,7 +370,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
       }
     })
   );
-
 
   disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.restart', async () => {

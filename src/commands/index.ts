@@ -1,4 +1,5 @@
 export * from './openAgentInOrg';
+export * from './openAuthoringBundleInOrg';
 export * from './activateAgent';
 export * from './deactivateAgent';
 export * from './validateAgent';

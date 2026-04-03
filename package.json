@@ -290,6 +290,11 @@
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml$/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ ||  resourceFilename =~ /.*\\.botVersion-meta\\.xml$/ || resourceFilename =~ /.*Planner\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml$/ || resourcePath =~ /genAiPlannerBundles/",
           "group": "agent@2"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAuthoringBundleInOrg",
+          "when": "resourcePath =~ /aiAuthoringBundles/",
+          "group": "agent@2"
         }
       ],
       "explorer/context": [
@@ -326,6 +331,11 @@
         {
           "command": "salesforcedx-vscode-agents.openAgentInOrg",
           "when": "resourceFilename =~ /.*\\.bot-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlannerBundle$/ || resourceFilename =~ /.*\\.genAiPlannerBundle/ || resourceFilename =~ /.*\\.botVersion-meta\\.xml/ || resourceFilename =~ /.*\\.genAiPlanner-meta\\.xml/ || resourcePath =~ /genAiPlannerBundles/",
+          "group": "agent@2"
+        },
+        {
+          "command": "salesforcedx-vscode-agents.openAuthoringBundleInOrg",
+          "when": "resourcePath =~ /aiAuthoringBundles/",
           "group": "agent@2"
         }
       ],
@@ -518,6 +528,10 @@
       },
       {
         "command": "salesforcedx-vscode-agents.openAgentInOrg",
+        "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
+      },
+      {
+        "command": "salesforcedx-vscode-agents.openAuthoringBundleInOrg",
         "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
       },
       {

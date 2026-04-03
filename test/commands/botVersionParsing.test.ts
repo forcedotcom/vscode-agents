@@ -341,4 +341,35 @@ describe('Directory Path Handling', () => {
     const agentName = await getAgentNameFromPath(mockFilePath);
     expect(agentName).toBe('Local_Info_Agent');
   });
+
+  it('should extract agent name from .agent file in aiAuthoringBundles', async () => {
+    const mockFilePath =
+      '/Users/test/project/force-app/main/default/aiAuthoringBundles/MyAgent/MyAgent.agent';
+
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({
+      type: vscode.FileType.File
+    });
+
+    const agentName = await getAgentNameFromPath(mockFilePath);
+    expect(agentName).toBe('MyAgent');
+  });
+
+  it('should extract agent name from directory in aiAuthoringBundles', async () => {
+    const mockDirPath = '/Users/test/project/force-app/main/default/aiAuthoringBundles/MyAgent';
+
+    const agentName = await getAgentNameFromPath(mockDirPath);
+    expect(agentName).toBe('MyAgent');
+  });
+
+  it('should extract agent name from nested file in aiAuthoringBundles', async () => {
+    const mockFilePath =
+      '/Users/test/project/force-app/main/default/aiAuthoringBundles/MyAgent/instructions/file.txt';
+
+    (vscode.workspace.fs.stat as jest.Mock).mockResolvedValue({
+      type: vscode.FileType.File
+    });
+
+    const agentName = await getAgentNameFromPath(mockFilePath);
+    expect(agentName).toBe('MyAgent');
+  });
 });
