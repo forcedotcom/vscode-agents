@@ -27,12 +27,71 @@ export interface PublishedAgentInfo {
   isActivated: boolean;
 }
 
+export interface Logger {
+  error(message: string): void;
+  debug(message: string): void;
+}
+
+export interface TelemetryService {
+  sendException(exceptionName: string, message: string): void;
+}
+
 export async function getConnectionAndProject() {
   const configAggregator = await ConfigAggregator.create();
-  const org = await Org.create({
-    aliasOrUsername: configAggregator.getPropertyValue<string>('target-org') ?? 'undefined'
-  });
-  return { conn: org.getConnection(), project: SfProject.getInstance() };
+  const targetOrg = configAggregator.getPropertyValue<string>('target-org');
+
+  if (!targetOrg) {
+    throw new Error('No default org configured. Set a target org with "sf config set target-org".');
+  }
+
+  const org = await Org.create({ aliasOrUsername: targetOrg });
+  return { conn: org.getConnection(), project: SfProject.getInstance(), org };
+}
+
+/**
+ * Prompts user to select an agent from the current DX project.
+ * Returns undefined if no agent is selected or no agents are available.
+ */
+export async function selectAgentFromProject(
+  logger: Logger,
+  telemetryService?: TelemetryService
+): Promise<string | undefined> {
+  const project = SfProject.getInstance();
+  const agents = await Agent.list(project);
+
+  if (agents.length === 0) {
+    vscode.window.showErrorMessage(`Couldn't find any agents in the current DX project.`);
+    logger.error("Couldn't find any agents in the current DX project.");
+    logger.debug(
+      'Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.'
+    );
+    return undefined;
+  }
+
+  const agentName = await vscode.window.showQuickPick(agents, { placeHolder: 'Agent name (type to search)' });
+
+  if (!agentName) {
+    telemetryService?.sendException('no_agent_selected', 'No Agent selected');
+    return undefined;
+  }
+
+  return agentName;
+}
+
+/**
+ * Handles command errors with consistent messaging and telemetry.
+ */
+export function handleCommandError(
+  error: unknown,
+  userMessage: string,
+  exceptionName: string,
+  logger: Logger,
+  telemetryService?: TelemetryService
+): void {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  vscode.window.showErrorMessage(`${userMessage}: ${errorMessage}`);
+  logger.error(`${userMessage}: ${errorMessage}`);
+  telemetryService?.sendException(exceptionName, errorMessage);
 }
 
 export async function getPublishedAgents(conn: ReturnType<Org['getConnection']>): Promise<PublishedAgentInfo[]> {
@@ -75,18 +134,7 @@ export async function getAgentNameFromPath(targetPath: string): Promise<string> 
   }
 }
 
-/**
- * Extracts the agent name from a path within the genAiPlannerBundles directory.
- * Handles files/directories at any depth within genAiPlannerBundles.
- *
- * @param targetPath - The path to check
- * @returns The agent name if the path is within genAiPlannerBundles, or null otherwise
- *
- * Examples:
- * - force-app/main/default/genAiPlannerBundles/MyAgent.genAiPlannerBundle -> MyAgent
- * - force-app/main/default/genAiPlannerBundles/MyAgent/file.txt -> MyAgent
- * - force-app/main/default/genAiPlannerBundles/MyAgent/subdir/file.txt -> MyAgent
- */
+// Returns agent name from genAiPlannerBundles path (removes .genAiPlannerBundle extension and version suffix)
 function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
   const pathParts = targetPath.split(path.sep);
   const plannerBundlesIndex = pathParts.findIndex(part => part === 'genAiPlannerBundles');
@@ -110,18 +158,7 @@ function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
   return agentIdentifier;
 }
 
-/**
- * Extracts the agent name from a path within the aiAuthoringBundles directory.
- * Handles files/directories at any depth within aiAuthoringBundles.
- *
- * @param targetPath - The path to check
- * @returns The agent name if the path is within aiAuthoringBundles, or null otherwise
- *
- * Examples:
- * - force-app/main/default/aiAuthoringBundles/MyAgent/MyAgent.agent -> MyAgent
- * - force-app/main/default/aiAuthoringBundles/MyAgent/ -> MyAgent
- * - force-app/main/default/aiAuthoringBundles/MyAgent/instructions.txt -> MyAgent
- */
+// Returns agent name from aiAuthoringBundles path (directory name after aiAuthoringBundles)
 function getAgentNameFromAuthoringBundlePath(targetPath: string): string | null {
   const pathParts = targetPath.split(path.sep);
   const authoringBundlesIndex = pathParts.findIndex(part => part === 'aiAuthoringBundles');

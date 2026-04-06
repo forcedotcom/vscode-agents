@@ -1,9 +1,7 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
-import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
-import { Agent } from '@salesforce/agents';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAgentNameFromPath } from './agentUtils';
+import { getAgentNameFromPath, selectAgentFromProject, getConnectionAndProject, handleCommandError } from './agentUtils';
 import { Logger } from '../utils/logger';
 
 export const registerOpenAgentInOrgCommand = () => {
@@ -27,21 +25,8 @@ export const registerOpenAgentInOrgCommand = () => {
 
     // If no agent name from context, prompt user to select
     if (!agentName) {
-      const project = SfProject.getInstance();
-      const agents = await Agent.list(project);
-      if (agents.length === 0) {
-        vscode.window.showErrorMessage(`Couldn't find any agents in the current DX project.`);
-        logger.error("Couldn't find any agents in the current DX project.");
-        logger.debug(
-          'Suggestion: Retrieve your agent metadata to your DX project with the "project retrieve start" CLI command.'
-        );
-        return;
-      }
-      // we need to prompt the user which agent to open
-      agentName = await vscode.window.showQuickPick(agents, { placeHolder: 'Agent name (type to search)' });
-
+      agentName = await selectAgentFromProject(logger, telemetryService);
       if (!agentName) {
-        telemetryService?.sendException('no_agent_selected', 'No Agent selected');
         return;
       }
     }
@@ -57,18 +42,7 @@ export const registerOpenAgentInOrgCommand = () => {
 
         try {
           // Get org connection
-          const configAggregator = await ConfigAggregator.create();
-          const targetOrg = configAggregator.getPropertyValue<string>('target-org');
-
-          if (!targetOrg) {
-            vscode.window.showErrorMessage('No default org configured. Set a target org with "sf config set target-org".');
-            logger.error('No default org configured.');
-            telemetryService?.sendException('no_target_org', 'No default org configured');
-            return;
-          }
-
-          const org = await Org.create({ aliasOrUsername: targetOrg });
-          const conn = org.getConnection();
+          const { conn, org } = await getConnectionAndProject();
 
           // Query BotDefinition to get the Bot ID (same as CLI does)
           // Escape single quotes in agent name to prevent SQL injection
@@ -101,10 +75,7 @@ export const registerOpenAgentInOrgCommand = () => {
 
           vscode.window.showInformationMessage('Agent opened successfully in the default org.');
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          vscode.window.showErrorMessage(`Unable to open agent: ${errorMessage}`);
-          logger.error(`Unable to open agent: ${errorMessage}`);
-          telemetryService?.sendException('open_agent_failed', errorMessage);
+          handleCommandError(error, 'Unable to open agent', 'open_agent_failed', logger, telemetryService);
         }
       }
     );
