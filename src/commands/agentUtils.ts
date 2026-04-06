@@ -136,7 +136,9 @@ export async function getAgentNameFromPath(targetPath: string): Promise<string> 
 
 // Returns agent name from genAiPlannerBundles path (removes .genAiPlannerBundle extension and version suffix)
 function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
-  const pathParts = targetPath.split(path.sep);
+  // Normalize to handle cross-platform path separators (/ on Unix, \ on Windows)
+  const normalizedPath = path.normalize(targetPath);
+  const pathParts = normalizedPath.split(path.sep);
   const plannerBundlesIndex = pathParts.findIndex(part => part === 'genAiPlannerBundles');
 
   if (plannerBundlesIndex === -1 || plannerBundlesIndex >= pathParts.length - 1) {
@@ -160,7 +162,9 @@ function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
 
 // Returns agent name from aiAuthoringBundles path (directory name after aiAuthoringBundles)
 function getAgentNameFromAuthoringBundlePath(targetPath: string): string | null {
-  const pathParts = targetPath.split(path.sep);
+  // Normalize to handle cross-platform path separators (/ on Unix, \ on Windows)
+  const normalizedPath = path.normalize(targetPath);
+  const pathParts = normalizedPath.split(path.sep);
   const authoringBundlesIndex = pathParts.findIndex(part => part === 'aiAuthoringBundles');
 
   if (authoringBundlesIndex === -1 || authoringBundlesIndex >= pathParts.length - 1) {
