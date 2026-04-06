@@ -64,7 +64,9 @@ export const registerOpenAgentInOrgCommand = () => {
           const conn = org.getConnection();
 
           // Query BotDefinition to get the Bot ID (same as CLI does)
-          const query = `SELECT Id FROM BotDefinition WHERE DeveloperName='${agentName}'`;
+          // Escape single quotes in agent name to prevent SQL injection
+          const escapedAgentName = agentName.replace(/'/g, "''");
+          const query = `SELECT Id FROM BotDefinition WHERE DeveloperName='${escapedAgentName}'`;
           const result = await conn.singleRecordQuery<{ Id: string }>(query, { tooling: false });
 
           if (!result?.Id) {

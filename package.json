@@ -532,7 +532,7 @@
       },
       {
         "command": "salesforcedx-vscode-agents.openAuthoringBundleInOrg",
-        "title": "%salesforcedx-vscode-agents.openAgentInOrg%"
+        "title": "%salesforcedx-vscode-agents.openAuthoringBundleInOrg%"
       },
       {
         "command": "salesforcedx-vscode-agents.activateAgent",
