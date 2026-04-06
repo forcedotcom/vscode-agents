@@ -58,7 +58,7 @@ export const StepTopicSelection: React.FC<StepTopicSelectionProps> = ({
             alt="Sparkles"
             className="step-topic-selection-icon"
           />
-          Reasoning: Topic Selection
+          Reasoning: Subagent Selection
         </div>
         {timing && (
           <div className="step-topic-selection-timing">
@@ -74,7 +74,7 @@ export const StepTopicSelection: React.FC<StepTopicSelectionProps> = ({
       <div className="step-topic-selection-content">
         {promptUsed && <ExpandableSection title="Prompt Used">{promptUsed}</ExpandableSection>}
         {availableTopics && (
-          <ExpandableSection title="Available Topics" badge={`${availableTopicsCount} available`}>
+          <ExpandableSection title="Available Subagents" badge={`${availableTopicsCount} available`}>
             {availableTopics}
           </ExpandableSection>
         )}

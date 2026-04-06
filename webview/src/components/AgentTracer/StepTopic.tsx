@@ -60,7 +60,7 @@ export const StepTopic: React.FC<StepTopicProps> = ({
       <div className="step-topic-header">
         <div className="step-topic-title">
           <img src={isDark ? bookIconDark : bookIconLight} alt="Book" className="step-topic-icon" />
-          Topic: {topicName}
+          Subagent: {topicName}
         </div>
         {timing && (
           <div className="step-topic-timing">
@@ -79,7 +79,7 @@ export const StepTopic: React.FC<StepTopicProps> = ({
         </ExpandableSection>
       )}
       {availableTopics && (
-        <ExpandableSection title="Available Topics" badge={`${availableTopicsCount} available`}>
+        <ExpandableSection title="Available Subagents" badge={`${availableTopicsCount} available`}>
           {availableTopics}
         </ExpandableSection>
       )}
