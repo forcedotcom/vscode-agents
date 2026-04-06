@@ -58,9 +58,16 @@ export const registerOpenAgentInOrgCommand = () => {
         try {
           // Get org connection
           const configAggregator = await ConfigAggregator.create();
-          const org = await Org.create({
-            aliasOrUsername: configAggregator.getPropertyValue<string>('target-org') ?? 'undefined'
-          });
+          const targetOrg = configAggregator.getPropertyValue<string>('target-org');
+
+          if (!targetOrg) {
+            vscode.window.showErrorMessage('No default org configured. Set a target org with "sf config set target-org".');
+            logger.error('No default org configured.');
+            telemetryService?.sendException('no_target_org', 'No default org configured');
+            return;
+          }
+
+          const org = await Org.create({ aliasOrUsername: targetOrg });
           const conn = org.getConnection();
 
           // Query BotDefinition to get the Bot ID (same as CLI does)
