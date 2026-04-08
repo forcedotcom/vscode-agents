@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
+import { SfError } from '@salesforce/core';
 import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath, selectAgentFromProject, getConnectionAndProject, handleCommandError } from './agentUtils';
 import { Logger } from '../utils/logger';

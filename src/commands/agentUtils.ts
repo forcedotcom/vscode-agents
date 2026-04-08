@@ -16,7 +16,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { ConfigAggregator, Org, SfProject } from '@salesforce/core';
+import { ConfigAggregator, Org, SfError, SfProject } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 
 const UNSUPPORTED_AGENTS = ['Copilot_for_Salesforce'];
@@ -28,7 +28,7 @@ export interface PublishedAgentInfo {
 }
 
 export interface Logger {
-  error(message: string): void;
+  error(message: string, error?: SfError): void;
   debug(message: string): void;
 }
 
@@ -88,9 +88,10 @@ export function handleCommandError(
   logger: Logger,
   telemetryService?: TelemetryService
 ): void {
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  const sfError = SfError.wrap(error);
+  const errorMessage = sfError.message;
   vscode.window.showErrorMessage(`${userMessage}: ${errorMessage}`);
-  logger.error(`${userMessage}: ${errorMessage}`);
+  logger.error(`${userMessage}: ${errorMessage}`, sfError);
   telemetryService?.sendException(exceptionName, errorMessage);
 }
 
@@ -134,70 +135,78 @@ export async function getAgentNameFromPath(targetPath: string): Promise<string> 
   }
 }
 
-// Returns agent name from genAiPlannerBundles path (removes .genAiPlannerBundle extension and version suffix)
-function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
+// Extracts agent name from bundle paths (genAiPlannerBundles or aiAuthoringBundles)
+function getAgentNameFromBundlePath(
+  targetPath: string,
+  bundleDir: string,
+  stripExtension?: string,
+  stripVersionSuffix = false
+): string | null {
   // Normalize to handle cross-platform path separators (/ on Unix, \ on Windows)
   const normalizedPath = path.normalize(targetPath);
   const pathParts = normalizedPath.split(path.sep);
-  const plannerBundlesIndex = pathParts.findIndex(part => part === 'genAiPlannerBundles');
+  const bundleIndex = pathParts.findIndex(part => part === bundleDir);
 
-  if (plannerBundlesIndex === -1 || plannerBundlesIndex >= pathParts.length - 1) {
-    // Not in genAiPlannerBundles directory, or genAiPlannerBundles is the last part
+  if (bundleIndex === -1 || bundleIndex >= pathParts.length - 1) {
     return null;
   }
 
-  // The agent name is the first item after genAiPlannerBundles
-  let agentIdentifier = pathParts[plannerBundlesIndex + 1];
+  // The agent name is the first item after the bundle directory
+  let agentIdentifier = pathParts[bundleIndex + 1];
 
-  // If it's a .genAiPlannerBundle file, remove the extension
-  if (agentIdentifier.endsWith('.genAiPlannerBundle')) {
-    agentIdentifier = agentIdentifier.replace('.genAiPlannerBundle', '');
+  // Remove extension if specified
+  if (stripExtension && agentIdentifier.endsWith(stripExtension)) {
+    agentIdentifier = agentIdentifier.replace(stripExtension, '');
   }
 
-  // Always remove version suffix (e.g., _v1, _v2, _v33, etc.) from directory or file names
-  agentIdentifier = agentIdentifier.replace(/_v\d+$/, '');
+  // Remove version suffix if requested
+  if (stripVersionSuffix) {
+    agentIdentifier = agentIdentifier.replace(/_v\d+$/, '');
+  }
 
   return agentIdentifier;
 }
 
-// Returns agent name from aiAuthoringBundles path (directory name after aiAuthoringBundles)
-function getAgentNameFromAuthoringBundlePath(targetPath: string): string | null {
-  // Normalize to handle cross-platform path separators (/ on Unix, \ on Windows)
-  const normalizedPath = path.normalize(targetPath);
-  const pathParts = normalizedPath.split(path.sep);
-  const authoringBundlesIndex = pathParts.findIndex(part => part === 'aiAuthoringBundles');
+// Returns agent name from genAiPlannerBundles path
+function getAgentNameFromPlannerBundlePath(targetPath: string): string | null {
+  return getAgentNameFromBundlePath(targetPath, 'genAiPlannerBundles', '.genAiPlannerBundle', true);
+}
 
-  if (authoringBundlesIndex === -1 || authoringBundlesIndex >= pathParts.length - 1) {
-    // Not in aiAuthoringBundles directory, or aiAuthoringBundles is the last part
+// Returns agent name from aiAuthoringBundles path
+function getAgentNameFromAuthoringBundlePath(targetPath: string): string | null {
+  return getAgentNameFromBundlePath(targetPath, 'aiAuthoringBundles');
+}
+
+/**
+ * Helper to find .bot-meta.xml file in a directory and extract agent name.
+ * Returns null if not found.
+ */
+async function findBotMetaXmlInDirectory(directoryPath: string): Promise<string | null> {
+  try {
+    const dirUri = vscode.Uri.file(directoryPath);
+    const files = await vscode.workspace.fs.readDirectory(dirUri);
+    const botMetaFile = files.find(([name, type]) => type === vscode.FileType.File && name.endsWith('.bot-meta.xml'));
+
+    if (botMetaFile) {
+      return botMetaFile[0].replace('.bot-meta.xml', '');
+    }
+    return null;
+  } catch (error) {
     return null;
   }
-
-  // The agent name is the first item after aiAuthoringBundles (the directory name)
-  return pathParts[authoringBundlesIndex + 1];
 }
 
 /**
  * Extracts the agent name from a directory by looking for a .bot-meta.xml file.
  */
 async function getAgentNameFromDirectory(directoryPath: string): Promise<string> {
-  try {
-    const dirUri = vscode.Uri.file(directoryPath);
-    const files = await vscode.workspace.fs.readDirectory(dirUri);
-
-    // Find the .bot-meta.xml file
-    const botMetaFile = files.find(([name, type]) => type === vscode.FileType.File && name.endsWith('.bot-meta.xml'));
-
-    if (botMetaFile) {
-      // Extract bot name from the .bot-meta.xml filename
-      return botMetaFile[0].replace('.bot-meta.xml', '');
-    }
-
-    // Fallback: use the directory name (assuming it's the bot name)
-    return path.basename(directoryPath);
-  } catch (error) {
-    console.warn('Failed to read directory for bot metadata, falling back to directory name:', error);
-    return path.basename(directoryPath);
+  const agentName = await findBotMetaXmlInDirectory(directoryPath);
+  if (agentName) {
+    return agentName;
   }
+
+  // Fallback: use the directory name
+  return path.basename(directoryPath);
 }
 
 /**
@@ -226,17 +235,10 @@ export async function getAgentNameFromFile(fileName: string, filePath: string): 
   if (fileName.endsWith('.botVersion-meta.xml')) {
     try {
       const directory = path.dirname(filePath);
-      const dirUri = vscode.Uri.file(directory);
+      const agentName = await findBotMetaXmlInDirectory(directory);
 
-      // Read all files in the directory
-      const files = await vscode.workspace.fs.readDirectory(dirUri);
-
-      // Find the .bot-meta.xml file
-      const botMetaFile = files.find(([name, type]) => type === vscode.FileType.File && name.endsWith('.bot-meta.xml'));
-
-      if (botMetaFile) {
-        // Extract bot name from the .bot-meta.xml filename
-        return botMetaFile[0].replace('.bot-meta.xml', '');
+      if (agentName) {
+        return agentName;
       }
 
       // Fallback: try to infer from the file path structure
