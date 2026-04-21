@@ -123,15 +123,15 @@ export const applyHistorySelection = (
 const STEP_DISPLAY_NAMES: Record<string, string> = {
   UserInputStep: 'User Input',
   SessionInitialStateStep: 'Session Initialized',
-  NodeEntryStateStep: 'Topic Selected',
+  NodeEntryStateStep: 'Subagent Selected',
   EnabledToolsStep: 'Tools Enabled',
   LLMStep: 'Reasoning',
   VariableUpdateStep: 'Variable Update',
-  TransitionStep: 'Topic Transition',
+  TransitionStep: 'Subagent Transition',
   BeforeReasoningStep: 'Before Reasoning',
   ReasoningStep: 'Output Evaluation',
   PlannerResponseStep: 'Agent Response',
-  UpdateTopicStep: 'Topic Selected',
+  UpdateTopicStep: 'Subagent Selected',
   FunctionStep: 'Action Executed'
 };
 

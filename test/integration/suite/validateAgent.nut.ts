@@ -87,9 +87,9 @@ start_agent topic_selector:
         instructions: ->
             | Select the tool that best matches the user's message and conversation history. If it's unclear, make your best guess.
         actions:
-            go_to_escalation: @utils.transition to @topic.escalation
+            go_to_escalation: @utils.transition to @subagent.escalation
 
-topic escalation:
+subagent escalation:
     label: "Escalation"
     description: "Handles requests from users who want to transfer or escalate their conversation to a live human agent."
 
@@ -165,7 +165,7 @@ start_agent topic_selector:
         instructions: ->
             | Select the tool that best matches the user's message and conversation history. If it's unclear, make your best guess.
         actions:
-            go_to_escalation: @utils.transition to @topic.escalation`;
+            go_to_escalation: @utils.transition to @subagent.escalation`;
 
     const invalidAgentDir = path.join(testWorkspacePath, 'force-app', 'main', 'default', 'aiAuthoringBundles', 'invalidagent');
     if (!fs.existsSync(invalidAgentDir)) {
