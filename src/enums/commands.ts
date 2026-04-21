@@ -1,5 +1,6 @@
 export enum Commands {
   openAgentInOrg = 'salesforcedx-vscode-agents.openAgentInOrg',
+  openAuthoringBundleInOrg = 'salesforcedx-vscode-agents.openAuthoringBundleInOrg',
   activateAgent = 'salesforcedx-vscode-agents.activateAgent',
   deactivateAgent = 'salesforcedx-vscode-agents.deactivateAgent',
   validateAgent = 'salesforcedx-vscode-agents.validateAgent',

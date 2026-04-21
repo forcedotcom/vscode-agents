@@ -1,5 +1,6 @@
 {
   "salesforcedx-vscode-agents.openAgentInOrg": "AFDX: Open Agent in Default Org",
+  "salesforcedx-vscode-agents.openAuthoringBundleInOrg": "AFDX: Open Authoring Bundle in Default Org",
   "salesforcedx-vscode-agents.activateAgent": "AFDX: Activate Agent",
   "salesforcedx-vscode-agents.deactivateAgent": "AFDX: Deactivate Agent",
   "agent_test_view_name": "Agent Tests",

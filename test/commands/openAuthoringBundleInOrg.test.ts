@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import { registerOpenAgentInOrgCommand } from '../../src/commands/openAgentInOrg';
+import { registerOpenAuthoringBundleInOrgCommand } from '../../src/commands/openAuthoringBundleInOrg';
 import { Commands } from '../../src/enums/commands';
 import { SfProject, ConfigAggregator, Org } from '@salesforce/core';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { Agent } from '@salesforce/agents';
 import * as agentUtils from '../../src/commands/agentUtils';
 
-describe('registerOpenAgentInOrgCommand', () => {
+describe('registerOpenAuthoringBundleInOrgCommand', () => {
   let commandSpy: jest.SpyInstance;
   let projectSpy: jest.SpyInstance;
   let quickPickSpy: jest.SpyInstance;
@@ -32,8 +32,7 @@ describe('registerOpenAgentInOrgCommand', () => {
   beforeEach(() => {
     // Reset mocks
     mockConnection = {
-      instanceUrl: 'https://test.salesforce.com',
-      singleRecordQuery: jest.fn().mockResolvedValue({ Id: '0XxD60000004Cj2KAE' })
+      instanceUrl: 'https://test.salesforce.com'
     };
     mockConfigAggregator = {
       getPropertyValue: jest.fn().mockReturnValue('test-org')
@@ -68,106 +67,62 @@ describe('registerOpenAgentInOrgCommand', () => {
   });
 
   it('registers the command', () => {
-    registerOpenAgentInOrgCommand();
-    expect(commandSpy).toHaveBeenCalledWith(Commands.openAgentInOrg, expect.any(Function));
+    registerOpenAuthoringBundleInOrgCommand();
+    expect(commandSpy).toHaveBeenCalledWith(Commands.openAuthoringBundleInOrg, expect.any(Function));
   });
 
-  it('opens selected agent in org', async () => {
-    registerOpenAgentInOrgCommand();
+  it('opens selected agent authoring bundle in org', async () => {
+    registerOpenAuthoringBundleInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
     expect(progressSpy).toHaveBeenCalled();
     expect(projectSpy).toHaveBeenCalled();
     expect(quickPickSpy).toHaveBeenCalledWith(['Agent1', 'Agent2'], { placeHolder: 'Agent name (type to search)' });
     expect(configAggregatorSpy).toHaveBeenCalled();
-    expect(mockConfigAggregator.getPropertyValue).toHaveBeenCalledWith('target-org');
-    expect(orgCreateSpy).toHaveBeenCalledWith(expect.objectContaining({ aliasOrUsername: expect.any(String) }));
-    expect(mockConnection.singleRecordQuery).toHaveBeenCalledWith(
-      "SELECT Id FROM BotDefinition WHERE DeveloperName='Agent1'",
-      { tooling: false }
-    );
-    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AiCopilot/copilotStudio.app#/copilot/builder?copilotId=0XxD60000004Cj2KAE');
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=Agent1');
     expect(openExternalSpy).toHaveBeenCalledWith('https://test.salesforce.com/secur/frontdoor.jsp?otp=xxx&startURL=yyy');
-  });
-
-  it('shows error message when agent not found in org', async () => {
-    mockConnection.singleRecordQuery.mockResolvedValue({ Id: null });
-    registerOpenAgentInOrgCommand();
-    await commandSpy.mock.calls[0][1]();
-
-    expect(errorMessageSpy).toHaveBeenCalledWith('Agent "Agent1" not found in org.');
-    expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith('agent_not_found', 'Agent "Agent1" not found in org');
   });
 
   it('shows error message when opening agent fails', async () => {
     mockOrg.getFrontDoorUrl.mockRejectedValue(new Error('Connection error'));
-    registerOpenAgentInOrgCommand();
+    registerOpenAuthoringBundleInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
     expect(errorMessageSpy).toHaveBeenCalledWith('Unable to open agent: Connection error');
-    expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith('open_agent_failed', 'Connection error');
+    expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith('open_agent_authoring_failed', 'Connection error');
   });
 
-  it('handles error when getting agent name from path', async () => {
-    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-    jest.spyOn(agentUtils, 'getAgentNameFromPath').mockRejectedValue(new Error('Invalid path'));
+  it('uses agent name from path when uri is provided', async () => {
+    jest.spyOn(agentUtils, 'getAgentNameFromPath').mockResolvedValue('MyAgent');
 
-    const mockUri = { fsPath: '/invalid/path.agent' } as vscode.Uri;
+    const mockUri = { fsPath: '/path/to/aiAuthoringBundles/MyAgent/MyAgent.agent' } as vscode.Uri;
 
-    registerOpenAgentInOrgCommand();
+    registerOpenAuthoringBundleInOrgCommand();
     await commandSpy.mock.calls[0][1](mockUri);
 
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      'Failed to get agent name from path, falling back to picker:',
-      expect.any(Error)
-    );
-    expect(quickPickSpy).toHaveBeenCalled(); // Falls back to picker
-
-    consoleWarnSpy.mockRestore();
+    expect(agentUtils.getAgentNameFromPath).toHaveBeenCalledWith('/path/to/aiAuthoringBundles/MyAgent/MyAgent.agent');
+    expect(quickPickSpy).not.toHaveBeenCalled();
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=MyAgent');
+    expect(openExternalSpy).toHaveBeenCalled();
   });
 
   it('shows error when no agents found in project', async () => {
     jest.spyOn(Agent, 'list').mockResolvedValue([]);
 
-    registerOpenAgentInOrgCommand();
+    registerOpenAuthoringBundleInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
     expect(errorMessageSpy).toHaveBeenCalledWith("Couldn't find any agents in the current DX project.");
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/\[error].*Couldn't find any agents in the current DX project/)
-    );
-    expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
-      expect.stringMatching(/\[debug].*Suggestion: Retrieve your agent metadata/)
-    );
-    expect(progressSpy).not.toHaveBeenCalled(); // Should not proceed
+    expect(progressSpy).not.toHaveBeenCalled();
   });
 
   it('handles user canceling agent selection', async () => {
-    quickPickSpy.mockResolvedValue(undefined); // User cancels
+    quickPickSpy.mockResolvedValue(undefined);
 
-    registerOpenAgentInOrgCommand();
+    registerOpenAuthoringBundleInOrgCommand();
     await commandSpy.mock.calls[0][1]();
 
     expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith('no_agent_selected', 'No Agent selected');
-    expect(progressSpy).not.toHaveBeenCalled(); // Should not proceed
-  });
-
-  it('uses agent name from path when uri is provided', async () => {
-    jest.spyOn(agentUtils, 'getAgentNameFromPath').mockResolvedValue('Agent2');
-    mockConnection.singleRecordQuery.mockResolvedValue({ Id: '0XxD60000004Cj3KAE' });
-
-    const mockUri = { fsPath: '/path/to/Agent2.bot-meta.xml' } as vscode.Uri;
-
-    registerOpenAgentInOrgCommand();
-    await commandSpy.mock.calls[0][1](mockUri);
-
-    expect(agentUtils.getAgentNameFromPath).toHaveBeenCalledWith('/path/to/Agent2.bot-meta.xml');
-    expect(quickPickSpy).not.toHaveBeenCalled(); // Should not show picker
-    expect(mockConnection.singleRecordQuery).toHaveBeenCalledWith(
-      "SELECT Id FROM BotDefinition WHERE DeveloperName='Agent2'",
-      { tooling: false }
-    );
-    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AiCopilot/copilotStudio.app#/copilot/builder?copilotId=0XxD60000004Cj3KAE');
-    expect(openExternalSpy).toHaveBeenCalled();
+    expect(progressSpy).not.toHaveBeenCalled();
   });
 });

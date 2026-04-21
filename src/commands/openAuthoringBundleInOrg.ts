@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025, Salesforce, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
 import { SfError } from '@salesforce/core';
@@ -5,11 +21,11 @@ import { CoreExtensionService } from '../services/coreExtensionService';
 import { getAgentNameFromPath, selectAgentFromProject, getConnectionAndProject, handleCommandError } from './agentUtils';
 import { Logger } from '../utils/logger';
 
-export const registerOpenAgentInOrgCommand = () => {
-  return vscode.commands.registerCommand(Commands.openAgentInOrg, async (uri?: vscode.Uri) => {
+export const registerOpenAuthoringBundleInOrgCommand = () => {
+  return vscode.commands.registerCommand(Commands.openAuthoringBundleInOrg, async (uri?: vscode.Uri) => {
     const telemetryService = CoreExtensionService.getTelemetryService();
     const logger = new Logger(CoreExtensionService.getChannelService());
-    const commandName = Commands.openAgentInOrg;
+    const commandName = Commands.openAuthoringBundleInOrg;
     const hrstart = process.hrtime();
     telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
@@ -43,28 +59,11 @@ export const registerOpenAgentInOrgCommand = () => {
 
         try {
           // Get org connection
-          const { conn, org } = await getConnectionAndProject();
+          const { org } = await getConnectionAndProject();
 
-          // Query BotDefinition to get the Bot ID (same as CLI does)
-          // Escape single quotes in agent name to prevent SQL injection
-          const escapedAgentName = agentName.replace(/'/g, "''");
-          const query = `SELECT Id FROM BotDefinition WHERE DeveloperName='${escapedAgentName}'`;
-          const result = await conn.singleRecordQuery<{ Id: string }>(query, { tooling: false });
-
-          if (!result?.Id) {
-            vscode.window.showErrorMessage(`Agent "${agentName}" not found in org.`);
-            logger.error(`Agent "${agentName}" not found in org.`);
-            logger.debug(
-              'Suggestion: Ensure the agent is deployed to your org with the "project deploy start" CLI command.'
-            );
-            telemetryService?.sendException('agent_not_found', `Agent "${agentName}" not found in org`);
-            return;
-          }
-
-          const botId = result.Id;
-
-          // Construct the Agent Builder redirect URL (same as CLI)
-          const redirectUri = `AiCopilot/copilotStudio.app#/copilot/builder?copilotId=${botId}`;
+          // For aiAuthoringBundles (.agent files), use the agent authoring builder URL
+          // URL format: AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=AgentName
+          const redirectUri = `AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=${encodeURIComponent(agentName)}`;
 
           // Generate frontdoor URL with authentication
           const frontdoorUrl = await org.getFrontDoorUrl(redirectUri);
@@ -76,7 +75,7 @@ export const registerOpenAgentInOrgCommand = () => {
 
           vscode.window.showInformationMessage('Agent opened successfully in the default org.');
         } catch (error) {
-          handleCommandError(error, 'Unable to open agent', 'open_agent_failed', logger, telemetryService);
+          handleCommandError(error, 'Unable to open agent', 'open_agent_authoring_failed', logger, telemetryService);
         }
       }
     );
