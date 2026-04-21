@@ -1,0 +1,32 @@
+name: Debug Token Owner
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  identify-token:
+    name: Identify IDEE_GH_TOKEN Owner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check token owner
+        env:
+          GH_TOKEN: ${{ secrets.IDEE_GH_TOKEN }}
+        run: |
+          echo "====================================="
+          echo "Identifying IDEE_GH_TOKEN owner..."
+          echo "====================================="
+          TOKEN_OWNER=$(gh api user --jq '.login')
+          echo ""
+          echo "✅ Token owner: $TOKEN_OWNER"
+          echo ""
+          echo "This account must be added to the branch protection bypass list."
+          echo "Current bypass list includes: svc-idee-bot"
+          echo ""
+          if [ "$TOKEN_OWNER" != "svc-idee-bot" ]; then
+            echo "⚠️  WARNING: Token owner ($TOKEN_OWNER) does not match svc-idee-bot!"
+            echo "   Add $TOKEN_OWNER to Settings → Branches → main → Bypass list"
+          else
+            echo "✅ Token owner matches the bypass list"
+          fi
+          echo "====================================="
