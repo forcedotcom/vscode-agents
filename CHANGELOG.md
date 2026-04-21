@@ -1,3 +1,16 @@
+# [1.14.0](https://github.com/salesforcecli/vsode-agents/compare/v1.13.0...v1.14.0) (2026-04-21)
+
+### Bug Fixes
+
+- handle missing target org with clear error message ([ee88bfc](https://github.com/salesforcecli/vsode-agents/commit/ee88bfcb9757ced9c3cb54f79287c58f0f21546c))
+- normalize paths for cross-platform compatibility ([2417ed7](https://github.com/salesforcecli/vsode-agents/commit/2417ed7f01d7ec1454e119249f322b8d1bb77230))
+- resolve critical security and UX issues ([a93c7c8](https://github.com/salesforcecli/vsode-agents/commit/a93c7c84181230b73b35747c4636edcde4733a54))
+
+### Features
+
+- open AAB ([867c35b](https://github.com/salesforcecli/vsode-agents/commit/867c35ba5e25f82f378686abdc2a9359504cc362))
+- open published agent without CLI ([12b52b4](https://github.com/salesforcecli/vsode-agents/commit/12b52b4a9c1897569aa5c2ef192fd79e07cfed1c))
+
 # [1.12.0](https://github.com/salesforcecli/vsode-agents/compare/v1.11.1...v1.12.0) (2026-04-21)
 
 ### Bug Fixes
