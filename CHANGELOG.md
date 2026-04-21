@@ -1,3 +1,14 @@
+# [1.12.0](https://github.com/salesforcecli/vsode-agents/compare/v1.11.1...v1.12.0) (2026-04-21)
+
+### Bug Fixes
+
+- rename topic to agent usage ([63a1054](https://github.com/salesforcecli/vsode-agents/commit/63a10549fe5fd08309c706934eab399b3f9041fa))
+- test automated release workflow ([5b34a59](https://github.com/salesforcecli/vsode-agents/commit/5b34a59674996769c0e8eadfa641845269278d44))
+
+### Features
+
+- bump versions to get name changes and v2 agent script compiler ([ce1d595](https://github.com/salesforcecli/vsode-agents/commit/ce1d595e43eca92429f68cc951fd1a48fb8e5f29))
+
 ## [1.11.1](https://github.com/salesforcecli/vsode-agents/compare/v1.11.0...v1.11.1) (2026-04-01)
 
 ### Bug Fixes
