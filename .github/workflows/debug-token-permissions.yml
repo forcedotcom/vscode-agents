@@ -1,0 +1,52 @@
+name: Debug Token Permissions
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  check-permissions:
+    name: Check IDEE_GH_TOKEN Permissions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check token permissions
+        env:
+          GH_TOKEN: ${{ secrets.IDEE_GH_TOKEN }}
+        run: |
+          echo "====================================="
+          echo "Checking IDEE_GH_TOKEN permissions..."
+          echo "====================================="
+          echo ""
+
+          # Get token owner
+          TOKEN_OWNER=$(gh api user --jq '.login')
+          echo "Token owner: $TOKEN_OWNER"
+          echo ""
+
+          # Check repo permissions
+          echo "Checking repository permissions..."
+          REPO_PERMS=$(gh api /repos/forcedotcom/vscode-agents --jq '{permissions}')
+          echo "Repository permissions: $REPO_PERMS"
+          echo ""
+
+          # Check if token can push
+          CAN_PUSH=$(gh api /repos/forcedotcom/vscode-agents --jq '.permissions.push')
+          CAN_ADMIN=$(gh api /repos/forcedotcom/vscode-agents --jq '.permissions.admin')
+
+          echo "Can push: $CAN_PUSH"
+          echo "Is admin: $CAN_ADMIN"
+          echo ""
+
+          # Check token scopes (for classic PATs)
+          echo "Checking token metadata..."
+          gh api /user --include 2>&1 | grep -i "x-oauth-scopes" || echo "Cannot determine token scopes (might be fine-grained PAT)"
+          echo ""
+
+          if [ "$CAN_PUSH" != "true" ]; then
+            echo "❌ ERROR: Token does not have push permissions!"
+            echo "   The svc-idee-bot account needs write access to this repository."
+            exit 1
+          else
+            echo "✅ Token has push permissions"
+          fi
+          echo "====================================="
