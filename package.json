@@ -128,7 +128,7 @@
       }
     ],
     "configuration": {
-      "title": "Salesforce",
+      "title": "Agentforce DX",
       "properties": {
         "salesforce.agentforceDX.showGeneratedData": {
           "type": "boolean",
