@@ -1,3 +1,9 @@
+## [1.14.1](https://github.com/salesforcecli/vsode-agents/compare/v1.14.0...v1.14.1) (2026-04-27)
+
+### Bug Fixes
+
+- update settings title to Agentforce DX ([467ab5f](https://github.com/salesforcecli/vsode-agents/commit/467ab5f62a48d8883890d9aa168ed3d507adad3b))
+
 # [1.14.0](https://github.com/salesforcecli/vsode-agents/compare/v1.13.0...v1.14.0) (2026-04-21)
 
 ### Bug Fixes
