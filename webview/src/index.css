@@ -16,6 +16,45 @@ body {
   padding: 0;
 }
 
+/* Session panel (editor tab) matches the active tab's background — cleaner color than
+   the broader editor background in most themes. */
+body.afdx-session-mode {
+  background-color: var(--vscode-tab-activeBackground, var(--vscode-editor-background));
+  color: var(--vscode-tab-activeForeground, var(--vscode-editor-foreground));
+}
+
+/* Strip background colors from container-level components so the body color shows through.
+   This applies only inside a session panel; the legacy sidebar layout is unaffected. */
+body.afdx-session-mode .app,
+body.afdx-session-mode .app-menu,
+body.afdx-session-mode .app-content,
+body.afdx-session-mode .agent-preview,
+body.afdx-session-mode .agent-tracer,
+body.afdx-session-mode .agent-selector,
+body.afdx-session-mode .form-container,
+body.afdx-session-mode .tab-navigation,
+body.afdx-session-mode .header,
+body.afdx-session-mode .plan-info,
+body.afdx-session-mode .session-info {
+  background-color: transparent;
+}
+
+/* Composer input and step card surfaces: inherit the panel background so they don't show
+   up as tinted cards against the tab-active color. */
+body.afdx-session-mode .chat-input,
+body.afdx-session-mode .step-action,
+body.afdx-session-mode .step-user-message,
+body.afdx-session-mode .step-response-validation,
+body.afdx-session-mode .step-topic,
+body.afdx-session-mode .step-topic-selection,
+body.afdx-session-mode .step-action-selection,
+body.afdx-session-mode .step-agent-response,
+body.afdx-session-mode input,
+body.afdx-session-mode textarea {
+  background-color: transparent;
+  color: inherit;
+}
+
 #root {
   width: 100%;
   height: 100vh;

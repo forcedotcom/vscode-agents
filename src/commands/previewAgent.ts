@@ -6,6 +6,7 @@ import { SfError, SfProject } from '@salesforce/core';
 import { AgentCombinedViewProvider } from '../views/agentCombinedViewProvider';
 import { Agent, AgentSource } from '@salesforce/agents';
 import { Logger } from '../utils/logger';
+import { isMultiSessionEnabled } from '../views/multiSession/settings';
 
 export const registerPreviewAgentCommand = () => {
   return vscode.commands.registerCommand(Commands.previewAgent, async (uri?: vscode.Uri) => {
@@ -25,6 +26,14 @@ export const registerPreviewAgentCommand = () => {
 
     // Clear previous output
     logger.clear();
+
+    // When multi-session UI is enabled, delegate to the panel-based flow so the
+    // user lands in a dedicated editor tab instead of the single sidebar webview.
+    if (isMultiSessionEnabled()) {
+      const targetUri = uri ?? vscode.Uri.file(filePath);
+      await vscode.commands.executeCommand('sf.agent.sessionList.openFromUri', targetUri);
+      return;
+    }
 
     try {
       // Open the Agent Preview panel

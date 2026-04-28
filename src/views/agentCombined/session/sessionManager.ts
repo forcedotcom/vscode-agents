@@ -34,9 +34,9 @@ export class SessionManager {
     agentId: string,
     agentSource: AgentSource,
     isLiveMode?: boolean,
-    webviewView?: any
+    webviewHost?: unknown
   ): Promise<void> {
-    if (!webviewView) {
+    if (!webviewHost) {
       throw new Error('Webview is not ready. Please ensure the view is visible.');
     }
 

@@ -25,6 +25,8 @@ import { AgentSource } from '@salesforce/agents';
 import { getTestOutlineProvider } from './views/testOutlineProvider';
 import { AgentTestRunner } from './views/testRunner';
 import { toggleGeneratedDataOn, toggleGeneratedDataOff } from './commands/toggleGeneratedData';
+import { publishMultiSessionContext, onDidChangeMultiSessionEnabled, isMultiSessionEnabled } from './views/multiSession/settings';
+import { registerMultiSessionSurface } from './views/multiSession';
 
 // Export the provider instance for testing purposes
 let agentCombinedViewProviderInstance: AgentCombinedViewProvider | undefined;
@@ -54,6 +56,14 @@ export async function activate(context: vscode.ExtensionContext) {
     // Set initial value
     updateSkipRetrieveEnv();
 
+    // Publish multi-session feature-flag context so `when` clauses can gate views/menus.
+    await publishMultiSessionContext();
+    context.subscriptions.push(
+      onDidChangeMultiSessionEnabled(async () => {
+        await publishMultiSessionContext();
+      })
+    );
+
     // Register commands before initializing `testRunner`
     const disposables: vscode.Disposable[] = [];
     disposables.push(commands.registerOpenAgentInOrgCommand());
@@ -67,6 +77,13 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(await registerTestView());
     const agentCombinedViewDisposable = registerAgentCombinedView(context);
     context.subscriptions.push(agentCombinedViewDisposable);
+
+    // Register the multi-session surface only when the flag is enabled. When the user
+    // toggles the setting, VS Code needs to reload for contributed views to reflect it,
+    // but commands/providers gated here are registered lazily at activation.
+    if (isMultiSessionEnabled()) {
+      context.subscriptions.push(registerMultiSessionSurface(context));
+    }
 
     // Update the test view without blocking activation
     setTimeout(() => {
@@ -250,6 +267,11 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
   // Command for selecting and running an agent
   const selectAndRunAgent = async () => {
+    if (isMultiSessionEnabled()) {
+      await vscode.commands.executeCommand('sf.agent.sessionList.newSession');
+      return;
+    }
+
     const selectedAgent = await showAgentPicker('Select an agent to run');
 
     if (selectedAgent) {
@@ -284,6 +306,11 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   // Register start agent alias command
   disposables.push(
     vscode.commands.registerCommand('sf.agent.startAgent', async () => {
+      if (isMultiSessionEnabled()) {
+        await vscode.commands.executeCommand('sf.agent.sessionList.newSession');
+        return;
+      }
+
       const currentAgentId = provider.getCurrentAgentId();
 
       if (currentAgentId) {
