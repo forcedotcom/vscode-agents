@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { AgentSource } from '@salesforce/agents';
+import { Agent, AgentSource } from '@salesforce/agents';
+import { SfProject } from '@salesforce/core';
 import type { Session } from './session';
 import type { SessionRegistry } from './sessionRegistry';
 import { WebviewMessageSender, WebviewMessageHandlers } from '../agentCombined/handlers';
@@ -9,6 +10,8 @@ import { ApexDebugManager } from '../agentCombined/debugging';
 import { AgentInitializer } from '../agentCombined/agent';
 import { SessionScopedState } from './sessionScopedState';
 import { renderSessionPanelHtml } from './panelHtml';
+import { CoreExtensionService } from '../../services/coreExtensionService';
+import { buildVersionPickerItems } from '../../commands/activateAgent';
 
 export const SESSION_PANEL_VIEW_TYPE = 'afdx.sessionPanel';
 
@@ -42,6 +45,7 @@ export class SessionPanelController {
     this.state.currentAgentSource = session.agentSource;
     void this.state.setLiveMode(session.liveMode);
     void this.state.setDebugMode(session.apexDebug);
+    void this.state.setAgentSelected(true);
 
     this.messageSender = new WebviewMessageSender(this.state);
     this.messageSender.setWebview(this.wrapHostForOutboundTracking(panel));
@@ -200,6 +204,93 @@ export class SessionPanelController {
 
   async recompileAndRestart(): Promise<void> {
     await this.sessionManager.recompileAndRestartSession();
+  }
+
+  async activateVersion(): Promise<void> {
+    const session = this.registry.get(this.sessionLocalId);
+    if (!session) {
+      return;
+    }
+    if (session.agentSource !== AgentSource.PUBLISHED) {
+      void vscode.window.showErrorMessage('Version activation is only available for published agents.');
+      return;
+    }
+
+    const agentId = session.agentId;
+
+    let versions = this.state.agentVersionsCache.get(agentId);
+    if (!versions || versions.length === 0) {
+      try {
+        const conn = await CoreExtensionService.getDefaultConnection();
+        const project = SfProject.getInstance();
+        const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+        const meta = await agent.getBotMetadata();
+        versions = meta.BotVersions.records
+          .filter((v: { IsDeleted?: boolean }) => !v.IsDeleted)
+          .map((v: { VersionNumber: number; Status: string }) => ({
+            VersionNumber: v.VersionNumber,
+            Status: v.Status
+          }));
+        this.state.agentVersionsCache.set(agentId, versions);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        void vscode.window.showErrorMessage(`Failed to load versions: ${msg}`);
+        return;
+      }
+    }
+
+    if (!versions || versions.length === 0) {
+      void vscode.window.showErrorMessage('No versions found for this agent.');
+      return;
+    }
+
+    const picked = await vscode.window.showQuickPick(
+      buildVersionPickerItems(versions, { includeDeactivate: true }),
+      { placeHolder: 'Select a version to activate' }
+    );
+    if (!picked) {
+      return;
+    }
+
+    if (picked.action === 'deactivate') {
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Deactivating agent...',
+          cancellable: false
+        },
+        async () => {
+          const conn = await CoreExtensionService.getDefaultConnection();
+          const project = SfProject.getInstance();
+          const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+          await agent.deactivate();
+          for (const v of versions!) {
+            v.Status = 'Inactive';
+          }
+          void vscode.window.showInformationMessage('Agent deactivated.');
+        }
+      );
+      return;
+    }
+
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `Activating version ${picked.versionNumber}...`,
+        cancellable: false
+      },
+      async () => {
+        const conn = await CoreExtensionService.getDefaultConnection();
+        const project = SfProject.getInstance();
+        const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+        const result = await agent.activate(picked.versionNumber!);
+        const activatedVersion = result.VersionNumber as number;
+        for (const v of versions!) {
+          v.Status = v.VersionNumber === activatedVersion ? 'Active' : 'Inactive';
+        }
+        void vscode.window.showInformationMessage(`Version ${activatedVersion} activated.`);
+      }
+    );
   }
 
   async toggleDebug(): Promise<void> {

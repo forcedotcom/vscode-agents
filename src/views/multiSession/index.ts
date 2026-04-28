@@ -10,6 +10,7 @@ import { PanelFactory } from './panelFactory';
 import { registerSessionListView } from './sessionListView';
 import { registerSessionScopedCommands } from './sessionCommands';
 import { getAgentSource } from '../agentCombined/agent';
+import { buildVersionPickerItems } from '../../commands/activateAgent';
 
 export function registerMultiSessionSurface(context: vscode.ExtensionContext): vscode.Disposable {
   const disposables: vscode.Disposable[] = [];
@@ -49,6 +50,72 @@ export function registerMultiSessionSurface(context: vscode.ExtensionContext): v
     })
   );
 
+  // Activate a published agent's version. Picks the agent first (published only), then a version.
+  disposables.push(
+    vscode.commands.registerCommand('sf.agent.sessionList.activateVersion', async () => {
+      const agentId = await pickPublishedAgent('Select a published agent');
+      if (!agentId) {
+        return;
+      }
+      try {
+        const conn = await CoreExtensionService.getDefaultConnection();
+        const project = SfProject.getInstance();
+        const agent = await Agent.init({ connection: conn, project, apiNameOrId: agentId });
+        const meta = await agent.getBotMetadata();
+        const versions = meta.BotVersions.records
+          .filter((v: { IsDeleted?: boolean }) => !v.IsDeleted)
+          .map((v: { VersionNumber: number; Status: string }) => ({
+            VersionNumber: v.VersionNumber,
+            Status: v.Status
+          }));
+        if (versions.length === 0) {
+          void vscode.window.showErrorMessage('No versions found for this agent.');
+          return;
+        }
+
+        const picked = await vscode.window.showQuickPick(
+          buildVersionPickerItems(versions, { includeDeactivate: true }),
+          { placeHolder: 'Select a version to activate' }
+        );
+        if (!picked) {
+          return;
+        }
+
+        if (picked.action === 'deactivate') {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: 'Deactivating agent...',
+              cancellable: false
+            },
+            async () => {
+              await agent.deactivate();
+              void vscode.window.showInformationMessage('Agent deactivated.');
+            }
+          );
+          return;
+        }
+
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Activating version ${picked.versionNumber}...`,
+            cancellable: false
+          },
+          async () => {
+            const result = await agent.activate(picked.versionNumber!);
+            void vscode.window.showInformationMessage(
+              `Version ${result.VersionNumber} activated.`
+            );
+          }
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        void vscode.window.showErrorMessage(`Failed to activate version: ${msg}`);
+      }
+    })
+  );
+
   // Bridge from the existing `previewAgent` command (right-click .agent file) into a new panel.
   disposables.push(
     vscode.commands.registerCommand('sf.agent.sessionList.openFromUri', async (uri: vscode.Uri) => {
@@ -73,6 +140,31 @@ interface AgentPick {
   id: string;
   source: AgentSource;
   displayName: string;
+}
+
+async function pickPublishedAgent(placeHolder: string): Promise<string | undefined> {
+  try {
+    const conn = await CoreExtensionService.getDefaultConnection();
+    const project = SfProject.getInstance();
+    const agents = await Agent.listPreviewable(conn, project);
+    const published = agents.filter(a => a.source === AgentSource.PUBLISHED && a.id);
+
+    if (published.length === 0) {
+      void vscode.window.showErrorMessage('No published agents found.');
+      return undefined;
+    }
+
+    const items = published.map(agent => ({
+      label: (agent.developerName ?? agent.aabName) as string,
+      id: agent.id!
+    }));
+    const picked = await vscode.window.showQuickPick(items, { placeHolder });
+    return picked?.id;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    void vscode.window.showErrorMessage(`Failed to list agents: ${msg}`);
+    return undefined;
+  }
 }
 
 async function pickAgent(placeHolder: string): Promise<AgentPick | undefined> {

@@ -51,6 +51,9 @@ export function registerSessionScopedCommands(
     ),
     vscode.commands.registerCommand('afdx.session.toggleDebug', () =>
       withFocused('Focus an agent session tab to toggle debug.', c => c.toggleDebug())
+    ),
+    vscode.commands.registerCommand('afdx.session.activateVersion', () =>
+      withFocused('Focus an agent session tab to activate a version.', c => c.activateVersion())
     )
   );
 

@@ -271,9 +271,36 @@
           "group": "navigation@1"
         },
         {
-          "command": "sf.agent.sessionList.refreshAgents",
+          "command": "sf.agent.sessionList.activateVersion",
           "when": "view == sf.agent.sessionList.view",
           "group": "navigation@2"
+        },
+        {
+          "command": "sf.agent.sessionList.refreshAgents",
+          "when": "view == sf.agent.sessionList.view",
+          "group": "navigation@3"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "afdx.session.activateVersion",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && agentforceDX:agentSelected && !agentforceDX:isScriptAgent && !agentforceDX:sessionStarting",
+          "group": "navigation@0"
+        },
+        {
+          "command": "afdx.session.stop",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && (agentforceDX:sessionActive || agentforceDX:sessionStarting)",
+          "group": "navigation@1"
+        },
+        {
+          "command": "afdx.session.restart",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && agentforceDX:sessionActive && agentforceDX:isScriptAgent",
+          "group": "navigation@2"
+        },
+        {
+          "command": "afdx.session.toggleDebug",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && agentforceDX:sessionActive && agentforceDX:isLiveMode",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -405,6 +432,10 @@
           "when": "false"
         },
         {
+          "command": "sf.agent.sessionList.activateVersion",
+          "when": "sf:project_opened && agentforceDX:multiSession"
+        },
+        {
           "command": "afdx.session.stop",
           "when": "agentforceDX:multiSession"
         },
@@ -418,6 +449,10 @@
         },
         {
           "command": "afdx.session.toggleDebug",
+          "when": "agentforceDX:multiSession"
+        },
+        {
+          "command": "afdx.session.activateVersion",
           "when": "agentforceDX:multiSession"
         },
         {
@@ -676,6 +711,16 @@
         "command": "afdx.session.toggleDebug",
         "title": "Toggle Apex Debug",
         "icon": "$(bug)"
+      },
+      {
+        "command": "afdx.session.activateVersion",
+        "title": "Activate Version (Focused Session)",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "sf.agent.sessionList.activateVersion",
+        "title": "Activate Agent Version",
+        "icon": "$(versions)"
       }
     ]
   }
