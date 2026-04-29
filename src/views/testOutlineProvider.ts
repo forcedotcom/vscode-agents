@@ -18,50 +18,100 @@ import { basename } from 'path';
 import * as vscode from 'vscode';
 import * as xml from 'fast-xml-parser';
 import { Commands } from '../enums/commands';
-import { AgentTestGroupNode, AgentTestNode, AiEvaluationDefinition, TestNode } from '../types';
+import { AgentTestGroupNode, AgentTestNode, AiEvaluationDefinition, AiTestingDefinition, TestNode } from '../types';
+import type { TestRunnerType } from '@salesforce/agents';
 
 const NO_TESTS_MESSAGE = 'no tests found';
 const NO_TESTS_DESCRIPTION = 'no test description';
 const AGENT_TESTS = 'AgentTests';
+
+const buildTestGroupNode = (
+  definitionUri: vscode.Uri,
+  definitionApiName: string,
+  label: string,
+  runnerType: TestRunnerType,
+  testCases: Array<{ number: string; inputs: { utterance: string } }>,
+  fileContent: string
+): AgentTestGroupNode => {
+  const testDefinitionNode = new AgentTestGroupNode(
+    label,
+    new vscode.Location(definitionUri, new vscode.Position(0, 0))
+  );
+  testDefinitionNode.testDefinitionName = definitionApiName;
+  testDefinitionNode.runnerType = runnerType;
+  const splitContent = fileContent.split(EOL);
+  testCases.map(test => {
+    const line = splitContent.findIndex(l => l.includes(`<number>${test.number}</number`));
+    const testcaseNode = new AgentTestNode(
+      `#${test.number}`,
+      new vscode.Location(definitionUri, new vscode.Position(line, 8))
+    );
+    testcaseNode.parentName = label;
+    testcaseNode.description = test.inputs.utterance;
+    testDefinitionNode.children.push(testcaseNode);
+  });
+  testDefinitionNode.children.sort((a, b) => a.name.localeCompare(b.name));
+  return testDefinitionNode;
+};
+
 export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTestGroupNode>> => {
-  const aiTestDefs = await vscode.workspace.findFiles('**/*.aiEvaluationDefinition-meta.xml');
-  //from the aiTestDef files, parse the xml using fast-xml-parser, find the testSetName that it points to
-  const aggregator = new Map<string, AgentTestGroupNode>();
+  const [aiEvalDefs, aiTestingDefs] = await Promise.all([
+    vscode.workspace.findFiles('**/*.aiEvaluationDefinition-meta.xml'),
+    vscode.workspace.findFiles('**/*.aiTestingDefinition-meta.xml')
+  ]);
   const parser = new xml.XMLParser();
-  await Promise.all(
-    aiTestDefs.map(async definition => {
+
+  // Parse both sets independently, keyed by API name
+  const evalNodes = new Map<string, AgentTestGroupNode>();
+  const ngtNodes = new Map<string, AgentTestGroupNode>();
+
+  await Promise.all([
+    ...aiEvalDefs.map(async definition => {
       const fileContent = (await vscode.workspace.fs.readFile(definition)).toString();
       const testDefinition = parser.parse(fileContent) as AiEvaluationDefinition;
       const definitionApiName = basename(definition.fsPath, '.aiEvaluationDefinition-meta.xml');
-
-      const testDefinitionNode = new AgentTestGroupNode(
+      const testCases = Array.isArray(testDefinition.AiEvaluationDefinition.testCase)
+        ? testDefinition.AiEvaluationDefinition.testCase
+        : [testDefinition.AiEvaluationDefinition.testCase];
+      evalNodes.set(
         definitionApiName,
-        new vscode.Location(definition, new vscode.Position(0, 0))
+        buildTestGroupNode(definition, definitionApiName, definitionApiName, 'testing-center', testCases, fileContent)
       );
-
-      const splitContent = fileContent.split(EOL);
-
-      (Array.isArray(testDefinition.AiEvaluationDefinition.testCase)
-        ? // xml parser will not parse single node into array
-          testDefinition.AiEvaluationDefinition.testCase
-        : [testDefinition.AiEvaluationDefinition.testCase]
-      ).map(test => {
-        const line = splitContent.findIndex(l => l.includes(`<number>${test.number}</number`));
-        const testcaseNode = new AgentTestNode(
-          `#${test.number}`,
-          new vscode.Location(definition, new vscode.Position(line, 8))
-        );
-        testcaseNode.parentName = definitionApiName;
-        testcaseNode.description = test.inputs.utterance;
-        testDefinitionNode.children.push(testcaseNode);
-      });
-
-      // Sort test cases alphabetically by name
-      testDefinitionNode.children.sort((a, b) => a.name.localeCompare(b.name));
-
-      aggregator.set(testDefinitionNode.name, testDefinitionNode);
+    }),
+    ...aiTestingDefs.map(async definition => {
+      const fileContent = (await vscode.workspace.fs.readFile(definition)).toString();
+      const testDefinition = parser.parse(fileContent) as AiTestingDefinition;
+      const definitionApiName = basename(definition.fsPath, '.aiTestingDefinition-meta.xml');
+      const testCases = Array.isArray(testDefinition.AiTestingDefinition.testCase)
+        ? testDefinition.AiTestingDefinition.testCase
+        : [testDefinition.AiTestingDefinition.testCase];
+      ngtNodes.set(
+        definitionApiName,
+        buildTestGroupNode(definition, definitionApiName, definitionApiName, 'agentforce-studio', testCases, fileContent)
+      );
     })
-  );
+  ]);
+
+  // Apply disambiguation labels for names that appear in both sets
+  const conflicts = new Set([...evalNodes.keys()].filter(k => ngtNodes.has(k)));
+  for (const name of conflicts) {
+    const evalNode = evalNodes.get(name)!;
+    const ngtNode = ngtNodes.get(name)!;
+    const evalLabel = `${name} (testing-center)`;
+    const ngtLabel = `${name} (agentforce-studio)`;
+    evalNode.label = evalLabel;
+    evalNode.name = evalLabel;
+    evalNode.children.forEach(c => (c.parentName = evalLabel));
+    ngtNode.label = ngtLabel;
+    ngtNode.name = ngtLabel;
+    ngtNode.children.forEach(c => (c.parentName = ngtLabel));
+  }
+
+  // Merge into a single map keyed by the (possibly suffixed) label
+  const aggregator = new Map<string, AgentTestGroupNode>();
+  for (const node of [...evalNodes.values(), ...ngtNodes.values()]) {
+    aggregator.set(node.name, node);
+  }
 
   return aggregator;
 };

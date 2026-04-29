@@ -22,3 +22,19 @@ export type AgentTestCase = {
     { name: 'expectedOutcome'; expectedValue: string }
   ];
 };
+
+export type NGTTestCaseMetadata = {
+  number: string;
+  inputs: { utterance: string };
+};
+
+export type AiTestingDefinition = {
+  AiTestingDefinition: {
+    description: string;
+    name: string;
+    subjectType: 'AGENT';
+    subjectName: string;
+    subjectVersion: string;
+    testCase: NGTTestCaseMetadata | NGTTestCaseMetadata[];
+  };
+};
