@@ -22,3 +22,21 @@ export type AgentTestCase = {
     { name: 'expectedOutcome'; expectedValue: string }
   ];
 };
+
+// until @salesforce/types has AiTestingDefinition
+export type AgentforceStudioTestCaseMetadata = {
+  number: string;
+  inputs: { utterance: string };
+};
+
+// until @salesforce/types has AiTestingDefinition
+export type AiTestingDefinition = {
+  AiTestingDefinition: {
+    description: string;
+    name: string;
+    subjectType: 'AGENT';
+    subjectName: string;
+    subjectVersion: string;
+    testCase: AgentforceStudioTestCaseMetadata | AgentforceStudioTestCaseMetadata[];
+  };
+};
