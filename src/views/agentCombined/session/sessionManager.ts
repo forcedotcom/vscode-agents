@@ -1,4 +1,4 @@
-import { AgentSource, ScriptAgent, ProductionAgent } from '@salesforce/agents';
+import { AgentSource, ScriptAgent, ProductionAgent, createPreviewSessionCache } from '@salesforce/agents';
 import { SfError } from '@salesforce/core';
 import { EOL } from 'os';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
@@ -82,6 +82,13 @@ export class SessionManager {
       this.state.sessionId = session.sessionId;
       this.state.sessionAgentId = agentId;
       this.logSessionStarted(isLiveMode);
+
+      // Write session-meta.json so SF CLI and other consumers can discover this session
+      const sessionType = agentSource === AgentSource.SCRIPT ? (isLiveMode ? 'live' : 'simulated') : 'published';
+      await createPreviewSessionCache(this.state.agentInstance, {
+        displayName: this.state.currentAgentName,
+        sessionType: sessionType as 'live' | 'simulated' | 'published',
+      });
 
       // Load history
       await this.historyManager.loadAndSendTraceHistory(agentId, agentSource);
@@ -244,6 +251,13 @@ export class SessionManager {
       this.state.sessionId = session.sessionId;
       this.state.sessionAgentId = agentId;
       this.logSessionStarted(isLiveMode);
+
+      // Write session-meta.json so SF CLI and other consumers can discover this session
+      const sessionType = agentSource === AgentSource.SCRIPT ? (isLiveMode ? 'live' : 'simulated') : 'published';
+      await createPreviewSessionCache(this.state.agentInstance, {
+        displayName: this.state.currentAgentName,
+        sessionType: sessionType as 'live' | 'simulated' | 'published',
+      });
 
       await this.completeRestart(session, 'Agent session recompiled and restarted.', ensureActive);
       this.state.pendingStartAgentId = undefined;

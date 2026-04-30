@@ -38,7 +38,8 @@ jest.mock('@salesforce/agents', () => ({
   },
   ProductionAgent: {
     init: jest.fn()
-  }
+  },
+  createPreviewSessionCache: jest.fn().mockResolvedValue(undefined)
 }));
 
 // Mock @salesforce/core
@@ -251,6 +252,12 @@ describe('SessionManager', () => {
         expect(mockChannelService.appendLine).toHaveBeenCalledWith(
           expect.stringContaining('Live test session started for agent TestAgent. SessionId: test-session-123')
         );
+
+        const { createPreviewSessionCache } = require('@salesforce/agents');
+        expect(createPreviewSessionCache).toHaveBeenCalledWith(
+          mockState.agentInstance,
+          expect.objectContaining({ sessionType: 'live' })
+        );
       });
 
       it('should log simulation mode session start when starting session successfully', async () => {
@@ -263,6 +270,12 @@ describe('SessionManager', () => {
         expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[debug]'));
         expect(mockChannelService.appendLine).toHaveBeenCalledWith(
           expect.stringContaining('Simulation session started for agent TestAgent. SessionId: test-session-123')
+        );
+
+        const { createPreviewSessionCache } = require('@salesforce/agents');
+        expect(createPreviewSessionCache).toHaveBeenCalledWith(
+          mockState.agentInstance,
+          expect.objectContaining({ sessionType: 'simulated' })
         );
       });
     });
