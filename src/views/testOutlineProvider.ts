@@ -63,7 +63,7 @@ export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTes
 
   // Parse both sets independently, keyed by API name
   const evalNodes = new Map<string, AgentTestGroupNode>();
-  const ngtNodes = new Map<string, AgentTestGroupNode>();
+  const agentforceStudioNodes = new Map<string, AgentTestGroupNode>();
 
   await Promise.all([
     ...aiEvalDefs.map(async definition => {
@@ -85,31 +85,38 @@ export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTes
       const testCases = Array.isArray(testDefinition.AiTestingDefinition.testCase)
         ? testDefinition.AiTestingDefinition.testCase
         : [testDefinition.AiTestingDefinition.testCase];
-      ngtNodes.set(
+      agentforceStudioNodes.set(
         definitionApiName,
-        buildTestGroupNode(definition, definitionApiName, definitionApiName, 'agentforce-studio', testCases, fileContent)
+        buildTestGroupNode(
+          definition,
+          definitionApiName,
+          definitionApiName,
+          'agentforce-studio',
+          testCases,
+          fileContent
+        )
       );
     })
   ]);
 
   // Apply disambiguation labels for names that appear in both sets
-  const conflicts = new Set([...evalNodes.keys()].filter(k => ngtNodes.has(k)));
+  const conflicts = new Set([...evalNodes.keys()].filter(k => agentforceStudioNodes.has(k)));
   for (const name of conflicts) {
     const evalNode = evalNodes.get(name)!;
-    const ngtNode = ngtNodes.get(name)!;
+    const afsNode = agentforceStudioNodes.get(name)!;
     const evalLabel = `${name} (testing-center)`;
-    const ngtLabel = `${name} (agentforce-studio)`;
+    const afsLabel = `${name} (agentforce-studio)`;
     evalNode.label = evalLabel;
     evalNode.name = evalLabel;
     evalNode.children.forEach(c => (c.parentName = evalLabel));
-    ngtNode.label = ngtLabel;
-    ngtNode.name = ngtLabel;
-    ngtNode.children.forEach(c => (c.parentName = ngtLabel));
+    afsNode.label = afsLabel;
+    afsNode.name = afsLabel;
+    afsNode.children.forEach(c => (c.parentName = afsLabel));
   }
 
   // Merge into a single map keyed by the (possibly suffixed) label
   const aggregator = new Map<string, AgentTestGroupNode>();
-  for (const node of [...evalNodes.values(), ...ngtNodes.values()]) {
+  for (const node of [...evalNodes.values(), ...agentforceStudioNodes.values()]) {
     aggregator.set(node.name, node);
   }
 

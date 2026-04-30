@@ -354,13 +354,13 @@ describe('parseAgentTestsFromProject', () => {
     await expect(parseAgentTestsFromProject()).rejects.toThrow();
   });
 
-  it('should parse single NGT test case from AiTestingDefinition XML file', async () => {
+  it('should parse single Agentforce Studio test case from AiTestingDefinition XML file', async () => {
     const mockXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <AiTestingDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
     <testCase>
         <number>1</number>
         <inputs>
-            <utterance>NGT utterance 1</utterance>
+            <utterance>Agentforce Studio utterance 1</utterance>
         </inputs>
         <scorer>
             <expectedValue>GeneralFAQ</expectedValue>
@@ -370,7 +370,7 @@ describe('parseAgentTestsFromProject', () => {
 </AiTestingDefinition>`;
 
     const mockUri = {
-      fsPath: '/test/MyNGTAgent.aiTestingDefinition-meta.xml'
+      fsPath: '/test/MyAgentforceStudioAgent.aiTestingDefinition-meta.xml'
     } as vscode.Uri;
 
     jest
@@ -382,35 +382,35 @@ describe('parseAgentTestsFromProject', () => {
     const result = await parseAgentTestsFromProject();
 
     expect(result.size).toBe(1);
-    expect(result.has('MyNGTAgent')).toBe(true);
+    expect(result.has('MyAgentforceStudioAgent')).toBe(true);
 
-    const testGroup = result.get('MyNGTAgent');
+    const testGroup = result.get('MyAgentforceStudioAgent');
     expect(testGroup).toBeDefined();
-    expect(testGroup!.name).toBe('MyNGTAgent');
+    expect(testGroup!.name).toBe('MyAgentforceStudioAgent');
     expect(testGroup!.children.length).toBe(1);
     expect(testGroup!.children[0].name).toBe('#1');
-    expect((testGroup!.children[0] as any).description).toBe('NGT utterance 1');
+    expect((testGroup!.children[0] as any).description).toBe('Agentforce Studio utterance 1');
   });
 
-  it('should parse multiple NGT test cases from AiTestingDefinition XML file', async () => {
+  it('should parse multiple Agentforce Studio test cases from AiTestingDefinition XML file', async () => {
     const mockXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <AiTestingDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
     <testCase>
         <number>2</number>
         <inputs>
-            <utterance>NGT utterance 2</utterance>
+            <utterance>Agentforce Studio utterance 2</utterance>
         </inputs>
     </testCase>
     <testCase>
         <number>1</number>
         <inputs>
-            <utterance>NGT utterance 1</utterance>
+            <utterance>Agentforce Studio utterance 1</utterance>
         </inputs>
     </testCase>
 </AiTestingDefinition>`;
 
     const mockUri = {
-      fsPath: '/test/MultiNGTAgent.aiTestingDefinition-meta.xml'
+      fsPath: '/test/MultiAgentforceStudioAgent.aiTestingDefinition-meta.xml'
     } as vscode.Uri;
 
     jest
@@ -422,7 +422,7 @@ describe('parseAgentTestsFromProject', () => {
     const result = await parseAgentTestsFromProject();
 
     expect(result.size).toBe(1);
-    const testGroup = result.get('MultiNGTAgent');
+    const testGroup = result.get('MultiAgentforceStudioAgent');
     expect(testGroup).toBeDefined();
     expect(testGroup!.children.length).toBe(2);
     expect(testGroup!.children[0].name).toBe('#1');
@@ -440,33 +440,35 @@ describe('parseAgentTestsFromProject', () => {
     </testCase>
 </AiEvaluationDefinition>`;
 
-    const ngtXml = `<?xml version="1.0" encoding="UTF-8"?>
+    const agentforceStudioXml = `<?xml version="1.0" encoding="UTF-8"?>
 <AiTestingDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
     <testCase>
         <number>1</number>
         <inputs>
-            <utterance>NGT utterance</utterance>
+            <utterance>Agentforce Studio utterance</utterance>
         </inputs>
     </testCase>
 </AiTestingDefinition>`;
 
     const evalUri = { fsPath: '/test/EvalAgent.aiEvaluationDefinition-meta.xml' } as vscode.Uri;
-    const ngtUri = { fsPath: '/test/NGTAgent.aiTestingDefinition-meta.xml' } as vscode.Uri;
+    const agentforceStudioUri = {
+      fsPath: '/test/AgentforceStudioAgent.aiTestingDefinition-meta.xml'
+    } as vscode.Uri;
 
     jest
       .spyOn(vscode.workspace, 'findFiles')
       .mockResolvedValueOnce([evalUri]) // aiEvaluationDefinition
-      .mockResolvedValueOnce([ngtUri]); // aiTestingDefinition
+      .mockResolvedValueOnce([agentforceStudioUri]); // aiTestingDefinition
     jest
       .spyOn(vscode.workspace.fs, 'readFile')
       .mockResolvedValueOnce(Buffer.from(evalXml))
-      .mockResolvedValueOnce(Buffer.from(ngtXml));
+      .mockResolvedValueOnce(Buffer.from(agentforceStudioXml));
 
     const result = await parseAgentTestsFromProject();
 
     expect(result.size).toBe(2);
     expect(result.has('EvalAgent')).toBe(true);
-    expect(result.has('NGTAgent')).toBe(true);
+    expect(result.has('AgentforceStudioAgent')).toBe(true);
   });
 
   it('should apply disambiguation suffixes when both types share the same API name', async () => {
@@ -481,12 +483,12 @@ describe('parseAgentTestsFromProject', () => {
 </${root}>`;
 
     const evalUri = { fsPath: '/test/WillieTest.aiEvaluationDefinition-meta.xml' } as vscode.Uri;
-    const ngtUri = { fsPath: '/test/WillieTest.aiTestingDefinition-meta.xml' } as vscode.Uri;
+    const agentforceStudioUri = { fsPath: '/test/WillieTest.aiTestingDefinition-meta.xml' } as vscode.Uri;
 
     jest
       .spyOn(vscode.workspace, 'findFiles')
       .mockResolvedValueOnce([evalUri])
-      .mockResolvedValueOnce([ngtUri]);
+      .mockResolvedValueOnce([agentforceStudioUri]);
     jest
       .spyOn(vscode.workspace.fs, 'readFile')
       .mockResolvedValueOnce(Buffer.from(sharedXml('AiEvaluationDefinition')))
@@ -513,25 +515,30 @@ describe('parseAgentTestsFromProject', () => {
 <AiEvaluationDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
     <testCase><number>1</number><inputs><utterance>u</utterance></inputs></testCase>
 </AiEvaluationDefinition>`;
-    const ngtXml = `<?xml version="1.0" encoding="UTF-8"?>
+    const agentforceStudioXml = `<?xml version="1.0" encoding="UTF-8"?>
 <AiTestingDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
     <testCase><number>1</number><inputs><utterance>u</utterance></inputs></testCase>
 </AiTestingDefinition>`;
 
     const evalUri = { fsPath: '/test/UniqueEval.aiEvaluationDefinition-meta.xml' } as vscode.Uri;
-    const ngtUri = { fsPath: '/test/UniqueNGT.aiTestingDefinition-meta.xml' } as vscode.Uri;
+    const agentforceStudioUri = {
+      fsPath: '/test/UniqueAgentforceStudio.aiTestingDefinition-meta.xml'
+    } as vscode.Uri;
 
-    jest.spyOn(vscode.workspace, 'findFiles').mockResolvedValueOnce([evalUri]).mockResolvedValueOnce([ngtUri]);
+    jest
+      .spyOn(vscode.workspace, 'findFiles')
+      .mockResolvedValueOnce([evalUri])
+      .mockResolvedValueOnce([agentforceStudioUri]);
     jest
       .spyOn(vscode.workspace.fs, 'readFile')
       .mockResolvedValueOnce(Buffer.from(evalXml))
-      .mockResolvedValueOnce(Buffer.from(ngtXml));
+      .mockResolvedValueOnce(Buffer.from(agentforceStudioXml));
 
     const result = await parseAgentTestsFromProject();
 
     expect(result.has('UniqueEval')).toBe(true);
-    expect(result.has('UniqueNGT')).toBe(true);
+    expect(result.has('UniqueAgentforceStudio')).toBe(true);
     expect(result.get('UniqueEval')!.testDefinitionName).toBe('UniqueEval');
-    expect(result.get('UniqueNGT')!.testDefinitionName).toBe('UniqueNGT');
+    expect(result.get('UniqueAgentforceStudio')!.testDefinitionName).toBe('UniqueAgentforceStudio');
   });
 });

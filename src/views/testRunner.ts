@@ -18,11 +18,11 @@ import * as vscode from 'vscode';
 import { AgentTestOutlineProvider } from './testOutlineProvider';
 import {
   AgentTester,
-  AgentTesterNGT,
+  AgentforceStudioTester,
   createAgentTester,
   TestStatus,
   AgentTestResultsResponse,
-  AgentTestNGTResultsResponse,
+  AgentforceStudioTestResultsResponse,
   humanFriendlyName,
   metric
 } from '@salesforce/agents';
@@ -34,15 +34,15 @@ import { AgentTestNode } from '../types';
 import { formatJson } from '../utils/jsonFormatter';
 
 type AgentTestResults = AgentTestResultsResponse & { id: string };
-type NGTTestResults = AgentTestNGTResultsResponse & { id: string };
+type AgentforceStudioTestResults = AgentforceStudioTestResultsResponse & { id: string };
 
-type ParsedNGTScorer =
+type ParsedAgentforceStudioScorer =
   | { kind: 'latency'; passing: boolean; latencyMs: number; reasoning: string }
   | { kind: 'quality'; passing: boolean; score: number; reasoning: string }
   | { kind: 'assertion'; passing: boolean; expectedValue: string; actualValue: string }
   | { kind: 'unknown'; passing: boolean; raw: string };
 
-function parseNGTScorer(scorerResponse: string): ParsedNGTScorer {
+function parseAgentforceStudioScorer(scorerResponse: string): ParsedAgentforceStudioScorer {
   try {
     const p = JSON.parse(scorerResponse) as {
       status?: string;
@@ -73,7 +73,7 @@ function parseNGTScorer(scorerResponse: string): ParsedNGTScorer {
 
 export class AgentTestRunner {
   private testGroupNameToResult = new Map<string, AgentTestResults>();
-  private ngtTestGroupNameToResult = new Map<string, NGTTestResults>();
+  private agentforceStudioTestGroupNameToResult = new Map<string, AgentforceStudioTestResults>();
   constructor(private testOutline: AgentTestOutlineProvider) {}
 
   public displayTestDetails(test: TestNode) {
@@ -81,20 +81,21 @@ export class AgentTestRunner {
     channelService.showChannelOutput();
     channelService.clear();
 
-    // Check NGT results first, then fall back to standard results
-    const ngtResult =
-      this.ngtTestGroupNameToResult.get(test.name) ?? this.ngtTestGroupNameToResult.get(test.parentName);
-    if (ngtResult) {
+    // Check Agentforce Studio results first, then fall back to standard results
+    const agentforceStudioResult =
+      this.agentforceStudioTestGroupNameToResult.get(test.name) ??
+      this.agentforceStudioTestGroupNameToResult.get(test.parentName);
+    if (agentforceStudioResult) {
       if (test.parentName == '') {
-        channelService.appendLine(`Job Id: ${ngtResult.id}`);
-        this.printNGTTestSummary(ngtResult);
+        channelService.appendLine(`Job Id: ${agentforceStudioResult.id}`);
+        this.printAgentforceStudioTestSummary(agentforceStudioResult);
         return;
       }
-      const testInfo = structuredClone(ngtResult);
+      const testInfo = structuredClone(agentforceStudioResult);
       if (test instanceof AgentTestNode) {
         testInfo.testCases = testInfo.testCases.filter(f => `#${f.testNumber}` === test.name);
       }
-      this.displayNGTTestCases(testInfo);
+      this.displayAgentforceStudioTestCases(testInfo);
       return;
     }
 
@@ -232,7 +233,7 @@ export class AgentTestRunner {
       );
 
       if (type === 'agentforce-studio') {
-        await this.runAgentforceStudioTest(test, runner as AgentTesterNGT, channelService);
+        await this.runAgentforceStudioTest(test, runner as AgentforceStudioTester, channelService);
       } else {
         await this.runTestingCenterTest(test, runner as AgentTester, channelService);
       }
@@ -276,25 +277,26 @@ export class AgentTestRunner {
 
   private async runAgentforceStudioTest(
     test: AgentTestGroupNode,
-    tester: AgentTesterNGT,
+    tester: AgentforceStudioTester,
     channelService: ReturnType<typeof CoreExtensionService.getTestChannelService>
   ): Promise<void> {
     const response = await tester.start(test.testDefinitionName);
     channelService.appendLine(`Job Id: ${response.runId}`);
     this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
 
-    const result: NGTTestResults = {
+    const result: AgentforceStudioTestResults = {
       ...(await tester.poll(response.runId, { timeout: Duration.minutes(100) })),
       id: response.runId
     };
 
-    this.ngtTestGroupNameToResult.set(test.name, result);
+    this.agentforceStudioTestGroupNameToResult.set(test.name, result);
     this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
 
     let hasFailure = false;
     result.testCases.map(tc => {
       const tcFailed =
-        tc.testScorerResults.length === 0 || tc.testScorerResults.some(s => !parseNGTScorer(s.scorerResponse).passing);
+        tc.testScorerResults.length === 0 ||
+        tc.testScorerResults.some(s => !parseAgentforceStudioScorer(s.scorerResponse).passing);
       if (tcFailed) hasFailure = true;
       this.testOutline
         .getTestGroup(test.name)
@@ -303,10 +305,10 @@ export class AgentTestRunner {
         ?.updateOutcome(tcFailed ? 'ERROR' : 'COMPLETED');
     });
     this.testOutline.getTestGroup(test.name)?.updateOutcome(hasFailure ? 'ERROR' : 'COMPLETED');
-    this.printNGTTestSummary(result);
+    this.printAgentforceStudioTestSummary(result);
   }
 
-  private displayNGTTestCases(testInfo: NGTTestResults): void {
+  private displayAgentforceStudioTestCases(testInfo: AgentforceStudioTestResults): void {
     const channelService = CoreExtensionService.getTestChannelService();
 
     testInfo.testCases.map(tc => {
@@ -315,7 +317,7 @@ export class AgentTestRunner {
       channelService.appendLine('════════════════════════════════════════════════════════════════════════');
       channelService.appendLine('');
       tc.testScorerResults.map(scorer => {
-        const parsed = parseNGTScorer(scorer.scorerResponse);
+        const parsed = parseAgentforceStudioScorer(scorer.scorerResponse);
         const icon = parsed.passing ? '✅' : '❌';
         const verdict = parsed.passing ? 'PASS' : 'FAILURE';
         channelService.appendLine(`❯ ${scorer.scorerName.toUpperCase()}: ${verdict} ${icon}`);
@@ -339,7 +341,7 @@ export class AgentTestRunner {
         channelService.appendLine('');
       });
 
-      const passing = tc.testScorerResults.filter(s => parseNGTScorer(s.scorerResponse).passing).length;
+      const passing = tc.testScorerResults.filter(s => parseAgentforceStudioScorer(s.scorerResponse).passing).length;
       const failing = tc.testScorerResults.length - passing;
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
       channelService.appendLine(
@@ -364,10 +366,11 @@ export class AgentTestRunner {
     channelService.appendLine(`Select a test case in the Test View panel for more information`);
   }
 
-  private printNGTTestSummary(result: NGTTestResults): void {
+  private printAgentforceStudioTestSummary(result: AgentforceStudioTestResults): void {
     const channelService = CoreExtensionService.getTestChannelService();
     const tcPassing = (tc: (typeof result.testCases)[number]): boolean =>
-      tc.testScorerResults.length > 0 && tc.testScorerResults.every(s => parseNGTScorer(s.scorerResponse).passing);
+      tc.testScorerResults.length > 0 &&
+      tc.testScorerResults.every(s => parseAgentforceStudioScorer(s.scorerResponse).passing);
     channelService.appendLine(result.status);
     channelService.appendLine('');
     channelService.appendLine('Test Results');

@@ -23,11 +23,13 @@ export type AgentTestCase = {
   ];
 };
 
-export type NGTTestCaseMetadata = {
+// until @salesforce/types has AiTestingDefinition
+export type AgentforceStudioTestCaseMetadata = {
   number: string;
   inputs: { utterance: string };
 };
 
+// until @salesforce/types has AiTestingDefinition
 export type AiTestingDefinition = {
   AiTestingDefinition: {
     description: string;
@@ -35,6 +37,6 @@ export type AiTestingDefinition = {
     subjectType: 'AGENT';
     subjectName: string;
     subjectVersion: string;
-    testCase: NGTTestCaseMetadata | NGTTestCaseMetadata[];
+    testCase: AgentforceStudioTestCaseMetadata | AgentforceStudioTestCaseMetadata[];
   };
 };
