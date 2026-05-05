@@ -1,4 +1,4 @@
-import { AgentSource, ScriptAgent, ProductionAgent } from '@salesforce/agents';
+import { AgentSource, ScriptAgent, ProductionAgent, createPreviewSessionCache } from '@salesforce/agents';
 import { SfError } from '@salesforce/core';
 import { EOL } from 'os';
 import { CoreExtensionService } from '../../../services/coreExtensionService';
@@ -82,6 +82,7 @@ export class SessionManager {
       this.state.sessionId = session.sessionId;
       this.state.sessionAgentId = agentId;
       this.logSessionStarted(isLiveMode);
+      await this.writeSessionCache(agentSource, isLiveMode);
 
       // Load history
       await this.historyManager.loadAndSendTraceHistory(agentId, agentSource);
@@ -161,7 +162,7 @@ export class SessionManager {
    * Restarts the agent session without recompilation
    */
   async restartSession(): Promise<void> {
-    if (!this.state.agentInstance || !this.state.sessionId) {
+    if (!this.state.agentInstance || !this.state.sessionId || !this.state.currentAgentSource) {
       return;
     }
 
@@ -172,6 +173,7 @@ export class SessionManager {
       // Start a new session directly - the SDK handles ending the previous session internally
       const session = await this.state.agentInstance.preview.start();
       this.state.sessionId = session.sessionId;
+      await this.writeSessionCache(this.state.currentAgentSource, this.state.isLiveMode);
 
       await this.completeRestart(session, 'Agent session restarted.');
     } catch (error) {
@@ -244,7 +246,7 @@ export class SessionManager {
       this.state.sessionId = session.sessionId;
       this.state.sessionAgentId = agentId;
       this.logSessionStarted(isLiveMode);
-
+      await this.writeSessionCache(agentSource, isLiveMode);
       await this.completeRestart(session, 'Agent session recompiled and restarted.', ensureActive);
       this.state.pendingStartAgentId = undefined;
       this.state.pendingStartAgentSource = undefined;
@@ -389,6 +391,19 @@ export class SessionManager {
     // Enable debug mode if set
     if (this.state.isApexDebuggingEnabled && this.state.agentInstance) {
       this.state.agentInstance.preview.setApexDebugging(this.state.isApexDebuggingEnabled);
+    }
+  }
+
+  private async writeSessionCache(agentSource: AgentSource, isLiveMode: boolean | undefined): Promise<void> {
+    const sessionType: 'live' | 'simulated' | 'published' =
+      agentSource === AgentSource.SCRIPT ? (isLiveMode ? 'live' : 'simulated') : 'published';
+    try {
+      await createPreviewSessionCache(this.state.agentInstance!, {
+        displayName: this.state.currentAgentName,
+        sessionType
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to write preview session cache: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
