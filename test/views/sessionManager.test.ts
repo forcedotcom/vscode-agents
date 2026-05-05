@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { AgentSource } from '@salesforce/agents';
+import { AgentSource, createPreviewSessionCache } from '@salesforce/agents';
 
 // Mock VS Code
 jest.mock('vscode', () => ({
@@ -253,8 +253,7 @@ describe('SessionManager', () => {
           expect.stringContaining('Live test session started for agent TestAgent. SessionId: test-session-123')
         );
 
-        const { createPreviewSessionCache } = require('@salesforce/agents');
-        expect(createPreviewSessionCache).toHaveBeenCalledWith(
+        expect(jest.mocked(createPreviewSessionCache)).toHaveBeenCalledWith(
           mockState.agentInstance,
           expect.objectContaining({ sessionType: 'live' })
         );
@@ -272,11 +271,75 @@ describe('SessionManager', () => {
           expect.stringContaining('Simulation session started for agent TestAgent. SessionId: test-session-123')
         );
 
-        const { createPreviewSessionCache } = require('@salesforce/agents');
-        expect(createPreviewSessionCache).toHaveBeenCalledWith(
+        expect(jest.mocked(createPreviewSessionCache)).toHaveBeenCalledWith(
           mockState.agentInstance,
           expect.objectContaining({ sessionType: 'simulated' })
         );
+      });
+
+      it('should call createPreviewSessionCache with published sessionType for a published agent', async () => {
+        const publishedAgentId = '0Xx000000000001AAA'; // valid Bot ID: starts with 0X, 18 chars
+        mockState.currentAgentSource = AgentSource.PUBLISHED;
+        mockState.currentAgentName = 'PublishedAgent';
+
+        const mockAgentInstance = {
+          name: 'PublishedAgent',
+          preview: {
+            start: jest.fn().mockResolvedValue({
+              sessionId: 'published-session-123',
+              messages: []
+            })
+          }
+        };
+        mockAgentInitializer.initializePublishedAgent.mockResolvedValue(mockAgentInstance);
+        mockState.agentInstance = mockAgentInstance;
+
+        const mockWebview = {};
+        await sessionManager.startSession(publishedAgentId, AgentSource.PUBLISHED, undefined, mockWebview);
+
+        expect(jest.mocked(createPreviewSessionCache)).toHaveBeenCalledWith(
+          mockState.agentInstance,
+          expect.objectContaining({ sessionType: 'published' })
+        );
+      });
+
+      it('should call createPreviewSessionCache during recompileAndRestartSession', async () => {
+        mockState.currentAgentId = 'test-agent-id';
+        mockState.currentAgentSource = AgentSource.SCRIPT;
+        mockState.isLiveMode = false;
+        mockState.currentAgentName = 'TestAgent';
+
+        const mockAgentInstance = {
+          name: 'TestAgent',
+          preview: {
+            start: jest.fn().mockResolvedValue({
+              sessionId: 'recompiled-session-123',
+              messages: []
+            }),
+            end: jest.fn().mockResolvedValue(undefined)
+          },
+          restoreConnection: jest.fn().mockResolvedValue(undefined)
+        };
+        mockState.agentInstance = mockAgentInstance;
+        mockState.sessionId = 'old-session-id';
+        mockAgentInitializer.initializeScriptAgent.mockResolvedValue(mockAgentInstance);
+
+        await sessionManager.recompileAndRestartSession();
+
+        expect(jest.mocked(createPreviewSessionCache)).toHaveBeenCalledWith(
+          mockState.agentInstance,
+          expect.objectContaining({ sessionType: 'simulated' })
+        );
+      });
+
+      it('should not abort session start when createPreviewSessionCache throws', async () => {
+        jest.mocked(createPreviewSessionCache).mockRejectedValueOnce(new Error('filesystem error'));
+
+        const mockWebview = {};
+        await sessionManager.startSession('test-agent-id', AgentSource.SCRIPT, true, mockWebview);
+
+        expect(mockState.setSessionActive).toHaveBeenCalledWith(true);
+        expect(mockMessageSender.sendSessionStarted).toHaveBeenCalled();
       });
     });
 
