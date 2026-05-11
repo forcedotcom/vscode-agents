@@ -44,7 +44,7 @@ const buildTestGroupNode = (
     const line = splitContent.findIndex(l => l.includes(`<number>${test.number}</number`));
     const testcaseNode = new AgentTestNode(
       `#${test.number}`,
-      new vscode.Location(definitionUri, new vscode.Position(line, 8))
+      new vscode.Location(definitionUri, new vscode.Position(line < 0 ? 0 : line, 8))
     );
     testcaseNode.parentName = label;
     testcaseNode.description = test.inputs.utterance;

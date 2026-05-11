@@ -23,6 +23,7 @@ import {
   TestStatus,
   AgentTestResultsResponse,
   AgentforceStudioTestResultsResponse,
+  AgentforceStudioTestStatusResponse,
   humanFriendlyName,
   metric
 } from '@salesforce/agents';
@@ -86,7 +87,7 @@ export class AgentTestRunner {
       this.agentforceStudioTestGroupNameToResult.get(test.name) ??
       this.agentforceStudioTestGroupNameToResult.get(test.parentName);
     if (agentforceStudioResult) {
-      if (test.parentName == '') {
+      if (!test.parentName) {
         channelService.appendLine(`Job Id: ${agentforceStudioResult.id}`);
         this.printAgentforceStudioTestSummary(agentforceStudioResult);
         return;
@@ -99,7 +100,7 @@ export class AgentTestRunner {
       return;
     }
 
-    if (test.parentName == '') {
+    if (!test.parentName) {
       // this is the parent test group, so we only show the test summary, test id
       const result = this.testGroupNameToResult.get(test.name);
       if (result) {
@@ -209,7 +210,7 @@ export class AgentTestRunner {
             lifecycle.on(
               'AGENT_TEST_POLLING_EVENT',
               async (data: {
-                status: TestStatus | string;
+                status: TestStatus | AgentforceStudioTestStatusResponse['status'];
                 completedTestCases: number;
                 totalTestCases: number;
                 failingTestCases: number;
@@ -294,6 +295,7 @@ export class AgentTestRunner {
 
     let hasFailure = false;
     result.testCases.map(tc => {
+      // A test case with no scorer results has not been evaluated and counts as a failure
       const tcFailed =
         tc.testScorerResults.length === 0 ||
         tc.testScorerResults.some(s => !parseAgentforceStudioScorer(s.scorerResponse).passing);
