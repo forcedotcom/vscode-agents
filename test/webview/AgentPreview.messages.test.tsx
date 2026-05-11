@@ -83,13 +83,15 @@ describe('AgentPreview - Message Handlers', () => {
     it('should handle compilationError with custom message', async () => {
       renderComponent();
       handlers.get('compilationError')?.({ message: 'Syntax error' });
-      await waitFor(() => expect(screen.getByText('Syntax error')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Something went wrong')).toBeInTheDocument());
+      expect(screen.getByText('Syntax error')).toBeInTheDocument();
     });
 
     it('should handle compilationError with default message', async () => {
       renderComponent();
       handlers.get('compilationError')?.({});
-      await waitFor(() => expect(screen.getByText('Failed to compile the agent.')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Something went wrong')).toBeInTheDocument());
+      expect(screen.getByText('Failed to compile the agent.')).toBeInTheDocument();
     });
   });
 

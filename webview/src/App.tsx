@@ -383,25 +383,23 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
-      {!hasSessionError && (
-        <div className="app-menu">
-          <AgentSelector
-            selectedAgent={desiredAgentId}
-            onAgentChange={handleAgentChange}
-            isSessionActive={isSessionActive}
-            isSessionStarting={isSessionStarting}
-            onLiveModeChange={handleLiveModeChange}
-            initialLiveMode={isLiveMode}
-            onSelectedAgentInfoChange={setSelectedAgentInfo}
-            onStopSession={handleStopSession}
-            onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
-          />
-          <div className="app-menu-divider" />
-          {previewAgentId !== '' && !isSessionStarting && (
-            <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED} />
-          )}
-        </div>
-      )}
+      <div className="app-menu" style={hasSessionError ? { display: 'none' } : undefined}>
+        <AgentSelector
+          selectedAgent={desiredAgentId}
+          onAgentChange={handleAgentChange}
+          isSessionActive={isSessionActive}
+          isSessionStarting={isSessionStarting}
+          onLiveModeChange={handleLiveModeChange}
+          initialLiveMode={isLiveMode}
+          onSelectedAgentInfoChange={setSelectedAgentInfo}
+          onStopSession={handleStopSession}
+          onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
+        />
+        <div className="app-menu-divider" />
+        {previewAgentId !== '' && !isSessionStarting && (
+          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED} />
+        )}
+      </div>
       <div className="app-content">
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview

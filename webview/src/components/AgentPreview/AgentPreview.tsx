@@ -268,15 +268,13 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       const disposeCompilationError = vscodeApi.onMessage('compilationError', data => {
         setIsLoading(false);
         setAgentConnected(false);
-
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          type: 'system',
-          content: data?.message || 'Failed to compile the agent.',
-          systemType: 'error',
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, errorMessage]);
+        sessionActiveStateRef.current = false;
+        sessionErrorTimestampRef.current = Date.now();
+        setHasSessionError(true);
+        setErrorMessage('Something went wrong');
+        setErrorDetails(data?.message || 'Failed to compile the agent.');
+        setMessages(prev => pruneStartingSessionMessages(prev));
+        onSessionTransitionSettled();
       });
       disposers.push(disposeCompilationError);
 
@@ -312,7 +310,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         sessionActiveStateRef.current = false;
         sessionErrorTimestampRef.current = Date.now();
         setHasSessionError(true);
-        setErrorMessage(data?.message || 'Something went wrong. Please try again.');
+        setErrorMessage(data?.message || 'Something went wrong');
         setErrorDetails(data?.details);
         setMessages(prev => pruneStartingSessionMessages(prev));
         setIsLoading(false);
