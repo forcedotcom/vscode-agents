@@ -165,7 +165,7 @@ describe('WebviewMessageHandlers', () => {
       await handlers.handleError(error);
 
       expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        'Something went wrong',
+        'Agent deactivated',
         expect.stringContaining('currently deactivated')
       );
     });
@@ -176,7 +176,7 @@ describe('WebviewMessageHandlers', () => {
       await handlers.handleError(error);
 
       expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        'Something went wrong',
+        'Agent not found',
         expect.stringContaining("couldn't be found")
       );
     });
@@ -187,7 +187,7 @@ describe('WebviewMessageHandlers', () => {
       await handlers.handleError(error);
 
       expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        'Something went wrong',
+        'Permission denied',
         expect.stringContaining("don't have permission")
       );
     });

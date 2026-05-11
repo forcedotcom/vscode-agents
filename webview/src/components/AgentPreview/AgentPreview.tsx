@@ -271,7 +271,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         sessionActiveStateRef.current = false;
         sessionErrorTimestampRef.current = Date.now();
         setHasSessionError(true);
-        setErrorMessage('Something went wrong');
+        setErrorMessage('Compilation failed');
         setErrorDetails(data?.message || 'Failed to compile the agent.');
         setMessages(prev => pruneStartingSessionMessages(prev));
         onSessionTransitionSettled();

@@ -93,29 +93,27 @@ export class WebviewMessageHandlers {
     }
     await this.state.setSessionStarting(false);
 
-    const genericTitle = 'Something went wrong';
-
     if (
       originalErrorMessage.includes('404') &&
       originalErrorMessage.includes('NOT_FOUND') &&
       originalErrorMessage.includes('No valid version available')
     ) {
       await this.messageSender.sendError(
-        genericTitle,
-        'This agent is currently deactivated, so you can\'t converse with it. Activate the agent using either the "AFDX: Activate Agent" VS Code command or your org\'s Agentforce UI.'
+        'Agent deactivated',
+        'This agent is currently deactivated, so you can\'t converse with it. Activate it using the "AFDX: Activate Agent" command or your org\'s Agentforce UI.'
       );
     } else if (originalErrorMessage.includes('NOT_FOUND') && originalErrorMessage.includes('404')) {
       await this.messageSender.sendError(
-        genericTitle,
+        'Agent not found',
         "The selected agent couldn't be found. Either it's been deleted or you don't have access to it."
       );
     } else if (originalErrorMessage.includes('403') || originalErrorMessage.includes('FORBIDDEN')) {
       await this.messageSender.sendError(
-        genericTitle,
+        'Permission denied',
         "You don't have permission to use this agent. Consult your Salesforce administrator."
       );
     } else {
-      await this.messageSender.sendError(genericTitle, originalErrorMessage);
+      await this.messageSender.sendError('Something went wrong', originalErrorMessage);
     }
 
     await this.state.setResetAgentViewAvailable(true);
