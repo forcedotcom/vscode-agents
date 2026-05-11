@@ -336,7 +336,7 @@ describe('parseAgentTestsFromProject', () => {
     await expect(parseAgentTestsFromProject()).rejects.toThrow('read failure');
   });
 
-  it('should throw when XML is missing test cases', async () => {
+  it('should skip definition files with no test cases', async () => {
     const mockUri = {
       fsPath: '/test/EmptyAgent.aiEvaluationDefinition-meta.xml'
     } as vscode.Uri;
@@ -351,7 +351,8 @@ describe('parseAgentTestsFromProject', () => {
       .mockResolvedValueOnce([]); // aiTestingDefinition
     jest.spyOn(vscode.workspace.fs, 'readFile').mockResolvedValue(Buffer.from(mockXmlContent));
 
-    await expect(parseAgentTestsFromProject()).rejects.toThrow();
+    const result = await parseAgentTestsFromProject();
+    expect(result.size).toBe(0);
   });
 
   it('should parse single Agentforce Studio test case from AiTestingDefinition XML file', async () => {
