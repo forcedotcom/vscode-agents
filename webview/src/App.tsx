@@ -82,6 +82,9 @@ const App: React.FC = () => {
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
       // Switch back to preview tab when refreshing agents
       setActiveTab('preview');
+      sessionActiveRef.current = false;
+      setIsSessionActive(false);
+      setIsSessionStarting(false);
     });
 
     const disposeSetLiveMode = vscodeApi.onMessage('setLiveMode', (data: { isLiveMode: boolean }) => {
@@ -251,11 +254,27 @@ const App: React.FC = () => {
       }
     });
 
+    const disposeCompilationError = vscodeApi.onMessage('compilationError', () => {
+      sessionActiveRef.current = false;
+      setIsSessionActive(false);
+      setIsSessionStarting(false);
+      const startResolver = sessionStartResolversRef.current.shift();
+      if (startResolver) {
+        startResolver(false);
+      }
+    });
+
+    const disposeClearMessages = vscodeApi.onMessage('clearMessages', () => {
+      setIsSessionStarting(false);
+    });
+
     return () => {
       disposeSessionStarted();
       disposeSessionEnded();
       disposeSessionStarting();
       disposeSessionError();
+      disposeCompilationError();
+      disposeClearMessages();
     };
   }, []);
 
