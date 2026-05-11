@@ -124,7 +124,7 @@ export class AgentTestRunner {
       // filter to selected test case
       testInfo.testCases = testInfo.testCases.filter(f => `#${f.testNumber}` === test.name);
     }
-    testInfo.testCases.map(tc => {
+    testInfo.testCases.forEach(tc => {
       channelService.appendLine('════════════════════════════════════════════════════════════════════════');
       channelService.appendLine(`CASE #${tc.testNumber} - ${testInfo.subjectName}`);
       channelService.appendLine('════════════════════════════════════════════════════════════════════════');
@@ -135,7 +135,7 @@ export class AgentTestRunner {
         // this is the output for topics/action/output validation (actual v expected)
         // filter out other metrics from it
         .filter(f => !metric.includes(f.name as (typeof metric)[number]))
-        .map(tr => {
+        .forEach(tr => {
           channelService.appendLine(
             `❯ ${humanFriendlyName(tr.name).toUpperCase()}: ${tr.result} ${tr.result === 'PASS' ? '✅' : '❌'}`
           );
@@ -164,7 +164,7 @@ export class AgentTestRunner {
       if (metricResults.length > 0) {
         channelService.appendLine(`❯ METRICS (Value/Threshold)`);
         channelService.appendLine('────────────────────────────────────────────────────────────────────────');
-        metricResults.map(tr => {
+        metricResults.forEach(tr => {
           if (tr.name === 'output_latency_milliseconds') {
             channelService.appendLine(
               `⏱️ : ${humanFriendlyName(tr.name).toUpperCase()} (${tr.score}ms)  ${tr.metricExplainability ? `: ${tr.metricExplainability}` : ''}`
@@ -217,10 +217,10 @@ export class AgentTestRunner {
                 passingTestCases: number;
               }) => {
                 const statusUpper = data.status.toUpperCase();
-                if (statusUpper === 'NEW' || statusUpper === 'IN_PROGRESS') {
+                if (statusUpper === 'NEW' || statusUpper === 'IN_PROGRESS' || statusUpper === 'CREATED') {
                   // every time IN_PROGRESS is returned, 10 is added, is possible to 100% progress bar and tests not be done
                   progress.report({ increment: 10, message: `Status: In Progress` });
-                } else if (statusUpper === 'ERROR' || statusUpper === 'TERMINATED') {
+                } else if (statusUpper === 'ERROR' || statusUpper === 'TERMINATED' || statusUpper === 'FAILED') {
                   progress.report({ increment: 100, message: `Status: ${data.status}` });
                   setTimeout(() => reject(), 1500);
                 } else if (statusUpper === 'COMPLETED' || statusUpper === 'SUCCESS') {
@@ -264,13 +264,14 @@ export class AgentTestRunner {
     this.testGroupNameToResult.set(test.name, result);
     this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
     let hasFailure = false;
-    result.testCases.map(tc => {
-      hasFailure = tc.testResults.some(tr => tr.result === 'FAILURE');
+    result.testCases.forEach(tc => {
+      const tcFailed = tc.testResults.some(tr => tr.result === 'FAILURE');
+      if (tcFailed) hasFailure = true;
       this.testOutline
         .getTestGroup(test.name)
         ?.getChildren()
         .find(child => child.name === `#${tc.testNumber}`)
-        ?.updateOutcome(hasFailure ? 'ERROR' : 'COMPLETED');
+        ?.updateOutcome(tcFailed ? 'ERROR' : 'COMPLETED');
     });
     this.testOutline.getTestGroup(test.name)?.updateOutcome(hasFailure ? 'ERROR' : 'COMPLETED');
     this.printTestSummary(result);
@@ -294,7 +295,7 @@ export class AgentTestRunner {
     this.testOutline.getTestGroup(test.name)?.updateOutcome('IN_PROGRESS', true);
 
     let hasFailure = false;
-    result.testCases.map(tc => {
+    result.testCases.forEach(tc => {
       // A test case with no scorer results has not been evaluated and counts as a failure
       const tcFailed =
         tc.testScorerResults.length === 0 ||
@@ -313,13 +314,15 @@ export class AgentTestRunner {
   private displayAgentforceStudioTestCases(testInfo: AgentforceStudioTestResults): void {
     const channelService = CoreExtensionService.getTestChannelService();
 
-    testInfo.testCases.map(tc => {
+    testInfo.testCases.forEach(tc => {
       channelService.appendLine('════════════════════════════════════════════════════════════════════════');
       channelService.appendLine(`CASE #${tc.testNumber}`);
       channelService.appendLine('════════════════════════════════════════════════════════════════════════');
       channelService.appendLine('');
-      tc.testScorerResults.map(scorer => {
+      let passing = 0;
+      tc.testScorerResults.forEach(scorer => {
         const parsed = parseAgentforceStudioScorer(scorer.scorerResponse);
+        if (parsed.passing) passing++;
         const icon = parsed.passing ? '✅' : '❌';
         const verdict = parsed.passing ? 'PASS' : 'FAILURE';
         channelService.appendLine(`❯ ${scorer.scorerName.toUpperCase()}: ${verdict} ${icon}`);
@@ -343,7 +346,6 @@ export class AgentTestRunner {
         channelService.appendLine('');
       });
 
-      const passing = tc.testScorerResults.filter(s => parseAgentforceStudioScorer(s.scorerResponse).passing).length;
       const failing = tc.testScorerResults.length - passing;
       channelService.appendLine('────────────────────────────────────────────────────────────────────────');
       channelService.appendLine(
@@ -358,12 +360,9 @@ export class AgentTestRunner {
     channelService.appendLine('');
     channelService.appendLine('Test Results');
     const total = result.testCases.length;
-    channelService.appendLine(
-      `Passing: ${result.testCases.filter(tc => tc.testResults.every(tr => tr.result === 'PASS')).length}/${total}`
-    );
-    channelService.appendLine(
-      `Failing: ${result.testCases.filter(tc => tc.testResults.some(tr => tr.result === 'FAILURE')).length}/${total}`
-    );
+    const passing = result.testCases.filter(tc => tc.testResults.every(tr => tr.result === 'PASS')).length;
+    channelService.appendLine(`Passing: ${passing}/${total}`);
+    channelService.appendLine(`Failing: ${total - passing}/${total}`);
     channelService.appendLine('');
     channelService.appendLine(`Select a test case in the Test View panel for more information`);
   }
@@ -377,8 +376,9 @@ export class AgentTestRunner {
     channelService.appendLine('');
     channelService.appendLine('Test Results');
     const total = result.testCases.length;
-    channelService.appendLine(`Passing: ${result.testCases.filter(tcPassing).length}/${total}`);
-    channelService.appendLine(`Failing: ${result.testCases.filter(tc => !tcPassing(tc)).length}/${total}`);
+    const passing = result.testCases.filter(tcPassing).length;
+    channelService.appendLine(`Passing: ${passing}/${total}`);
+    channelService.appendLine(`Failing: ${total - passing}/${total}`);
     channelService.appendLine('');
     channelService.appendLine(`Select a test case in the Test View panel for more information`);
   }

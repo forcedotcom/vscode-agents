@@ -40,7 +40,7 @@ const buildTestGroupNode = (
   testDefinitionNode.testDefinitionName = definitionApiName;
   testDefinitionNode.runnerType = runnerType;
   const splitContent = fileContent.split(EOL);
-  testCases.map(test => {
+  testCases.forEach(test => {
     const line = splitContent.findIndex(l => l.includes(`<number>${test.number}</number`));
     const testcaseNode = new AgentTestNode(
       `#${test.number}`,
@@ -70,9 +70,9 @@ export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTes
       const fileContent = (await vscode.workspace.fs.readFile(definition)).toString();
       const testDefinition = parser.parse(fileContent) as AiEvaluationDefinition;
       const definitionApiName = basename(definition.fsPath, '.aiEvaluationDefinition-meta.xml');
-      const testCases = Array.isArray(testDefinition.AiEvaluationDefinition.testCase)
-        ? testDefinition.AiEvaluationDefinition.testCase
-        : [testDefinition.AiEvaluationDefinition.testCase];
+      const rawTestCases = testDefinition.AiEvaluationDefinition?.testCase;
+      if (!rawTestCases) return;
+      const testCases = Array.isArray(rawTestCases) ? rawTestCases : [rawTestCases];
       evalNodes.set(
         definitionApiName,
         buildTestGroupNode(definition, definitionApiName, definitionApiName, 'testing-center', testCases, fileContent)
@@ -82,9 +82,9 @@ export const parseAgentTestsFromProject = async (): Promise<Map<string, AgentTes
       const fileContent = (await vscode.workspace.fs.readFile(definition)).toString();
       const testDefinition = parser.parse(fileContent) as AiTestingDefinition;
       const definitionApiName = basename(definition.fsPath, '.aiTestingDefinition-meta.xml');
-      const testCases = Array.isArray(testDefinition.AiTestingDefinition.testCase)
-        ? testDefinition.AiTestingDefinition.testCase
-        : [testDefinition.AiTestingDefinition.testCase];
+      const rawTestCases = testDefinition.AiTestingDefinition?.testCase;
+      if (!rawTestCases) return;
+      const testCases = Array.isArray(rawTestCases) ? rawTestCases : [rawTestCases];
       agentforceStudioNodes.set(
         definitionApiName,
         buildTestGroupNode(
