@@ -1,3 +1,9 @@
+## [1.14.2](https://github.com/salesforcecli/vsode-agents/compare/v1.14.1...v1.14.2) (2026-05-05)
+
+### Bug Fixes
+
+- generate session-meta.json when starting agent preview session ([cbcd84f](https://github.com/salesforcecli/vsode-agents/commit/cbcd84f0fa365bfde1d2abf39e44578086a6ac50))
+
 ## [1.14.1](https://github.com/salesforcecli/vsode-agents/compare/v1.14.0...v1.14.1) (2026-04-27)
 
 ### Bug Fixes

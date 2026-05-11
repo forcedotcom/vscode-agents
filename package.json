@@ -2,7 +2,7 @@
   "name": "salesforcedx-vscode-agents",
   "displayName": "Agentforce DX",
   "description": "Provides a suite of tools to iteratively build, preview, and test agents right in your IDE.",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "publisher": "Salesforce",
   "o11yUploadEndpoint": "https://794testsite.my.site.com/byolwr/webruntime/log/metrics",
   "enableO11y": "true",
@@ -20,7 +20,7 @@
   ],
   "main": "lib/src/extension.js",
   "dependencies": {
-    "@salesforce/agents": "^1.6.0",
+    "@salesforce/agents": "^1.6.4",
     "@salesforce/core": "^8.28.3",
     "@salesforce/kit": "^3.2.6",
     "@salesforce/types": "^1.7.1",
