@@ -217,15 +217,17 @@ export class AgentTestRunner {
                 passingTestCases: number;
               }) => {
                 const statusUpper = data.status.toUpperCase();
-                if (statusUpper === 'NEW' || statusUpper === 'IN_PROGRESS' || statusUpper === 'CREATED') {
+                if (['NEW', 'IN_PROGRESS', 'CREATED'].includes(statusUpper)) {
                   // every time IN_PROGRESS is returned, 10 is added, is possible to 100% progress bar and tests not be done
                   progress.report({ increment: 10, message: `Status: In Progress` });
-                } else if (statusUpper === 'ERROR' || statusUpper === 'TERMINATED' || statusUpper === 'FAILED') {
+                } else if (['ERROR', 'TERMINATED', 'FAILED'].includes(statusUpper)) {
                   progress.report({ increment: 100, message: `Status: ${data.status}` });
                   setTimeout(() => reject(), 1500);
-                } else if (statusUpper === 'COMPLETED' || statusUpper === 'SUCCESS') {
+                } else if (['COMPLETED', 'SUCCESS'].includes(statusUpper)) {
                   progress.report({ increment: 100, message: `Status: ${data.status}` });
                   setTimeout(() => resolve({}), 1500);
+                } else {
+                  channelService.appendLine(`Warning: Unexpected test status: ${data.status}`);
                 }
               }
             );

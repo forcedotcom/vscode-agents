@@ -41,7 +41,7 @@ const buildTestGroupNode = (
   testDefinitionNode.runnerType = runnerType;
   const splitContent = fileContent.split(EOL);
   testCases.forEach(test => {
-    const line = splitContent.findIndex(l => l.includes(`<number>${test.number}</number`));
+    const line = splitContent.findIndex(l => l.includes(`<number>${test.number}</number>`));
     const testcaseNode = new AgentTestNode(
       `#${test.number}`,
       new vscode.Location(definitionUri, new vscode.Position(line < 0 ? 0 : line, 8))
