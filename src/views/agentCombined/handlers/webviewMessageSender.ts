@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { AgentViewState } from '../state/agentViewState';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { JsonTokenColors } from '../../../utils/themeColors';
+import type { SessionListEntry } from '../session';
 
 /**
  * Handles all outgoing messages to the webview
@@ -27,8 +28,12 @@ export class WebviewMessageSender {
     this.postMessage('sessionStarting', { message: message || 'Starting session...' });
   }
 
-  sendSessionStarted(welcomeMessage?: string): void {
-    this.postMessage('sessionStarted', welcomeMessage);
+  sendSessionStarted(welcomeMessage?: string, sessionId?: string, skipWelcome?: boolean): void {
+    if (sessionId || skipWelcome) {
+      this.postMessage('sessionStarted', { welcomeMessage, sessionId, skipWelcome });
+    } else {
+      this.postMessage('sessionStarted', welcomeMessage);
+    }
   }
 
   sendSessionEnded(): void {
@@ -96,6 +101,10 @@ export class WebviewMessageSender {
 
   sendNoHistoryFound(agentId: string): void {
     this.postMessage('noHistoryFound', { agentId });
+  }
+
+  sendSessionList(agentId: string, sessions: SessionListEntry[]): void {
+    this.postMessage('sessionList', { agentId, sessions });
   }
 
   // Error messages

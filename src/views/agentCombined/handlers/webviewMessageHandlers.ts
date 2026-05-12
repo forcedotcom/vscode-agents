@@ -11,6 +11,7 @@ import type { HistoryManager } from '../history';
 import type { ApexDebugManager } from '../debugging';
 import { Logger } from '../../../utils/logger';
 import { getAgentSource } from '../agent';
+import { listSessionsForAgent } from '../session';
 
 /**
  * Handles all incoming messages from the webview
@@ -54,6 +55,8 @@ export class WebviewMessageHandlers {
       setSelectedAgentId: async msg => await this.handleSetSelectedAgentId(msg),
       setLiveMode: async msg => await this.handleSetLiveMode(msg),
       getInitialLiveMode: async () => await this.handleGetInitialLiveMode(),
+      listSessions: async msg => await this.handleListSessions(msg),
+      resumeSession: async msg => await this.handleResumeSession(msg),
       // Test-specific commands for integration tests
       clearMessages: async () => {
         // Clear messages in the webview - no-op on extension side
@@ -381,6 +384,57 @@ export class WebviewMessageHandlers {
 
   private async handleGetInitialLiveMode(): Promise<void> {
     this.messageSender.sendLiveMode(this.state.isLiveMode);
+  }
+
+  private async handleListSessions(message: AgentMessage): Promise<void> {
+    const data = message.data as { agentId?: string; agentSource?: AgentSource } | undefined;
+    const agentId = data?.agentId ?? this.state.currentAgentId;
+    if (!agentId || typeof agentId !== 'string') {
+      this.messageSender.sendSessionList('', []);
+      return;
+    }
+    try {
+      const agentSource = data?.agentSource ?? this.state.currentAgentSource ?? (await getAgentSource(agentId));
+      const sessions = await listSessionsForAgent(agentId, agentSource);
+      this.messageSender.sendSessionList(agentId, sessions);
+    } catch (err) {
+      console.error('Error listing sessions:', err);
+      this.messageSender.sendSessionList(agentId, []);
+    }
+  }
+
+  private async handleResumeSession(message: AgentMessage): Promise<void> {
+    const data = message.data as
+      | { agentId?: string; agentSource?: AgentSource; sessionId?: string; isLiveMode?: boolean }
+      | undefined;
+    const agentId = data?.agentId ?? this.state.currentAgentId;
+    const sessionId = data?.sessionId;
+
+    if (!agentId || typeof agentId !== 'string') {
+      throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
+    }
+    if (!sessionId || typeof sessionId !== 'string') {
+      throw new Error(`Invalid session ID: ${sessionId}. Expected a string.`);
+    }
+
+    let agentSource = data?.agentSource ?? this.state.currentAgentSource;
+    if (!agentSource) {
+      agentSource = await getAgentSource(agentId);
+    }
+    this.state.currentAgentSource = agentSource;
+
+    const isLiveMode = data?.isLiveMode ?? this.state.isLiveMode ?? false;
+
+    // If the requested session is already the active one, no need to restart
+    if (
+      this.state.isSessionActive &&
+      this.state.sessionId === sessionId &&
+      this.state.sessionAgentId === agentId
+    ) {
+      return;
+    }
+
+    await this.sessionManager.resumeSession(agentId, agentSource, sessionId, isLiveMode, this.webviewView);
   }
 
   async fetchAndSendActiveVersion(agentId: string): Promise<void> {

@@ -40,6 +40,13 @@ export interface AgentInfo {
   activeVersion?: number;
 }
 
+export interface SessionListEntry {
+  sessionId: string;
+  timestamp?: string;
+  sessionType?: 'simulated' | 'live' | 'published';
+  firstUserMessage?: string;
+}
+
 export interface TraceHistoryMessageEntry {
   storageKey: string;
   agentId: string;
@@ -140,6 +147,15 @@ class VSCodeApiService {
     this.vscode?.postMessage({ command, data });
   }
 
+  // Dispatch a synthetic message to local listeners only (not sent to the extension).
+  // Useful for optimistic UI updates that should mirror an extension-driven event.
+  emitLocal(command: string, data?: any) {
+    const handlers = this.messageHandlers.get(command);
+    if (handlers) {
+      handlers.forEach(handler => handler(data));
+    }
+  }
+
   // Agent session management
   startSession(agentId: string, options?: { isLiveMode?: boolean; agentSource?: string }) {
     this.postMessage('startSession', { agentId, ...options });
@@ -211,6 +227,15 @@ class VSCodeApiService {
 
   openTraceJson(entry: TraceHistoryMessageEntry) {
     this.postMessage('openTraceJson', { entry });
+  }
+
+  // Session history
+  listSessions(agentId: string, agentSource?: AgentSource) {
+    this.postMessage('listSessions', { agentId, agentSource });
+  }
+
+  resumeSession(agentId: string, sessionId: string, options?: { isLiveMode?: boolean; agentSource?: AgentSource }) {
+    this.postMessage('resumeSession', { agentId, sessionId, ...options });
   }
 
   // Test support - send test response messages

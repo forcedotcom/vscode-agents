@@ -1,0 +1,114 @@
+.session-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  height: 100%;
+}
+
+
+.session-history-item-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 18px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--vscode-foreground);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.session-history-item-button:hover,
+.session-history-item-button:focus {
+  background-color: var(--vscode-list-hoverBackground);
+  outline: none;
+}
+
+.session-history-item-message {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--vscode-foreground);
+  font-weight: 500;
+}
+
+.session-history-item-timestamp {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 8px;
+}
+
+.session-history-item-type {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  background-color: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+
+.session-history-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+  height: 100%;
+  padding: 40px 40px 104px 40px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.session-history-placeholder-icon {
+  margin-bottom: 30px;
+  opacity: 0.2;
+  width: 50px;
+  height: 50px;
+  background-image: url('../../assets/clock-light.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+body.vscode-dark .session-history-placeholder-icon,
+body.vscode-high-contrast .session-history-placeholder-icon {
+  background-image: url('../../assets/clock-dark.svg');
+}
+
+.session-history-placeholder p {
+  margin: 0 0 30px 0;
+  color: var(--vscode-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.session-history-placeholder .vscode-button,
+.session-history-placeholder .vscode-split-button {
+  width: auto;
+  min-width: auto;
+}
+
+.session-history-placeholder .vscode-button__start svg,
+.session-history-placeholder .vscode-split-button__start svg {
+  width: 10px;
+  height: 10px;
+}
+
+.session-history-placeholder .session-history-send-icon .vscode-button__start svg {
+  width: 16px;
+  height: 16px;
+}

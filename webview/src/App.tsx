@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AgentPreview, { AgentPreviewRef } from './components/AgentPreview/AgentPreview.js';
 import AgentTracer from './components/AgentTracer/AgentTracer.js';
 import AgentSelector from './components/AgentPreview/AgentSelector.js';
+import SessionHistory from './components/SessionHistory/SessionHistory.js';
 import TabNavigation from './components/shared/TabNavigation.js';
 import { vscodeApi, AgentInfo, AgentSource } from './services/vscodeApi.js';
 import './App.css';
@@ -24,7 +25,7 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'preview' | 'tracer'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'tracer' | 'history'>('preview');
   const [displayedAgentId, setDisplayedAgentIdState] = useState('');
   const [desiredAgentId, setDesiredAgentId] = useState('');
   const [restartTrigger, setRestartTrigger] = useState(0);
@@ -32,6 +33,7 @@ const App: React.FC = () => {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionStarting, setIsSessionStarting] = useState(false);
   const [hasSessionError, setHasSessionError] = useState(false);
+  const activeSessionIdRef = useRef<string | undefined>(undefined);
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [selectedAgentInfo, setSelectedAgentInfo] = useState<AgentInfo | null>(null);
   const [hasAgents, setHasAgents] = useState(false);
@@ -133,7 +135,7 @@ const App: React.FC = () => {
       vscodeApi.getTraceData();
     });
 
-    const disposeTestSwitchTab = vscodeApi.onMessage('testSwitchTab', (data: { tab: 'preview' | 'tracer' }) => {
+    const disposeTestSwitchTab = vscodeApi.onMessage('testSwitchTab', (data: { tab: 'preview' | 'tracer' | 'history' }) => {
       const tab = data?.tab || 'preview';
       console.log('[Webview Test] testSwitchTab received:', tab);
       setActiveTab(tab);
@@ -154,7 +156,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleTabChange = (tab: 'preview' | 'tracer') => {
+  const handleTabChange = (tab: 'preview' | 'tracer' | 'history') => {
     setActiveTab(tab);
   };
 
@@ -173,6 +175,13 @@ const App: React.FC = () => {
       }
     }
   }, [selectedAgentInfo, activeTab, desiredAgentId]);
+
+  // Switch to preview tab when the agent changes while viewing history
+  useEffect(() => {
+    if (activeTab === 'history') {
+      setActiveTab('preview');
+    }
+  }, [desiredAgentId]);
 
   const handleGoToPreview = useCallback(() => {
     // If session is not active and we have a desired agent, start the session
@@ -209,10 +218,13 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', () => {
+    const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', (data: any) => {
       sessionActiveRef.current = true;
       setIsSessionActive(true);
       setIsSessionStarting(false);
+      if (data && typeof data === 'object' && typeof data.sessionId === 'string') {
+        activeSessionIdRef.current = data.sessionId;
+      }
       const resolver = sessionStartResolversRef.current.shift();
       if (resolver) {
         resolver(true);
@@ -223,6 +235,7 @@ const App: React.FC = () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
+      activeSessionIdRef.current = undefined;
       const resolver = sessionEndResolversRef.current.shift();
       if (resolver) {
         resolver();
@@ -379,7 +392,12 @@ const App: React.FC = () => {
           />
           <div className="app-menu-divider" />
           {previewAgentId !== '' && !isSessionStarting && (
-            <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED} />
+            <TabNavigation
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED}
+              showHistoryTab={true}
+            />
           )}
         </div>
       )}
@@ -405,6 +423,28 @@ const App: React.FC = () => {
             isSessionActive={isSessionActive}
             isLiveMode={isLiveMode}
             selectedAgentInfo={selectedAgentInfo}
+            onLiveModeChange={handleLiveModeChange}
+          />
+        </div>
+        <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
+          <SessionHistory
+            agentId={previewAgentId}
+            agentSource={selectedAgentInfo?.type}
+            isActive={activeTab === 'history'}
+            isSessionActive={isSessionActive}
+            isLiveMode={isLiveMode}
+            selectedAgentInfo={selectedAgentInfo}
+            onResume={(sessionId: string) => {
+              const isAlreadyActive = sessionActiveRef.current && activeSessionIdRef.current === sessionId;
+              if (!isAlreadyActive) {
+                sessionActiveRef.current = false;
+                setIsSessionActive(false);
+                setIsSessionStarting(true);
+                vscodeApi.emitLocal('sessionStarting', { message: 'Resuming session...' });
+              }
+              setActiveTab('preview');
+            }}
+            onGoToPreview={handleGoToPreview}
             onLiveModeChange={handleLiveModeChange}
           />
         </div>

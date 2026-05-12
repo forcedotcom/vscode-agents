@@ -205,7 +205,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         sessionErrorTimestampRef.current = 0;
         sessionActiveStateRef.current = true;
 
-        if (data) {
+        if (data && !data.skipWelcome) {
           setMessages(prev => {
             const newMessages = [...prev];
 
