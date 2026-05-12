@@ -71,9 +71,15 @@ jest.mock('../../../../src/views/agentCombined/agent/agentUtils', () => ({
   getAgentSource: jest.fn()
 }));
 
+// Mock sessionHistoryService (the session/index reexports it)
+jest.mock('../../../../src/views/agentCombined/session', () => ({
+  listSessionsForAgent: jest.fn()
+}));
+
 // Import after mocks
 import { WebviewMessageHandlers } from '../../../../src/views/agentCombined/handlers/webviewMessageHandlers';
 import { CoreExtensionService } from '../../../../src/services/coreExtensionService';
+import { listSessionsForAgent } from '../../../../src/views/agentCombined/session';
 
 describe('WebviewMessageHandlers', () => {
   let handlers: WebviewMessageHandlers;
@@ -107,12 +113,14 @@ describe('WebviewMessageHandlers', () => {
 
     mockMessageSender = {
       sendError: jest.fn().mockResolvedValue(undefined),
-      sendClearMessages: jest.fn()
+      sendClearMessages: jest.fn(),
+      sendSessionList: jest.fn()
     };
 
     mockSessionManager = {
       startSession: jest.fn(),
-      endSession: jest.fn()
+      endSession: jest.fn(),
+      resumeSession: jest.fn().mockResolvedValue(undefined)
     };
 
     mockHistoryManager = {
@@ -242,6 +250,86 @@ describe('WebviewMessageHandlers', () => {
       expect(mockChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringContaining('[error] AgentCombinedViewProvider error')
       );
+    });
+  });
+
+  describe('listSessions', () => {
+    it('posts the session list back to the webview', async () => {
+      const sessions = [
+        { sessionId: 'a', timestamp: '2026-05-10T00:00:00Z', sessionType: 'live', firstUserMessage: 'hi' }
+      ];
+      (listSessionsForAgent as jest.Mock).mockResolvedValue(sessions);
+
+      await handlers.handleMessage({
+        command: 'listSessions',
+        data: { agentId: 'agent-1', agentSource: 'script' }
+      } as any);
+
+      expect(listSessionsForAgent).toHaveBeenCalledWith('agent-1', 'script');
+      expect(mockMessageSender.sendSessionList).toHaveBeenCalledWith('agent-1', sessions);
+    });
+
+    it('returns an empty list when no agentId is supplied or known', async () => {
+      await handlers.handleMessage({ command: 'listSessions', data: {} } as any);
+
+      expect(mockMessageSender.sendSessionList).toHaveBeenCalledWith('', []);
+      expect(listSessionsForAgent).not.toHaveBeenCalled();
+    });
+
+    it('falls back to an empty list when listing throws', async () => {
+      (listSessionsForAgent as jest.Mock).mockRejectedValue(new Error('boom'));
+      const originalError = console.error;
+      console.error = jest.fn();
+
+      await handlers.handleMessage({
+        command: 'listSessions',
+        data: { agentId: 'agent-1', agentSource: 'script' }
+      } as any);
+
+      expect(mockMessageSender.sendSessionList).toHaveBeenCalledWith('agent-1', []);
+      console.error = originalError;
+    });
+  });
+
+  describe('resumeSession', () => {
+    it('forwards to sessionManager.resumeSession with resolved agentSource', async () => {
+      mockState.currentAgentSource = 'script';
+
+      await handlers.handleMessage({
+        command: 'resumeSession',
+        data: { agentId: 'agent-1', sessionId: 'sess-1', isLiveMode: false }
+      } as any);
+
+      expect(mockSessionManager.resumeSession).toHaveBeenCalledWith(
+        'agent-1',
+        'script',
+        'sess-1',
+        false,
+        mockWebviewView
+      );
+    });
+
+    it('short-circuits when the requested session is already active for the same agent', async () => {
+      mockState.isSessionActive = true;
+      mockState.sessionId = 'sess-1';
+      mockState.sessionAgentId = 'agent-1';
+      mockState.currentAgentSource = 'script';
+
+      await handlers.handleMessage({
+        command: 'resumeSession',
+        data: { agentId: 'agent-1', sessionId: 'sess-1' }
+      } as any);
+
+      expect(mockSessionManager.resumeSession).not.toHaveBeenCalled();
+    });
+
+    it('throws when sessionId is missing', async () => {
+      await expect(
+        handlers.handleMessage({
+          command: 'resumeSession',
+          data: { agentId: 'agent-1' }
+        } as any)
+      ).rejects.toThrow(/Invalid session ID/);
     });
   });
 });

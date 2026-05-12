@@ -42,15 +42,21 @@ jest.mock('@salesforce/agents', () => ({
   createPreviewSessionCache: jest.fn().mockResolvedValue(undefined)
 }));
 
-// Mock @salesforce/core
-jest.mock('@salesforce/core', () => ({
-  SfProject: {
-    getInstance: () => ({
-      getPath: () => '/mock/project'
-    })
-  },
-  SfError: Error
-}));
+// Mock @salesforce/core. SfError is aliased to Error so `instanceof SfError`
+// passes for plain Errors, matching pre-existing tests, while still exposing
+// SfError.wrap which the resumeSession path uses.
+jest.mock('@salesforce/core', () => {
+  const SfErrorMock = Error as any;
+  SfErrorMock.wrap = (err: unknown) => (err instanceof Error ? err : new Error(String(err)));
+  return {
+    SfProject: {
+      getInstance: () => ({
+        getPath: () => '/mock/project'
+      })
+    },
+    SfError: SfErrorMock
+  };
+});
 
 // Mock CoreExtensionService
 jest.mock('../../src/services/coreExtensionService', () => ({
@@ -404,6 +410,90 @@ describe('SessionManager', () => {
         expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[error]'));
         expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/^\tCompilationError$/));
       });
+    });
+  });
+
+  describe('resumeSession', () => {
+    const buildMockAgentInstance = (overrides: any = {}) => ({
+      name: 'TestAgent',
+      preview: {
+        end: jest.fn().mockResolvedValue(undefined)
+      },
+      restoreConnection: jest.fn().mockResolvedValue(undefined),
+      resumeSession: jest.fn().mockResolvedValue(undefined),
+      ...overrides
+    });
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockState.currentAgentName = 'TestAgent';
+      mockState.currentAgentId = 'test-agent-id';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+    });
+
+    it('reattaches the agent to the supplied sessionId via SDK resumeSession', async () => {
+      const instance = buildMockAgentInstance();
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = instance;
+        return instance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(instance.resumeSession).toHaveBeenCalledWith('sess-prior');
+      expect(mockState.sessionId).toBe('sess-prior');
+      expect(mockState.sessionAgentId).toBe('test-agent-id');
+    });
+
+    it('sends sessionStarted with skipWelcome=true', async () => {
+      const instance = buildMockAgentInstance();
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = instance;
+        return instance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(mockMessageSender.sendSessionStarted).toHaveBeenCalledWith(undefined, 'sess-prior', true);
+    });
+
+    it('ends the previous SDK session before reinitializing', async () => {
+      const previousInstance = buildMockAgentInstance();
+      mockState.agentInstance = previousInstance;
+      mockState.sessionId = 'sess-old';
+      const newInstance = buildMockAgentInstance();
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = newInstance;
+        return newInstance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(previousInstance.preview.end).toHaveBeenCalled();
+      expect(mockState.clearSessionState).toHaveBeenCalled();
+      expect(newInstance.resumeSession).toHaveBeenCalledWith('sess-prior');
+    });
+
+    it('surfaces resume errors via sendError and sets error state', async () => {
+      const instance = buildMockAgentInstance({
+        resumeSession: jest.fn().mockRejectedValue(new Error('disk read failed'))
+      });
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = instance;
+        return instance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(mockMessageSender.sendError).toHaveBeenCalledWith(expect.stringContaining('Failed to resume session'));
+      expect(mockState.setResetAgentViewAvailable).toHaveBeenCalledWith(true);
+      expect(mockState.setSessionErrorState).toHaveBeenCalledWith(true);
+    });
+
+    it('throws when no webview is provided', async () => {
+      await expect(
+        sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, undefined as any)
+      ).rejects.toThrow(/Webview is not ready/);
     });
   });
 });
