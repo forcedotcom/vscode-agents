@@ -817,6 +817,145 @@ describe('AgentTracer', () => {
         expect(screen.getAllByText(/Action Executed/i).length).toBeGreaterThan(0);
         expect(screen.getAllByText(/Output Evaluation/i).length).toBeGreaterThan(0);
       });
+
+      const findTimelineItem = (label: RegExp): Element => {
+        const labels = document.querySelectorAll('.vscode-timeline-item__label');
+        for (const labelEl of Array.from(labels)) {
+          if (label.test(labelEl.textContent ?? '')) {
+            const item = labelEl.closest('.vscode-timeline-item');
+            if (item) return item;
+          }
+        }
+        throw new Error(`Timeline item matching ${label} not found`);
+      };
+
+      it('highlights the selected step under the filter using the filtered index', () => {
+        renderMultiStep();
+
+        // Click the FunctionStep (original index 1) to select it.
+        const functionStepItem = findTimelineItem(/Action Executed/i);
+        fireEvent.click(functionStepItem);
+
+        // Confirm it is rendered as selected before any filter is applied.
+        expect(document.querySelectorAll('.vscode-timeline-item--selected').length).toBe(1);
+
+        // Apply a filter that hides earlier steps so the selected step's filtered
+        // position differs from its original plan index.
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'A123' } });
+
+        // The FunctionStep should still be the only selected timeline item, even though
+        // its filtered position (0) differs from its original plan index (1).
+        const selectedAfterFilter = document.querySelectorAll('.vscode-timeline-item--selected');
+        expect(selectedAfterFilter.length).toBe(1);
+        expect(selectedAfterFilter[0].textContent).toMatch(/Action Executed/i);
+      });
+
+      it('does not highlight a step that is filtered out', () => {
+        renderMultiStep();
+
+        // Select the UserInputStep first
+        const userInputItem = findTimelineItem(/User Input/i);
+        fireEvent.click(userInputItem);
+        expect(document.querySelectorAll('.vscode-timeline-item--selected').length).toBe(1);
+
+        // Filter out everything except the FunctionStep
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'A123' } });
+
+        // No timeline item should be marked selected
+        expect(document.querySelectorAll('.vscode-timeline-item--selected').length).toBe(0);
+      });
+    });
+
+    it('clears the filter when a new traceHistory message arrives', () => {
+      render(<AgentTracer isVisible />);
+      const trace = {
+        type: 'PlanSuccessResponse',
+        planId: 'plan-A',
+        sessionId: 'session-A',
+        plan: [{ type: 'UserInputStep', message: 'hello' }]
+      };
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-A',
+            sessionId: 'session-A',
+            userMessage: 'first',
+            trace
+          }
+        ]
+      });
+
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'no_match_xyz' } });
+      expect(input.value).toBe('no_match_xyz');
+
+      // New batch arrives
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-B',
+            sessionId: 'session-B',
+            userMessage: 'second',
+            trace: { ...trace, planId: 'plan-B', sessionId: 'session-B' }
+          }
+        ]
+      });
+
+      const inputAfter = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      expect(inputAfter.value).toBe('');
+      expect(screen.getByText('second')).toBeInTheDocument();
+    });
+
+    it('clears the filter when sessionStarted fires', () => {
+      render(<AgentTracer isVisible />);
+      const trace = {
+        type: 'PlanSuccessResponse',
+        planId: 'plan-A',
+        sessionId: 'session-A',
+        plan: [{ type: 'UserInputStep', message: 'hello' }]
+      };
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-A',
+            sessionId: 'session-A',
+            userMessage: 'first',
+            trace
+          }
+        ]
+      });
+
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'something' } });
+      expect(input.value).toBe('something');
+
+      dispatchMessage('sessionStarted', {});
+
+      // After sessionStarted, the placeholder is shown (no entries). Send a new history
+      // and verify the filter input renders empty.
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-B',
+            sessionId: 'session-B',
+            userMessage: 'second',
+            trace: { ...trace, planId: 'plan-B', sessionId: 'session-B' }
+          }
+        ]
+      });
+
+      const inputAfter = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      expect(inputAfter.value).toBe('');
     });
   });
 });

@@ -100,6 +100,34 @@ export const selectHistoryEntry = (entries: TraceHistoryEntry[], index: number):
   return entries[index].trace ?? null;
 };
 
+export const translateStepIndexToFiltered = (
+  plan: any[] | undefined,
+  originalStepIndex: number | null,
+  filterQuery: string
+): number | undefined => {
+  if (originalStepIndex === null || originalStepIndex === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(plan)) {
+    return undefined;
+  }
+  const trimmed = (filterQuery ?? '').trim();
+  if (!trimmed) {
+    return originalStepIndex;
+  }
+
+  let filteredIndex = -1;
+  for (let i = 0; i < plan.length; i++) {
+    if (stepMatchesFilter(plan[i], trimmed)) {
+      filteredIndex++;
+      if (i === originalStepIndex) {
+        return filteredIndex;
+      }
+    }
+  }
+  return undefined;
+};
+
 export const stepMatchesFilter = (step: any, query: string): boolean => {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) {
@@ -497,6 +525,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       setSelectedStepIndex(null);
       setSelectedHistoryIndex(null);
       setExpandedPlanIds(new Set());
+      setFilterQuery('');
     });
 
     // Request trace data when component mounts
@@ -512,6 +541,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
         setSelectedStepIndex(null);
         setSelectedHistoryIndex(null);
         setExpandedPlanIds(new Set());
+        setFilterQuery('');
         setLoading(false);
         vscodeApi.postTestMessage('testTraceHistoryReceived', { entryCount: 0, entries: [] });
         return;
@@ -525,6 +555,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
       setTraceData(latestEntry.trace);
       setSelectedStepIndex(null);
       setSelectedHistoryIndex(null);
+      setFilterQuery('');
 
       // Expand only the latest entry (collapse others)
       setExpandedPlanIds(new Set([latestEntry.planId]));
@@ -662,6 +693,11 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                     stepFilter
                   );
 
+                  const rowSelectedStepIndex =
+                    selectedHistoryIndex === index
+                      ? translateStepIndexToFiltered(entry.trace?.plan, selectedStepIndex, stepFilter)
+                      : undefined;
+
                   return (
                     <TraceHistoryRow
                       key={entry.planId}
@@ -672,7 +708,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                       onOpenJson={() => handleRowOpenJson(entry)}
                       timelineItems={timelineItems}
                       message={message}
-                      selectedStepIndex={selectedHistoryIndex === index ? selectedStepIndex ?? undefined : undefined}
+                      selectedStepIndex={rowSelectedStepIndex}
                     />
                   );
                 })}

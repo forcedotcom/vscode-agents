@@ -9,6 +9,7 @@ import {
   matchesTraceFilter,
   entryMetadataMatches,
   stepMatchesFilter,
+  translateStepIndexToFiltered,
   type TraceHistoryEntry
 } from '../../webview/src/components/AgentTracer/AgentTracer';
 
@@ -816,6 +817,47 @@ describe('AgentTracer helpers', () => {
 
     it('returns false when nothing matches', () => {
       expect(stepMatchesFilter({ type: 'UserInputStep', message: 'hello' }, 'goodbye')).toBe(false);
+    });
+  });
+
+  describe('translateStepIndexToFiltered', () => {
+    const plan = [
+      { type: 'UserInputStep', message: 'hello' },
+      { type: 'FunctionStep', function: { name: 'lookup_account', input: { accountId: 'A123' } } },
+      { type: 'ReasoningStep', reason: 'topic_selection' },
+      { type: 'OutputEvaluationStep', data: { score: 0.9 } }
+    ];
+
+    it('returns undefined when index is null', () => {
+      expect(translateStepIndexToFiltered(plan, null, '')).toBeUndefined();
+    });
+
+    it('returns the original index when filter is empty', () => {
+      expect(translateStepIndexToFiltered(plan, 2, '')).toBe(2);
+      expect(translateStepIndexToFiltered(plan, 2, '   ')).toBe(2);
+    });
+
+    it('returns the position of the original index in the filtered list', () => {
+      // Filtering for "Reasoning" matches the ReasoningStep at original index 2.
+      // After filtering only that step survives, so its filtered index is 0.
+      expect(translateStepIndexToFiltered(plan, 2, 'topic_selection')).toBe(0);
+    });
+
+    it('translates correctly when the original index is the second match in the filtered list', () => {
+      // "step" matches multiple types. The OutputEvaluationStep at original index 3
+      // would be the 4th in a typical filter; for a more controlled case use a query that
+      // matches indices 1 and 3 only.
+      const result = translateStepIndexToFiltered(plan, 3, 'OutputEvaluationStep');
+      expect(result).toBe(0); // only step 3 matches "OutputEvaluationStep" by raw type
+    });
+
+    it('returns undefined when the original index does not match the filter', () => {
+      // Filter for "A123" only matches index 1; index 0 does not survive.
+      expect(translateStepIndexToFiltered(plan, 0, 'A123')).toBeUndefined();
+    });
+
+    it('returns undefined when the plan is missing', () => {
+      expect(translateStepIndexToFiltered(undefined, 0, '')).toBeUndefined();
     });
   });
 
