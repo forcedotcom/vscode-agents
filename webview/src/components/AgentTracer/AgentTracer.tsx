@@ -100,6 +100,61 @@ export const selectHistoryEntry = (entries: TraceHistoryEntry[], index: number):
   return entries[index].trace ?? null;
 };
 
+export const stepMatchesFilter = (step: any, query: string): boolean => {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return true;
+  }
+  const stepType = step?.type || step?.stepType || '';
+  const displayName = STEP_DISPLAY_NAMES[stepType] || stepType;
+  if (displayName && displayName.toLowerCase().includes(trimmed)) {
+    return true;
+  }
+  try {
+    if (JSON.stringify(step).toLowerCase().includes(trimmed)) {
+      return true;
+    }
+  } catch {
+    // ignore stringify failures (e.g. circular refs)
+  }
+  return false;
+};
+
+export const entryMetadataMatches = (entry: TraceHistoryEntry, query: string): boolean => {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return true;
+  }
+  if (entry.userMessage && entry.userMessage.toLowerCase().includes(trimmed)) {
+    return true;
+  }
+  if (entry.sessionId && entry.sessionId.toLowerCase().includes(trimmed)) {
+    return true;
+  }
+  if (entry.planId && entry.planId.toLowerCase().includes(trimmed)) {
+    return true;
+  }
+  return false;
+};
+
+export const matchesTraceFilter = (entry: TraceHistoryEntry, query: string): boolean => {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return true;
+  }
+
+  if (entryMetadataMatches(entry, trimmed)) {
+    return true;
+  }
+
+  const plan = entry.trace?.plan;
+  if (!Array.isArray(plan)) {
+    return false;
+  }
+
+  return plan.some(step => stepMatchesFilter(step, trimmed));
+};
+
 export const applyHistorySelection = (
   entries: TraceHistoryEntry[],
   preferredIndex: number | null
@@ -129,7 +184,9 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   VariableUpdateStep: 'Variable Update',
   TransitionStep: 'Subagent Transition',
   BeforeReasoningStep: 'Before Reasoning',
-  ReasoningStep: 'Output Evaluation',
+  BeforeReasoningIterationStep: 'Before Reasoning Iteration',
+  ReasoningStep: 'Reasoning',
+  OutputEvaluationStep: 'Output Evaluation',
   PlannerResponseStep: 'Agent Response',
   UpdateTopicStep: 'Subagent Selected',
   FunctionStep: 'Action Executed'
@@ -145,7 +202,9 @@ const STEP_ICONS: Record<string, TimelineIconName> = {
   VariableUpdateStep: 'symbol-namespace',
   TransitionStep: 'arrow-right',
   BeforeReasoningStep: 'checklist',
-  ReasoningStep: 'search',
+  BeforeReasoningIterationStep: 'checklist',
+  ReasoningStep: 'lightbulb',
+  OutputEvaluationStep: 'search',
   PlannerResponseStep: 'agent',
   UpdateTopicStep: 'tag',
   FunctionStep: 'action'
@@ -242,13 +301,16 @@ const getStepDescription = (step: any): string | undefined => {
 
 export const buildTimelineItems = (
   traceData: PlanSuccessResponse | null,
-  onSelect: (index: number) => void
+  onSelect: (index: number) => void,
+  filterQuery?: string
 ): TimelineItemProps[] => {
   if (!traceData || !traceData.plan) {
     return [];
   }
 
-  return traceData.plan.map((step: any, index: number) => {
+  const trimmedFilter = filterQuery?.trim() ?? '';
+
+  const items = traceData.plan.map((step: any, index: number) => {
     const stepType = step.type || step.stepType || '';
     const stepName = step.name || step.label || step.description || '';
 
@@ -283,9 +345,18 @@ export const buildTimelineItems = (
       label,
       description,
       icon,
-      onClick: hasData ? () => onSelect(index) : undefined
-    };
+      onClick: hasData ? () => onSelect(index) : undefined,
+      _step: step
+    } as TimelineItemProps & { _step: any };
   });
+
+  if (!trimmedFilter) {
+    return items.map(({ _step, ...item }) => item);
+  }
+
+  return items
+    .filter(item => stepMatchesFilter(item._step, trimmedFilter))
+    .map(({ _step, ...item }) => item);
 };
 
 export const getStepData = (traceData: PlanSuccessResponse | null, selectedStepIndex: number | null): string | null => {
@@ -350,6 +421,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [traceHistory, setTraceHistory] = useState<TraceHistoryEntry[]>([]);
   const [expandedPlanIds, setExpandedPlanIds] = useState<Set<string>>(new Set());
+  const [filterQuery, setFilterQuery] = useState<string>('');
 
   const handleRowExpandedChange = useCallback((planId: string, expanded: boolean) => {
     setExpandedPlanIds(prev => {
@@ -490,6 +562,25 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
   const shouldShowPlaceholder = !hasTraceHistory;
   const selectedStepData = getStepData(traceData, selectedStepIndex);
 
+  const trimmedFilter = filterQuery.trim();
+  const filteredEntries = trimmedFilter
+    ? traceHistory
+        .map((entry, index) => ({ entry, index }))
+        .filter(({ entry }) => matchesTraceFilter(entry, trimmedFilter))
+    : traceHistory.map((entry, index) => ({ entry, index }));
+  const hasFilterMatches = filteredEntries.length > 0;
+
+  const totalStepCount = traceHistory.reduce((sum, entry) => sum + (entry.trace?.plan?.length ?? 0), 0);
+  const matchedStepCount = trimmedFilter
+    ? filteredEntries.reduce((sum, { entry }) => {
+        const plan = entry.trace?.plan ?? [];
+        if (entryMetadataMatches(entry, trimmedFilter)) {
+          return sum + plan.length;
+        }
+        return sum + plan.filter((step: any) => stepMatchesFilter(step, trimmedFilter)).length;
+      }, 0)
+    : totalStepCount;
+
   // Handle panel resize
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -529,28 +620,66 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
           </div>
         ) : hasTraceHistory ? (
           <div className="tracer-simple">
-            <div className="trace-history-list" role="list" aria-label="Trace history">
-              {traceHistory.map((entry, index) => {
-                const { message } = formatHistoryParts(entry, index);
-                const timelineItems = buildTimelineItems(entry.trace, stepIndex =>
-                  handleRowStepSelect(index, stepIndex)
-                );
-
-                return (
-                  <TraceHistoryRow
-                    key={entry.planId}
-                    entry={entry}
-                    index={index}
-                    isExpanded={expandedPlanIds.has(entry.planId)}
-                    onExpandedChange={expanded => handleRowExpandedChange(entry.planId, expanded)}
-                    onOpenJson={() => handleRowOpenJson(entry)}
-                    timelineItems={timelineItems}
-                    message={message}
-                    selectedStepIndex={selectedHistoryIndex === index ? selectedStepIndex ?? undefined : undefined}
-                  />
-                );
-              })}
+            <div className="trace-filter">
+              <div className="trace-filter__input-wrapper">
+                <input
+                  type="text"
+                  className={`trace-filter__input${trimmedFilter ? ' trace-filter__input--with-count' : ''}`}
+                  placeholder="Filter traces by message, event type, or content..."
+                  value={filterQuery}
+                  onChange={e => setFilterQuery(e.target.value)}
+                  aria-label="Filter trace history"
+                />
+                {trimmedFilter && (
+                  <span className="trace-filter__count" aria-live="polite">
+                    {matchedStepCount} of {totalStepCount}
+                  </span>
+                )}
+                {filterQuery && (
+                  <button
+                    type="button"
+                    className="trace-filter__clear"
+                    onClick={() => setFilterQuery('')}
+                    aria-label="Clear filter"
+                    title="Clear filter"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 8.707l3.646 3.647.708-.708L8.707 8l3.647-3.646-.708-.708L8 7.293 4.354 3.646l-.708.708L7.293 8l-3.647 3.646.708.708L8 8.707z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
+            {hasFilterMatches ? (
+              <div className="trace-history-list" role="list" aria-label="Trace history">
+                {filteredEntries.map(({ entry, index }) => {
+                  const { message } = formatHistoryParts(entry, index);
+                  const metadataMatches = !!trimmedFilter && entryMetadataMatches(entry, trimmedFilter);
+                  const stepFilter = metadataMatches ? '' : trimmedFilter;
+                  const timelineItems = buildTimelineItems(
+                    entry.trace,
+                    stepIndex => handleRowStepSelect(index, stepIndex),
+                    stepFilter
+                  );
+
+                  return (
+                    <TraceHistoryRow
+                      key={entry.planId}
+                      entry={entry}
+                      index={index}
+                      isExpanded={expandedPlanIds.has(entry.planId)}
+                      onExpandedChange={expanded => handleRowExpandedChange(entry.planId, expanded)}
+                      onOpenJson={() => handleRowOpenJson(entry)}
+                      timelineItems={timelineItems}
+                      message={message}
+                      selectedStepIndex={selectedHistoryIndex === index ? selectedStepIndex ?? undefined : undefined}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="trace-filter__empty">No traces match "{trimmedFilter}"</div>
+            )}
           </div>
         ) : shouldShowPlaceholder ? (
           <TracerPlaceholder

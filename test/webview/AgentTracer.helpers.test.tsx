@@ -6,6 +6,9 @@ import {
   applyHistorySelection,
   buildTimelineItems,
   getStepData,
+  matchesTraceFilter,
+  entryMetadataMatches,
+  stepMatchesFilter,
   type TraceHistoryEntry
 } from '../../webview/src/components/AgentTracer/AgentTracer';
 
@@ -249,7 +252,7 @@ describe('AgentTracer helpers', () => {
 
     const items = buildTimelineItems(trace, () => {});
     expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('Output Evaluation');
+    expect(items[0].label).toBe('Reasoning');
     expect(items[0].description).toBe('SMALL_TALK');
   });
 
@@ -693,5 +696,160 @@ describe('AgentTracer helpers', () => {
     expect(items[0].onClick).toBeDefined();
     items[0].onClick?.();
     expect(indices).toEqual([0]);
+  });
+
+  describe('matchesTraceFilter', () => {
+    const buildEntry = (overrides: Partial<TraceHistoryEntry> = {}): TraceHistoryEntry => ({
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'session',
+      planId: 'plan',
+      userMessage: 'Hello world',
+      trace: {
+        type: 'PlanSuccessResponse',
+        planId: 'plan',
+        sessionId: 'session',
+        plan: [
+          { type: 'UserInputStep', message: 'Check the weather' },
+          { type: 'FunctionStep', function: { name: 'lookup_account', input: { accountId: 'A123' } } }
+        ]
+      },
+      ...overrides
+    });
+
+    it('returns true for an empty or whitespace query', () => {
+      const entry = buildEntry();
+      expect(matchesTraceFilter(entry, '')).toBe(true);
+      expect(matchesTraceFilter(entry, '   ')).toBe(true);
+    });
+
+    it('matches against the user message case-insensitively', () => {
+      expect(matchesTraceFilter(buildEntry(), 'HELLO')).toBe(true);
+      expect(matchesTraceFilter(buildEntry(), 'world')).toBe(true);
+    });
+
+    it('matches against the step type display name', () => {
+      expect(matchesTraceFilter(buildEntry(), 'User Input')).toBe(true);
+      expect(matchesTraceFilter(buildEntry(), 'action executed')).toBe(true);
+    });
+
+    it('matches against nested JSON content of a step', () => {
+      expect(matchesTraceFilter(buildEntry(), 'lookup_account')).toBe(true);
+      expect(matchesTraceFilter(buildEntry(), 'A123')).toBe(true);
+    });
+
+    it('returns false when there is no match', () => {
+      expect(matchesTraceFilter(buildEntry(), 'nonexistent_value')).toBe(false);
+    });
+
+    it('returns false when the trace has no plan and message does not match', () => {
+      const entry = buildEntry({
+        userMessage: undefined,
+        trace: { type: 'PlanSuccessResponse', planId: 'plan', sessionId: 'session', plan: [] }
+      });
+      expect(matchesTraceFilter(entry, 'anything')).toBe(false);
+    });
+  });
+
+  describe('entryMetadataMatches', () => {
+    const buildEntry = (overrides: Partial<TraceHistoryEntry> = {}): TraceHistoryEntry => ({
+      storageKey: 'agent',
+      agentId: 'agent',
+      sessionId: 'abc-session-123',
+      planId: 'xyz-plan-456',
+      userMessage: 'Find weather',
+      trace: { type: 'PlanSuccessResponse', planId: 'xyz-plan-456', sessionId: 'abc-session-123', plan: [] },
+      ...overrides
+    });
+
+    it('returns true for empty query', () => {
+      expect(entryMetadataMatches(buildEntry(), '')).toBe(true);
+      expect(entryMetadataMatches(buildEntry(), '   ')).toBe(true);
+    });
+
+    it('matches against userMessage', () => {
+      expect(entryMetadataMatches(buildEntry(), 'weather')).toBe(true);
+    });
+
+    it('matches against sessionId', () => {
+      expect(entryMetadataMatches(buildEntry(), 'abc-session')).toBe(true);
+    });
+
+    it('matches against planId', () => {
+      expect(entryMetadataMatches(buildEntry(), 'xyz-plan')).toBe(true);
+    });
+
+    it('is case-insensitive', () => {
+      expect(entryMetadataMatches(buildEntry(), 'WEATHER')).toBe(true);
+      expect(entryMetadataMatches(buildEntry(), 'ABC-SESSION')).toBe(true);
+    });
+
+    it('returns false when nothing matches', () => {
+      expect(entryMetadataMatches(buildEntry(), 'nonexistent')).toBe(false);
+    });
+
+    it('returns false when fields are missing and no match', () => {
+      const entry = buildEntry({ userMessage: undefined, sessionId: '', planId: '' });
+      expect(entryMetadataMatches(entry, 'anything')).toBe(false);
+    });
+  });
+
+  describe('stepMatchesFilter', () => {
+    it('returns true for empty query', () => {
+      expect(stepMatchesFilter({ type: 'UserInputStep' }, '')).toBe(true);
+    });
+
+    it('matches by step display name', () => {
+      expect(stepMatchesFilter({ type: 'FunctionStep' }, 'action executed')).toBe(true);
+      expect(stepMatchesFilter({ type: 'OutputEvaluationStep' }, 'output evaluation')).toBe(true);
+    });
+
+    it('matches by raw step type when not in display map', () => {
+      expect(stepMatchesFilter({ type: 'CustomUnknownStep' }, 'CustomUnknown')).toBe(true);
+    });
+
+    it('matches against nested JSON content', () => {
+      const step = { type: 'FunctionStep', function: { name: 'lookup_account', input: { accountId: 'A123' } } };
+      expect(stepMatchesFilter(step, 'lookup_account')).toBe(true);
+      expect(stepMatchesFilter(step, 'A123')).toBe(true);
+    });
+
+    it('returns false when nothing matches', () => {
+      expect(stepMatchesFilter({ type: 'UserInputStep', message: 'hello' }, 'goodbye')).toBe(false);
+    });
+  });
+
+  describe('buildTimelineItems with filter', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'p',
+      sessionId: 's',
+      plan: [
+        { type: 'UserInputStep', message: 'hello' },
+        { type: 'FunctionStep', function: { name: 'lookup_account', input: { accountId: 'A123' } } },
+        { type: 'ReasoningStep', reason: 'topic_selector' }
+      ]
+    };
+
+    it('returns all items when filter is empty', () => {
+      const items = buildTimelineItems(trace, () => {});
+      expect(items).toHaveLength(3);
+    });
+
+    it('filters timeline items by step content', () => {
+      const items = buildTimelineItems(trace, () => {}, 'A123');
+      expect(items).toHaveLength(1);
+      expect(items[0].label).toContain('Action Executed');
+    });
+
+    it('filters timeline items by step display name', () => {
+      const items = buildTimelineItems(trace, () => {}, 'reasoning');
+      expect(items).toHaveLength(1);
+    });
+
+    it('returns empty array when no steps match', () => {
+      const items = buildTimelineItems(trace, () => {}, 'no_match_xyz');
+      expect(items).toHaveLength(0);
+    });
   });
 });
