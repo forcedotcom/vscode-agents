@@ -1,3 +1,9 @@
+# [1.15.0](https://github.com/salesforcecli/vsode-agents/compare/v1.14.2...v1.15.0) (2026-05-13)
+
+### Features
+
+- add NGT support @W-22143534@ ([#198](https://github.com/salesforcecli/vsode-agents/issues/198)) ([da87405](https://github.com/salesforcecli/vsode-agents/commit/da87405114a1cb85b030d83bafb270dbf368610e))
+
 ## [1.14.2](https://github.com/salesforcecli/vsode-agents/compare/v1.14.1...v1.14.2) (2026-05-05)
 
 ### Bug Fixes
