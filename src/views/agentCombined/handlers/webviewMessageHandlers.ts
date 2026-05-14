@@ -5,7 +5,7 @@ import { CoreExtensionService } from '../../../services/coreExtensionService';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { AgentMessage } from '../types';
 import type { AgentViewState } from '../state';
-import type { WebviewMessageSender } from './webviewMessageSender';
+import type { WebviewHost, WebviewMessageSender } from './webviewMessageSender';
 import type { SessionManager } from '../session';
 import type { HistoryManager } from '../history';
 import type { ApexDebugManager } from '../debugging';
@@ -25,7 +25,7 @@ export class WebviewMessageHandlers {
     private readonly historyManager: HistoryManager,
     private readonly apexDebugManager: ApexDebugManager,
     private readonly context: vscode.ExtensionContext,
-    private readonly webviewView: vscode.WebviewView
+    private readonly webviewHost: WebviewHost
   ) {
     this.logger = new Logger(CoreExtensionService.getChannelService());
   }
@@ -138,7 +138,7 @@ export class WebviewMessageHandlers {
     this.state.currentAgentSource = agentSource;
 
     const isLiveMode = data?.isLiveMode ?? false;
-    await this.sessionManager.startSession(agentId, agentSource, isLiveMode, this.webviewView);
+    await this.sessionManager.startSession(agentId, agentSource, isLiveMode, this.webviewHost);
   }
 
   private async handleSetApexDebugging(message: AgentMessage): Promise<void> {

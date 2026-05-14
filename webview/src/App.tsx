@@ -6,6 +6,23 @@ import TabNavigation from './components/shared/TabNavigation.js';
 import { vscodeApi, AgentInfo, AgentSource } from './services/vscodeApi.js';
 import './App.css';
 
+interface SessionBootstrap {
+  localId: string;
+  agentId: string;
+  agentSource: AgentSource;
+  agentName?: string | null;
+  liveMode: boolean;
+  apexDebug: boolean;
+  status: 'draft' | 'starting' | 'active' | 'inactive' | 'error';
+  multiSession: boolean;
+}
+
+declare global {
+  interface Window {
+    afdxSessionBootstrap?: SessionBootstrap;
+  }
+}
+
 interface SelectAgentMessage {
   agentId: string;
   forceRestart?: boolean;
@@ -23,19 +40,30 @@ declare global {
   }
 }
 
+const bootstrap = typeof window !== 'undefined' ? window.afdxSessionBootstrap : undefined;
+const isSessionMode = Boolean(bootstrap?.multiSession);
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'preview' | 'tracer'>('preview');
-  const [displayedAgentId, setDisplayedAgentIdState] = useState('');
-  const [desiredAgentId, setDesiredAgentId] = useState('');
+  const [displayedAgentId, setDisplayedAgentIdState] = useState(isSessionMode ? bootstrap!.agentId : '');
+  const [desiredAgentId, setDesiredAgentId] = useState(isSessionMode ? bootstrap!.agentId : '');
   const [restartTrigger, setRestartTrigger] = useState(0);
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionStarting, setIsSessionStarting] = useState(false);
   const [hasSessionError, setHasSessionError] = useState(false);
-  const [isLiveMode, setIsLiveMode] = useState(false);
-  const [selectedAgentInfo, setSelectedAgentInfo] = useState<AgentInfo | null>(null);
-  const [hasAgents, setHasAgents] = useState(false);
-  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const [isLiveMode, setIsLiveMode] = useState(isSessionMode ? Boolean(bootstrap!.liveMode) : false);
+  const [selectedAgentInfo, setSelectedAgentInfo] = useState<AgentInfo | null>(
+    isSessionMode
+      ? {
+          id: bootstrap!.agentId,
+          name: bootstrap!.agentName ?? bootstrap!.agentId,
+          type: bootstrap!.agentSource as AgentSource
+        }
+      : null
+  );
+  const [hasAgents, setHasAgents] = useState(isSessionMode);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(!isSessionMode);
   const sessionChangeQueueRef = useRef(Promise.resolve());
   const displayedAgentIdRef = useRef<string>('');
   const desiredAgentIdRef = useRef<string>('');
@@ -141,6 +169,11 @@ const App: React.FC = () => {
 
     // Request initial live mode state from extension
     vscodeApi.getInitialLiveMode();
+
+    if (isSessionMode && bootstrap) {
+      // Pre-select the agent on the extension side so history/traces load for the correct agent.
+      vscodeApi.setSelectedAgentId(bootstrap.agentId, bootstrap.agentSource);
+    }
 
     return () => {
       disposeSelectAgent();
@@ -366,18 +399,22 @@ const App: React.FC = () => {
     <div className="app">
       {!hasSessionError && (
         <div className="app-menu">
-          <AgentSelector
-            selectedAgent={desiredAgentId}
-            onAgentChange={handleAgentChange}
-            isSessionActive={isSessionActive}
-            isSessionStarting={isSessionStarting}
-            onLiveModeChange={handleLiveModeChange}
-            initialLiveMode={isLiveMode}
-            onSelectedAgentInfoChange={setSelectedAgentInfo}
-            onStopSession={handleStopSession}
-            onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
-          />
-          <div className="app-menu-divider" />
+          {!isSessionMode && (
+            <>
+              <AgentSelector
+                selectedAgent={desiredAgentId}
+                onAgentChange={handleAgentChange}
+                isSessionActive={isSessionActive}
+                isSessionStarting={isSessionStarting}
+                onLiveModeChange={handleLiveModeChange}
+                initialLiveMode={isLiveMode}
+                onSelectedAgentInfoChange={setSelectedAgentInfo}
+                onStopSession={handleStopSession}
+                onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
+              />
+              <div className="app-menu-divider" />
+            </>
+          )}
           {previewAgentId !== '' && !isSessionStarting && (
             <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED} />
           )}

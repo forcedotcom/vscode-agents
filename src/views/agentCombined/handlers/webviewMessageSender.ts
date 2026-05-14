@@ -4,22 +4,29 @@ import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { JsonTokenColors } from '../../../utils/themeColors';
 
 /**
+ * Any host that exposes a `webview` — both `vscode.WebviewView` and `vscode.WebviewPanel` qualify.
+ */
+export interface WebviewHost {
+  webview: vscode.Webview;
+}
+
+/**
  * Handles all outgoing messages to the webview
  */
 export class WebviewMessageSender {
-  private webviewView?: vscode.WebviewView;
+  private host?: WebviewHost;
 
   constructor(private readonly state: AgentViewState) {}
 
-  setWebview(webviewView: vscode.WebviewView): void {
-    this.webviewView = webviewView;
+  setWebview(host: WebviewHost): void {
+    this.host = host;
   }
 
   private postMessage(command: string, data?: unknown): void {
-    if (!this.webviewView) {
+    if (!this.host) {
       return;
     }
-    this.webviewView.webview.postMessage({ command, data });
+    this.host.webview.postMessage({ command, data });
   }
 
   // Session messages

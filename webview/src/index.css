@@ -16,6 +16,24 @@ body {
   padding: 0;
 }
 
+/* Session panel (editor tab) matches the active tab's background color. */
+body.afdx-session-mode {
+  background-color: var(--vscode-tab-activeBackground, var(--vscode-editor-background));
+  color: var(--vscode-tab-activeForeground, var(--vscode-editor-foreground));
+}
+
+/* Container-level panels paint their own sidebar-colored background by default. Inside
+   session panels we want them to inherit the tab-active body color instead. */
+body.afdx-session-mode .app,
+body.afdx-session-mode .agent-preview,
+body.afdx-session-mode .agent-tracer,
+body.afdx-session-mode .app-menu,
+body.afdx-session-mode .tab-navigation,
+body.afdx-session-mode .form-container,
+body.afdx-session-mode .chat-input {
+  background-color: transparent;
+}
+
 #root {
   width: 100%;
   height: 100vh;

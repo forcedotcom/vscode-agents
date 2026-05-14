@@ -139,6 +139,11 @@
           "type": "boolean",
           "default": false,
           "description": "Skip retrieving agent metadata to your DX project when publishing the authoring bundle to your org."
+        },
+        "salesforce.agentforceDX.multiSession.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the multi-session preview UI (preview). Displays active sessions in the sidebar and opens each session in its own editor tab."
         }
       }
     },
@@ -155,7 +160,12 @@
           "id": "sf.agent.combined.view",
           "name": "%agentforce_dx%",
           "type": "webview",
-          "when": "sf:project_opened"
+          "when": "sf:project_opened && !agentforceDX:multiSession"
+        },
+        {
+          "id": "sf.agent.sessionList.view",
+          "name": "Agentforce DX Sessions",
+          "when": "sf:project_opened && agentforceDX:multiSession"
         }
       ]
     },
@@ -168,6 +178,13 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "sf.agent.sessionList.view",
+        "contents": "No active agent sessions.\n[+ New session](command:sf.agent.sessionList.newSession)",
+        "when": "agentforceDX:multiSession"
+      }
+    ],
     "menus": {
       "sf.agent.combined.view.restartMenu": [
         {
@@ -247,6 +264,43 @@
           "command": "sf.agent.test.view.toggleGeneratedData.off",
           "when": "view == sf.agent.test.view && !agentforceDX:showGeneratedData",
           "group": "navigation@4"
+        },
+        {
+          "command": "sf.agent.sessionList.newSession",
+          "when": "view == sf.agent.sessionList.view",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sf.agent.sessionList.activateVersion",
+          "when": "view == sf.agent.sessionList.view",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sf.agent.sessionList.refreshAgents",
+          "when": "view == sf.agent.sessionList.view",
+          "group": "navigation@3"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "afdx.session.activateVersion",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && agentforceDX:agentSelected && !agentforceDX:isScriptAgent && !agentforceDX:sessionStarting",
+          "group": "navigation@0"
+        },
+        {
+          "command": "afdx.session.stop",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && (agentforceDX:sessionActive || agentforceDX:sessionStarting)",
+          "group": "navigation@1"
+        },
+        {
+          "command": "afdx.session.restart",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && agentforceDX:sessionActive && agentforceDX:isScriptAgent",
+          "group": "navigation@2"
+        },
+        {
+          "command": "afdx.session.toggleDebug",
+          "when": "activeWebviewPanelId == 'afdx.sessionPanel' && agentforceDX:multiSession && agentforceDX:sessionActive && agentforceDX:isLiveMode",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -258,6 +312,11 @@
         {
           "command": "sf.agent.test.view.goToTestResults",
           "when": "view == sf.agent.test.view && viewItem =~ /(agentTest|agentTestGroup)(_Pass|_Skip|\\b)/"
+        },
+        {
+          "command": "sf.agent.sessionList.close",
+          "when": "view == sf.agent.sessionList.view && viewItem =~ /^afdxSession:/",
+          "group": "inline"
         }
       ],
       "editor/context": [
@@ -355,6 +414,46 @@
         {
           "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
           "when": "sf:project_opened"
+        },
+        {
+          "command": "sf.agent.sessionList.newSession",
+          "when": "sf:project_opened && agentforceDX:multiSession"
+        },
+        {
+          "command": "sf.agent.sessionList.refreshAgents",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.sessionList.reveal",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.sessionList.close",
+          "when": "false"
+        },
+        {
+          "command": "sf.agent.sessionList.activateVersion",
+          "when": "sf:project_opened && agentforceDX:multiSession"
+        },
+        {
+          "command": "afdx.session.stop",
+          "when": "agentforceDX:multiSession"
+        },
+        {
+          "command": "afdx.session.restart",
+          "when": "agentforceDX:multiSession"
+        },
+        {
+          "command": "afdx.session.recompileAndRestart",
+          "when": "agentforceDX:multiSession"
+        },
+        {
+          "command": "afdx.session.toggleDebug",
+          "when": "agentforceDX:multiSession"
+        },
+        {
+          "command": "afdx.session.activateVersion",
+          "when": "agentforceDX:multiSession"
         },
         {
           "command": "sf.agent.test.view.goToTestResults",
@@ -574,6 +673,54 @@
         "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
         "title": "AFDX: Create Agent",
         "icon": "$(add)"
+      },
+      {
+        "command": "sf.agent.sessionList.newSession",
+        "title": "New Session",
+        "icon": "$(add)"
+      },
+      {
+        "command": "sf.agent.sessionList.refreshAgents",
+        "title": "Refresh Agents",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sf.agent.sessionList.reveal",
+        "title": "Open Session"
+      },
+      {
+        "command": "sf.agent.sessionList.close",
+        "title": "Close Session",
+        "icon": "$(close)"
+      },
+      {
+        "command": "afdx.session.stop",
+        "title": "Stop Session",
+        "icon": "$(stop-circle)"
+      },
+      {
+        "command": "afdx.session.restart",
+        "title": "Restart Session",
+        "icon": "$(debug-rerun)"
+      },
+      {
+        "command": "afdx.session.recompileAndRestart",
+        "title": "Recompile & Restart"
+      },
+      {
+        "command": "afdx.session.toggleDebug",
+        "title": "Toggle Apex Debug",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "afdx.session.activateVersion",
+        "title": "Activate Version (Focused Session)",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "sf.agent.sessionList.activateVersion",
+        "title": "Activate Agent Version",
+        "icon": "$(versions)"
       }
     ]
   }
