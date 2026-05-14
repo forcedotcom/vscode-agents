@@ -78,7 +78,10 @@ export const registerActivateAgentCommand = () => {
         const deactivated = agents.filter(a => !a.isActivated);
 
         if (deactivated.length === 0) {
-          vscode.window.showInformationMessage('No deactivated agents found in the org.');
+          const msg = agents.length === 0
+            ? 'No published agents found in the org.'
+            : 'No published agents are available to activate.';
+          vscode.window.showInformationMessage(msg);
           return;
         }
 
