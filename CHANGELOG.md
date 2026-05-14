@@ -1,3 +1,9 @@
+# [1.16.0](https://github.com/salesforcecli/vsode-agents/compare/v1.15.1...v1.16.0) (2026-05-14)
+
+### Features
+
+- add search filter to agent tracer @W-22434499@ ([#207](https://github.com/salesforcecli/vsode-agents/issues/207)) ([34f11d8](https://github.com/salesforcecli/vsode-agents/commit/34f11d8191114a3cfc97acd96ad870bd8897ca8c))
+
 ## [1.15.1](https://github.com/salesforcecli/vsode-agents/compare/v1.15.0...v1.15.1) (2026-05-14)
 
 ### Bug Fixes
