@@ -64,7 +64,6 @@ describe('Refresh Agents Command', () => {
 
       try {
         await mockProvider.resetCurrentAgentView();
-        vscode.window.showInformationMessage('Agent preview reset.');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`Unable to reset agent view: ${errorMessage}`);
@@ -74,7 +73,7 @@ describe('Refresh Agents Command', () => {
     await resetCommand();
 
     expect(mockProvider.resetCurrentAgentView).toHaveBeenCalled();
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Agent preview reset.');
+    expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
   });
 
   it('should show an error when no agent is selected', async () => {
@@ -107,7 +106,6 @@ describe('Refresh Agents Command', () => {
 
       try {
         await mockProvider.resetCurrentAgentView();
-        vscode.window.showInformationMessage('Agent preview reset.');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`Unable to reset agent view: ${errorMessage}`);

@@ -378,7 +378,6 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
 
       try {
         await provider.resetCurrentAgentView();
-        vscode.window.showInformationMessage('Agent preview reset.');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`Unable to reset agent view: ${errorMessage}`);

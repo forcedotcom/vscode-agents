@@ -157,17 +157,19 @@ describe('App Integration Tests - Recent Bug Fixes', () => {
       // 1. Initially no tabs
       expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
 
-      // 2. Select agent - tabs still not visible
+      // 2. Select agent - tabs appear once an agent is selected
       triggerMessage('selectAgent', { agentId: 'agent1' });
-      expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
-
-      // 3. Session starting (loading) - tabs still hidden
-      triggerMessage('sessionStarting', {});
       await waitFor(() => {
-        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
 
-      // 4. Session started - tabs now visible
+      // 3. Session starting - tabs stay visible to keep loading continuity
+      triggerMessage('sessionStarting', {});
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // 4. Session started - tabs still visible
       triggerMessage('sessionStarted', {});
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
@@ -180,7 +182,7 @@ describe('App Integration Tests - Recent Bug Fixes', () => {
       });
     });
 
-    it('should hide tabs during restart from active session', async () => {
+    it('should keep tabs visible during restart from active session', async () => {
       render(<App />);
 
       // Start initial session
@@ -191,15 +193,12 @@ describe('App Integration Tests - Recent Bug Fixes', () => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
 
-      // Restart session
+      // Restart session - tabs stay visible (no flicker)
       triggerMessage('sessionStarting', {});
-
-      // Tabs should be hidden during restart
       await waitFor(() => {
-        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
 
-      // Tabs show again after restart completes
       triggerMessage('sessionStarted', {});
       await waitFor(() => {
         expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
@@ -307,9 +306,9 @@ describe('App Integration Tests - Recent Bug Fixes', () => {
       triggerMessage('selectAgent', { agentId: 'agent2' });
       triggerMessage('sessionStarting', {});
 
-      // Tabs should hide during transition
+      // Tabs should stay visible during transition for loading continuity
       await waitFor(() => {
-        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
 
       // New session started
@@ -381,8 +380,8 @@ describe('App Integration Tests - Recent Bug Fixes', () => {
       await waitFor(() => {
         // Should switch to preview
         expect(screen.getByTestId('agent-preview')).toBeInTheDocument();
-        // Tabs hidden during loading
-        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+        // Tabs stay visible during loading for continuity
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
 
       // 6. Session started again
