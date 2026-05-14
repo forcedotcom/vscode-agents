@@ -55,6 +55,7 @@ body.vscode-high-contrast .agent-preview-error-icon {
   font-weight: 500;
   line-height: 1.3;
   text-wrap: balance;
+  white-space: pre-wrap;
 }
 
 .agent-preview-error .vscode-button {
