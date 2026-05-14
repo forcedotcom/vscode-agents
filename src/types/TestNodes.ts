@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TestStatus } from '@salesforce/agents';
+import { TestStatus, type TestRunnerType } from '@salesforce/agents';
 import { getTestOutlineProvider } from '../views/testOutlineProvider';
 
 /**
@@ -66,8 +66,13 @@ export abstract class TestNode extends vscode.TreeItem {
  * has children AgentTestNode for individual test cases
  */
 export class AgentTestGroupNode extends TestNode {
+  /** The actual metadata API name, which may differ from the display label when there's a naming conflict. */
+  public testDefinitionName: string;
+  public runnerType: TestRunnerType = 'testing-center';
+
   constructor(label: string, location?: vscode.Location) {
     super(label, vscode.TreeItemCollapsibleState.Expanded, location ?? null);
+    this.testDefinitionName = label;
   }
 
   public contextValue = 'agentTestGroup';

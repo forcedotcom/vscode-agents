@@ -626,4 +626,336 @@ describe('AgentTracer', () => {
     expect(screen.getByRole('button', { name: /first/i })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('button', { name: /second/i })).toHaveAttribute('aria-expanded', 'false');
   });
+
+  describe('search filter', () => {
+    const renderWithEntries = () => {
+      render(<AgentTracer isVisible />);
+      const trace1 = {
+        type: 'PlanSuccessResponse',
+        planId: 'plan-1',
+        sessionId: 'session-1',
+        plan: [{ type: 'FunctionStep', function: { name: 'lookup_account', input: { accountId: 'A123' } } }]
+      };
+      const trace2 = {
+        type: 'PlanSuccessResponse',
+        planId: 'plan-2',
+        sessionId: 'session-2',
+        plan: [{ type: 'UserInputStep', message: 'check the weather' }]
+      };
+      dispatchMessage('traceHistory', {
+        entries: [
+          { storageKey: 'agent', agentId: 'agent', planId: 'plan-1', sessionId: 'session-1', userMessage: 'Find account info', trace: trace1 },
+          { storageKey: 'agent', agentId: 'agent', planId: 'plan-2', sessionId: 'session-2', userMessage: 'What is the weather', trace: trace2 }
+        ]
+      });
+    };
+
+    it('renders the filter input when trace history is present', () => {
+      renderWithEntries();
+      expect(screen.getByLabelText(/Filter trace history/i)).toBeInTheDocument();
+    });
+
+    it('filters entries by user message text', () => {
+      renderWithEntries();
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+      fireEvent.change(input, { target: { value: 'weather' } });
+
+      expect(screen.queryByText('Find account info')).not.toBeInTheDocument();
+      expect(screen.getByText('What is the weather')).toBeInTheDocument();
+      expect(screen.getByText('1 of 2')).toBeInTheDocument();
+    });
+
+    it('filters by JSON content within steps', () => {
+      renderWithEntries();
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+      fireEvent.change(input, { target: { value: 'A123' } });
+
+      expect(screen.getByText('Find account info')).toBeInTheDocument();
+      expect(screen.queryByText('What is the weather')).not.toBeInTheDocument();
+    });
+
+    it('shows empty-state message when nothing matches', () => {
+      renderWithEntries();
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+      fireEvent.change(input, { target: { value: 'no_match_xyz' } });
+
+      expect(screen.getByText(/No traces match/i)).toBeInTheDocument();
+      expect(screen.getByText(/0 of 2/)).toBeInTheDocument();
+    });
+
+    it('clears the filter when the clear button is clicked', () => {
+      renderWithEntries();
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+      fireEvent.change(input, { target: { value: 'weather' } });
+      expect(screen.queryByText('Find account info')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText(/Clear filter/i));
+      expect(input.value).toBe('');
+      expect(screen.getByText('Find account info')).toBeInTheDocument();
+      expect(screen.getByText('What is the weather')).toBeInTheDocument();
+    });
+
+    it('filters by sessionId', () => {
+      renderWithEntries();
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+      fireEvent.change(input, { target: { value: 'session-1' } });
+
+      expect(screen.getByText('Find account info')).toBeInTheDocument();
+      expect(screen.queryByText('What is the weather')).not.toBeInTheDocument();
+    });
+
+    it('filters by planId', () => {
+      renderWithEntries();
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+      fireEvent.change(input, { target: { value: 'plan-2' } });
+
+      expect(screen.queryByText('Find account info')).not.toBeInTheDocument();
+      expect(screen.getByText('What is the weather')).toBeInTheDocument();
+    });
+
+    it('does not show the counter when the filter is empty', () => {
+      renderWithEntries();
+      expect(screen.queryByText(/of \d+/)).not.toBeInTheDocument();
+    });
+
+    it('does not show the clear button when the filter is empty', () => {
+      renderWithEntries();
+      expect(screen.queryByLabelText(/Clear filter/i)).not.toBeInTheDocument();
+    });
+
+    describe('step-level filtering and counting', () => {
+      const renderMultiStep = () => {
+        render(<AgentTracer isVisible />);
+        const trace = {
+          type: 'PlanSuccessResponse',
+          planId: 'plan-A',
+          sessionId: 'session-A',
+          plan: [
+            { type: 'UserInputStep', message: 'hello' },
+            { type: 'FunctionStep', function: { name: 'lookup_account', input: { accountId: 'A123' } } },
+            { type: 'ReasoningStep', reason: 'topic_selection' },
+            { type: 'OutputEvaluationStep', data: { score: 0.9 } }
+          ]
+        };
+        dispatchMessage('traceHistory', {
+          entries: [
+            {
+              storageKey: 'agent',
+              agentId: 'agent',
+              planId: 'plan-A',
+              sessionId: 'session-A',
+              userMessage: 'My question',
+              trace
+            }
+          ]
+        });
+      };
+
+      it('counts total steps when filter is empty', () => {
+        renderMultiStep();
+        expect(screen.queryByText(/of 4/)).not.toBeInTheDocument();
+      });
+
+      it('counts only matching steps when query matches step content', () => {
+        renderMultiStep();
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+        fireEvent.change(input, { target: { value: 'A123' } });
+
+        expect(screen.getByText('1 of 4')).toBeInTheDocument();
+      });
+
+      it('counts all steps in entry when query matches entry metadata', () => {
+        renderMultiStep();
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+        fireEvent.change(input, { target: { value: 'My question' } });
+
+        expect(screen.getByText('4 of 4')).toBeInTheDocument();
+      });
+
+      it('counts all steps when query matches sessionId', () => {
+        renderMultiStep();
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+        fireEvent.change(input, { target: { value: 'session-A' } });
+
+        expect(screen.getByText('4 of 4')).toBeInTheDocument();
+      });
+
+      it('hides non-matching steps inside the timeline', () => {
+        renderMultiStep();
+
+        // before filtering, all 4 step types should appear in the timeline
+        expect(screen.getAllByText(/User Input/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Action Executed/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Reasoning/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Output Evaluation/i).length).toBeGreaterThan(0);
+
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'A123' } });
+
+        // only the FunctionStep should remain visible
+        expect(screen.getAllByText(/Action Executed/i).length).toBeGreaterThan(0);
+        expect(screen.queryByText(/User Input/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Output Evaluation/i)).not.toBeInTheDocument();
+      });
+
+      it('keeps all steps visible when query matches entry metadata', () => {
+        renderMultiStep();
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+
+        fireEvent.change(input, { target: { value: 'My question' } });
+
+        expect(screen.getAllByText(/User Input/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Action Executed/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Output Evaluation/i).length).toBeGreaterThan(0);
+      });
+
+      const findTimelineItem = (label: RegExp): Element => {
+        const labels = document.querySelectorAll('.vscode-timeline-item__label');
+        for (const labelEl of Array.from(labels)) {
+          if (label.test(labelEl.textContent ?? '')) {
+            const item = labelEl.closest('.vscode-timeline-item');
+            if (item) return item;
+          }
+        }
+        throw new Error(`Timeline item matching ${label} not found`);
+      };
+
+      it('highlights the selected step under the filter using the filtered index', () => {
+        renderMultiStep();
+
+        // Click the FunctionStep (original index 1) to select it.
+        const functionStepItem = findTimelineItem(/Action Executed/i);
+        fireEvent.click(functionStepItem);
+
+        // Confirm it is rendered as selected before any filter is applied.
+        expect(document.querySelectorAll('.vscode-timeline-item--selected').length).toBe(1);
+
+        // Apply a filter that hides earlier steps so the selected step's filtered
+        // position differs from its original plan index.
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'A123' } });
+
+        // The FunctionStep should still be the only selected timeline item, even though
+        // its filtered position (0) differs from its original plan index (1).
+        const selectedAfterFilter = document.querySelectorAll('.vscode-timeline-item--selected');
+        expect(selectedAfterFilter.length).toBe(1);
+        expect(selectedAfterFilter[0].textContent).toMatch(/Action Executed/i);
+      });
+
+      it('does not highlight a step that is filtered out', () => {
+        renderMultiStep();
+
+        // Select the UserInputStep first
+        const userInputItem = findTimelineItem(/User Input/i);
+        fireEvent.click(userInputItem);
+        expect(document.querySelectorAll('.vscode-timeline-item--selected').length).toBe(1);
+
+        // Filter out everything except the FunctionStep
+        const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'A123' } });
+
+        // No timeline item should be marked selected
+        expect(document.querySelectorAll('.vscode-timeline-item--selected').length).toBe(0);
+      });
+    });
+
+    it('clears the filter when a new traceHistory message arrives', () => {
+      render(<AgentTracer isVisible />);
+      const trace = {
+        type: 'PlanSuccessResponse',
+        planId: 'plan-A',
+        sessionId: 'session-A',
+        plan: [{ type: 'UserInputStep', message: 'hello' }]
+      };
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-A',
+            sessionId: 'session-A',
+            userMessage: 'first',
+            trace
+          }
+        ]
+      });
+
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'no_match_xyz' } });
+      expect(input.value).toBe('no_match_xyz');
+
+      // New batch arrives
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-B',
+            sessionId: 'session-B',
+            userMessage: 'second',
+            trace: { ...trace, planId: 'plan-B', sessionId: 'session-B' }
+          }
+        ]
+      });
+
+      const inputAfter = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      expect(inputAfter.value).toBe('');
+      expect(screen.getByText('second')).toBeInTheDocument();
+    });
+
+    it('clears the filter when sessionStarted fires', () => {
+      render(<AgentTracer isVisible />);
+      const trace = {
+        type: 'PlanSuccessResponse',
+        planId: 'plan-A',
+        sessionId: 'session-A',
+        plan: [{ type: 'UserInputStep', message: 'hello' }]
+      };
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-A',
+            sessionId: 'session-A',
+            userMessage: 'first',
+            trace
+          }
+        ]
+      });
+
+      const input = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'something' } });
+      expect(input.value).toBe('something');
+
+      dispatchMessage('sessionStarted', {});
+
+      // After sessionStarted, the placeholder is shown (no entries). Send a new history
+      // and verify the filter input renders empty.
+      dispatchMessage('traceHistory', {
+        entries: [
+          {
+            storageKey: 'agent',
+            agentId: 'agent',
+            planId: 'plan-B',
+            sessionId: 'session-B',
+            userMessage: 'second',
+            trace: { ...trace, planId: 'plan-B', sessionId: 'session-B' }
+          }
+        ]
+      });
+
+      const inputAfter = screen.getByLabelText(/Filter trace history/i) as HTMLInputElement;
+      expect(inputAfter.value).toBe('');
+    });
+  });
 });

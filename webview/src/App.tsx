@@ -84,6 +84,9 @@ const App: React.FC = () => {
     const disposeRefreshAgents = vscodeApi.onMessage('refreshAgents', () => {
       // Switch back to preview tab when refreshing agents
       setActiveTab('preview');
+      sessionActiveRef.current = false;
+      setIsSessionActive(false);
+      setIsSessionStarting(false);
     });
 
     const disposeSetLiveMode = vscodeApi.onMessage('setLiveMode', (data: { isLiveMode: boolean }) => {
@@ -264,11 +267,27 @@ const App: React.FC = () => {
       }
     });
 
+    const disposeCompilationError = vscodeApi.onMessage('compilationError', () => {
+      sessionActiveRef.current = false;
+      setIsSessionActive(false);
+      setIsSessionStarting(false);
+      const startResolver = sessionStartResolversRef.current.shift();
+      if (startResolver) {
+        startResolver(false);
+      }
+    });
+
+    const disposeClearMessages = vscodeApi.onMessage('clearMessages', () => {
+      setIsSessionStarting(false);
+    });
+
     return () => {
       disposeSessionStarted();
       disposeSessionEnded();
       disposeSessionStarting();
       disposeSessionError();
+      disposeCompilationError();
+      disposeClearMessages();
     };
   }, []);
 
@@ -377,30 +396,28 @@ const App: React.FC = () => {
 
   return (
     <div className="app">
-      {!hasSessionError && (
-        <div className="app-menu">
-          <AgentSelector
-            selectedAgent={desiredAgentId}
-            onAgentChange={handleAgentChange}
-            isSessionActive={isSessionActive}
-            isSessionStarting={isSessionStarting}
-            onLiveModeChange={handleLiveModeChange}
-            initialLiveMode={isLiveMode}
-            onSelectedAgentInfoChange={setSelectedAgentInfo}
-            onStopSession={handleStopSession}
-            onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
+      <div className="app-menu" style={hasSessionError ? { display: 'none' } : undefined}>
+        <AgentSelector
+          selectedAgent={desiredAgentId}
+          onAgentChange={handleAgentChange}
+          isSessionActive={isSessionActive}
+          isSessionStarting={isSessionStarting}
+          onLiveModeChange={handleLiveModeChange}
+          initialLiveMode={isLiveMode}
+          onSelectedAgentInfoChange={setSelectedAgentInfo}
+          onStopSession={handleStopSession}
+          onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
+        />
+        <div className="app-menu-divider" />
+        {previewAgentId !== '' && !isSessionStarting && (
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED}
+            showHistoryTab={true}
           />
-          <div className="app-menu-divider" />
-          {previewAgentId !== '' && !isSessionStarting && (
-            <TabNavigation
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED}
-              showHistoryTab={true}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </div>
       <div className="app-content">
         <div className={`tab-content ${activeTab === 'preview' ? 'active' : 'hidden'}`}>
           <AgentPreview

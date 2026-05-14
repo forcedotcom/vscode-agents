@@ -1,3 +1,21 @@
+# [1.16.0](https://github.com/salesforcecli/vsode-agents/compare/v1.15.1...v1.16.0) (2026-05-14)
+
+### Features
+
+- add search filter to agent tracer @W-22434499@ ([#207](https://github.com/salesforcecli/vsode-agents/issues/207)) ([34f11d8](https://github.com/salesforcecli/vsode-agents/commit/34f11d8191114a3cfc97acd96ad870bd8897ca8c))
+
+## [1.15.1](https://github.com/salesforcecli/vsode-agents/compare/v1.15.0...v1.15.1) (2026-05-14)
+
+### Bug Fixes
+
+- recover from session start failures in the AFDX agent preview @W-22434854@ ([#204](https://github.com/salesforcecli/vsode-agents/issues/204)) ([5019e7a](https://github.com/salesforcecli/vsode-agents/commit/5019e7af6acdff9cc23521892a60e63d6ed1a2b2))
+
+# [1.15.0](https://github.com/salesforcecli/vsode-agents/compare/v1.14.2...v1.15.0) (2026-05-13)
+
+### Features
+
+- add NGT support @W-22143534@ ([#198](https://github.com/salesforcecli/vsode-agents/issues/198)) ([da87405](https://github.com/salesforcecli/vsode-agents/commit/da87405114a1cb85b030d83bafb270dbf368610e))
+
 ## [1.14.2](https://github.com/salesforcecli/vsode-agents/compare/v1.14.1...v1.14.2) (2026-05-05)
 
 ### Bug Fixes

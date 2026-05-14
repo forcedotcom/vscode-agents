@@ -173,8 +173,8 @@ describe('WebviewMessageHandlers', () => {
       await handlers.handleError(error);
 
       expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        expect.stringContaining('currently deactivated'),
-        '404 NOT_FOUND: No valid version available for this agent'
+        'Agent deactivated',
+        expect.stringContaining('currently deactivated')
       );
     });
 
@@ -184,8 +184,8 @@ describe('WebviewMessageHandlers', () => {
       await handlers.handleError(error);
 
       expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        expect.stringContaining("couldn't be found"),
-        '404 NOT_FOUND: Agent does not exist'
+        'Agent not found',
+        expect.stringContaining("couldn't be found")
       );
     });
 
@@ -195,8 +195,8 @@ describe('WebviewMessageHandlers', () => {
       await handlers.handleError(error);
 
       expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        expect.stringContaining("don't have permission"),
-        '403 FORBIDDEN: Access denied'
+        'Permission denied',
+        expect.stringContaining("don't have permission")
       );
     });
 
@@ -206,7 +206,7 @@ describe('WebviewMessageHandlers', () => {
       await handlers.handleError(error);
 
       expect(mockMessageSender.sendError).toHaveBeenCalledWith(
-        'Something went wrong. Please try again.',
+        'Something went wrong',
         'Something unexpected happened'
       );
     });
