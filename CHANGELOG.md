@@ -1,3 +1,9 @@
+## [1.15.1](https://github.com/salesforcecli/vsode-agents/compare/v1.15.0...v1.15.1) (2026-05-14)
+
+### Bug Fixes
+
+- recover from session start failures in the AFDX agent preview @W-22434854@ ([#204](https://github.com/salesforcecli/vsode-agents/issues/204)) ([5019e7a](https://github.com/salesforcecli/vsode-agents/commit/5019e7af6acdff9cc23521892a60e63d6ed1a2b2))
+
 # [1.15.0](https://github.com/salesforcecli/vsode-agents/compare/v1.14.2...v1.15.0) (2026-05-13)
 
 ### Features
