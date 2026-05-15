@@ -98,8 +98,11 @@ describe('WebviewMessageHandlers', () => {
     mockState = {
       agentInstance: undefined,
       sessionId: '',
+      sessionAgentId: undefined,
       currentAgentId: undefined,
       currentAgentSource: undefined,
+      currentPlanId: undefined,
+      previewedSessionId: undefined,
       isSessionActive: false,
       isSessionStarting: false,
       pendingStartAgentId: undefined,
@@ -108,13 +111,20 @@ describe('WebviewMessageHandlers', () => {
       setSessionStarting: jest.fn().mockResolvedValue(undefined),
       setResetAgentViewAvailable: jest.fn().mockResolvedValue(undefined),
       setSessionErrorState: jest.fn().mockResolvedValue(undefined),
+      setConversationDataAvailable: jest.fn().mockResolvedValue(undefined),
+      cancelPendingSessionStart: jest.fn(),
       clearSessionState: jest.fn()
     };
 
     mockMessageSender = {
       sendError: jest.fn().mockResolvedValue(undefined),
       sendClearMessages: jest.fn(),
-      sendSessionList: jest.fn()
+      sendSessionList: jest.fn(),
+      sendSessionStarting: jest.fn(),
+      sendSessionEnded: jest.fn(),
+      sendSetConversation: jest.fn(),
+      sendTraceHistory: jest.fn(),
+      sendTraceData: jest.fn()
     };
 
     mockSessionManager = {
@@ -124,8 +134,10 @@ describe('WebviewMessageHandlers', () => {
     };
 
     mockHistoryManager = {
-      loadAndSendTraceHistory: jest.fn(),
-      showHistoryOrPlaceholder: jest.fn()
+      loadAndSendTraceHistory: jest.fn().mockResolvedValue(undefined),
+      showHistoryOrPlaceholder: jest.fn(),
+      loadAndSendSessionPreview: jest.fn().mockResolvedValue(undefined),
+      loadAndSendTracesForSession: jest.fn().mockResolvedValue(undefined)
     };
 
     mockApexDebugManager = {};
@@ -291,45 +303,163 @@ describe('WebviewMessageHandlers', () => {
     });
   });
 
-  describe('resumeSession', () => {
-    it('forwards to sessionManager.resumeSession with resolved agentSource', async () => {
+  describe('previewSession', () => {
+    it('loads the session preview and records previewedSessionId', async () => {
       mockState.currentAgentSource = 'script';
 
       await handlers.handleMessage({
-        command: 'resumeSession',
-        data: { agentId: 'agent-1', sessionId: 'sess-1', isLiveMode: false }
+        command: 'previewSession',
+        data: { agentId: 'agent-1', sessionId: 'sess-1' }
       } as any);
 
-      expect(mockSessionManager.resumeSession).toHaveBeenCalledWith(
+      expect(mockHistoryManager.loadAndSendSessionPreview).toHaveBeenCalledWith(
         'agent-1',
         'script',
         'sess-1',
-        false,
-        mockWebviewView
+        undefined
       );
+      expect(mockState.previewedSessionId).toBe('sess-1');
+      expect(mockSessionManager.resumeSession).not.toHaveBeenCalled();
     });
 
-    it('short-circuits when the requested session is already active for the same agent', async () => {
+    it('short-circuits when the requested session is already active', async () => {
       mockState.isSessionActive = true;
       mockState.sessionId = 'sess-1';
       mockState.sessionAgentId = 'agent-1';
       mockState.currentAgentSource = 'script';
 
       await handlers.handleMessage({
-        command: 'resumeSession',
+        command: 'previewSession',
         data: { agentId: 'agent-1', sessionId: 'sess-1' }
       } as any);
 
-      expect(mockSessionManager.resumeSession).not.toHaveBeenCalled();
+      expect(mockHistoryManager.loadAndSendSessionPreview).not.toHaveBeenCalled();
     });
 
     it('throws when sessionId is missing', async () => {
       await expect(
         handlers.handleMessage({
-          command: 'resumeSession',
+          command: 'previewSession',
           data: { agentId: 'agent-1' }
         } as any)
       ).rejects.toThrow(/Invalid session ID/);
+    });
+  });
+
+  describe('startSession with previewed session', () => {
+    it('routes through resumeSession when a previewed session is set for the same agent', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = 'script';
+      mockState.previewedSessionId = 'sess-prior';
+
+      await handlers.handleMessage({
+        command: 'startSession',
+        data: { agentId: 'agent-1', isLiveMode: true }
+      } as any);
+
+      expect(mockSessionManager.resumeSession).toHaveBeenCalledWith(
+        'agent-1',
+        'script',
+        'sess-prior',
+        true,
+        mockWebviewView
+      );
+      expect(mockSessionManager.startSession).not.toHaveBeenCalled();
+      expect(mockState.previewedSessionId).toBeUndefined();
+    });
+  });
+
+  describe('previewSession with active live session', () => {
+    it('ends the SDK session and surfaces the stopping spinner before loading the preview', async () => {
+      const previewEnd = jest.fn().mockResolvedValue(undefined);
+      const restoreConnection = jest.fn().mockResolvedValue(undefined);
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = 'published';
+      mockState.sessionId = 'live-session';
+      mockState.sessionAgentId = 'agent-1';
+      mockState.isSessionActive = true;
+      mockState.agentInstance = { preview: { end: previewEnd }, restoreConnection };
+
+      await handlers.handleMessage({
+        command: 'previewSession',
+        data: { agentId: 'agent-1', sessionId: 'sess-old', sessionType: 'live' }
+      } as any);
+
+      expect(mockState.cancelPendingSessionStart).toHaveBeenCalled();
+      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith([], true, null);
+      expect(mockMessageSender.sendTraceHistory).toHaveBeenCalledWith('agent-1', []);
+      expect(mockMessageSender.sendSessionStarting).toHaveBeenCalledWith('Stopping current session...');
+      // Published agents end with 'UserRequest'
+      expect(previewEnd).toHaveBeenCalledWith('UserRequest');
+      expect(restoreConnection).toHaveBeenCalled();
+      expect(mockState.clearSessionState).toHaveBeenCalled();
+      expect(mockHistoryManager.loadAndSendSessionPreview).toHaveBeenCalledWith(
+        'agent-1',
+        'published',
+        'sess-old',
+        'live'
+      );
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalled();
+      expect(mockState.previewedSessionId).toBe('sess-old');
+    });
+
+    it('uses preview.end() with no args for script agents', async () => {
+      const previewEnd = jest.fn().mockResolvedValue(undefined);
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = 'script';
+      mockState.sessionId = 'live-session';
+      mockState.agentInstance = {
+        preview: { end: previewEnd },
+        restoreConnection: jest.fn().mockResolvedValue(undefined)
+      };
+
+      await handlers.handleMessage({
+        command: 'previewSession',
+        data: { agentId: 'agent-1', sessionId: 'sess-old', sessionType: 'simulated' }
+      } as any);
+
+      expect(previewEnd).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('handleGetTraceData with previewed session', () => {
+    it('routes to loadAndSendTracesForSession when previewing', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = 'script';
+      mockState.previewedSessionId = 'sess-old';
+      mockState.isSessionActive = false;
+
+      await handlers.handleMessage({ command: 'getTraceData' } as any);
+
+      expect(mockHistoryManager.loadAndSendTracesForSession).toHaveBeenCalledWith(
+        'agent-1',
+        'script',
+        'sess-old'
+      );
+      expect(mockHistoryManager.loadAndSendTraceHistory).not.toHaveBeenCalled();
+    });
+
+    it('falls back to loadAndSendTraceHistory when not previewing', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = 'script';
+      mockState.previewedSessionId = undefined;
+
+      await handlers.handleMessage({ command: 'getTraceData' } as any);
+
+      expect(mockHistoryManager.loadAndSendTraceHistory).toHaveBeenCalledWith('agent-1', 'script');
+      expect(mockHistoryManager.loadAndSendTracesForSession).not.toHaveBeenCalled();
+    });
+
+    it('falls back to loadAndSendTraceHistory when a session is active even if previewedSessionId is set', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = 'script';
+      mockState.previewedSessionId = 'sess-old';
+      mockState.isSessionActive = true;
+
+      await handlers.handleMessage({ command: 'getTraceData' } as any);
+
+      expect(mockHistoryManager.loadAndSendTraceHistory).toHaveBeenCalled();
+      expect(mockHistoryManager.loadAndSendTracesForSession).not.toHaveBeenCalled();
     });
   });
 });

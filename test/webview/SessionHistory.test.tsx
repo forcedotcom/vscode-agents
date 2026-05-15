@@ -22,7 +22,7 @@ jest.mock('../../webview/src/services/vscodeApi', () => ({
   vscodeApi: {
     onMessage: jest.fn(),
     listSessions: jest.fn(),
-    resumeSession: jest.fn()
+    previewSession: jest.fn()
   },
   AgentSource: {
     SCRIPT: 'script',
@@ -117,7 +117,7 @@ describe('SessionHistory', () => {
     expect(screen.getByText('Simulation')).toBeInTheDocument();
   });
 
-  it('clicking a row resumes the session and notifies the parent', async () => {
+  it('clicking a row previews the session and notifies the parent', async () => {
     const onResume = jest.fn();
     render(
       <SessionHistory
@@ -141,10 +141,10 @@ describe('SessionHistory', () => {
     const user = userEvent.setup();
     await user.click(screen.getByText('Hello agent').closest('button')!);
 
-    expect(vscodeApi.resumeSession).toHaveBeenCalledWith(
+    expect(vscodeApi.previewSession).toHaveBeenCalledWith(
       'agent-1',
       'sess-1',
-      expect.objectContaining({ isLiveMode: false, agentSource: 'script' })
+      expect.objectContaining({ agentSource: 'script' })
     );
     expect(onResume).toHaveBeenCalledWith('sess-1');
   });

@@ -73,19 +73,15 @@ describe('package.json', () => {
         expect(activateNoSelection?.when).toContain('!agentforceDX:agentSelected');
         expect(activateNoSelection?.when).toContain('!agentforceDX:sessionActive');
         expect(activateNoSelection?.when).toContain('!agentforceDX:sessionStarting');
-        expect(activateNoSelection?.group).toBe('navigation@0');
+        expect(activateNoSelection?.group).toBe('navigation@1');
       });
 
-      it('should show create agent button before activate agent button', () => {
+      it('should not show create agent button in the view title bar', () => {
         const createAgent = viewTitleMenus.find(
           (menu: any) => menu.command === 'salesforcedx-vscode-agents.createAiAuthoringBundle'
         );
-        const activateAgent = viewTitleMenus.find(
-          (menu: any) => menu.command === 'salesforcedx-vscode-agents.activateAgent'
-        );
 
-        expect(createAgent?.group).toBe('navigation@-1');
-        expect(activateAgent?.group).toBe('navigation@0');
+        expect(createAgent).toBeUndefined();
       });
 
       it('should show activate version button only when a published agent is selected', () => {
