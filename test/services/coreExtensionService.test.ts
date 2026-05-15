@@ -33,6 +33,17 @@ jest.mock('semver', () => ({
   valid: jest.fn()
 }));
 
+// Mock @salesforce/core so getDefaultConnection's fallback path doesn't read
+// the developer's real ~/.sfdx config and resolve a live Connection.
+jest.mock('@salesforce/core', () => ({
+  ConfigAggregator: {
+    create: jest.fn().mockRejectedValue(new Error('No sf config available in test env'))
+  },
+  Org: {
+    create: jest.fn().mockRejectedValue(new Error('No org available in test env'))
+  }
+}));
+
 describe('CoreExtensionService', () => {
   let mockExtension: { packageJSON: { version: string }; exports: CoreExtensionApi };
   let mockContext: ExtensionContext;
