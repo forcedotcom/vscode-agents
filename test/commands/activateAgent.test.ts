@@ -151,14 +151,14 @@ describe('activateAgent command', () => {
     );
   });
 
-  it('shows message when no deactivated agents found', async () => {
+  it('shows message when no agents exist in the org', async () => {
     setupOrgMocks();
     (getPublishedAgents as jest.Mock).mockResolvedValue([]);
 
     const handler = registerAndGetHandler();
     await handler();
 
-    expect(infoSpy).toHaveBeenCalledWith('No deactivated agents found in the org.');
+    expect(infoSpy).toHaveBeenCalledWith('No published agents found in the org.');
   });
 
   it('shows message when only active agents exist', async () => {
@@ -170,7 +170,7 @@ describe('activateAgent command', () => {
     const handler = registerAndGetHandler();
     await handler();
 
-    expect(infoSpy).toHaveBeenCalledWith('No deactivated agents found in the org.');
+    expect(infoSpy).toHaveBeenCalledWith('No published agents are available to activate.');
     expect(quickPickSpy).not.toHaveBeenCalled();
   });
 

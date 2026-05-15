@@ -1,3 +1,9 @@
+## [1.16.1](https://github.com/salesforcecli/vsode-agents/compare/v1.16.0...v1.16.1) (2026-05-15)
+
+### Bug Fixes
+
+- clarify empty-state message when no agents are activatable @W-22497097@ ([#209](https://github.com/salesforcecli/vsode-agents/issues/209)) ([1faade0](https://github.com/salesforcecli/vsode-agents/commit/1faade0d13be522a23774f75e235ac6b2c94a0bd))
+
 # [1.16.0](https://github.com/salesforcecli/vsode-agents/compare/v1.15.1...v1.16.0) (2026-05-14)
 
 ### Features
