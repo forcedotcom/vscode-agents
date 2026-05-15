@@ -177,11 +177,21 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
           data && Array.isArray(data.messages) ? data.messages.map(normalizeHistoryMessage) : [];
 
         setMessages(historyMessages);
-        setShowPlaceholder(data?.showPlaceholder ?? historyMessages.length === 0);
         setSessionActive(false);
         setAgentConnected(false);
-        setIsLoading(false);
         setHasSessionError(false);
+        // If we're mid-stop (sessionStarting=true), keep the loading spinner
+        // and suppress the empty-state placeholder. The next setConversation
+        // (with the previewed session's messages) will clear loading.
+        setIsLoading(prev => {
+          const explicitlyMidStop = prev && historyMessages.length === 0;
+          if (!explicitlyMidStop) {
+            setShowPlaceholder(data?.showPlaceholder ?? historyMessages.length === 0);
+          } else {
+            setShowPlaceholder(false);
+          }
+          return explicitlyMidStop ? true : false;
+        });
       });
       disposers.push(disposeSetConversation);
 

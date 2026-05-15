@@ -173,6 +173,11 @@ const App: React.FC = () => {
   // Track when the backend pushes a "loaded conversation" so the start button
   // can switch between Resume and Start. The setConversation message includes
   // previewSessionInfo when a prior session's transcript is being shown.
+  const isSessionStartingRef = useRef(false);
+  useEffect(() => {
+    isSessionStartingRef.current = isSessionStarting;
+  }, [isSessionStarting]);
+
   useEffect(() => {
     return vscodeApi.onMessage('setConversation', (data: any) => {
       const info = data?.previewSessionInfo;
@@ -188,11 +193,14 @@ const App: React.FC = () => {
         // A conversation with messages but no preview info means a non-resumable
         // load (e.g. legacy auto-load). Drop the preview flag.
         setIsPreviewingSession(false);
+      } else if (!isSessionStartingRef.current) {
+        // Empty conversation, no preview info, not in a stopping transition:
+        // this is an explicit clear (toolbar action). Drop the preview flag so
+        // the start button reverts to "Start Simulation/Live Test".
+        setIsPreviewingSession(false);
       }
-      // An empty setConversation with no preview info is a transitional clear
-      // (e.g. while stopping a session before showing a preview). Leave the
-      // preview flag alone — the next setConversation with previewSessionInfo
-      // will set it to true.
+      // Else: empty + null + sessionStarting=true means we're mid-stop. Leave
+      // isPreviewingSession alone so Resume label stays put.
     });
   }, []);
 
@@ -266,6 +274,7 @@ const App: React.FC = () => {
 
     const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
       sessionActiveRef.current = false;
+      isSessionStartingRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
       // Note: don't clear isPreviewingSession here — the setConversation
@@ -280,6 +289,10 @@ const App: React.FC = () => {
 
     const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
       sessionActiveRef.current = false;
+      // Update the ref synchronously so the setConversation listener (which
+      // may fire on the same message-bus tick) sees the new value before
+      // React's state-driven effect catches up.
+      isSessionStartingRef.current = true;
       setIsSessionActive(false);
       setIsSessionStarting(true);
       // Switch to preview tab when starting a new session

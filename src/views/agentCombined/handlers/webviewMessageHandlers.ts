@@ -471,14 +471,19 @@ export class WebviewMessageHandlers {
     const hadActiveSession = !!(previousAgent && previousSessionId);
     if (hadActiveSession) {
       this.state.cancelPendingSessionStart();
+      // Flip context flags immediately so toolbar actions tied to sessionActive
+      // (debug, stop, etc.) hide right away during the stopping transition.
+      // The SDK round-trip below can take seconds and we don't want stale
+      // session-active toolbar buttons hanging around.
+      await this.state.setSessionActive(false);
       await this.state.setSessionStarting(true);
-      // Clear chat + tracer immediately so the previous conversation isn't
-      // visible while we wait on the SDK round-trip. App.tsx ignores empty
-      // setConversation messages for the purpose of isPreviewingSession, so
-      // the optimistic Resume label set on click is preserved.
+      // Send sessionStarting FIRST so the webview's isSessionStartingRef flips
+      // to true before the empty setConversation arrives — App.tsx uses that
+      // ref to distinguish a stopping-transition clear (preserve Resume label)
+      // from a toolbar Clear action (drop preview flag).
+      this.messageSender.sendSessionStarting('Stopping current session...');
       this.messageSender.sendSetConversation([], true, null);
       this.messageSender.sendTraceHistory(agentId, []);
-      this.messageSender.sendSessionStarting('Stopping current session...');
       try {
         if (previousSource === AgentSource.SCRIPT) {
           await previousAgent!.preview.end();
@@ -494,7 +499,6 @@ export class WebviewMessageHandlers {
         console.warn('Error restoring connection:', err);
       }
       this.state.clearSessionState();
-      await this.state.setSessionActive(false);
       // We deliberately keep isSessionStarting=true through the disk read below
       // so the input stays disabled. Cleared after the preview is loaded.
 
