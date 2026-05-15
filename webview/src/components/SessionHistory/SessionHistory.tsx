@@ -171,7 +171,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
 
   if (sessions.length === 0) {
     return renderPlaceholder(
-      'History lists your prior conversations with this agent so you can pick one back up where you left off without losing context.',
+      'Use the History tab to view your past conversations with this agent and resume any of them where you left off without losing context.',
       true
     );
   }

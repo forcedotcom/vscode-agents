@@ -89,7 +89,7 @@ describe('SessionHistory', () => {
 
     emitSessionList('agent-1', []);
 
-    expect(screen.getByText(/History lists your prior conversations/i)).toBeInTheDocument();
+    expect(screen.getByText(/Use the History tab/i)).toBeInTheDocument();
     expect(screen.getByText(/Start Simulation/i)).toBeInTheDocument();
   });
 

@@ -656,7 +656,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                 <input
                   type="text"
                   className={`trace-filter__input${trimmedFilter ? ' trace-filter__input--with-count' : ''}`}
-                  placeholder="Filter traces by message, event type, or content..."
+                  placeholder="Filter traces by message, event type, or content"
                   value={filterQuery}
                   onChange={e => setFilterQuery(e.target.value)}
                   aria-label="Filter trace history"
