@@ -54,6 +54,8 @@
   font-size: 11px;
   line-height: 1.2;
   flex-shrink: 0;
+  min-width: 70px;
+  text-align: center;
   background-color: var(--vscode-badge-background);
   color: var(--vscode-badge-foreground);
 }
