@@ -94,4 +94,41 @@ describe('AgentViewState', () => {
       );
     });
   });
+
+  describe('previewedSessionId', () => {
+    it('flips agentforceDX:hasLoadedSession to true when set to a sessionId', () => {
+      const executeCommand = vscode.commands.executeCommand as jest.Mock;
+      executeCommand.mockClear();
+
+      state.previewedSessionId = 'sess-123';
+
+      expect(executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasLoadedSession',
+        true
+      );
+      expect(state.previewedSessionId).toBe('sess-123');
+    });
+
+    it('flips agentforceDX:hasLoadedSession to false when cleared', () => {
+      state.previewedSessionId = 'sess-123';
+      const executeCommand = vscode.commands.executeCommand as jest.Mock;
+      executeCommand.mockClear();
+
+      state.previewedSessionId = undefined;
+
+      expect(executeCommand).toHaveBeenCalledWith(
+        'setContext',
+        'agentforceDX:hasLoadedSession',
+        false
+      );
+      expect(state.previewedSessionId).toBeUndefined();
+    });
+
+    it('clearSessionState clears previewedSessionId', () => {
+      state.previewedSessionId = 'sess-123';
+      state.clearSessionState();
+      expect(state.previewedSessionId).toBeUndefined();
+    });
+  });
 });

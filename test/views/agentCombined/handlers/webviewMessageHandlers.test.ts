@@ -403,6 +403,45 @@ describe('WebviewMessageHandlers', () => {
       expect(mockState.previewedSessionId).toBe('sess-old');
     });
 
+    it('flips sessionActive=false and emits sessionStarting before invoking the SDK end', async () => {
+      const callOrder: string[] = [];
+      const previewEnd = jest.fn().mockImplementation(async () => {
+        callOrder.push('preview.end');
+      });
+      mockState.setSessionActive.mockImplementation(async (active: boolean) => {
+        if (active === false) callOrder.push('setSessionActive(false)');
+      });
+      mockMessageSender.sendSessionStarting.mockImplementation(() => {
+        callOrder.push('sendSessionStarting');
+      });
+      mockMessageSender.sendSetConversation.mockImplementation((messages: any[]) => {
+        if (messages.length === 0) callOrder.push('sendSetConversation(empty)');
+      });
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = 'published';
+      mockState.sessionId = 'live-session';
+      mockState.agentInstance = {
+        preview: { end: previewEnd },
+        restoreConnection: jest.fn().mockResolvedValue(undefined)
+      };
+
+      await handlers.handleMessage({
+        command: 'previewSession',
+        data: { agentId: 'agent-1', sessionId: 'sess-old', sessionType: 'live' }
+      } as any);
+
+      // sessionActive must flip to false before the SDK round-trip so toolbar
+      // actions gated on it (debug, stop) hide immediately.
+      expect(callOrder.indexOf('setSessionActive(false)')).toBeLessThan(
+        callOrder.indexOf('preview.end')
+      );
+      // sessionStarting must precede the empty setConversation so the webview's
+      // isSessionStartingRef is true when the empty payload arrives.
+      expect(callOrder.indexOf('sendSessionStarting')).toBeLessThan(
+        callOrder.indexOf('sendSetConversation(empty)')
+      );
+    });
+
     it('uses preview.end() with no args for script agents', async () => {
       const previewEnd = jest.fn().mockResolvedValue(undefined);
       mockState.currentAgentId = 'agent-1';
