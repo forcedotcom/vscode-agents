@@ -181,27 +181,27 @@
         {
           "command": "sf.agent.combined.view.exportConversation",
           "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:sessionStarting && !agentforceDX:sessionError && agentforceDX:hasConversationData",
-          "group": "navigation@-1"
-        },
-        {
-          "command": "salesforcedx-vscode-agents.createAiAuthoringBundle",
-          "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView && !agentforceDX:agentSelected",
-          "group": "navigation@-1"
+          "group": "navigation@3"
         },
         {
           "command": "salesforcedx-vscode-agents.activateAgent",
           "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView && !agentforceDX:agentSelected",
-          "group": "navigation@0"
+          "group": "navigation@1"
         },
         {
           "command": "sf.agent.combined.view.activateVersion",
           "when": "view == sf.agent.combined.view && agentforceDX:agentSelected && !agentforceDX:isScriptAgent && !agentforceDX:sessionActive && !agentforceDX:sessionStarting",
-          "group": "navigation@0"
+          "group": "navigation@2"
+        },
+        {
+          "command": "sf.agent.combined.view.clearLoadedSession",
+          "when": "view == sf.agent.combined.view && agentforceDX:hasLoadedSession && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView",
+          "group": "navigation@4"
         },
         {
           "command": "sf.agent.combined.view.refreshAgents",
           "when": "view == sf.agent.combined.view && !agentforceDX:sessionActive && !agentforceDX:sessionStarting && !agentforceDX:canResetAgentView",
-          "group": "navigation@1"
+          "group": "navigation@0"
         },
         {
           "command": "sf.agent.combined.view.resetAgentView",
@@ -464,6 +464,11 @@
         "command": "sf.agent.combined.view.refreshAgents",
         "title": "Refresh Agent List",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "sf.agent.combined.view.clearLoadedSession",
+        "title": "Clear Loaded Session",
+        "icon": "$(clear-all)"
       },
       {
         "command": "sf.agent.combined.view.resetAgentView",

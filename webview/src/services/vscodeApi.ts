@@ -234,8 +234,16 @@ class VSCodeApiService {
     this.postMessage('listSessions', { agentId, agentSource });
   }
 
-  resumeSession(agentId: string, sessionId: string, options?: { isLiveMode?: boolean; agentSource?: AgentSource }) {
-    this.postMessage('resumeSession', { agentId, sessionId, ...options });
+  previewSession(
+    agentId: string,
+    sessionId: string,
+    options?: { agentSource?: AgentSource; sessionType?: 'simulated' | 'live' | 'published' }
+  ) {
+    this.postMessage('previewSession', { agentId, sessionId, ...options });
+  }
+
+  clearPreviewedSession() {
+    this.postMessage('clearPreviewedSession');
   }
 
   // Test support - send test response messages

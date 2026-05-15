@@ -98,12 +98,20 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
     vscodeApi.listSessions(agentId, agentSource);
   }, [isActive, agentId, agentSource]);
 
-  const handleResume = (sessionId: string) => {
+  const handleResume = (session: SessionListEntry) => {
     if (!agentId) {
       return;
     }
-    vscodeApi.resumeSession(agentId, sessionId, { isLiveMode, agentSource });
-    onResume(sessionId);
+    // Sync the Start button mode to the previewed session's type so clicking
+    // Start resumes in the same mode the session ran in originally.
+    if (onLiveModeChange && session.sessionType) {
+      const wasLive = session.sessionType === 'live' || session.sessionType === 'published';
+      if (wasLive !== isLiveMode) {
+        onLiveModeChange(wasLive);
+      }
+    }
+    vscodeApi.previewSession(agentId, session.sessionId, { agentSource, sessionType: session.sessionType });
+    onResume(session.sessionId);
   };
 
   const renderPlaceholder = (message: string, showButton: boolean) => {
@@ -177,7 +185,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
             <button
               type="button"
               className="session-history-item-button"
-              onClick={() => handleResume(session.sessionId)}
+              onClick={() => handleResume(session)}
               title={`${label} — ${formatTimestamp(session.timestamp)}`}
             >
               {session.sessionType && (

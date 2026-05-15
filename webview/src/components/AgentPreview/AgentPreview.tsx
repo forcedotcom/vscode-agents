@@ -231,9 +231,10 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeSessionStarted);
 
-      const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
+      const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', (data: any) => {
         const currentSelectedAgentId = selectedAgentIdRef.current;
         const currentPendingAgentId = pendingAgentIdRef.current;
+        const explicitMessage = typeof data?.message === 'string' ? data.message : undefined;
 
         setSessionActive(false);
         setAgentConnected(false);
@@ -248,11 +249,13 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
         if (currentPendingAgentId && currentPendingAgentId === currentSelectedAgentId) {
           setIsLoading(true);
-          setLoadingMessage('Connecting to agent...');
+          setLoadingMessage(explicitMessage ?? 'Connecting to agent...');
         } else if (!currentPendingAgentId) {
           setIsLoading(true);
-          setLoadingMessage('Loading agent...');
-          setMessages([]);
+          setLoadingMessage(explicitMessage ?? 'Loading agent...');
+          if (!explicitMessage) {
+            setMessages([]);
+          }
         } else {
           setIsLoading(false);
         }

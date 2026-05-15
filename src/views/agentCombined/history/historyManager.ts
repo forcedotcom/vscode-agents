@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import type { AgentViewState } from '../state/agentViewState';
 import type { WebviewMessageSender } from '../handlers/webviewMessageSender';
 import { getAgentStorageKey } from '../agent/agentUtils';
+import { listSessionsForAgent, type SessionListEntry } from '../session/sessionHistoryService';
 
 /**
  * Manages conversation and trace history
@@ -153,10 +154,13 @@ export class HistoryManager {
    */
   async showHistoryOrPlaceholder(agentId: string, agentSource: AgentSource): Promise<void> {
     try {
-      // Load both histories in parallel
-      const [traceEntries, transcriptEntries] = await Promise.all([
+      // Load histories + the cached-session list in parallel.
+      // The session list is used to identify the most-recent sessionId/type so
+      // the webview can display Resume vs Start on the start button.
+      const [traceEntries, transcriptEntries, sessions] = await Promise.all([
         this.loadTraceHistoryData(agentId, agentSource),
-        this.loadConversationHistoryData(agentId, agentSource)
+        this.loadConversationHistoryData(agentId, agentSource),
+        listSessionsForAgent(agentId, agentSource).catch(() => [] as SessionListEntry[])
       ]);
 
       // Send trace history
@@ -166,7 +170,13 @@ export class HistoryManager {
       const historyMessages = this.convertTranscriptToMessages(transcriptEntries);
       const hasHistory = historyMessages.length > 0;
       await this.state.setConversationDataAvailable(hasHistory);
-      this.messageSender.sendSetConversation(historyMessages, !hasHistory);
+
+      // If a conversation is loaded, mark it as resumable. Newest session is first.
+      const previewSessionInfo = hasHistory && sessions.length > 0
+        ? { sessionId: sessions[0].sessionId, sessionType: sessions[0].sessionType }
+        : null;
+      this.state.previewedSessionId = previewSessionInfo?.sessionId;
+      this.messageSender.sendSetConversation(historyMessages, !hasHistory, previewSessionInfo);
 
       // Send current or latest trace data
       if (traceEntries.length > 0) {
@@ -179,7 +189,107 @@ export class HistoryManager {
     } catch (err) {
       console.error('Error loading history:', err);
       await this.state.setConversationDataAvailable(false);
-      this.messageSender.sendSetConversation([], true);
+      this.messageSender.sendSetConversation([], true, null);
+    }
+  }
+
+  /**
+   * Loads only the trace history for a specific sessionId (from disk) and pushes
+   * it to the webview. Used when the tracer tab is opened while previewing a
+   * session — we don't want to re-render the chat, only ensure the tracer has
+   * the right traces.
+   */
+  async loadAndSendTracesForSession(
+    agentId: string,
+    agentSource: AgentSource,
+    sessionId: string
+  ): Promise<void> {
+    const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+    let traces: any[] = [];
+    try {
+      const history = await getAllHistory(agentStorageKey, sessionId);
+      traces = history.traces || [];
+    } catch (err) {
+      console.error('Could not load traces for session:', err);
+    }
+
+    const sortedTraces = [...traces].sort((a: any, b: any) => {
+      const timeA = this.getTraceStartTime(a) ?? Infinity;
+      const timeB = this.getTraceStartTime(b) ?? Infinity;
+      return timeA - timeB;
+    });
+    const traceEntries: TraceHistoryEntry[] = sortedTraces.map((trace: any, index) => {
+      const planId = trace.planId || `plan-${index}`;
+      const startTime = this.getTraceStartTime(trace);
+      const timestamp = startTime ? new Date(startTime).toISOString() : new Date().toISOString();
+      return {
+        storageKey: agentStorageKey,
+        agentId,
+        sessionId: trace.sessionId || sessionId,
+        planId,
+        userMessage: this.extractUserMessageFromTrace(trace),
+        timestamp,
+        trace
+      };
+    });
+
+    this.messageSender.sendTraceHistory(agentId, traceEntries);
+    if (traceEntries.length > 0) {
+      this.messageSender.sendTraceData(traceEntries[traceEntries.length - 1].trace);
+    } else {
+      this.messageSender.sendTraceData({ plan: [], planId: '', sessionId: '' });
+    }
+  }
+
+  /**
+   * Loads transcript and traces for a specific sessionId (from disk) and pushes
+   * them to the webview, without starting a session. Used by the History tab
+   * to preview a prior session before the user clicks Start.
+   */
+  async loadAndSendSessionPreview(
+    agentId: string,
+    agentSource: AgentSource,
+    sessionId: string,
+    sessionType?: 'simulated' | 'live' | 'published'
+  ): Promise<void> {
+    const agentStorageKey = getAgentStorageKey(agentId, agentSource);
+    let transcript: any[] = [];
+    let traces: any[] = [];
+    try {
+      const history = await getAllHistory(agentStorageKey, sessionId);
+      transcript = history.transcript || [];
+      traces = history.traces || [];
+    } catch (err) {
+      console.error('Could not load session preview:', err);
+    }
+
+    const sortedTraces = [...traces].sort((a: any, b: any) => {
+      const timeA = this.getTraceStartTime(a) ?? Infinity;
+      const timeB = this.getTraceStartTime(b) ?? Infinity;
+      return timeA - timeB;
+    });
+    const traceEntries: TraceHistoryEntry[] = sortedTraces.map((trace: any, index) => {
+      const planId = trace.planId || `plan-${index}`;
+      const startTime = this.getTraceStartTime(trace);
+      const timestamp = startTime ? new Date(startTime).toISOString() : new Date().toISOString();
+      return {
+        storageKey: agentStorageKey,
+        agentId,
+        sessionId: trace.sessionId || sessionId,
+        planId,
+        userMessage: this.extractUserMessageFromTrace(trace),
+        timestamp,
+        trace
+      };
+    });
+
+    const messages = this.convertTranscriptToMessages(transcript);
+    const hasMessages = messages.length > 0;
+    await this.state.setConversationDataAvailable(hasMessages);
+    this.messageSender.sendSetConversation(messages, !hasMessages, { sessionId, sessionType });
+    this.messageSender.sendTraceHistory(agentId, traceEntries);
+    if (traceEntries.length > 0) {
+      this.messageSender.sendTraceData(traceEntries[traceEntries.length - 1].trace);
     }
   }
 

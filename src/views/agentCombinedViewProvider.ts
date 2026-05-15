@@ -295,6 +295,21 @@ export class AgentCombinedViewProvider implements vscode.WebviewViewProvider {
   /**
    * Resets the current agent view
    */
+  /**
+   * Drops the currently displayed (resumable) conversation/traces so the user can
+   * start a fresh session from an empty chat. Does not touch on-disk session data.
+   */
+  public clearLoadedSession(): void {
+    this.state.previewedSessionId = undefined;
+    this.state.currentPlanId = undefined;
+    void this.state.setConversationDataAvailable(false);
+    this.messageSender.sendSetConversation([], true, null);
+    if (this.state.currentAgentId) {
+      this.messageSender.sendTraceHistory(this.state.currentAgentId, []);
+    }
+    this.messageSender.sendTraceData({ plan: [], planId: '', sessionId: '' });
+  }
+
   public async resetCurrentAgentView(): Promise<void> {
     if (!this.webviewView) {
       throw new Error('Agent view is not ready to reset.');

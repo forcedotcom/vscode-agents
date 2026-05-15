@@ -86,9 +86,10 @@ export class WebviewMessageSender {
 
   sendSetConversation(
     messages: Array<{ id: string; type: string; content: string; timestamp: number }>,
-    showPlaceholder: boolean
+    showPlaceholder: boolean,
+    previewSessionInfo?: { sessionId: string; sessionType?: 'simulated' | 'live' | 'published' } | null
   ): void {
-    this.postMessage('setConversation', { messages, showPlaceholder });
+    this.postMessage('setConversation', { messages, showPlaceholder, previewSessionInfo });
   }
 
   sendTraceHistory(agentId: string, entries: TraceHistoryEntry[]): void {
