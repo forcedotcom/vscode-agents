@@ -1,3 +1,9 @@
+## [1.16.2](https://github.com/salesforcecli/vsode-agents/compare/v1.16.1...v1.16.2) (2026-05-16)
+
+### Bug Fixes
+
+- agent preview session lifecycle continuity @W-22497762@ ([#210](https://github.com/salesforcecli/vsode-agents/issues/210)) ([bee0816](https://github.com/salesforcecli/vsode-agents/commit/bee081695224c136faf098566323c9f92bc86df8))
+
 ## [1.16.1](https://github.com/salesforcecli/vsode-agents/compare/v1.16.0...v1.16.1) (2026-05-15)
 
 ### Bug Fixes
