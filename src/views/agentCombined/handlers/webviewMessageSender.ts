@@ -36,8 +36,10 @@ export class WebviewMessageSender {
     }
   }
 
-  sendSessionEnded(): void {
-    this.postMessage('sessionEnded', {});
+  sendSessionEnded(
+    previewSessionInfo?: { sessionId: string; sessionType?: 'simulated' | 'live' | 'published' }
+  ): void {
+    this.postMessage('sessionEnded', { previewSessionInfo });
   }
 
   // Compilation messages

@@ -730,6 +730,55 @@ describe('AgentSelector', () => {
       expect(onStopSession).not.toHaveBeenCalled();
     });
 
+    it('keeps the Stop label while a stop is pending after optimistic isSessionActive=false', async () => {
+      // After Stop is clicked, App optimistically flips isSessionActive=false
+      // and sets isStopPending=true until sessionEnded arrives. The button
+      // must keep its Stop label (not flip to Resume/Start) so the user
+      // doesn't see a label change while the disabled button is mid-stop.
+      render(
+        <AgentSelector
+          selectedAgent="script1"
+          onAgentChange={jest.fn()}
+          isSessionActive={false}
+          isSessionStarting={false}
+          isSessionTransitioning={true}
+          isStopPending={true}
+        />
+      );
+
+      messageHandlers.get('availableAgents')!({ agents });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stop Simulation/i)).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/Resume Simulation/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Start Simulation/i)).not.toBeInTheDocument();
+    });
+
+    it('keeps the Stop Live Test label on a published agent while a stop is pending', async () => {
+      const publishedAgents: AgentInfo[] = [{ id: 'pub1', name: 'Pub', type: 'published' }];
+      render(
+        <AgentSelector
+          selectedAgent="pub1"
+          onAgentChange={jest.fn()}
+          isSessionActive={false}
+          isSessionStarting={false}
+          isSessionTransitioning={true}
+          isStopPending={true}
+        />
+      );
+
+      messageHandlers.get('availableAgents')!({ agents: publishedAgents });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stop Live Test/i)).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/Resume Live Test/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Start Live Test/i)).not.toBeInTheDocument();
+    });
+
     it('disables the published-agent Start button while transitioning', async () => {
       const publishedAgents: AgentInfo[] = [{ id: 'pub1', name: 'Pub', type: 'published' }];
       const onStartSession = jest.fn();

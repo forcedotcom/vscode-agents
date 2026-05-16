@@ -240,6 +240,20 @@ export class SessionManager {
 
     const agentName = this.state.currentAgentName;
     const sessionId = this.state.sessionId;
+    // Capture identity before clearSessionState wipes it. After Stop, the
+    // just-ended session becomes a previewable history-like session: Resume
+    // and Clear appear on the toolbar, but the chat messages stay on screen.
+    // We only mark it previewable, we don't reload the conversation.
+    const endedAgentSource = this.state.currentAgentSource;
+    const endedSessionType: 'simulated' | 'live' | 'published' | undefined = endedAgentSource
+      ? endedAgentSource === AgentSource.SCRIPT
+        ? this.state.isLiveMode
+          ? 'live'
+          : 'simulated'
+        : 'published'
+      : undefined;
+    const hadRunningSession = !!(this.state.agentInstance && this.state.sessionId);
+
     if (this.state.agentInstance && this.state.sessionId) {
       // Restore connection before clearing agent references
       try {
@@ -249,12 +263,20 @@ export class SessionManager {
       }
 
       this.state.clearSessionState();
-      this.messageSender.sendSessionEnded();
-    } else if (sessionWasStarting) {
-      this.messageSender.sendSessionEnded();
     }
 
     this.logger.debug(`Simulation ended. AgentName: ${agentName}, SessionId: ${sessionId}`);
+
+    if (hadRunningSession && sessionId && endedSessionType) {
+      // Mark the just-ended session as previewable so the hasLoadedSession
+      // context flips on (showing the Clear toolbar action) and the webview
+      // toolbar shows Resume. The chat is left untouched; the conversation
+      // already on screen is the previewed session's transcript.
+      this.state.previewedSessionId = sessionId;
+      this.messageSender.sendSessionEnded({ sessionId, sessionType: endedSessionType });
+    } else if (hadRunningSession || sessionWasStarting) {
+      this.messageSender.sendSessionEnded();
+    }
 
     if (sessionWasStarting && restoreViewCallback) {
       await restoreViewCallback();

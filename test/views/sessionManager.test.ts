@@ -197,6 +197,91 @@ describe('SessionManager', () => {
 
       expect(mockMessageSender.sendSessionEnded).toHaveBeenCalled();
     });
+
+    it('marks the just-ended simulated session as previewable on sessionEnded', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+      mockState.isLiveMode = false;
+
+      await sessionManager.endSession();
+
+      expect(mockState.previewedSessionId).toBe('session-just-finished');
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith({
+        sessionId: 'session-just-finished',
+        sessionType: 'simulated'
+      });
+    });
+
+    it('marks live-mode script sessions as live on sessionEnded', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+      mockState.isLiveMode = true;
+
+      await sessionManager.endSession();
+
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith({
+        sessionId: 'session-just-finished',
+        sessionType: 'live'
+      });
+    });
+
+    it('marks published agent sessions as published on sessionEnded', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.PUBLISHED;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+
+      await sessionManager.endSession();
+
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith({
+        sessionId: 'session-just-finished',
+        sessionType: 'published'
+      });
+    });
+
+    it('does not reload the chat after a normal stop (preview is in-place)', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+
+      await sessionManager.endSession();
+
+      expect(mockHistoryManager.showHistoryOrPlaceholder).not.toHaveBeenCalled();
+    });
+
+    it('sends sessionEnded without preview info when only a starting session is being cancelled', async () => {
+      mockState.agentInstance = undefined;
+      mockState.sessionId = undefined;
+      mockState.isSessionStarting = true;
+
+      await sessionManager.endSession();
+
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith();
+    });
+
+    it('still calls restoreViewCallback when a starting session is cancelled', async () => {
+      mockState.agentInstance = undefined;
+      mockState.sessionId = undefined;
+      mockState.isSessionStarting = true;
+
+      const restoreView = jest.fn().mockResolvedValue(undefined);
+      await sessionManager.endSession(restoreView);
+
+      expect(restoreView).toHaveBeenCalled();
+    });
   });
 
   describe('restartSession', () => {

@@ -148,4 +148,95 @@ describe('SessionHistory', () => {
     );
     expect(onResume).toHaveBeenCalledWith('sess-1');
   });
+
+  it('notifies parent of preview start when a row is clicked while a session is active', async () => {
+    const onPreviewStart = jest.fn();
+    render(
+      <SessionHistory
+        agentId="agent-1"
+        agentSource={'script' as any}
+        isActive={true}
+        isSessionActive={true}
+        isLiveMode={false}
+        onResume={jest.fn()}
+        onPreviewStart={onPreviewStart}
+      />
+    );
+
+    emitSessionList('agent-1', [
+      {
+        sessionId: 'sess-1',
+        timestamp: '2026-05-10T15:30:00Z',
+        sessionType: 'simulated',
+        firstUserMessage: 'Hello agent'
+      }
+    ]);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Hello agent').closest('button')!);
+
+    expect(onPreviewStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not flip isLiveMode when a row is clicked (App syncs it on setConversation)', async () => {
+    // Eagerly flipping isLiveMode would change the toolbar Stop label to the
+    // new session's mode while the old session is still being stopped, which
+    // looks wrong. Mode should sync from previewSessionInfo when the preview
+    // actually lands, not from the row click.
+    const onLiveModeChange = jest.fn();
+    render(
+      <SessionHistory
+        agentId="agent-1"
+        agentSource={'script' as any}
+        isActive={true}
+        isSessionActive={true}
+        isLiveMode={true}
+        onResume={jest.fn()}
+        onLiveModeChange={onLiveModeChange}
+      />
+    );
+
+    emitSessionList('agent-1', [
+      {
+        sessionId: 'sess-1',
+        timestamp: '2026-05-10T15:30:00Z',
+        sessionType: 'simulated',
+        firstUserMessage: 'Hello agent'
+      }
+    ]);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Hello agent').closest('button')!);
+
+    expect(onLiveModeChange).not.toHaveBeenCalled();
+  });
+
+  it('does not notify onPreviewStart when no session is active', async () => {
+    const onPreviewStart = jest.fn();
+    render(
+      <SessionHistory
+        agentId="agent-1"
+        agentSource={'script' as any}
+        isActive={true}
+        isSessionActive={false}
+        isLiveMode={false}
+        onResume={jest.fn()}
+        onPreviewStart={onPreviewStart}
+      />
+    );
+
+    emitSessionList('agent-1', [
+      {
+        sessionId: 'sess-1',
+        timestamp: '2026-05-10T15:30:00Z',
+        sessionType: 'simulated',
+        firstUserMessage: 'Hello agent'
+      }
+    ]);
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Hello agent').closest('button')!);
+
+    expect(onPreviewStart).not.toHaveBeenCalled();
+  });
 });

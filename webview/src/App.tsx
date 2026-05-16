@@ -191,6 +191,10 @@ const App: React.FC = () => {
       const messages = Array.isArray(data?.messages) ? data.messages : [];
       if (info && typeof info.sessionId === 'string') {
         setIsPreviewingSession(true);
+        // Preview has landed; the stopping transition started by a history
+        // row click is over. Clear the stop-pending flag so the button can
+        // settle on its Resume label.
+        setIsStopPending(false);
         if (info.sessionType === 'simulated') {
           setIsLiveMode(false);
         } else if (info.sessionType === 'live' || info.sessionType === 'published') {
@@ -298,15 +302,27 @@ const App: React.FC = () => {
       }
     });
 
-    const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
+    const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', (data: any) => {
       sessionActiveRef.current = false;
       isSessionStartingRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
-      setIsStopPending(false);
-      // Note: don't clear isPreviewingSession here. The setConversation
+      // If the backend marked the just-ended session as previewable, flip
+      // into preview mode so the toolbar shows Resume + Clear without
+      // touching the chat messages already on screen.
+      const info = data?.previewSessionInfo;
+      if (info && typeof info.sessionId === 'string') {
+        setIsPreviewingSession(true);
+        if (info.sessionType === 'simulated') {
+          setIsLiveMode(false);
+        } else if (info.sessionType === 'live' || info.sessionType === 'published') {
+          setIsLiveMode(true);
+        }
+      }
+      // Else: don't clear isPreviewingSession here. The setConversation
       // listener owns that flag. When sessionEnded fires after a history-row
       // click, a preview is still loaded and Resume should remain available.
+      setIsStopPending(false);
       activeSessionIdRef.current = undefined;
       const resolver = sessionEndResolversRef.current.shift();
       if (resolver) {
@@ -314,7 +330,7 @@ const App: React.FC = () => {
       }
     });
 
-    const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
+    const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', (data: any) => {
       sessionActiveRef.current = false;
       // Update the ref synchronously so the setConversation listener (which
       // may fire on the same message-bus tick) sees the new value before
@@ -322,7 +338,13 @@ const App: React.FC = () => {
       isSessionStartingRef.current = true;
       setIsSessionActive(false);
       setIsSessionStarting(true);
-      setIsStopPending(false);
+      // Don't clear isStopPending during a stopping-for-preview transition,
+      // or the toolbar button briefly flips to Start before the preview
+      // lands and reveals Resume.
+      const isStoppingTransition = typeof data?.message === 'string' && /stopping/i.test(data.message);
+      if (!isStoppingTransition) {
+        setIsStopPending(false);
+      }
       // Switch to preview tab when starting a new session
       setActiveTab('preview');
     });
@@ -485,6 +507,7 @@ const App: React.FC = () => {
           isSessionActive={isSessionActive}
           isSessionStarting={isSessionStarting}
           isSessionTransitioning={isSessionTransitioning || isStopPending}
+          isStopPending={isStopPending}
           onLiveModeChange={handleLiveModeChange}
           initialLiveMode={isLiveMode}
           onSelectedAgentInfoChange={setSelectedAgentInfo}
@@ -543,6 +566,12 @@ const App: React.FC = () => {
             onResume={() => {
               setIsPreviewingSession(true);
               setActiveTab('preview');
+            }}
+            onPreviewStart={() => {
+              // History row clicked while a session is active. Mirror the
+              // optimistic Stop flow so the toolbar button keeps its Stop
+              // label across the stopping transition until the preview lands.
+              setIsStopPending(true);
             }}
             onGoToPreview={handleGoToPreview}
             onLiveModeChange={handleLiveModeChange}

@@ -10,6 +10,7 @@ interface AgentSelectorProps {
   isSessionActive?: boolean;
   isSessionStarting?: boolean;
   isSessionTransitioning?: boolean;
+  isStopPending?: boolean;
   onLiveModeChange?: (isLive: boolean) => void;
   initialLiveMode?: boolean;
   onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
@@ -55,6 +56,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   isSessionActive = false,
   isSessionStarting = false,
   isSessionTransitioning = false,
+  isStopPending = false,
   onLiveModeChange,
   initialLiveMode = false,
   onSelectedAgentInfoChange,
@@ -66,7 +68,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(initialLiveMode);
-  const shouldShowStop = isSessionActive;
+  const shouldShowStop = isSessionActive || isStopPending;
   const stopIcon = (
     <svg className="stop-icon" width="4" height="4" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path

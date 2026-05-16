@@ -12,6 +12,7 @@ interface SessionHistoryProps {
   isLiveMode: boolean;
   selectedAgentInfo?: AgentInfo | null;
   onResume: (sessionId: string) => void;
+  onPreviewStart?: () => void;
   onGoToPreview?: () => void;
   onLiveModeChange?: (isLive: boolean) => void;
 }
@@ -71,6 +72,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
   isLiveMode,
   selectedAgentInfo = null,
   onResume,
+  onPreviewStart,
   onGoToPreview,
   onLiveModeChange
 }) => {
@@ -102,13 +104,16 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({
     if (!agentId) {
       return;
     }
-    // Sync the Start button mode to the previewed session's type so clicking
-    // Start resumes in the same mode the session ran in originally.
-    if (onLiveModeChange && session.sessionType) {
-      const wasLive = session.sessionType === 'live' || session.sessionType === 'published';
-      if (wasLive !== isLiveMode) {
-        onLiveModeChange(wasLive);
-      }
+    // Note: don't flip isLiveMode here. App's setConversation handler syncs
+    // the mode from previewSessionInfo.sessionType when the preview lands,
+    // so the toolbar button keeps showing the old session's mode through the
+    // stopping transition and flips to the new mode at the same moment the
+    // Resume label appears.
+    // If a session is active, the backend will run a stopping transition
+    // before the preview lands. Notify the parent so the toolbar's Stop
+    // label stays put across the transition instead of flipping to Start.
+    if (isSessionActive) {
+      onPreviewStart?.();
     }
     vscodeApi.previewSession(agentId, session.sessionId, { agentSource, sessionType: session.sessionType });
     onResume(session.sessionId);

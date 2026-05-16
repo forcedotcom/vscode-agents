@@ -83,6 +83,28 @@ jest.mock('../../webview/src/components/shared/TabNavigation', () => {
   };
 });
 
+const sessionHistoryPropsRef: { current?: any } = {};
+
+jest.mock('../../webview/src/components/SessionHistory/SessionHistory', () => {
+  const React = require('react');
+  return function MockSessionHistory(props: any) {
+    sessionHistoryPropsRef.current = props;
+    return (
+      <div data-testid="session-history">
+        <button
+          data-testid="history-row"
+          onClick={() => {
+            props.onPreviewStart?.();
+            props.onResume?.('sess-1');
+          }}
+        >
+          row
+        </button>
+      </div>
+    );
+  };
+});
+
 import App from '../../webview/src/App';
 
 describe('App session lifecycle', () => {
@@ -91,6 +113,7 @@ describe('App session lifecycle', () => {
   beforeEach(() => {
     selectorPropsRef.current = undefined;
     previewPropsRef.current = undefined;
+    sessionHistoryPropsRef.current = undefined;
     messageHandlers = new Map();
     jest.clearAllMocks();
 
@@ -195,6 +218,61 @@ describe('App session lifecycle', () => {
       await waitFor(() => {
         expect(selectorPropsRef.current?.isSessionTransitioning).toBe(false);
         expect(selectorPropsRef.current?.isSessionActive).toBe(false);
+      });
+    });
+
+    it('flips into preview mode when sessionEnded carries previewSessionInfo', async () => {
+      // After Stop, the backend marks the just-ended session as previewable.
+      // The toolbar must show Resume + Clear without any chat reload, so we
+      // should NOT see a setConversation message wiping the existing
+      // messages — only sessionEnded with previewSessionInfo.
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('sessionStarted', { content: 'hi' });
+      await waitFor(() => expect(selectorPropsRef.current?.isSessionActive).toBe(true));
+
+      await click('stop-button');
+      expect(selectorPropsRef.current?.isStopPending).toBe(true);
+
+      trigger('sessionEnded', {
+        previewSessionInfo: { sessionId: 'sess-just-ended', sessionType: 'simulated' }
+      });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.isPreviewingSession).toBe(true);
+        expect(selectorPropsRef.current?.isSessionActive).toBe(false);
+        expect(selectorPropsRef.current?.isStopPending).toBe(false);
+      });
+    });
+
+    it('does not flip into preview mode when sessionEnded has no previewSessionInfo', async () => {
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('sessionStarted', { content: 'hi' });
+      await waitFor(() => expect(selectorPropsRef.current?.isSessionActive).toBe(true));
+
+      await click('stop-button');
+      trigger('sessionEnded');
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.isStopPending).toBe(false);
+      });
+      expect(selectorPropsRef.current?.isPreviewingSession).toBe(false);
+    });
+
+    it('syncs isLiveMode from previewSessionInfo on sessionEnded', async () => {
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('sessionStarted', { content: 'hi' });
+      await waitFor(() => expect(selectorPropsRef.current?.isSessionActive).toBe(true));
+
+      // Live session ends → live mode true.
+      trigger('sessionEnded', {
+        previewSessionInfo: { sessionId: 'sess-1', sessionType: 'live' }
+      });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.initialLiveMode).toBe(true);
       });
     });
 
@@ -313,6 +391,60 @@ describe('App session lifecycle', () => {
       trigger('sessionStarted', { content: 'hi' });
       await waitFor(() => {
         expect(previewPropsRef.current?.isSessionActive).toBe(true);
+      });
+    });
+  });
+
+  describe('history row click during active session', () => {
+    it('keeps isStopPending across the stopping transition until the preview lands', async () => {
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('sessionStarted', { content: 'hi' });
+      await waitFor(() => expect(selectorPropsRef.current?.isSessionActive).toBe(true));
+
+      // Switch to history tab and simulate clicking a row (the mock fires
+      // onPreviewStart synchronously to mirror the real component's flow).
+      await act(async () => {
+        sessionHistoryPropsRef.current?.onPreviewStart?.();
+      });
+
+      // The toolbar should now be in the optimistic stop state.
+      expect(selectorPropsRef.current?.isStopPending).toBe(true);
+      expect(selectorPropsRef.current?.isSessionTransitioning).toBe(true);
+
+      // Backend fires sessionStarting('Stopping current session...') as part
+      // of the preview transition. isStopPending must NOT be cleared here.
+      trigger('sessionStarting', { message: 'Stopping current session...' });
+      expect(selectorPropsRef.current?.isStopPending).toBe(true);
+
+      // The preview lands; isStopPending clears so the button can settle on
+      // its Resume label.
+      trigger('setConversation', {
+        messages: [{ role: 'user', content: 'old' }],
+        previewSessionInfo: { sessionId: 'sess-1', sessionType: 'simulated' }
+      });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.isStopPending).toBe(false);
+        expect(selectorPropsRef.current?.isPreviewingSession).toBe(true);
+      });
+    });
+
+    it('clears isStopPending on a regular sessionStarting (real start path)', async () => {
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('sessionStarted', { content: 'hi' });
+      await waitFor(() => expect(selectorPropsRef.current?.isSessionActive).toBe(true));
+
+      await act(async () => {
+        sessionHistoryPropsRef.current?.onPreviewStart?.();
+      });
+      expect(selectorPropsRef.current?.isStopPending).toBe(true);
+
+      // A regular start (not a stopping transition) should clear stop-pending.
+      trigger('sessionStarting', { message: 'Starting session...' });
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.isStopPending).toBe(false);
       });
     });
   });
