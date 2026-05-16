@@ -120,7 +120,7 @@ describe('AgentPreview - Placeholder Behavior', () => {
       });
     });
 
-    it('should start session when placeholder button is clicked', async () => {
+    it('should start session via vscodeApi when placeholder button is clicked and no parent handler is provided', async () => {
       const user = userEvent.setup();
       render(
         <AgentPreview
@@ -143,6 +143,35 @@ describe('AgentPreview - Placeholder Behavior', () => {
       await user.click(startButton);
 
       expect(mockVscodeApi.startSession).toHaveBeenCalledWith('test-agent');
+    });
+
+    it('should delegate placeholder start to the parent handler when one is provided', async () => {
+      const user = userEvent.setup();
+      const onStartSession = jest.fn();
+      render(
+        <AgentPreview
+          selectedAgentId="test-agent"
+          pendingAgentId={null}
+          isSessionTransitioning={false}
+          onSessionTransitionSettled={jest.fn()}
+          isLiveMode={false}
+          onStartSession={onStartSession}
+        />
+      );
+
+      const noHistoryHandler = messageHandlers.get('noHistoryFound');
+      noHistoryHandler!({ agentId: 'test-agent' });
+
+      await waitFor(() => {
+        expect(screen.getByText('Start Simulation')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Start Simulation'));
+
+      expect(onStartSession).toHaveBeenCalledTimes(1);
+      // When the parent handles it, AgentPreview should not call vscodeApi
+      // directly — the parent owns the session-transition lifecycle.
+      expect(mockVscodeApi.startSession).not.toHaveBeenCalled();
     });
   });
 

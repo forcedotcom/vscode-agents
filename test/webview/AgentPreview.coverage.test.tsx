@@ -65,6 +65,7 @@ describe('AgentPreview - Coverage Tests', () => {
         isSessionTransitioning={false}
         onSessionTransitionSettled={jest.fn()}
         isLiveMode={false}
+        isSessionActive
         {...props}
       />
     );

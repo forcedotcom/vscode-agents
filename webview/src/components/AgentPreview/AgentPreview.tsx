@@ -13,6 +13,9 @@ interface AgentPreviewProps {
   onSessionTransitionSettled: () => void;
   pendingAgentId: string | null;
   selectedAgentId: string;
+  isSessionActive?: boolean;
+  isStopPending?: boolean;
+  onStartSession?: () => void;
   onHasSessionError?: (hasError: boolean) => void;
   onLoadingChange?: (isLoading: boolean) => void;
   isLiveMode?: boolean;
@@ -70,6 +73,9 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       onSessionTransitionSettled,
       pendingAgentId,
       selectedAgentId,
+      isSessionActive: parentIsSessionActive = false,
+      isStopPending = false,
+      onStartSession: parentOnStartSession,
       onHasSessionError,
       onLoadingChange,
       isLiveMode = false,
@@ -95,6 +101,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     const previousSelectedAgentRef = React.useRef<string>('');
     const selectedAgentIdRef = React.useRef(selectedAgentId);
     const pendingAgentIdRef = React.useRef(pendingAgentId);
+    const isSessionTransitioningRef = React.useRef(isSessionTransitioning);
     const chatInputRef = useRef<ChatInputRef>(null);
     const messagesRef = useRef<Message[]>([]);
     const agentInfoRef = useRef<AgentInfo | null>(selectedAgentInfo ?? null);
@@ -116,6 +123,10 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     useEffect(() => {
       pendingAgentIdRef.current = pendingAgentId;
     }, [pendingAgentId]);
+
+    useEffect(() => {
+      isSessionTransitioningRef.current = isSessionTransitioning;
+    }, [isSessionTransitioning]);
 
     useEffect(() => {
       messagesRef.current = messages;
@@ -147,7 +158,12 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         setMessages([]);
         setSessionActive(false);
         setAgentConnected(false);
-        setIsLoading(false);
+        // Don't clear loading mid-restart: the backend sends clearMessages
+        // immediately before sessionStarting, and dropping the loader between
+        // them produces a one-frame blank chat area.
+        if (!isSessionTransitioningRef.current) {
+          setIsLoading(false);
+        }
         setHasSessionError(false); // Clear error state when switching agents
         setShowPlaceholder(false); // Clear placeholder when switching agents
       });
@@ -333,10 +349,16 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
       const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
         setSessionActive(false);
-        setIsLoading(false);
         setAgentConnected(false);
         sessionActiveStateRef.current = false;
-        onSessionTransitionSettled();
+        // During a restart, sessionEnded is a midpoint, not the end of the
+        // transition. Keep loading visible and don't settle the transition
+        // flag yet, otherwise the chat area blanks between sessionEnded and
+        // sessionStarting.
+        if (!isSessionTransitioningRef.current) {
+          setIsLoading(false);
+          onSessionTransitionSettled();
+        }
       });
       disposers.push(disposeSessionEnded);
 
@@ -400,7 +422,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     }, [isSessionTransitioning, pendingAgentId, selectedAgentId]);
 
     const handleSendMessage = (content: string) => {
-      if (!agentConnected) {
+      if (!agentConnected || !parentIsSessionActive || isStopPending || isSessionTransitioning) {
         return;
       }
 
@@ -438,8 +460,15 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         return;
       }
       setShowPlaceholder(false);
-      setIsLoading(true);
-      vscodeApi.startSession(selectedAgentId);
+      // Route through the parent so App's session-transition state is
+      // updated synchronously (button disables, loader appears immediately).
+      // Fall back to the local path only if no parent handler was provided.
+      if (parentOnStartSession) {
+        parentOnStartSession();
+      } else {
+        setIsLoading(true);
+        vscodeApi.startSession(selectedAgentId);
+      }
     };
 
     const handleErrorReset = () => {
@@ -497,13 +526,18 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       );
     }
 
+    // Input is enabled only when the parent confirms the session is active and
+    // no stop/transition is in flight. This makes Stop disable the input
+    // immediately on click, before the backend confirms sessionEnded.
+    const inputEnabled = agentConnected && parentIsSessionActive && !isStopPending && !isSessionTransitioning;
+
     return (
       <div className="agent-preview">
         <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
         <FormContainer
           ref={chatInputRef}
           onSendMessage={handleSendMessage}
-          sessionActive={agentConnected}
+          sessionActive={inputEnabled}
           isLoading={isLoading}
           messages={messages}
           isLiveMode={isLiveMode}

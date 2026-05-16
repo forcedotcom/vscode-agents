@@ -37,12 +37,15 @@ jest.mock('semver', () => ({
 // the developer's real ~/.sfdx config and resolve a live Connection.
 jest.mock('@salesforce/core', () => ({
   ConfigAggregator: {
-    create: jest.fn().mockRejectedValue(new Error('No sf config available in test env'))
+    create: jest.fn()
   },
   Org: {
-    create: jest.fn().mockRejectedValue(new Error('No org available in test env'))
+    create: jest.fn()
   }
 }));
+
+import { ConfigAggregator, Org } from '@salesforce/core';
+
 
 describe('CoreExtensionService', () => {
   let mockExtension: { packageJSON: { version: string }; exports: CoreExtensionApi };
@@ -295,10 +298,17 @@ describe('CoreExtensionService', () => {
   });
 
   it('should attempt to create connection directly when getting default connection before initialization', async () => {
-    // When not initialized, should try to create connection via ConfigAggregator
-    // This will fail in test environment without mocking, but error message will include
-    // both NOT_INITIALIZED_ERROR prefix and more specific info about what went wrong
-    await expect(CoreExtensionService.getDefaultConnection()).rejects.toThrow();
+    // When not initialized, the fallback path uses ConfigAggregator + Org to
+    // produce a connection. Force the fallback to fail and assert the error
+    // wraps NOT_INITIALIZED_ERROR with the underlying message.
+    (ConfigAggregator.create as jest.Mock).mockResolvedValue({
+      getPropertyValue: () => undefined
+    });
+
+    await expect(CoreExtensionService.getDefaultConnection()).rejects.toThrow(
+      new RegExp(`${NOT_INITIALIZED_ERROR}.*No default org configured`)
+    );
+    expect(Org.create).not.toHaveBeenCalled();
   });
 
   it('should not reinitialize if already initialized', async () => {

@@ -9,10 +9,12 @@ interface AgentSelectorProps {
   onAgentChange: (agentId: string, agentSource?: AgentSource) => void;
   isSessionActive?: boolean;
   isSessionStarting?: boolean;
+  isSessionTransitioning?: boolean;
   onLiveModeChange?: (isLive: boolean) => void;
   initialLiveMode?: boolean;
   onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
   onStopSession?: () => void;
+  onStartSession?: () => void;
   onAgentsAvailabilityChange?: (hasAgents: boolean, isLoading: boolean) => void;
   isPreviewingSession?: boolean;
 }
@@ -52,10 +54,12 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   onAgentChange,
   isSessionActive = false,
   isSessionStarting = false,
+  isSessionTransitioning = false,
   onLiveModeChange,
   initialLiveMode = false,
   onSelectedAgentInfoChange,
   onStopSession,
+  onStartSession,
   onAgentsAvailabilityChange,
   isPreviewingSession = false
 }) => {
@@ -217,21 +221,25 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   }, [agents.length, isLoading, onAgentsAvailabilityChange]);
 
-  const handleModeSelect = async (value: string) => {
+  const handleModeSelect = (value: string) => {
     const isLive = value === 'live';
     const modeChanged = isLive !== isLiveMode;
 
     setIsLiveMode(isLive);
 
-    // If session is active and mode changed, restart with new mode
-    if (modeChanged && isSessionActive && selectedAgent) {
-      // Optimistic update: notify parent immediately before sending to backend
-      onStopSession?.();
-      await vscodeApi.endSession();
-      // Wait a brief moment for the session to fully end
-      await new Promise(resolve => setTimeout(resolve, 100));
-      // Restart with new mode
-      vscodeApi.startSession(selectedAgent, { isLiveMode: isLive });
+    if (!modeChanged) {
+      return;
+    }
+
+    // Push the new mode to the parent synchronously so the next start picks
+    // it up in the same render cycle (otherwise App's queue effect runs with
+    // a stale isLiveMode and the wrong mode reaches the backend).
+    onLiveModeChange?.(isLive);
+
+    // If a session is active, restart through the parent's start handler so
+    // the loading state stays continuous across the end/start transition.
+    if (isSessionActive && selectedAgent) {
+      onStartSession?.();
     }
   };
 
@@ -246,7 +254,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
         onStopSession?.();
         vscodeApi.endSession();
       },
-      startSession: (agentId, options) => vscodeApi.startSession(agentId, options)
+      startSession: () => onStartSession?.()
     });
 
   return (
@@ -256,7 +264,9 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           className={`agent-select ${selectedAgent ? 'has-selection' : ''}`}
           value={selectedAgent}
           onChange={handleAgentChange}
-          disabled={isLoading || isSessionActive || isSessionStarting || agents.length === 0}
+          disabled={
+            isLoading || isSessionActive || isSessionStarting || isSessionTransitioning || agents.length === 0
+          }
         >
           <option value="">
             {isLoading ? 'Loading...' : agents.length === 0 ? 'No agents available' : 'Select agent...'}
@@ -295,7 +305,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               size="small"
               onClick={handleStartClick}
               className="agent-selector__start-button"
-              disabled={isLoading || isSessionStarting}
+              disabled={isLoading || isSessionStarting || isSessionTransitioning}
               startIcon={shouldShowStop ? stopIcon : playIcon}
             >
               {shouldShowStop ? 'Stop Live Test' : isPreviewingSession ? 'Resume Live Test' : 'Start Live Test'}
@@ -306,7 +316,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               size="small"
               onClick={handleStartClick}
               className="agent-selector__start-button"
-              disabled={isLoading || isSessionStarting}
+              disabled={isLoading || isSessionStarting || isSessionTransitioning}
               startIcon={stopIcon}
             >
               {isLiveMode ? 'Stop Live Test' : 'Stop Simulation'}
@@ -323,7 +333,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
                 { label: 'Live Test', value: 'live' }
               ]}
               className="agent-selector__start-button"
-              disabled={isLoading || isSessionStarting}
+              disabled={isLoading || isSessionStarting || isSessionTransitioning}
               startIcon={shouldShowStop ? stopIcon : playIcon}
             >
               {shouldShowStop

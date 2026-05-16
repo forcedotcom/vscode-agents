@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [isSessionTransitioning, setIsSessionTransitioning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionStarting, setIsSessionStarting] = useState(false);
+  const [isStopPending, setIsStopPending] = useState(false);
   const [hasSessionError, setHasSessionError] = useState(false);
   const [isPreviewingSession, setIsPreviewingSession] = useState(false);
   const activeSessionIdRef = useRef<string | undefined>(undefined);
@@ -44,6 +45,7 @@ const App: React.FC = () => {
   const desiredAgentIdRef = useRef<string>('');
   const forceRestartRef = useRef(false);
   const sessionActiveRef = useRef(false);
+  const isSessionTransitioningRef = useRef(false);
   const sessionEndResolversRef = useRef<Array<() => void>>([]);
   const sessionStartResolversRef = useRef<Array<(success: boolean) => void>>([]);
   const agentPreviewRef = useRef<AgentPreviewRef>(null);
@@ -55,6 +57,10 @@ const App: React.FC = () => {
   useEffect(() => {
     desiredAgentIdRef.current = desiredAgentId;
   }, [desiredAgentId]);
+
+  useEffect(() => {
+    isSessionTransitioningRef.current = isSessionTransitioning;
+  }, [isSessionTransitioning]);
 
   useEffect(() => {
     const disposeSelectAgent = vscodeApi.onMessage('selectAgent', (data: SelectAgentMessage) => {
@@ -88,6 +94,7 @@ const App: React.FC = () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
+      setIsStopPending(false);
     });
 
     const disposeSetLiveMode = vscodeApi.onMessage('setLiveMode', (data: { isLiveMode: boolean }) => {
@@ -250,6 +257,25 @@ const App: React.FC = () => {
     sessionActiveRef.current = false;
     setIsSessionActive(false);
     setIsSessionStarting(false);
+    // Mark the stop as in flight so the Start button stays disabled until
+    // sessionEnded arrives. We deliberately don't set isSessionTransitioning
+    // here because that would trigger the "Connecting to agent..." loader in
+    // AgentPreview while the user is actually stopping.
+    setIsStopPending(true);
+  }, []);
+
+  const handleStartSession = useCallback(() => {
+    // Route Start through the restart queue so isSessionTransitioning stays
+    // true continuously from click through sessionStarted, preventing a
+    // flicker where the chat area goes blank between click and backend ack.
+    // Also set the transition flag synchronously here so the loading state
+    // appears on the very next render, instead of waiting for the queue
+    // microtask + the network round-trip to sessionStarting.
+    setActiveTab('preview');
+    setIsSessionStarting(true);
+    setIsSessionTransitioning(true);
+    forceRestartRef.current = true;
+    setRestartTrigger(prev => prev + 1);
   }, []);
 
   const handleAgentsAvailabilityChange = useCallback((hasAgentsAvailable: boolean, isLoading: boolean) => {
@@ -277,7 +303,8 @@ const App: React.FC = () => {
       isSessionStartingRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
-      // Note: don't clear isPreviewingSession here — the setConversation
+      setIsStopPending(false);
+      // Note: don't clear isPreviewingSession here. The setConversation
       // listener owns that flag. When sessionEnded fires after a history-row
       // click, a preview is still loaded and Resume should remain available.
       activeSessionIdRef.current = undefined;
@@ -295,6 +322,7 @@ const App: React.FC = () => {
       isSessionStartingRef.current = true;
       setIsSessionActive(false);
       setIsSessionStarting(true);
+      setIsStopPending(false);
       // Switch to preview tab when starting a new session
       setActiveTab('preview');
     });
@@ -303,6 +331,7 @@ const App: React.FC = () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
+      setIsStopPending(false);
       const endResolver = sessionEndResolversRef.current.shift();
       if (endResolver) {
         endResolver();
@@ -317,6 +346,7 @@ const App: React.FC = () => {
       sessionActiveRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
+      setIsStopPending(false);
       const startResolver = sessionStartResolversRef.current.shift();
       if (startResolver) {
         startResolver(false);
@@ -324,7 +354,13 @@ const App: React.FC = () => {
     });
 
     const disposeClearMessages = vscodeApi.onMessage('clearMessages', () => {
-      setIsSessionStarting(false);
+      // The backend sends clearMessages immediately before sessionStarting at
+      // the start of a (re)start. Don't clear isSessionStarting mid-restart,
+      // or the Start/Stop button briefly re-enables and the loading state
+      // gets a visible discontinuity.
+      if (!isSessionTransitioningRef.current) {
+        setIsSessionStarting(false);
+      }
     });
 
     return () => {
@@ -448,10 +484,12 @@ const App: React.FC = () => {
           onAgentChange={handleAgentChange}
           isSessionActive={isSessionActive}
           isSessionStarting={isSessionStarting}
+          isSessionTransitioning={isSessionTransitioning || isStopPending}
           onLiveModeChange={handleLiveModeChange}
           initialLiveMode={isLiveMode}
           onSelectedAgentInfoChange={setSelectedAgentInfo}
           onStopSession={handleStopSession}
+          onStartSession={handleStartSession}
           onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
           isPreviewingSession={isPreviewingSession}
         />
@@ -473,6 +511,9 @@ const App: React.FC = () => {
             onSessionTransitionSettled={handleSessionTransitionSettled}
             selectedAgentId={previewAgentId}
             pendingAgentId={pendingAgentId}
+            isSessionActive={isSessionActive}
+            isStopPending={isStopPending}
+            onStartSession={handleStartSession}
             onHasSessionError={setHasSessionError}
             isLiveMode={isLiveMode}
             selectedAgentInfo={selectedAgentInfo}
