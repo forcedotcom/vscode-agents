@@ -192,32 +192,30 @@ describe('App', () => {
       expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
     });
 
-    it('should not show tabs during session starting', async () => {
+    it('should keep tabs visible during session starting', async () => {
       render(<App />);
 
-      // Select an agent
+      // Select an agent - tabs should appear once an agent is selected
       triggerMessage('selectAgent', { agentId: 'agent1' });
 
-      // Trigger session starting (loading/compilation)
+      await waitFor(() => {
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
+      });
+
+      // Tabs should remain visible during session start to keep loading
+      // continuity (no flicker between simulation/live test transitions).
       triggerMessage('sessionStarting', {});
 
-      // Tabs should not be visible during loading
       await waitFor(() => {
-        expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
+        expect(screen.getByTestId('tab-navigation')).toBeInTheDocument();
       });
     });
 
-    it('should show tabs after loading completes', async () => {
+    it('should keep tabs visible after loading completes', async () => {
       render(<App />);
 
-      // Select an agent
       triggerMessage('selectAgent', { agentId: 'agent1' });
-
-      // Session starting - tabs should not show during loading
       triggerMessage('sessionStarting', {});
-      expect(screen.queryByTestId('tab-navigation')).not.toBeInTheDocument();
-
-      // Session started - tabs should now show
       triggerMessage('sessionStarted', {});
 
       await waitFor(() => {
