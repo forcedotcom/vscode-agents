@@ -675,6 +675,68 @@ describe('AgentTracer helpers', () => {
     expect(result).toContain('"output"');
   });
 
+  it('renders GuardrailsStep with display name and adherence level', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'GuardrailsStep',
+          generatedResponse: 'Sure thing!',
+          instructionAdherence: 'HIGH\n\nThis response adheres to the assigned instructions.'
+        }
+      ]
+    };
+
+    const items = buildTimelineItems(trace, () => undefined);
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Guardrails Check');
+    expect(items[0].description).toBe('HIGH');
+  });
+
+  it('includes generatedResponse and instructionAdherence in GuardrailsStep data', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'GuardrailsStep',
+          generatedResponse: 'Hi there.',
+          instructionAdherence: 'HIGH\n\nReason here.'
+        }
+      ]
+    };
+
+    const result = getStepData(trace, 0);
+    expect(result).toContain('"generatedResponse"');
+    expect(result).toContain('Hi there.');
+    expect(result).toContain('"instructionAdherence"');
+  });
+
+  it('makes GuardrailsStep clickable so the detail panel opens', () => {
+    const trace = {
+      type: 'PlanSuccessResponse',
+      planId: 'plan',
+      sessionId: 'session',
+      plan: [
+        {
+          type: 'GuardrailsStep',
+          generatedResponse: 'Hi there.',
+          instructionAdherence: 'HIGH'
+        }
+      ]
+    };
+
+    const indices: number[] = [];
+    const items = buildTimelineItems(trace, index => indices.push(index));
+    expect(items).toHaveLength(1);
+    expect(items[0].onClick).toBeDefined();
+    items[0].onClick?.();
+    expect(indices).toEqual([0]);
+  });
+
   it('makes FunctionStep clickable when function data exists', () => {
     const trace = {
       type: 'PlanSuccessResponse',

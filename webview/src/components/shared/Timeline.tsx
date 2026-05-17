@@ -22,7 +22,8 @@ export type TimelineIconName =
   | 'check-all'
   | 'error'
   | 'agent'
-  | 'action';
+  | 'action'
+  | 'shield';
 
 export interface TimelineItemProps {
   /**
@@ -241,6 +242,17 @@ const getIconByName = (name: TimelineIconName): React.ReactNode => {
         <svg width="9" height="14" viewBox="0 0 9 14" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
             d="M3.41333 0.533333L4.32 0H7.62667L8.42667 1.54667L6.24 4.96H8L8.74667 6.66667L1.6 13.9733L0 12.8L2.13333 8.96H0.906667L0 7.52L3.41333 0.533333ZM3.78667 8L0.906667 13.28L8 5.97333H4.32L7.62667 0.96H4.32L0.906667 8H3.78667Z"
+            fill="currentColor"
+          />
+        </svg>
+      );
+    case 'shield':
+      return (
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M13.81 1H2.19a1.16 1.16 0 0 0-.95.5l-.07.13L1 1.78v6.95l.04.41a3.06 3.06 0 0 0 .19.71 7.84 7.84 0 0 0 1.95 2.83 16.5 16.5 0 0 0 4.59 3.18l.21.06.21-.06a16.45 16.45 0 0 0 4.59-3.18 7.84 7.84 0 0 0 1.95-2.83A3.91 3.91 0 0 0 14.96 9V1.78A1.16 1.16 0 0 0 13.81 1zm.16 7.7a3.42 3.42 0 0 1-.16.59 7 7 0 0 1-1.7 2.49A15.05 15.05 0 0 1 8 14.71a15 15 0 0 1-4.11-2.93 7 7 0 0 1-1.7-2.49A3.51 3.51 0 0 1 2 8.7V2h12v6.7z"
             fill="currentColor"
           />
         </svg>
