@@ -467,7 +467,7 @@
       },
       {
         "command": "sf.agent.combined.view.clearLoadedSession",
-        "title": "Clear Loaded Session",
+        "title": "Clear Chat Session",
         "icon": "$(clear-all)"
       },
       {
