@@ -229,7 +229,10 @@ export class SessionManager {
   /**
    * Ends the current agent session
    */
-  async endSession(restoreViewCallback?: () => Promise<void>): Promise<void> {
+  async endSession(
+    restoreViewCallback?: () => Promise<void>,
+    options?: { restarting?: boolean }
+  ): Promise<void> {
     this.state.cancelPendingSessionStart();
     const sessionWasStarting = this.state.isSessionStarting;
 
@@ -267,11 +270,14 @@ export class SessionManager {
 
     this.logger.debug(`Simulation ended. AgentName: ${agentName}, SessionId: ${sessionId}`);
 
-    if (hadRunningSession && sessionId && endedSessionType) {
+    if (hadRunningSession && sessionId && endedSessionType && !options?.restarting) {
       // Mark the just-ended session as previewable so the hasLoadedSession
       // context flips on (showing the Clear toolbar action) and the webview
       // toolbar shows Resume. The chat is left untouched; the conversation
       // already on screen is the previewed session's transcript.
+      // Skipped when this end is part of a restart (mode switch / agent
+      // change): the upcoming startSession would route through resume,
+      // which is not what the user asked for.
       this.state.previewedSessionId = sessionId;
       this.messageSender.sendSessionEnded({ sessionId, sessionType: endedSessionType });
     } else if (hadRunningSession || sessionWasStarting) {

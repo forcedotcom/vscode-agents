@@ -45,7 +45,7 @@ export class WebviewMessageHandlers {
       startSession: async msg => await this.handleStartSession(msg),
       setApexDebugging: async msg => await this.handleSetApexDebugging(msg),
       sendChatMessage: async msg => await this.handleSendChatMessage(msg),
-      endSession: async () => await this.handleEndSession(),
+      endSession: async msg => await this.handleEndSession(msg),
       loadAgentHistory: async msg => await this.handleLoadAgentHistory(msg),
       getAvailableAgents: async () => await this.handleGetAvailableAgents(),
       getTraceData: async () => await this.handleGetTraceData(),
@@ -228,14 +228,18 @@ export class WebviewMessageHandlers {
     }
   }
 
-  private async handleEndSession(): Promise<void> {
-    await this.sessionManager.endSession(async () => {
-      const agentId = this.state.pendingStartAgentId ?? this.state.currentAgentId;
-      if (agentId) {
-        const agentSource = this.state.pendingStartAgentSource ?? (await getAgentSource(agentId));
-        await this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
-      }
-    });
+  private async handleEndSession(message?: AgentMessage): Promise<void> {
+    const data = message?.data as { restarting?: boolean } | undefined;
+    await this.sessionManager.endSession(
+      async () => {
+        const agentId = this.state.pendingStartAgentId ?? this.state.currentAgentId;
+        if (agentId) {
+          const agentSource = this.state.pendingStartAgentSource ?? (await getAgentSource(agentId));
+          await this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
+        }
+      },
+      { restarting: data?.restarting === true }
+    );
   }
 
   private async handleLoadAgentHistory(message: AgentMessage): Promise<void> {

@@ -453,7 +453,10 @@ const App: React.FC = () => {
 
         if (hasExistingAgent && (changingAgents || shouldForceRestart) && sessionActiveRef.current) {
           const waitForEnd = waitForSessionEnd();
-          vscodeApi.endSession();
+          // Tell the backend this end is part of a restart (mode switch or
+          // agent change) so it skips marking the session as previewable.
+          // Otherwise the upcoming startSession would route through resume.
+          vscodeApi.endSession({ restarting: true });
           await waitForEnd;
         }
 

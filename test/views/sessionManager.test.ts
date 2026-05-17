@@ -282,6 +282,56 @@ describe('SessionManager', () => {
 
       expect(restoreView).toHaveBeenCalled();
     });
+
+    it('records previewedSessionId so the next start routes through resume', async () => {
+      // This locks in the Resume-after-Stop integration: endSession must
+      // leave previewedSessionId set on the shared state so the message
+      // handler's startSession path picks it up and calls resumeSession
+      // instead of starting a fresh session.
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+      mockState.isLiveMode = false;
+
+      await sessionManager.endSession();
+
+      expect(mockState.previewedSessionId).toBe('session-just-finished');
+    });
+
+    it('does not mark the session previewable when called with restarting=true', async () => {
+      // Mode switch / agent change paths route through endSession({restarting:true})
+      // because the next startSession is going to start a fresh session.
+      // If we marked the session previewable, startSession would route
+      // through resumeSession instead.
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-restarting';
+      mockState.isSessionStarting = false;
+      mockState.previewedSessionId = undefined;
+
+      await sessionManager.endSession(undefined, { restarting: true });
+
+      expect(mockState.previewedSessionId).toBeUndefined();
+      // Plain sessionEnded with no preview info.
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith();
+    });
+
+    it('does not record previewedSessionId when only a starting session was cancelled', async () => {
+      // Edge case: user clicks Stop while still starting; nothing to resume.
+      mockState.agentInstance = undefined;
+      mockState.sessionId = undefined;
+      mockState.isSessionStarting = true;
+      mockState.previewedSessionId = undefined;
+
+      await sessionManager.endSession();
+
+      expect(mockState.previewedSessionId).toBeUndefined();
+    });
   });
 
   describe('restartSession', () => {

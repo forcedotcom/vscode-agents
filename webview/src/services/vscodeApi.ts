@@ -161,8 +161,8 @@ class VSCodeApiService {
     this.postMessage('startSession', { agentId, ...options });
   }
 
-  endSession() {
-    this.postMessage('endSession');
+  endSession(options?: { restarting?: boolean }) {
+    this.postMessage('endSession', options);
   }
 
   sendChatMessage(message: string) {

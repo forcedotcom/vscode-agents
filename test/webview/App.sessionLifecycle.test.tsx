@@ -448,4 +448,45 @@ describe('App session lifecycle', () => {
       });
     });
   });
+
+  describe('restart vs stop intent', () => {
+    it('signals restarting=true on endSession when forceRestart triggers a restart', async () => {
+      // When the user clicks Start while a session is already active (e.g.
+      // mode switch on an active session), the App's queue calls endSession
+      // before startSession. The endSession must include restarting:true so
+      // the backend skips marking the session previewable; otherwise the
+      // upcoming startSession would route through resume.
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('sessionStarted', { content: 'hi' });
+      await waitFor(() => expect(selectorPropsRef.current?.isSessionActive).toBe(true));
+
+      mockVscodeApi.endSession.mockClear();
+      await click('start-button');
+
+      // Allow the restart queue to flush.
+      trigger('sessionEnded');
+      await waitFor(() => {
+        expect(mockVscodeApi.endSession).toHaveBeenCalledWith({ restarting: true });
+      });
+    });
+
+    it('does not signal restarting on user-initiated Stop', async () => {
+      // The toolbar Stop button calls endSession directly (no restart). The
+      // backend should preserve the previewable behavior so Resume appears.
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('sessionStarted', { content: 'hi' });
+      await waitFor(() => expect(selectorPropsRef.current?.isSessionActive).toBe(true));
+
+      mockVscodeApi.endSession.mockClear();
+      await click('stop-button');
+
+      // The mocked AgentSelector calls onStopSession only (does not call
+      // vscodeApi.endSession directly in this test mock); only the App's
+      // restart queue invokes vscodeApi.endSession. Verify it was NOT called
+      // here, which proves the Stop path does not enqueue a restart.
+      expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
+    });
+  });
 });
