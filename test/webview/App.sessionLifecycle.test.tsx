@@ -489,4 +489,104 @@ describe('App session lifecycle', () => {
       expect(mockVscodeApi.endSession).not.toHaveBeenCalled();
     });
   });
+
+  describe('setConversation handler', () => {
+    it('flips into preview mode when setConversation includes previewSessionInfo', async () => {
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+
+      trigger('setConversation', {
+        messages: [{ role: 'user', content: 'old' }],
+        previewSessionInfo: { sessionId: 'sess-1', sessionType: 'simulated' }
+      });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.isPreviewingSession).toBe(true);
+        expect(selectorPropsRef.current?.initialLiveMode).toBe(false);
+      });
+    });
+
+    it('syncs isLiveMode=true for live and published session types', async () => {
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+
+      trigger('setConversation', {
+        messages: [],
+        previewSessionInfo: { sessionId: 'sess-1', sessionType: 'live' }
+      });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.initialLiveMode).toBe(true);
+      });
+
+      trigger('setConversation', {
+        messages: [],
+        previewSessionInfo: { sessionId: 'sess-2', sessionType: 'published' }
+      });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.initialLiveMode).toBe(true);
+      });
+    });
+
+    it('drops preview flag for a non-resumable load (messages but no preview info)', async () => {
+      // Simulate a session already in preview mode.
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('setConversation', {
+        messages: [{ role: 'user', content: 'old' }],
+        previewSessionInfo: { sessionId: 'sess-1', sessionType: 'simulated' }
+      });
+      await waitFor(() => expect(selectorPropsRef.current?.isPreviewingSession).toBe(true));
+
+      // Legacy auto-load: messages, no previewSessionInfo.
+      trigger('setConversation', {
+        messages: [{ role: 'user', content: 'auto-loaded' }]
+      });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.isPreviewingSession).toBe(false);
+      });
+    });
+
+    it('drops preview flag on an explicit toolbar Clear (empty + no preview info, not stopping)', async () => {
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('setConversation', {
+        messages: [{ role: 'user', content: 'old' }],
+        previewSessionInfo: { sessionId: 'sess-1', sessionType: 'simulated' }
+      });
+      await waitFor(() => expect(selectorPropsRef.current?.isPreviewingSession).toBe(true));
+
+      // Toolbar Clear: empty messages, null preview info, not in a stopping
+      // transition (isSessionStarting is false here).
+      trigger('setConversation', { messages: [], previewSessionInfo: null });
+
+      await waitFor(() => {
+        expect(selectorPropsRef.current?.isPreviewingSession).toBe(false);
+      });
+    });
+
+    it('preserves preview flag mid-stop (empty + null + isSessionStarting=true)', async () => {
+      // Simulate the stopping transition triggered by a history-row click:
+      // backend sends sessionStarting first, then the empty setConversation,
+      // then the previewed conversation.
+      render(<App />);
+      trigger('selectAgent', { agentId: 'agent1' });
+      trigger('setConversation', {
+        messages: [{ role: 'user', content: 'old' }],
+        previewSessionInfo: { sessionId: 'sess-1', sessionType: 'simulated' }
+      });
+      await waitFor(() => expect(selectorPropsRef.current?.isPreviewingSession).toBe(true));
+
+      // Backend flips into stopping mode.
+      trigger('sessionStarting', { message: 'Stopping current session...' });
+
+      // Empty setConversation arrives while sessionStarting is still true.
+      trigger('setConversation', { messages: [], previewSessionInfo: null });
+
+      // Preview flag must NOT be cleared during the stopping transition.
+      expect(selectorPropsRef.current?.isPreviewingSession).toBe(true);
+    });
+  });
 });

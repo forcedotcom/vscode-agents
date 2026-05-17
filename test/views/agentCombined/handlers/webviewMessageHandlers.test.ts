@@ -346,6 +346,40 @@ describe('WebviewMessageHandlers', () => {
     });
   });
 
+  describe('endSession message wiring', () => {
+    it('forwards restarting=true from the message data to sessionManager.endSession', async () => {
+      // The App.tsx restart queue posts endSession({ restarting: true }) when
+      // a mode switch or agent change drives a stop-then-start. The handler
+      // must propagate that flag so sessionManager skips marking the session
+      // previewable; otherwise the upcoming startSession routes through
+      // resume.
+      await handlers.handleMessage({
+        command: 'endSession',
+        data: { restarting: true }
+      } as any);
+
+      expect(mockSessionManager.endSession).toHaveBeenCalledTimes(1);
+      const [, options] = mockSessionManager.endSession.mock.calls[0];
+      expect(options).toEqual({ restarting: true });
+    });
+
+    it('passes restarting=false when the message has no data (user-initiated Stop)', async () => {
+      await handlers.handleMessage({ command: 'endSession' } as any);
+
+      expect(mockSessionManager.endSession).toHaveBeenCalledTimes(1);
+      const [, options] = mockSessionManager.endSession.mock.calls[0];
+      expect(options).toEqual({ restarting: false });
+    });
+
+    it('passes restarting=false when the data omits the flag', async () => {
+      await handlers.handleMessage({ command: 'endSession', data: {} } as any);
+
+      expect(mockSessionManager.endSession).toHaveBeenCalledTimes(1);
+      const [, options] = mockSessionManager.endSession.mock.calls[0];
+      expect(options).toEqual({ restarting: false });
+    });
+  });
+
   describe('startSession with previewed session', () => {
     it('routes through resumeSession when a previewed session is set for the same agent', async () => {
       mockState.currentAgentId = 'agent-1';
