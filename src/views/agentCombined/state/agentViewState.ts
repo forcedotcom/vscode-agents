@@ -275,6 +275,9 @@ export class AgentViewState {
     this._pendingStartAgentId = undefined;
     this._pendingStartAgentSource = undefined;
     this._pendingSelectAgentId = undefined;
-    this._previewedSessionId = undefined;
+    // Route through the setter so the hasLoadedSession context flag is reset
+    // alongside the field. Direct assignment would leave the toolbar's Clear
+    // Chat Session action visible after a teardown.
+    this.previewedSessionId = undefined;
   }
 }

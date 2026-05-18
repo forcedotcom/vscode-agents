@@ -462,6 +462,16 @@ export class WebviewMessageHandlers {
     if (!agentSource) {
       agentSource = await getAgentSource(agentId);
     }
+
+    // Capture prior session identity BEFORE overwriting currentAgentSource.
+    // Without this, previousSource reads the new source and the wrong
+    // preview.end() argument is used to tear down the running session when
+    // the previewed session has a different source than the running one.
+    const previousAgent = this.state.agentInstance;
+    const previousSessionId = this.state.sessionId;
+    const previousSource = this.state.currentAgentSource;
+    const hadActiveSession = !!(previousAgent && previousSessionId);
+
     this.state.currentAgentSource = agentSource;
     this.state.currentAgentId = agentId;
 
@@ -469,10 +479,6 @@ export class WebviewMessageHandlers {
     // conversation. We surface a loading state via sessionStarting so the input
     // is disabled while the SDK round-trip completes (a few seconds for
     // live/published sessions).
-    const previousAgent = this.state.agentInstance;
-    const previousSessionId = this.state.sessionId;
-    const previousSource = this.state.currentAgentSource;
-    const hadActiveSession = !!(previousAgent && previousSessionId);
     if (hadActiveSession) {
       this.state.cancelPendingSessionStart();
       // Flip context flags immediately so toolbar actions tied to sessionActive
