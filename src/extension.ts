@@ -368,6 +368,12 @@ const registerAgentCombinedView = (context: vscode.ExtensionContext): vscode.Dis
   );
 
   disposables.push(
+    vscode.commands.registerCommand('sf.agent.combined.view.clearLoadedSession', () => {
+      provider.clearLoadedSession();
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('sf.agent.combined.view.resetAgentView', async () => {
       const currentAgentId = provider.getCurrentAgentId();
 

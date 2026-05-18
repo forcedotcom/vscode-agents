@@ -22,6 +22,9 @@ export class AgentViewState {
   private _pendingStartAgentId?: string;
   private _pendingStartAgentSource?: AgentSource;
   private _pendingSelectAgentId?: string;
+  // The sessionId currently shown via History tab preview (read-only, not yet started).
+  // When the user clicks Start, the start path resumes this session instead of creating a new one.
+  private _previewedSessionId?: string;
 
   // Version state
   private _currentAgentActiveVersion?: number;
@@ -173,6 +176,15 @@ export class AgentViewState {
     this._pendingSelectAgentId = value;
   }
 
+  get previewedSessionId(): string | undefined {
+    return this._previewedSessionId;
+  }
+
+  set previewedSessionId(value: string | undefined) {
+    this._previewedSessionId = value;
+    void vscode.commands.executeCommand('setContext', 'agentforceDX:hasLoadedSession', !!value);
+  }
+
   // State update methods
   async setSessionActive(active: boolean): Promise<void> {
     this._isSessionActive = active;
@@ -182,6 +194,10 @@ export class AgentViewState {
   async setSessionStarting(starting: boolean): Promise<void> {
     this._isSessionStarting = starting;
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', starting);
+  }
+
+  async setSessionStopping(stopping: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStopping', stopping);
   }
 
   beginSessionStart(): number {
@@ -259,5 +275,9 @@ export class AgentViewState {
     this._pendingStartAgentId = undefined;
     this._pendingStartAgentSource = undefined;
     this._pendingSelectAgentId = undefined;
+    // Route through the setter so the hasLoadedSession context flag is reset
+    // alongside the field. Direct assignment would leave the toolbar's Clear
+    // Chat Session action visible after a teardown.
+    this.previewedSessionId = undefined;
   }
 }

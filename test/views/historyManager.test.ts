@@ -100,6 +100,7 @@ describe('HistoryManager', () => {
       currentAgentId: undefined,
       currentAgentSource: undefined,
       currentPlanId: undefined,
+      previewedSessionId: undefined,
       setConversationDataAvailable: jest.fn().mockResolvedValue(undefined),
       setResetAgentViewAvailable: jest.fn().mockResolvedValue(undefined)
     };
@@ -326,7 +327,8 @@ describe('HistoryManager', () => {
       expect(mockMessageSender.sendTraceHistory).toHaveBeenCalled();
       expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith(
         [expect.objectContaining({ content: 'Hello' })],
-        false
+        false,
+        expect.any(Object)
       );
       expect(mockState.setConversationDataAvailable).toHaveBeenCalledWith(true);
     });
@@ -334,7 +336,7 @@ describe('HistoryManager', () => {
     it('should show placeholder when no history exists', async () => {
       await historyManager.showHistoryOrPlaceholder('TestAgent', AgentSource.SCRIPT);
 
-      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith([], true);
+      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith([], true, null);
       expect(mockState.setConversationDataAvailable).toHaveBeenCalledWith(false);
     });
 
@@ -365,7 +367,29 @@ describe('HistoryManager', () => {
       await historyManager.showHistoryOrPlaceholder('TestAgent', AgentSource.SCRIPT);
 
       expect(mockState.setConversationDataAvailable).toHaveBeenCalledWith(false);
-      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith([], true);
+      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith([], true, null);
+    });
+
+    it('marks the loaded conversation as resumable when sessions exist on disk', async () => {
+      mockGetAllHistory.mockResolvedValue(mockHistory(
+        [transcript('Hello', '2025-01-01T00:00:00Z', 'session1', 'user')],
+        [trace('plan-1', 'session1', 1000)]
+      ));
+      // listSessionsForAgent reads from disk; mock its underlying readdir to return one session.
+      // The simpler approach: spy on the module so it returns a known session list.
+      const sessionService = require('../../src/views/agentCombined/session/sessionHistoryService');
+      jest.spyOn(sessionService, 'listSessionsForAgent').mockResolvedValueOnce([
+        { sessionId: 'session1', timestamp: '2025-01-01T00:00:00Z', sessionType: 'simulated' }
+      ]);
+
+      await historyManager.showHistoryOrPlaceholder('TestAgent', AgentSource.SCRIPT);
+
+      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith(
+        [expect.objectContaining({ content: 'Hello' })],
+        false,
+        { sessionId: 'session1', sessionType: 'simulated' }
+      );
+      expect(mockState.previewedSessionId).toBe('session1');
     });
   });
 
@@ -387,6 +411,86 @@ describe('HistoryManager', () => {
 
       expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
         'Unable to open trace JSON: Missing trace details.'
+      );
+    });
+  });
+
+  describe('loadAndSendSessionPreview', () => {
+    it('reads the requested sessionId from disk and pushes conversation + traces with preview info', async () => {
+      mockGetAllHistory.mockResolvedValue(
+        mockHistory(
+          [transcript('hi', '2026-05-10T00:00:00Z', 'sess-A', 'user')],
+          [trace('plan-A', 'sess-A', 1000, 'hi')]
+        )
+      );
+
+      await historyManager.loadAndSendSessionPreview(
+        'TestAgent',
+        AgentSource.SCRIPT,
+        'sess-A',
+        'simulated'
+      );
+
+      // Reads the specific sessionId, not the most recent
+      expect(mockGetAllHistory).toHaveBeenCalledWith('TestAgent', 'sess-A');
+      // Conversation pushed with previewSessionInfo so the start button reads "Resume"
+      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith(
+        [expect.objectContaining({ content: 'hi' })],
+        false,
+        { sessionId: 'sess-A', sessionType: 'simulated' }
+      );
+      // Traces pushed for the same session
+      expect(mockMessageSender.sendTraceHistory).toHaveBeenCalledWith(
+        'TestAgent',
+        [expect.objectContaining({ sessionId: 'sess-A', planId: 'plan-A' })]
+      );
+      expect(mockMessageSender.sendTraceData).toHaveBeenCalled();
+    });
+
+    it('still pushes a placeholder when the session has no transcript or traces', async () => {
+      mockGetAllHistory.mockResolvedValue(mockHistory([], []));
+
+      await historyManager.loadAndSendSessionPreview('TestAgent', AgentSource.SCRIPT, 'sess-empty');
+
+      expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith(
+        [],
+        true,
+        { sessionId: 'sess-empty', sessionType: undefined }
+      );
+      // No traces means no traceData
+      expect(mockMessageSender.sendTraceData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('loadAndSendTracesForSession', () => {
+    it('pushes only traces, not setConversation', async () => {
+      mockGetAllHistory.mockResolvedValue(
+        mockHistory(
+          [transcript('hi', '2026-05-10T00:00:00Z', 'sess-A', 'user')],
+          [trace('plan-A', 'sess-A', 1000)]
+        )
+      );
+
+      await historyManager.loadAndSendTracesForSession('TestAgent', AgentSource.SCRIPT, 'sess-A');
+
+      expect(mockGetAllHistory).toHaveBeenCalledWith('TestAgent', 'sess-A');
+      expect(mockMessageSender.sendTraceHistory).toHaveBeenCalledWith(
+        'TestAgent',
+        [expect.objectContaining({ sessionId: 'sess-A', planId: 'plan-A' })]
+      );
+      expect(mockMessageSender.sendTraceData).toHaveBeenCalled();
+      // Crucially, this method must not touch the conversation panel
+      expect(mockMessageSender.sendSetConversation).not.toHaveBeenCalled();
+    });
+
+    it('sends an empty traceData payload when the session has no traces', async () => {
+      mockGetAllHistory.mockResolvedValue(mockHistory([], []));
+
+      await historyManager.loadAndSendTracesForSession('TestAgent', AgentSource.SCRIPT, 'sess-empty');
+
+      expect(mockMessageSender.sendTraceHistory).toHaveBeenCalledWith('TestAgent', []);
+      expect(mockMessageSender.sendTraceData).toHaveBeenCalledWith(
+        expect.objectContaining({ planId: '', sessionId: '' })
       );
     });
   });

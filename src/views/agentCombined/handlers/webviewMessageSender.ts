@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { AgentViewState } from '../state/agentViewState';
 import type { TraceHistoryEntry } from '../../../utils/traceHistory';
 import type { JsonTokenColors } from '../../../utils/themeColors';
+import type { SessionListEntry } from '../session';
 
 /**
  * Handles all outgoing messages to the webview
@@ -27,12 +28,18 @@ export class WebviewMessageSender {
     this.postMessage('sessionStarting', { message: message || 'Starting session...' });
   }
 
-  sendSessionStarted(welcomeMessage?: string): void {
-    this.postMessage('sessionStarted', welcomeMessage);
+  sendSessionStarted(welcomeMessage?: string, sessionId?: string, skipWelcome?: boolean): void {
+    if (sessionId || skipWelcome) {
+      this.postMessage('sessionStarted', { welcomeMessage, sessionId, skipWelcome });
+    } else {
+      this.postMessage('sessionStarted', welcomeMessage);
+    }
   }
 
-  sendSessionEnded(): void {
-    this.postMessage('sessionEnded', {});
+  sendSessionEnded(
+    previewSessionInfo?: { sessionId: string; sessionType?: 'simulated' | 'live' | 'published' }
+  ): void {
+    this.postMessage('sessionEnded', { previewSessionInfo });
   }
 
   // Compilation messages
@@ -81,9 +88,10 @@ export class WebviewMessageSender {
 
   sendSetConversation(
     messages: Array<{ id: string; type: string; content: string; timestamp: number }>,
-    showPlaceholder: boolean
+    showPlaceholder: boolean,
+    previewSessionInfo?: { sessionId: string; sessionType?: 'simulated' | 'live' | 'published' } | null
   ): void {
-    this.postMessage('setConversation', { messages, showPlaceholder });
+    this.postMessage('setConversation', { messages, showPlaceholder, previewSessionInfo });
   }
 
   sendTraceHistory(agentId: string, entries: TraceHistoryEntry[]): void {
@@ -96,6 +104,10 @@ export class WebviewMessageSender {
 
   sendNoHistoryFound(agentId: string): void {
     this.postMessage('noHistoryFound', { agentId });
+  }
+
+  sendSessionList(agentId: string, sessions: SessionListEntry[]): void {
+    this.postMessage('sessionList', { agentId, sessions });
   }
 
   // Error messages

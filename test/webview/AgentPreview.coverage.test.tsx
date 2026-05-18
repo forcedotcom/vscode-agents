@@ -553,4 +553,97 @@ describe('AgentPreview - Coverage Tests', () => {
       expect(vscodeApi.sendChatMessage).toHaveBeenCalledWith('Test message');
     });
   });
+
+  describe('Stopping transition', () => {
+    it('shows the unified "Stopping session..." spinner and hides messages while a stop is pending (simulation)', async () => {
+      const { rerender, container } = render(
+        <AgentPreview
+          selectedAgentId="test-agent"
+          pendingAgentId={null}
+          isSessionTransitioning={false}
+          onSessionTransitionSettled={jest.fn()}
+          isLiveMode={false}
+          isSessionActive
+          isStopPending={false}
+        />
+      );
+
+      // Drop a message into the chat through the setConversation handler.
+      handlers.get('setConversation')!({
+        messages: [{ role: 'agent', content: 'Hello visible!' }]
+      });
+      handlers.get('sessionStarted')!({ sessionId: 'sess-1', skipWelcome: true });
+
+      await waitFor(() => {
+        expect(screen.getByText('Hello visible!')).toBeInTheDocument();
+      });
+
+      // Stop is clicked: parent flips isStopPending true.
+      rerender(
+        <AgentPreview
+          selectedAgentId="test-agent"
+          pendingAgentId={null}
+          isSessionTransitioning={false}
+          onSessionTransitionSettled={jest.fn()}
+          isLiveMode={false}
+          isSessionActive={false}
+          isStopPending
+        />
+      );
+
+      // Unified stopping message and spinner.
+      await waitFor(() => {
+        expect(screen.getByText('Stopping session...')).toBeInTheDocument();
+      });
+      expect(container.querySelector('.loading-spinner')).toBeInTheDocument();
+
+      // Chat transcript is hidden while stopping.
+      expect(screen.queryByText('Hello visible!')).not.toBeInTheDocument();
+    });
+
+    it('uses the same "Stopping session..." message for live test as for simulation', async () => {
+      render(
+        <AgentPreview
+          selectedAgentId="test-agent"
+          pendingAgentId={null}
+          isSessionTransitioning={false}
+          onSessionTransitionSettled={jest.fn()}
+          isLiveMode
+          isSessionActive={false}
+          isStopPending
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Stopping session...')).toBeInTheDocument();
+      });
+      // No mode-specific phrasing.
+      expect(screen.queryByText(/Stopping live test/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Stopping simulation/i)).not.toBeInTheDocument();
+    });
+
+    it('shows the unified stopping spinner when the backend drives the history-tab switch path', async () => {
+      // The history-tab switch path comes from the backend as a sessionStarting
+      // message with the stopping phrase, surfaced through the standard chat
+      // loader. Verify the same unified copy reaches the chat area.
+      const { container } = render(
+        <AgentPreview
+          selectedAgentId="test-agent"
+          pendingAgentId={null}
+          isSessionTransitioning={false}
+          onSessionTransitionSettled={jest.fn()}
+          isLiveMode
+          isSessionActive
+          isStopPending={false}
+        />
+      );
+
+      handlers.get('sessionStarting')!({ message: 'Stopping session...' });
+
+      await waitFor(() => {
+        expect(screen.getByText('Stopping session...')).toBeInTheDocument();
+      });
+      expect(container.querySelector('.loading-spinner')).toBeInTheDocument();
+    });
+  });
 });

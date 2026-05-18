@@ -958,4 +958,26 @@ describe('AgentTracer', () => {
       expect(inputAfter.value).toBe('');
     });
   });
+
+  describe('isVisible refetch', () => {
+    it('requests trace data when becoming visible', () => {
+      const { rerender } = render(<AgentTracer isVisible={false} />);
+      const postMessageSpy = jest.spyOn((window as any).vscode, 'postMessage');
+      postMessageSpy.mockClear();
+
+      rerender(<AgentTracer isVisible={true} />);
+
+      expect(postMessageSpy).toHaveBeenCalledWith({ command: 'getTraceData' });
+    });
+
+    it('does not request trace data when becoming hidden', () => {
+      const { rerender } = render(<AgentTracer isVisible={true} />);
+      const postMessageSpy = jest.spyOn((window as any).vscode, 'postMessage');
+      postMessageSpy.mockClear();
+
+      rerender(<AgentTracer isVisible={false} />);
+
+      expect(postMessageSpy).not.toHaveBeenCalledWith({ command: 'getTraceData' });
+    });
+  });
 });

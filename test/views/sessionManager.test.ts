@@ -42,15 +42,21 @@ jest.mock('@salesforce/agents', () => ({
   createPreviewSessionCache: jest.fn().mockResolvedValue(undefined)
 }));
 
-// Mock @salesforce/core
-jest.mock('@salesforce/core', () => ({
-  SfProject: {
-    getInstance: () => ({
-      getPath: () => '/mock/project'
-    })
-  },
-  SfError: Error
-}));
+// Mock @salesforce/core. SfError is aliased to Error so `instanceof SfError`
+// passes for plain Errors, matching pre-existing tests, while still exposing
+// SfError.wrap which the resumeSession path uses.
+jest.mock('@salesforce/core', () => {
+  const SfErrorMock = Error as any;
+  SfErrorMock.wrap = (err: unknown) => (err instanceof Error ? err : new Error(String(err)));
+  return {
+    SfProject: {
+      getInstance: () => ({
+        getPath: () => '/mock/project'
+      })
+    },
+    SfError: SfErrorMock
+  };
+});
 
 // Mock CoreExtensionService
 jest.mock('../../src/services/coreExtensionService', () => ({
@@ -96,6 +102,7 @@ describe('SessionManager', () => {
       sessionStartOperationId: 1, // Match the return value of beginSessionStart
       setSessionActive: jest.fn().mockResolvedValue(undefined),
       setSessionStarting: jest.fn().mockResolvedValue(undefined),
+      setSessionStopping: jest.fn().mockResolvedValue(undefined),
       setResetAgentViewAvailable: jest.fn().mockResolvedValue(undefined),
       setSessionErrorState: jest.fn().mockResolvedValue(undefined),
       setConversationDataAvailable: jest.fn().mockResolvedValue(undefined),
@@ -190,6 +197,141 @@ describe('SessionManager', () => {
       await sessionManager.endSession();
 
       expect(mockMessageSender.sendSessionEnded).toHaveBeenCalled();
+    });
+
+    it('marks the just-ended simulated session as previewable on sessionEnded', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+      mockState.isLiveMode = false;
+
+      await sessionManager.endSession();
+
+      expect(mockState.previewedSessionId).toBe('session-just-finished');
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith({
+        sessionId: 'session-just-finished',
+        sessionType: 'simulated'
+      });
+    });
+
+    it('marks live-mode script sessions as live on sessionEnded', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+      mockState.isLiveMode = true;
+
+      await sessionManager.endSession();
+
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith({
+        sessionId: 'session-just-finished',
+        sessionType: 'live'
+      });
+    });
+
+    it('marks published agent sessions as published on sessionEnded', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.PUBLISHED;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+
+      await sessionManager.endSession();
+
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith({
+        sessionId: 'session-just-finished',
+        sessionType: 'published'
+      });
+    });
+
+    it('does not reload the chat after a normal stop (preview is in-place)', async () => {
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+
+      await sessionManager.endSession();
+
+      expect(mockHistoryManager.showHistoryOrPlaceholder).not.toHaveBeenCalled();
+    });
+
+    it('sends sessionEnded without preview info when only a starting session is being cancelled', async () => {
+      mockState.agentInstance = undefined;
+      mockState.sessionId = undefined;
+      mockState.isSessionStarting = true;
+
+      await sessionManager.endSession();
+
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith();
+    });
+
+    it('still calls restoreViewCallback when a starting session is cancelled', async () => {
+      mockState.agentInstance = undefined;
+      mockState.sessionId = undefined;
+      mockState.isSessionStarting = true;
+
+      const restoreView = jest.fn().mockResolvedValue(undefined);
+      await sessionManager.endSession(restoreView);
+
+      expect(restoreView).toHaveBeenCalled();
+    });
+
+    it('records previewedSessionId so the next start routes through resume', async () => {
+      // This locks in the Resume-after-Stop integration: endSession must
+      // leave previewedSessionId set on the shared state so the message
+      // handler's startSession path picks it up and calls resumeSession
+      // instead of starting a fresh session.
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-just-finished';
+      mockState.isSessionStarting = false;
+      mockState.isLiveMode = false;
+
+      await sessionManager.endSession();
+
+      expect(mockState.previewedSessionId).toBe('session-just-finished');
+    });
+
+    it('does not mark the session previewable when called with restarting=true', async () => {
+      // Mode switch / agent change paths route through endSession({restarting:true})
+      // because the next startSession is going to start a fresh session.
+      // If we marked the session previewable, startSession would route
+      // through resumeSession instead.
+      mockState.currentAgentId = 'agent-1';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+      mockState.sessionAgentId = 'agent-1';
+      mockState.agentInstance = { restoreConnection: jest.fn().mockResolvedValue(undefined) };
+      mockState.sessionId = 'session-restarting';
+      mockState.isSessionStarting = false;
+      mockState.previewedSessionId = undefined;
+
+      await sessionManager.endSession(undefined, { restarting: true });
+
+      expect(mockState.previewedSessionId).toBeUndefined();
+      // Plain sessionEnded with no preview info.
+      expect(mockMessageSender.sendSessionEnded).toHaveBeenCalledWith();
+    });
+
+    it('does not record previewedSessionId when only a starting session was cancelled', async () => {
+      // Edge case: user clicks Stop while still starting; nothing to resume.
+      mockState.agentInstance = undefined;
+      mockState.sessionId = undefined;
+      mockState.isSessionStarting = true;
+      mockState.previewedSessionId = undefined;
+
+      await sessionManager.endSession();
+
+      expect(mockState.previewedSessionId).toBeUndefined();
     });
   });
 
@@ -404,6 +546,90 @@ describe('SessionManager', () => {
         expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringContaining('[error]'));
         expect(mockChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/^\tCompilationError$/));
       });
+    });
+  });
+
+  describe('resumeSession', () => {
+    const buildMockAgentInstance = (overrides: any = {}) => ({
+      name: 'TestAgent',
+      preview: {
+        end: jest.fn().mockResolvedValue(undefined)
+      },
+      restoreConnection: jest.fn().mockResolvedValue(undefined),
+      resumeSession: jest.fn().mockResolvedValue(undefined),
+      ...overrides
+    });
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockState.currentAgentName = 'TestAgent';
+      mockState.currentAgentId = 'test-agent-id';
+      mockState.currentAgentSource = AgentSource.SCRIPT;
+    });
+
+    it('reattaches the agent to the supplied sessionId via SDK resumeSession', async () => {
+      const instance = buildMockAgentInstance();
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = instance;
+        return instance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(instance.resumeSession).toHaveBeenCalledWith('sess-prior');
+      expect(mockState.sessionId).toBe('sess-prior');
+      expect(mockState.sessionAgentId).toBe('test-agent-id');
+    });
+
+    it('sends sessionStarted with skipWelcome=true', async () => {
+      const instance = buildMockAgentInstance();
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = instance;
+        return instance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(mockMessageSender.sendSessionStarted).toHaveBeenCalledWith(undefined, 'sess-prior', true);
+    });
+
+    it('ends the previous SDK session before reinitializing', async () => {
+      const previousInstance = buildMockAgentInstance();
+      mockState.agentInstance = previousInstance;
+      mockState.sessionId = 'sess-old';
+      const newInstance = buildMockAgentInstance();
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = newInstance;
+        return newInstance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(previousInstance.preview.end).toHaveBeenCalled();
+      expect(mockState.clearSessionState).toHaveBeenCalled();
+      expect(newInstance.resumeSession).toHaveBeenCalledWith('sess-prior');
+    });
+
+    it('surfaces resume errors via sendError and sets error state', async () => {
+      const instance = buildMockAgentInstance({
+        resumeSession: jest.fn().mockRejectedValue(new Error('disk read failed'))
+      });
+      mockAgentInitializer.initializeScriptAgent.mockImplementation(async () => {
+        mockState.agentInstance = instance;
+        return instance;
+      });
+
+      await sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, {});
+
+      expect(mockMessageSender.sendError).toHaveBeenCalledWith(expect.stringContaining('Failed to resume session'));
+      expect(mockState.setResetAgentViewAvailable).toHaveBeenCalledWith(true);
+      expect(mockState.setSessionErrorState).toHaveBeenCalledWith(true);
+    });
+
+    it('throws when no webview is provided', async () => {
+      await expect(
+        sessionManager.resumeSession('test-agent-id', AgentSource.SCRIPT, 'sess-prior', false, undefined as any)
+      ).rejects.toThrow(/Webview is not ready/);
     });
   });
 });

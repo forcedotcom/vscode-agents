@@ -11,6 +11,7 @@ import type { HistoryManager } from '../history';
 import type { ApexDebugManager } from '../debugging';
 import { Logger } from '../../../utils/logger';
 import { getAgentSource } from '../agent';
+import { listSessionsForAgent } from '../session';
 
 /**
  * Handles all incoming messages from the webview
@@ -44,7 +45,7 @@ export class WebviewMessageHandlers {
       startSession: async msg => await this.handleStartSession(msg),
       setApexDebugging: async msg => await this.handleSetApexDebugging(msg),
       sendChatMessage: async msg => await this.handleSendChatMessage(msg),
-      endSession: async () => await this.handleEndSession(),
+      endSession: async msg => await this.handleEndSession(msg),
       loadAgentHistory: async msg => await this.handleLoadAgentHistory(msg),
       getAvailableAgents: async () => await this.handleGetAvailableAgents(),
       getTraceData: async () => await this.handleGetTraceData(),
@@ -54,6 +55,9 @@ export class WebviewMessageHandlers {
       setSelectedAgentId: async msg => await this.handleSetSelectedAgentId(msg),
       setLiveMode: async msg => await this.handleSetLiveMode(msg),
       getInitialLiveMode: async () => await this.handleGetInitialLiveMode(),
+      listSessions: async msg => await this.handleListSessions(msg),
+      previewSession: async msg => await this.handlePreviewSession(msg),
+      clearPreviewedSession: async () => await this.handleClearPreviewedSession(),
       // Test-specific commands for integration tests
       clearMessages: async () => {
         // Clear messages in the webview - no-op on extension side
@@ -136,6 +140,16 @@ export class WebviewMessageHandlers {
     this.state.currentAgentSource = agentSource;
 
     const isLiveMode = data?.isLiveMode ?? false;
+
+    // If a session is currently being previewed via the History tab, the Start
+    // button should resume that session rather than create a new one.
+    const previewedSessionId = this.state.previewedSessionId;
+    if (previewedSessionId && agentId === this.state.currentAgentId) {
+      this.state.previewedSessionId = undefined;
+      await this.sessionManager.resumeSession(agentId, agentSource, previewedSessionId, isLiveMode, this.webviewView);
+      return;
+    }
+
     await this.sessionManager.startSession(agentId, agentSource, isLiveMode, this.webviewView);
   }
 
@@ -214,14 +228,18 @@ export class WebviewMessageHandlers {
     }
   }
 
-  private async handleEndSession(): Promise<void> {
-    await this.sessionManager.endSession(async () => {
-      const agentId = this.state.pendingStartAgentId ?? this.state.currentAgentId;
-      if (agentId) {
-        const agentSource = this.state.pendingStartAgentSource ?? (await getAgentSource(agentId));
-        await this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
-      }
-    });
+  private async handleEndSession(message?: AgentMessage): Promise<void> {
+    const data = message?.data as { restarting?: boolean } | undefined;
+    await this.sessionManager.endSession(
+      async () => {
+        const agentId = this.state.pendingStartAgentId ?? this.state.currentAgentId;
+        if (agentId) {
+          const agentSource = this.state.pendingStartAgentSource ?? (await getAgentSource(agentId));
+          await this.historyManager.showHistoryOrPlaceholder(agentId, agentSource);
+        }
+      },
+      { restarting: data?.restarting === true }
+    );
   }
 
   private async handleLoadAgentHistory(message: AgentMessage): Promise<void> {
@@ -312,6 +330,17 @@ export class WebviewMessageHandlers {
   private async handleGetTraceData(): Promise<void> {
     try {
       if (this.state.currentAgentId && this.state.currentAgentSource) {
+        // When the user is previewing a specific historical session, load
+        // traces for that session (not falling back to "most recent"). Use
+        // the trace-only path so we don't re-render the chat.
+        if (this.state.previewedSessionId && !this.state.isSessionActive) {
+          await this.historyManager.loadAndSendTracesForSession(
+            this.state.currentAgentId,
+            this.state.currentAgentSource,
+            this.state.previewedSessionId
+          );
+          return;
+        }
         await this.historyManager.loadAndSendTraceHistory(this.state.currentAgentId, this.state.currentAgentSource);
         return;
       }
@@ -351,6 +380,9 @@ export class WebviewMessageHandlers {
   private async handleSetSelectedAgentId(message: AgentMessage): Promise<void> {
     const data = message.data as { agentId?: string; agentSource?: AgentSource } | undefined;
     const agentId = data?.agentId;
+    if (agentId !== this.state.currentAgentId) {
+      this.state.previewedSessionId = undefined;
+    }
     if (agentId && typeof agentId === 'string' && agentId !== '') {
       this.state.currentAgentId = agentId;
       // Use passed agentSource if available to avoid expensive listPreviewable call
@@ -379,6 +411,147 @@ export class WebviewMessageHandlers {
 
   private async handleGetInitialLiveMode(): Promise<void> {
     this.messageSender.sendLiveMode(this.state.isLiveMode);
+  }
+
+  private async handleListSessions(message: AgentMessage): Promise<void> {
+    const data = message.data as { agentId?: string; agentSource?: AgentSource } | undefined;
+    const agentId = data?.agentId ?? this.state.currentAgentId;
+    if (!agentId || typeof agentId !== 'string') {
+      this.messageSender.sendSessionList('', []);
+      return;
+    }
+    try {
+      const agentSource = data?.agentSource ?? this.state.currentAgentSource ?? (await getAgentSource(agentId));
+      const sessions = await listSessionsForAgent(agentId, agentSource);
+      this.messageSender.sendSessionList(agentId, sessions);
+    } catch (err) {
+      console.error('Error listing sessions:', err);
+      this.messageSender.sendSessionList(agentId, []);
+    }
+  }
+
+  /**
+   * Loads a prior session's transcript + traces into the views without starting it.
+   * Records previewedSessionId so the next "start" click resumes this session
+   * instead of creating a new one.
+   */
+  private async handlePreviewSession(message: AgentMessage): Promise<void> {
+    const data = message.data as
+      | { agentId?: string; agentSource?: AgentSource; sessionId?: string; sessionType?: 'simulated' | 'live' | 'published' }
+      | undefined;
+    const agentId = data?.agentId ?? this.state.currentAgentId;
+    const sessionId = data?.sessionId;
+
+    if (!agentId || typeof agentId !== 'string') {
+      throw new Error(`Invalid agent ID: ${agentId}. Expected a string.`);
+    }
+    if (!sessionId || typeof sessionId !== 'string') {
+      throw new Error(`Invalid session ID: ${sessionId}. Expected a string.`);
+    }
+
+    // No-op if this session is already the active live session.
+    if (
+      this.state.isSessionActive &&
+      this.state.sessionId === sessionId &&
+      this.state.sessionAgentId === agentId
+    ) {
+      return;
+    }
+
+    let agentSource = data?.agentSource ?? this.state.currentAgentSource;
+    if (!agentSource) {
+      agentSource = await getAgentSource(agentId);
+    }
+
+    // Capture prior session identity BEFORE overwriting currentAgentSource.
+    // Without this, previousSource reads the new source and the wrong
+    // preview.end() argument is used to tear down the running session when
+    // the previewed session has a different source than the running one.
+    const previousAgent = this.state.agentInstance;
+    const previousSessionId = this.state.sessionId;
+    const previousSource = this.state.currentAgentSource;
+    const hadActiveSession = !!(previousAgent && previousSessionId);
+
+    this.state.currentAgentSource = agentSource;
+    this.state.currentAgentId = agentId;
+
+    // If a session is active, fully end it before showing the previewed
+    // conversation. We surface a loading state via sessionStarting so the input
+    // is disabled while the SDK round-trip completes (a few seconds for
+    // live/published sessions).
+    if (hadActiveSession) {
+      this.state.cancelPendingSessionStart();
+      // Flip context flags immediately so toolbar actions tied to sessionActive
+      // (debug, stop, etc.) hide right away during the stopping transition.
+      // The SDK round-trip below can take seconds and we don't want stale
+      // session-active toolbar buttons hanging around.
+      await this.state.setSessionActive(false);
+      await this.state.setSessionStarting(true);
+      await this.state.setSessionStopping(true);
+      // Send sessionStarting FIRST so the webview's isSessionStartingRef flips
+      // to true before the empty setConversation arrives — App.tsx uses that
+      // ref to distinguish a stopping-transition clear (preserve Resume label)
+      // from a toolbar Clear action (drop preview flag).
+      this.messageSender.sendSessionStarting('Stopping session...');
+      this.messageSender.sendSetConversation([], true, null);
+      this.messageSender.sendTraceHistory(agentId, []);
+      try {
+        if (previousSource === AgentSource.SCRIPT) {
+          await previousAgent!.preview.end();
+        } else {
+          await previousAgent!.preview.end('UserRequest');
+        }
+      } catch (err) {
+        console.warn('Error ending previous session before preview:', err);
+      }
+      try {
+        await previousAgent!.restoreConnection();
+      } catch (err) {
+        console.warn('Error restoring connection:', err);
+      }
+      this.state.clearSessionState();
+      // We deliberately keep isSessionStarting=true through the disk read below
+      // so the input stays disabled. Cleared after the preview is loaded.
+
+      // Re-establish current agent context cleared by clearSessionState so the
+      // previewed conversation is associated correctly.
+      this.state.currentAgentId = agentId;
+      this.state.currentAgentSource = agentSource;
+    } else if (this.state.isSessionStarting) {
+      // Cancel any in-flight start that hasn't produced an agent instance yet.
+      await this.sessionManager.endSession();
+    }
+
+    this.state.previewedSessionId = sessionId;
+
+    // Read the previewed session from disk and push it to the webview. The
+    // setConversation message includes previewSessionInfo so the start button
+    // flips to "Resume".
+    await this.historyManager.loadAndSendSessionPreview(agentId, agentSource, sessionId, data?.sessionType);
+
+    if (hadActiveSession) {
+      // Now that the previewed conversation is on screen, clear the
+      // starting/active state and emit sessionEnded so the input becomes
+      // editable and the start button shows "Resume".
+      await this.state.setSessionStarting(false);
+      await this.state.setSessionStopping(false);
+      this.messageSender.sendSessionEnded();
+    }
+  }
+
+  /**
+   * Drops the currently displayed conversation/traces so the user can start a
+   * fresh session from an empty chat. Does not touch on-disk session data.
+   */
+  private async handleClearPreviewedSession(): Promise<void> {
+    this.state.previewedSessionId = undefined;
+    this.state.currentPlanId = undefined;
+    await this.state.setConversationDataAvailable(false);
+    this.messageSender.sendSetConversation([], true, null);
+    if (this.state.currentAgentId) {
+      this.messageSender.sendTraceHistory(this.state.currentAgentId, []);
+    }
+    this.messageSender.sendTraceData({ plan: [], planId: '', sessionId: '' });
   }
 
   async fetchAndSendActiveVersion(agentId: string): Promise<void> {

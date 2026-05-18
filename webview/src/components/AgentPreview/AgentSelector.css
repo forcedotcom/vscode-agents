@@ -9,8 +9,14 @@
 }
 
 /* Full width start button */
-.agent-selector__start-button {
+.agent-selector__actions {
+  display: flex;
   width: 100%;
+}
+
+.agent-selector__start-button {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .agent-selector__start-button .vscode-button__start,

@@ -10,12 +10,14 @@ interface AgentSelectorProps {
   isSessionActive?: boolean;
   isSessionStarting?: boolean;
   isSessionTransitioning?: boolean;
+  isStopPending?: boolean;
   onLiveModeChange?: (isLive: boolean) => void;
   initialLiveMode?: boolean;
   onSelectedAgentInfoChange?: (agentInfo: AgentInfo | null) => void;
   onStopSession?: () => void;
   onStartSession?: () => void;
   onAgentsAvailabilityChange?: (hasAgents: boolean, isLoading: boolean) => void;
+  isPreviewingSession?: boolean;
 }
 
 export interface StartClickParams {
@@ -54,17 +56,19 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
   isSessionActive = false,
   isSessionStarting = false,
   isSessionTransitioning = false,
+  isStopPending = false,
   onLiveModeChange,
   initialLiveMode = false,
   onSelectedAgentInfoChange,
   onStopSession,
   onStartSession,
-  onAgentsAvailabilityChange
+  onAgentsAvailabilityChange,
+  isPreviewingSession = false
 }) => {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiveMode, setIsLiveMode] = useState(initialLiveMode);
-  const shouldShowStop = isSessionActive;
+  const shouldShowStop = isSessionActive || isStopPending;
   const stopIcon = (
     <svg className="stop-icon" width="4" height="4" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -295,53 +299,60 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
           </div>
         )}
       </div>
-      {selectedAgent &&
-        (selectedAgentInfo?.type === AgentSource.PUBLISHED ? (
-          <Button
-            appearance="primary"
-            size="small"
-            onClick={handleStartClick}
-            className="agent-selector__start-button"
-            disabled={isLoading || isSessionStarting || isSessionTransitioning}
-            startIcon={shouldShowStop ? stopIcon : playIcon}
-          >
-            {shouldShowStop ? 'Stop Live Test' : 'Start Live Test'}
-          </Button>
-        ) : shouldShowStop ? (
-          <Button
-            appearance="primary"
-            size="small"
-            onClick={handleStartClick}
-            className="agent-selector__start-button"
-            disabled={isLoading || isSessionStarting || isSessionTransitioning}
-            startIcon={stopIcon}
-          >
-            {isLiveMode ? 'Stop Live Test' : 'Stop Simulation'}
-          </Button>
-        ) : (
-          <SplitButton
-            appearance="primary"
-            size="small"
-            onClick={handleStartClick}
-            onSelect={handleModeSelect}
-            value={isLiveMode ? 'live' : 'simulate'}
-            options={[
-              { label: 'Simulation', value: 'simulate' },
-              { label: 'Live Test', value: 'live' }
-            ]}
-            className="agent-selector__start-button"
-            disabled={isLoading || isSessionStarting || isSessionTransitioning}
-            startIcon={shouldShowStop ? stopIcon : playIcon}
-          >
-            {shouldShowStop
-              ? isLiveMode
-                ? 'Stop Live Test'
-                : 'Stop Simulation'
-              : isLiveMode
-                ? 'Start Live Test'
-                : 'Start Simulation'}
-          </SplitButton>
-        ))}
+      {selectedAgent && (
+        <div className="agent-selector__actions">
+          {selectedAgentInfo?.type === AgentSource.PUBLISHED ? (
+            <Button
+              appearance="primary"
+              size="small"
+              onClick={handleStartClick}
+              className="agent-selector__start-button"
+              disabled={isLoading || isSessionStarting || isSessionTransitioning || isStopPending}
+              startIcon={shouldShowStop ? stopIcon : playIcon}
+            >
+              {shouldShowStop ? 'Stop Live Test' : isPreviewingSession ? 'Resume Live Test' : 'Start Live Test'}
+            </Button>
+          ) : shouldShowStop ? (
+            <Button
+              appearance="primary"
+              size="small"
+              onClick={handleStartClick}
+              className="agent-selector__start-button"
+              disabled={isLoading || isSessionStarting || isSessionTransitioning || isStopPending}
+              startIcon={stopIcon}
+            >
+              {isLiveMode ? 'Stop Live Test' : 'Stop Simulation'}
+            </Button>
+          ) : (
+            <SplitButton
+              appearance="primary"
+              size="small"
+              onClick={handleStartClick}
+              onSelect={handleModeSelect}
+              value={isLiveMode ? 'live' : 'simulate'}
+              options={[
+                { label: 'Simulation', value: 'simulate' },
+                { label: 'Live Test', value: 'live' }
+              ]}
+              className="agent-selector__start-button"
+              disabled={isLoading || isSessionStarting || isSessionTransitioning || isStopPending}
+              startIcon={shouldShowStop ? stopIcon : playIcon}
+            >
+              {shouldShowStop
+                ? isLiveMode
+                  ? 'Stop Live Test'
+                  : 'Stop Simulation'
+                : isPreviewingSession
+                  ? isLiveMode
+                    ? 'Resume Live Test'
+                    : 'Resume Simulation'
+                  : isLiveMode
+                    ? 'Start Live Test'
+                    : 'Start Simulation'}
+            </SplitButton>
+          )}
+        </div>
+      )}
     </div>
   );
 };

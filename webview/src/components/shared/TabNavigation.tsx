@@ -8,9 +8,10 @@ export interface Tab {
 }
 
 interface TabNavigationProps {
-  activeTab: number | 'preview' | 'tracer';
+  activeTab: number | 'preview' | 'tracer' | 'history';
   onTabChange: (tab: any) => void;
   showTracerTab?: boolean;
+  showHistoryTab?: boolean;
   tabs?: Tab[];
   onClose?: () => void;
 }
@@ -19,6 +20,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   activeTab,
   onTabChange,
   showTracerTab = false,
+  showHistoryTab = false,
   tabs,
   onClose
 }) => {
@@ -50,7 +52,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
 
   React.useEffect(() => {
     updateIndicator();
-  }, [updateIndicator, showTracerTab]);
+  }, [updateIndicator, showTracerTab, showHistoryTab]);
 
   // Update indicator on window resize (for responsive behavior)
   React.useEffect(() => {
@@ -111,6 +113,18 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
                 <span className="tab-label">
                   <span className="tab-label-prefix">Agent </span>
                   <span className="tab-label-main">Tracer</span>
+                </span>
+              </button>
+            )}
+            {showHistoryTab && (
+              <button
+                ref={el => (tabRefs.current['history'] = el)}
+                className={`tab ${activeTab === 'history' ? 'active' : ''}`}
+                onClick={() => handleTabClick('history')}
+              >
+                <span className="tab-icon tab-icon-clock"></span>
+                <span className="tab-label">
+                  <span className="tab-label-main">History</span>
                 </span>
               </button>
             )}

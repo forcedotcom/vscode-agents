@@ -8,6 +8,8 @@ import { vscodeApi, Message, AgentInfo } from '../../services/vscodeApi.js';
 import { ChatInputRef } from './ChatInput.js';
 import './AgentPreview.css';
 
+export const STOPPING_SESSION_MESSAGE = 'Stopping session...';
+
 interface AgentPreviewProps {
   isSessionTransitioning: boolean;
   onSessionTransitionSettled: () => void;
@@ -193,11 +195,21 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
           data && Array.isArray(data.messages) ? data.messages.map(normalizeHistoryMessage) : [];
 
         setMessages(historyMessages);
-        setShowPlaceholder(data?.showPlaceholder ?? historyMessages.length === 0);
         setSessionActive(false);
         setAgentConnected(false);
-        setIsLoading(false);
         setHasSessionError(false);
+        // If we're mid-stop (sessionStarting=true), keep the loading spinner
+        // and suppress the empty-state placeholder. The next setConversation
+        // (with the previewed session's messages) will clear loading.
+        setIsLoading(prev => {
+          const explicitlyMidStop = prev && historyMessages.length === 0;
+          if (!explicitlyMidStop) {
+            setShowPlaceholder(data?.showPlaceholder ?? historyMessages.length === 0);
+          } else {
+            setShowPlaceholder(false);
+          }
+          return explicitlyMidStop ? true : false;
+        });
       });
       disposers.push(disposeSetConversation);
 
@@ -221,7 +233,7 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
         sessionErrorTimestampRef.current = 0;
         sessionActiveStateRef.current = true;
 
-        if (data) {
+        if (data && !data.skipWelcome) {
           setMessages(prev => {
             const newMessages = [...prev];
 
@@ -247,9 +259,10 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
       });
       disposers.push(disposeSessionStarted);
 
-      const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
+      const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', (data: any) => {
         const currentSelectedAgentId = selectedAgentIdRef.current;
         const currentPendingAgentId = pendingAgentIdRef.current;
+        const explicitMessage = typeof data?.message === 'string' ? data.message : undefined;
 
         setSessionActive(false);
         setAgentConnected(false);
@@ -264,11 +277,13 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
 
         if (currentPendingAgentId && currentPendingAgentId === currentSelectedAgentId) {
           setIsLoading(true);
-          setLoadingMessage('Connecting to agent...');
+          setLoadingMessage(explicitMessage ?? 'Connecting to agent...');
         } else if (!currentPendingAgentId) {
           setIsLoading(true);
-          setLoadingMessage('Loading agent...');
-          setMessages([]);
+          setLoadingMessage(explicitMessage ?? 'Loading agent...');
+          if (!explicitMessage) {
+            setMessages([]);
+          }
         } else {
           setIsLoading(false);
         }
@@ -518,15 +533,27 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     // immediately on click, before the backend confirms sessionEnded.
     const inputEnabled = agentConnected && parentIsSessionActive && !isStopPending && !isSessionTransitioning;
 
+    // While a Stop is in flight, mirror the "Connecting..." loader so the user
+    // sees the chat-area spinner and a clear stopping message instead of a
+    // frozen chat that still looks interactive.
+    const showStopLoader = isStopPending && !isLoading;
+    const effectiveIsLoading = isLoading || showStopLoader;
+    const effectiveLoadingMessage = showStopLoader ? STOPPING_SESSION_MESSAGE : loadingMessage;
+
+    // Hide the chat transcript while a Stop is in flight so the user sees only
+    // the spinner and stopping message. Mirrors the empty-chat treatment during
+    // session start.
+    const visibleMessages = showStopLoader ? [] : messages;
+
     return (
       <div className="agent-preview">
-        <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
+        <ChatContainer messages={visibleMessages} isLoading={effectiveIsLoading} loadingMessage={effectiveLoadingMessage} />
         <FormContainer
           ref={chatInputRef}
           onSendMessage={handleSendMessage}
           sessionActive={inputEnabled}
-          isLoading={isLoading}
-          messages={messages}
+          isLoading={effectiveIsLoading}
+          messages={visibleMessages}
           isLiveMode={isLiveMode}
         />
       </div>

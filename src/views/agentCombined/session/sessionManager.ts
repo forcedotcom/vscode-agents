@@ -93,7 +93,7 @@ export class SessionManager {
 
       // Send session started message
       const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
-      this.messageSender.sendSessionStarted(agentMessage?.message);
+      this.messageSender.sendSessionStarted(agentMessage?.message, this.state.sessionId);
       this.state.pendingStartAgentId = undefined;
       this.state.pendingStartAgentSource = undefined;
       await this.state.setConversationDataAvailable(true);
@@ -124,9 +124,115 @@ export class SessionManager {
   }
 
   /**
+   * Resumes a previously cached session by loading its state from disk.
+   * Does NOT call preview.start() — keeps the same sessionId.
+   */
+  async resumeSession(
+    agentId: string,
+    agentSource: AgentSource,
+    sessionId: string,
+    isLiveMode?: boolean,
+    webviewView?: any
+  ): Promise<void> {
+    if (!webviewView) {
+      throw new Error('Webview is not ready. Please ensure the view is visible.');
+    }
+
+    const sessionStartId = this.state.beginSessionStart();
+    const { ensureActive, isActive } = createSessionStartGuards(this.state, sessionStartId);
+
+    try {
+      // Single beat: sessionActive=false + sessionStarting=true, message cleared.
+      // This avoids a flicker through the "no session" toolbar state.
+      await this.beginRestart(this.state.isLiveMode ? 'Resuming live test...' : 'Resuming session...');
+      ensureActive();
+
+      // Tear down any prior SDK session in place. The agent instance is
+      // discarded (replaced below) so the previous session can be safely ended.
+      if (this.state.agentInstance && this.state.sessionId) {
+        try {
+          if (this.state.currentAgentSource === AgentSource.SCRIPT) {
+            await this.state.agentInstance.preview.end();
+          } else {
+            await this.state.agentInstance.preview.end('UserRequest');
+          }
+        } catch (error) {
+          console.warn('Error ending previous session before resume:', error);
+        }
+        try {
+          await this.state.agentInstance.restoreConnection();
+        } catch (error) {
+          console.warn('Error restoring connection before resume:', error);
+        }
+        this.state.clearSessionState();
+        ensureActive();
+      }
+
+      const conn = await CoreExtensionService.getDefaultConnection();
+      ensureActive();
+
+      this.state.currentAgentId = agentId;
+      const project = SfProject.getInstance();
+
+      this.state.pendingStartAgentId = agentId;
+      this.state.pendingStartAgentSource = agentSource;
+
+      if (agentSource === AgentSource.SCRIPT) {
+        await this.initializeScriptAgent(agentId, conn, project, isLiveMode, isActive, ensureActive);
+      } else {
+        await this.initializePublishedAgent(agentId, conn, project, ensureActive);
+      }
+
+      if (!this.state.agentInstance) {
+        throw new Error('Failed to initialize agent instance.');
+      }
+
+      await this.state.agentInstance.resumeSession(sessionId);
+      ensureActive();
+      this.state.sessionId = sessionId;
+      this.state.sessionAgentId = agentId;
+      this.logger.debug(`Resumed session for agent ${this.state.currentAgentName}. SessionId: ${sessionId}`);
+
+      // Load conversation history first. The webview's conversationHistory
+      // handler temporarily flips sessionActive=false; sessionStarted (sent
+      // below) flips it back true so the input becomes editable.
+      await this.historyManager.loadAndSendConversationHistory(agentId, agentSource);
+
+      await this.state.setSessionActive(true);
+      ensureActive();
+      await this.state.setSessionStarting(false);
+      ensureActive();
+
+      // Send sessionStarted before traces so the tracer's reset-on-start
+      // doesn't wipe the trace history we're about to send.
+      this.messageSender.sendSessionStarted(undefined, this.state.sessionId, true);
+      this.state.pendingStartAgentId = undefined;
+      this.state.pendingStartAgentSource = undefined;
+
+      await this.historyManager.loadAndSendTraceHistory(agentId, agentSource);
+
+      await this.state.setConversationDataAvailable(true);
+    } catch (err) {
+      if (err instanceof SessionStartCancelledError || !isActive()) {
+        return;
+      }
+
+      const sfError = SfError.wrap(err);
+      this.logger.error('Error resuming session', sfError);
+      await this.state.setSessionStarting(false);
+      await this.messageSender.sendError(`Failed to resume session: ${sfError.message}`);
+      await this.state.setResetAgentViewAvailable(true);
+      await this.state.setSessionErrorState(true);
+    }
+  }
+
+  /**
    * Ends the current agent session
    */
-  async endSession(restoreViewCallback?: () => Promise<void>): Promise<void> {
+  async endSession(
+    restoreViewCallback?: () => Promise<void>,
+    options?: { restarting?: boolean }
+  ): Promise<void> {
     this.state.cancelPendingSessionStart();
     const sessionWasStarting = this.state.isSessionStarting;
 
@@ -134,9 +240,27 @@ export class SessionManager {
     // This matches the webview's optimistic update for button state
     await this.state.setSessionActive(false);
     await this.state.setSessionStarting(false);
+    // Block toolbar actions while the SDK teardown is in flight. Without this,
+    // the gap between sessionActive=false and clearSessionState exposes
+    // toolbar items gated only on !sessionActive && !sessionStarting.
+    await this.state.setSessionStopping(true);
 
     const agentName = this.state.currentAgentName;
     const sessionId = this.state.sessionId;
+    // Capture identity before clearSessionState wipes it. After Stop, the
+    // just-ended session becomes a previewable history-like session: Resume
+    // and Clear appear on the toolbar, but the chat messages stay on screen.
+    // We only mark it previewable, we don't reload the conversation.
+    const endedAgentSource = this.state.currentAgentSource;
+    const endedSessionType: 'simulated' | 'live' | 'published' | undefined = endedAgentSource
+      ? endedAgentSource === AgentSource.SCRIPT
+        ? this.state.isLiveMode
+          ? 'live'
+          : 'simulated'
+        : 'published'
+      : undefined;
+    const hadRunningSession = !!(this.state.agentInstance && this.state.sessionId);
+
     if (this.state.agentInstance && this.state.sessionId) {
       // Restore connection before clearing agent references
       try {
@@ -146,16 +270,29 @@ export class SessionManager {
       }
 
       this.state.clearSessionState();
-      this.messageSender.sendSessionEnded();
-    } else if (sessionWasStarting) {
-      this.messageSender.sendSessionEnded();
     }
 
     this.logger.debug(`Simulation ended. AgentName: ${agentName}, SessionId: ${sessionId}`);
 
+    if (hadRunningSession && sessionId && endedSessionType && !options?.restarting) {
+      // Mark the just-ended session as previewable so the hasLoadedSession
+      // context flips on (showing the Clear toolbar action) and the webview
+      // toolbar shows Resume. The chat is left untouched; the conversation
+      // already on screen is the previewed session's transcript.
+      // Skipped when this end is part of a restart (mode switch / agent
+      // change): the upcoming startSession would route through resume,
+      // which is not what the user asked for.
+      this.state.previewedSessionId = sessionId;
+      this.messageSender.sendSessionEnded({ sessionId, sessionType: endedSessionType });
+    } else if (hadRunningSession || sessionWasStarting) {
+      this.messageSender.sendSessionEnded();
+    }
+
     if (sessionWasStarting && restoreViewCallback) {
       await restoreViewCallback();
     }
+
+    await this.state.setSessionStopping(false);
   }
 
   /**
@@ -303,7 +440,7 @@ export class SessionManager {
     ensureActive?.();
 
     const agentMessage = session.messages.find((msg: any) => msg.type === 'Inform');
-    this.messageSender.sendSessionStarted(agentMessage?.message);
+    this.messageSender.sendSessionStarted(agentMessage?.message, this.state.sessionId);
     await this.state.setConversationDataAvailable(true);
 
     this.logger.debug(logMessage);

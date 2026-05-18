@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AgentPreview, { AgentPreviewRef } from './components/AgentPreview/AgentPreview.js';
 import AgentTracer from './components/AgentTracer/AgentTracer.js';
 import AgentSelector from './components/AgentPreview/AgentSelector.js';
+import SessionHistory from './components/SessionHistory/SessionHistory.js';
 import TabNavigation from './components/shared/TabNavigation.js';
 import { vscodeApi, AgentInfo, AgentSource } from './services/vscodeApi.js';
 import './App.css';
@@ -24,7 +25,7 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'preview' | 'tracer'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'tracer' | 'history'>('preview');
   const [displayedAgentId, setDisplayedAgentIdState] = useState('');
   const [desiredAgentId, setDesiredAgentId] = useState('');
   const [restartTrigger, setRestartTrigger] = useState(0);
@@ -33,6 +34,8 @@ const App: React.FC = () => {
   const [isSessionStarting, setIsSessionStarting] = useState(false);
   const [isStopPending, setIsStopPending] = useState(false);
   const [hasSessionError, setHasSessionError] = useState(false);
+  const [isPreviewingSession, setIsPreviewingSession] = useState(false);
+  const activeSessionIdRef = useRef<string | undefined>(undefined);
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [selectedAgentInfo, setSelectedAgentInfo] = useState<AgentInfo | null>(null);
   const [hasAgents, setHasAgents] = useState(false);
@@ -143,7 +146,7 @@ const App: React.FC = () => {
       vscodeApi.getTraceData();
     });
 
-    const disposeTestSwitchTab = vscodeApi.onMessage('testSwitchTab', (data: { tab: 'preview' | 'tracer' }) => {
+    const disposeTestSwitchTab = vscodeApi.onMessage('testSwitchTab', (data: { tab: 'preview' | 'tracer' | 'history' }) => {
       const tab = data?.tab || 'preview';
       console.log('[Webview Test] testSwitchTab received:', tab);
       setActiveTab(tab);
@@ -164,7 +167,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleTabChange = (tab: 'preview' | 'tracer') => {
+  const handleTabChange = (tab: 'preview' | 'tracer' | 'history') => {
     setActiveTab(tab);
   };
 
@@ -173,6 +176,45 @@ const App: React.FC = () => {
     // Notify the provider to persist the selection
     vscodeApi.setLiveMode(isLive);
   }, []);
+
+  // Track when the backend pushes a "loaded conversation" so the start button
+  // can switch between Resume and Start. The setConversation message includes
+  // previewSessionInfo when a prior session's transcript is being shown.
+  const isSessionStartingRef = useRef(false);
+  useEffect(() => {
+    isSessionStartingRef.current = isSessionStarting;
+  }, [isSessionStarting]);
+
+  useEffect(() => {
+    return vscodeApi.onMessage('setConversation', (data: any) => {
+      const info = data?.previewSessionInfo;
+      const messages = Array.isArray(data?.messages) ? data.messages : [];
+      if (info && typeof info.sessionId === 'string') {
+        setIsPreviewingSession(true);
+        // Preview has landed; the stopping transition started by a history
+        // row click is over. Clear the stop-pending flag so the button can
+        // settle on its Resume label.
+        setIsStopPending(false);
+        if (info.sessionType === 'simulated') {
+          setIsLiveMode(false);
+        } else if (info.sessionType === 'live' || info.sessionType === 'published') {
+          setIsLiveMode(true);
+        }
+      } else if (messages.length > 0) {
+        // A conversation with messages but no preview info means a non-resumable
+        // load (e.g. legacy auto-load). Drop the preview flag.
+        setIsPreviewingSession(false);
+      } else if (!isSessionStartingRef.current) {
+        // Empty conversation, no preview info, not in a stopping transition:
+        // this is an explicit clear (toolbar action). Drop the preview flag so
+        // the start button reverts to "Start Simulation/Live Test".
+        setIsPreviewingSession(false);
+      }
+      // Else: empty + null + sessionStarting=true means we're mid-stop. Leave
+      // isPreviewingSession alone so Resume label stays put.
+    });
+  }, []);
+
 
   // Switch to preview tab when a published agent is selected (tracer not supported)
   // or when no agent is selected
@@ -183,6 +225,13 @@ const App: React.FC = () => {
       }
     }
   }, [selectedAgentInfo, activeTab, desiredAgentId]);
+
+  // Switch to preview tab when the agent changes while viewing history
+  useEffect(() => {
+    if (activeTab === 'history') {
+      setActiveTab('preview');
+    }
+  }, [desiredAgentId]);
 
   const handleGoToPreview = useCallback(() => {
     // If session is not active and we have a desired agent, start the session
@@ -200,6 +249,7 @@ const App: React.FC = () => {
 
   const handleAgentChange = useCallback((agentId: string, agentSource?: AgentSource) => {
     setDesiredAgentId(agentId);
+    setIsPreviewingSession(false);
     // Notify the extension about the selected agent
     // Pass agentSource to avoid expensive re-fetch on the backend
     // History is now loaded atomically by setSelectedAgentId handler
@@ -238,32 +288,63 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', () => {
+    const disposeSessionStarted = vscodeApi.onMessage('sessionStarted', (data: any) => {
       sessionActiveRef.current = true;
       setIsSessionActive(true);
       setIsSessionStarting(false);
+      setIsPreviewingSession(false);
+      if (data && typeof data === 'object' && typeof data.sessionId === 'string') {
+        activeSessionIdRef.current = data.sessionId;
+      }
       const resolver = sessionStartResolversRef.current.shift();
       if (resolver) {
         resolver(true);
       }
     });
 
-    const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', () => {
+    const disposeSessionEnded = vscodeApi.onMessage('sessionEnded', (data: any) => {
       sessionActiveRef.current = false;
+      isSessionStartingRef.current = false;
       setIsSessionActive(false);
       setIsSessionStarting(false);
+      // If the backend marked the just-ended session as previewable, flip
+      // into preview mode so the toolbar shows Resume + Clear without
+      // touching the chat messages already on screen.
+      const info = data?.previewSessionInfo;
+      if (info && typeof info.sessionId === 'string') {
+        setIsPreviewingSession(true);
+        if (info.sessionType === 'simulated') {
+          setIsLiveMode(false);
+        } else if (info.sessionType === 'live' || info.sessionType === 'published') {
+          setIsLiveMode(true);
+        }
+      }
+      // Else: don't clear isPreviewingSession here. The setConversation
+      // listener owns that flag. When sessionEnded fires after a history-row
+      // click, a preview is still loaded and Resume should remain available.
       setIsStopPending(false);
+      activeSessionIdRef.current = undefined;
       const resolver = sessionEndResolversRef.current.shift();
       if (resolver) {
         resolver();
       }
     });
 
-    const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', () => {
+    const disposeSessionStarting = vscodeApi.onMessage('sessionStarting', (data: any) => {
       sessionActiveRef.current = false;
+      // Update the ref synchronously so the setConversation listener (which
+      // may fire on the same message-bus tick) sees the new value before
+      // React's state-driven effect catches up.
+      isSessionStartingRef.current = true;
       setIsSessionActive(false);
       setIsSessionStarting(true);
-      setIsStopPending(false);
+      // Don't clear isStopPending during a stopping-for-preview transition,
+      // or the toolbar button briefly flips to Start before the preview
+      // lands and reveals Resume.
+      const isStoppingTransition = typeof data?.message === 'string' && /stopping/i.test(data.message);
+      if (!isStoppingTransition) {
+        setIsStopPending(false);
+      }
       // Switch to preview tab when starting a new session
       setActiveTab('preview');
     });
@@ -372,7 +453,10 @@ const App: React.FC = () => {
 
         if (hasExistingAgent && (changingAgents || shouldForceRestart) && sessionActiveRef.current) {
           const waitForEnd = waitForSessionEnd();
-          vscodeApi.endSession();
+          // Tell the backend this end is part of a restart (mode switch or
+          // agent change) so it skips marking the session as previewable.
+          // Otherwise the upcoming startSession would route through resume.
+          vscodeApi.endSession({ restarting: true });
           await waitForEnd;
         }
 
@@ -426,16 +510,23 @@ const App: React.FC = () => {
           isSessionActive={isSessionActive}
           isSessionStarting={isSessionStarting}
           isSessionTransitioning={isSessionTransitioning || isStopPending}
+          isStopPending={isStopPending}
           onLiveModeChange={handleLiveModeChange}
           initialLiveMode={isLiveMode}
           onSelectedAgentInfoChange={setSelectedAgentInfo}
           onStopSession={handleStopSession}
           onStartSession={handleStartSession}
           onAgentsAvailabilityChange={handleAgentsAvailabilityChange}
+          isPreviewingSession={isPreviewingSession}
         />
         <div className="app-menu-divider" />
-        {previewAgentId !== '' && (
-          <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED} />
+        {previewAgentId !== '' && !isSessionStarting && !isStopPending && (
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            showTracerTab={selectedAgentInfo?.type !== AgentSource.PUBLISHED}
+            showHistoryTab={true}
+          />
         )}
       </div>
       <div className="app-content">
@@ -459,10 +550,33 @@ const App: React.FC = () => {
         </div>
         <div className={`tab-content ${activeTab === 'tracer' ? 'active' : 'hidden'}`}>
           <AgentTracer
+            isVisible={activeTab === 'tracer'}
             onGoToPreview={handleGoToPreview}
             isSessionActive={isSessionActive}
             isLiveMode={isLiveMode}
             selectedAgentInfo={selectedAgentInfo}
+            onLiveModeChange={handleLiveModeChange}
+          />
+        </div>
+        <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
+          <SessionHistory
+            agentId={previewAgentId}
+            agentSource={selectedAgentInfo?.type}
+            isActive={activeTab === 'history'}
+            isSessionActive={isSessionActive}
+            isLiveMode={isLiveMode}
+            selectedAgentInfo={selectedAgentInfo}
+            onResume={() => {
+              setIsPreviewingSession(true);
+              setActiveTab('preview');
+            }}
+            onPreviewStart={() => {
+              // History row clicked while a session is active. Mirror the
+              // optimistic Stop flow so the toolbar button keeps its Stop
+              // label across the stopping transition until the preview lands.
+              setIsStopPending(true);
+            }}
+            onGoToPreview={handleGoToPreview}
             onLiveModeChange={handleLiveModeChange}
           />
         </div>

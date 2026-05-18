@@ -33,9 +33,8 @@ jest.mock('semver', () => ({
   valid: jest.fn()
 }));
 
-// Mock @salesforce/core so the fallback path in getDefaultConnection
-// doesn't reach into the host's ~/.sfdx config and a real Salesforce
-// connection during tests.
+// Mock @salesforce/core so getDefaultConnection's fallback path doesn't read
+// the developer's real ~/.sfdx config and resolve a live Connection.
 jest.mock('@salesforce/core', () => ({
   ConfigAggregator: {
     create: jest.fn()
@@ -46,6 +45,7 @@ jest.mock('@salesforce/core', () => ({
 }));
 
 import { ConfigAggregator, Org } from '@salesforce/core';
+
 
 describe('CoreExtensionService', () => {
   let mockExtension: { packageJSON: { version: string }; exports: CoreExtensionApi };

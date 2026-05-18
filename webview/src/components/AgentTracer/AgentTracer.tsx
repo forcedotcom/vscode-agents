@@ -217,7 +217,8 @@ const STEP_DISPLAY_NAMES: Record<string, string> = {
   OutputEvaluationStep: 'Output Evaluation',
   PlannerResponseStep: 'Agent Response',
   UpdateTopicStep: 'Subagent Selected',
-  FunctionStep: 'Action Executed'
+  FunctionStep: 'Action Executed',
+  GuardrailsStep: 'Guardrails Check'
 };
 
 // Map step types to icons (VS Code icons)
@@ -235,7 +236,8 @@ const STEP_ICONS: Record<string, TimelineIconName> = {
   OutputEvaluationStep: 'search',
   PlannerResponseStep: 'agent',
   UpdateTopicStep: 'tag',
-  FunctionStep: 'action'
+  FunctionStep: 'action',
+  GuardrailsStep: 'shield'
 };
 
 // Get the description/subtitle for a step based on its type
@@ -322,6 +324,18 @@ const getStepDescription = (step: any): string | undefined => {
     case 'FunctionStep':
       return step.function?.name || undefined;
 
+    case 'GuardrailsStep': {
+      // instructionAdherence is a multi-line string starting with a level
+      // like "HIGH" / "MEDIUM" / "LOW", followed by an explanation. Surface
+      // just the level on the timeline.
+      const adherence = step.instructionAdherence;
+      if (typeof adherence === 'string' && adherence.length > 0) {
+        const firstLine = adherence.split('\n')[0].trim();
+        return firstLine || undefined;
+      }
+      return undefined;
+    }
+
     default:
       return undefined;
   }
@@ -366,7 +380,9 @@ export const buildTimelineItems = (
     }
 
     const description = getStepDescription(step);
-    const hasData = step && (step.data || step.message || step.reason || step.function);
+    const hasData =
+      step &&
+      (step.data || step.message || step.reason || step.function || step.generatedResponse || step.instructionAdherence);
 
     return {
       status,
@@ -423,6 +439,12 @@ export const getStepData = (traceData: PlanSuccessResponse | null, selectedStepI
   }
   if (step.function) {
     displayData.function = step.function;
+  }
+  if (step.generatedResponse) {
+    displayData.generatedResponse = step.generatedResponse;
+  }
+  if (step.instructionAdherence) {
+    displayData.instructionAdherence = step.instructionAdherence;
   }
 
   if (Object.keys(displayData).length > 0) {
@@ -656,7 +678,7 @@ const AgentTracer: React.FC<AgentTracerProps> = ({
                 <input
                   type="text"
                   className={`trace-filter__input${trimmedFilter ? ' trace-filter__input--with-count' : ''}`}
-                  placeholder="Filter traces by message, event type, or content..."
+                  placeholder="Filter traces by message, event type, or content"
                   value={filterQuery}
                   onChange={e => setFilterQuery(e.target.value)}
                   aria-label="Filter trace history"

@@ -67,6 +67,10 @@
   background-image: url('../../assets/tree-light.svg');
 }
 
+.tab-icon-clock {
+  background-image: url('../../assets/clock-light.svg');
+}
+
 body.vscode-dark .tab-icon-comment,
 body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-comment {
   background-image: url('../../assets/comment-dark.svg');
@@ -75,6 +79,11 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-comment {
 body.vscode-dark .tab-icon-tree,
 body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-tree {
   background-image: url('../../assets/tree-dark.svg');
+}
+
+body.vscode-dark .tab-icon-clock,
+body.vscode-high-contrast:not(.vscode-high-contrast-light) .tab-icon-clock {
+  background-image: url('../../assets/clock-dark.svg');
 }
 
 .tab-navigation-close {
