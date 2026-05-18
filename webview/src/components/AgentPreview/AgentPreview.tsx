@@ -8,6 +8,8 @@ import { vscodeApi, Message, AgentInfo } from '../../services/vscodeApi.js';
 import { ChatInputRef } from './ChatInput.js';
 import './AgentPreview.css';
 
+export const STOPPING_SESSION_MESSAGE = 'Stopping session...';
+
 interface AgentPreviewProps {
   isSessionTransitioning: boolean;
   onSessionTransitionSettled: () => void;
@@ -531,15 +533,27 @@ const AgentPreview = forwardRef<AgentPreviewRef, AgentPreviewProps>(
     // immediately on click, before the backend confirms sessionEnded.
     const inputEnabled = agentConnected && parentIsSessionActive && !isStopPending && !isSessionTransitioning;
 
+    // While a Stop is in flight, mirror the "Connecting..." loader so the user
+    // sees the chat-area spinner and a clear stopping message instead of a
+    // frozen chat that still looks interactive.
+    const showStopLoader = isStopPending && !isLoading;
+    const effectiveIsLoading = isLoading || showStopLoader;
+    const effectiveLoadingMessage = showStopLoader ? STOPPING_SESSION_MESSAGE : loadingMessage;
+
+    // Hide the chat transcript while a Stop is in flight so the user sees only
+    // the spinner and stopping message. Mirrors the empty-chat treatment during
+    // session start.
+    const visibleMessages = showStopLoader ? [] : messages;
+
     return (
       <div className="agent-preview">
-        <ChatContainer messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
+        <ChatContainer messages={visibleMessages} isLoading={effectiveIsLoading} loadingMessage={effectiveLoadingMessage} />
         <FormContainer
           ref={chatInputRef}
           onSendMessage={handleSendMessage}
           sessionActive={inputEnabled}
-          isLoading={isLoading}
-          messages={messages}
+          isLoading={effectiveIsLoading}
+          messages={visibleMessages}
           isLiveMode={isLiveMode}
         />
       </div>

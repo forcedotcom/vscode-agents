@@ -520,7 +520,7 @@ const App: React.FC = () => {
           isPreviewingSession={isPreviewingSession}
         />
         <div className="app-menu-divider" />
-        {previewAgentId !== '' && !isSessionStarting && (
+        {previewAgentId !== '' && !isSessionStarting && !isStopPending && (
           <TabNavigation
             activeTab={activeTab}
             onTabChange={handleTabChange}

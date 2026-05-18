@@ -240,6 +240,10 @@ export class SessionManager {
     // This matches the webview's optimistic update for button state
     await this.state.setSessionActive(false);
     await this.state.setSessionStarting(false);
+    // Block toolbar actions while the SDK teardown is in flight. Without this,
+    // the gap between sessionActive=false and clearSessionState exposes
+    // toolbar items gated only on !sessionActive && !sessionStarting.
+    await this.state.setSessionStopping(true);
 
     const agentName = this.state.currentAgentName;
     const sessionId = this.state.sessionId;
@@ -287,6 +291,8 @@ export class SessionManager {
     if (sessionWasStarting && restoreViewCallback) {
       await restoreViewCallback();
     }
+
+    await this.state.setSessionStopping(false);
   }
 
   /**

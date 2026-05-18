@@ -196,6 +196,10 @@ export class AgentViewState {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStarting', starting);
   }
 
+  async setSessionStopping(stopping: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:sessionStopping', stopping);
+  }
+
   beginSessionStart(): number {
     return ++this._sessionStartOperationId;
   }

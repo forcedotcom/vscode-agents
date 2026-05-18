@@ -481,11 +481,12 @@ export class WebviewMessageHandlers {
       // session-active toolbar buttons hanging around.
       await this.state.setSessionActive(false);
       await this.state.setSessionStarting(true);
+      await this.state.setSessionStopping(true);
       // Send sessionStarting FIRST so the webview's isSessionStartingRef flips
       // to true before the empty setConversation arrives — App.tsx uses that
       // ref to distinguish a stopping-transition clear (preserve Resume label)
       // from a toolbar Clear action (drop preview flag).
-      this.messageSender.sendSessionStarting('Stopping current session...');
+      this.messageSender.sendSessionStarting('Stopping session...');
       this.messageSender.sendSetConversation([], true, null);
       this.messageSender.sendTraceHistory(agentId, []);
       try {
@@ -527,6 +528,7 @@ export class WebviewMessageHandlers {
       // starting/active state and emit sessionEnded so the input becomes
       // editable and the start button shows "Resume".
       await this.state.setSessionStarting(false);
+      await this.state.setSessionStopping(false);
       this.messageSender.sendSessionEnded();
     }
   }

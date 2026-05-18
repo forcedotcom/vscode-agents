@@ -307,7 +307,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               size="small"
               onClick={handleStartClick}
               className="agent-selector__start-button"
-              disabled={isLoading || isSessionStarting || isSessionTransitioning}
+              disabled={isLoading || isSessionStarting || isSessionTransitioning || isStopPending}
               startIcon={shouldShowStop ? stopIcon : playIcon}
             >
               {shouldShowStop ? 'Stop Live Test' : isPreviewingSession ? 'Resume Live Test' : 'Start Live Test'}
@@ -318,7 +318,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
               size="small"
               onClick={handleStartClick}
               className="agent-selector__start-button"
-              disabled={isLoading || isSessionStarting || isSessionTransitioning}
+              disabled={isLoading || isSessionStarting || isSessionTransitioning || isStopPending}
               startIcon={stopIcon}
             >
               {isLiveMode ? 'Stop Live Test' : 'Stop Simulation'}
@@ -335,7 +335,7 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
                 { label: 'Live Test', value: 'live' }
               ]}
               className="agent-selector__start-button"
-              disabled={isLoading || isSessionStarting || isSessionTransitioning}
+              disabled={isLoading || isSessionStarting || isSessionTransitioning || isStopPending}
               startIcon={shouldShowStop ? stopIcon : playIcon}
             >
               {shouldShowStop

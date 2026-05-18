@@ -109,6 +109,7 @@ describe('WebviewMessageHandlers', () => {
       pendingStartAgentSource: undefined,
       setSessionActive: jest.fn().mockResolvedValue(undefined),
       setSessionStarting: jest.fn().mockResolvedValue(undefined),
+      setSessionStopping: jest.fn().mockResolvedValue(undefined),
       setResetAgentViewAvailable: jest.fn().mockResolvedValue(undefined),
       setSessionErrorState: jest.fn().mockResolvedValue(undefined),
       setConversationDataAvailable: jest.fn().mockResolvedValue(undefined),
@@ -422,7 +423,7 @@ describe('WebviewMessageHandlers', () => {
       expect(mockState.cancelPendingSessionStart).toHaveBeenCalled();
       expect(mockMessageSender.sendSetConversation).toHaveBeenCalledWith([], true, null);
       expect(mockMessageSender.sendTraceHistory).toHaveBeenCalledWith('agent-1', []);
-      expect(mockMessageSender.sendSessionStarting).toHaveBeenCalledWith('Stopping current session...');
+      expect(mockMessageSender.sendSessionStarting).toHaveBeenCalledWith('Stopping session...');
       // Published agents end with 'UserRequest'
       expect(previewEnd).toHaveBeenCalledWith('UserRequest');
       expect(restoreConnection).toHaveBeenCalled();

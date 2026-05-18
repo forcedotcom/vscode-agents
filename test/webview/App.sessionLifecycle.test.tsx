@@ -412,9 +412,9 @@ describe('App session lifecycle', () => {
       expect(selectorPropsRef.current?.isStopPending).toBe(true);
       expect(selectorPropsRef.current?.isSessionTransitioning).toBe(true);
 
-      // Backend fires sessionStarting('Stopping current session...') as part
+      // Backend fires sessionStarting('Stopping session...') as part
       // of the preview transition. isStopPending must NOT be cleared here.
-      trigger('sessionStarting', { message: 'Stopping current session...' });
+      trigger('sessionStarting', { message: 'Stopping session...' });
       expect(selectorPropsRef.current?.isStopPending).toBe(true);
 
       // The preview lands; isStopPending clears so the button can settle on
@@ -580,7 +580,7 @@ describe('App session lifecycle', () => {
       await waitFor(() => expect(selectorPropsRef.current?.isPreviewingSession).toBe(true));
 
       // Backend flips into stopping mode.
-      trigger('sessionStarting', { message: 'Stopping current session...' });
+      trigger('sessionStarting', { message: 'Stopping session...' });
 
       // Empty setConversation arrives while sessionStarting is still true.
       trigger('setConversation', { messages: [], previewSessionInfo: null });

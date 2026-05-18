@@ -102,6 +102,7 @@ describe('SessionManager', () => {
       sessionStartOperationId: 1, // Match the return value of beginSessionStart
       setSessionActive: jest.fn().mockResolvedValue(undefined),
       setSessionStarting: jest.fn().mockResolvedValue(undefined),
+      setSessionStopping: jest.fn().mockResolvedValue(undefined),
       setResetAgentViewAvailable: jest.fn().mockResolvedValue(undefined),
       setSessionErrorState: jest.fn().mockResolvedValue(undefined),
       setConversationDataAvailable: jest.fn().mockResolvedValue(undefined),
