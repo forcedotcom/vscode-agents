@@ -1,3 +1,9 @@
+# [1.17.0](https://github.com/salesforcecli/vsode-agents/compare/v1.16.2...v1.17.0) (2026-05-18)
+
+### Features
+
+- add History tab to resume prior agent sessions from disk @W-22434464@ ([#205](https://github.com/salesforcecli/vsode-agents/issues/205)) ([30b4da1](https://github.com/salesforcecli/vsode-agents/commit/30b4da151ff1eec9b8810c12b13f251cdddf6e82))
+
 ## [1.16.2](https://github.com/salesforcecli/vsode-agents/compare/v1.16.1...v1.16.2) (2026-05-16)
 
 ### Bug Fixes
