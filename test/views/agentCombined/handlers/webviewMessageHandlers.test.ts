@@ -113,12 +113,18 @@ describe('WebviewMessageHandlers', () => {
       setResetAgentViewAvailable: jest.fn().mockResolvedValue(undefined),
       setSessionErrorState: jest.fn().mockResolvedValue(undefined),
       setConversationDataAvailable: jest.fn().mockResolvedValue(undefined),
+      setAuthError: jest.fn().mockResolvedValue(undefined),
+      setHasAgents: jest.fn().mockResolvedValue(undefined),
+      agentVersionsCache: new Map(),
+      pendingSelectAgentId: undefined,
       cancelPendingSessionStart: jest.fn(),
       clearSessionState: jest.fn()
     };
 
     mockMessageSender = {
       sendError: jest.fn().mockResolvedValue(undefined),
+      sendAuthError: jest.fn(),
+      sendAvailableAgents: jest.fn(),
       sendClearMessages: jest.fn(),
       sendSessionList: jest.fn(),
       sendSessionStarting: jest.fn(),
@@ -534,6 +540,85 @@ describe('WebviewMessageHandlers', () => {
 
       expect(mockHistoryManager.loadAndSendTraceHistory).toHaveBeenCalled();
       expect(mockHistoryManager.loadAndSendTracesForSession).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleGetAvailableAgents - connection errors', () => {
+    const originalError = console.error;
+    beforeAll(() => {
+      console.error = jest.fn();
+    });
+    afterAll(() => {
+      console.error = originalError;
+    });
+
+    it('sends authError when RefreshTokenAuthError occurs', async () => {
+      const error = new Error('Error authenticating with the refresh token due to: authentication failure');
+      error.name = 'RefreshTokenAuthError';
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockRejectedValueOnce(error);
+
+      await handlers.handleMessage({ command: 'getAvailableAgents' } as any);
+
+      expect(mockMessageSender.sendAuthError).toHaveBeenCalledWith(
+        'Unable to connect to org',
+        'Set a new default org or re-authenticate to continue.'
+      );
+      expect(mockState.setAuthError).toHaveBeenCalledWith(true);
+      expect(mockMessageSender.sendAvailableAgents).not.toHaveBeenCalled();
+    });
+
+    it('sends authError when INVALID_CROSS_REFERENCE_KEY occurs', async () => {
+      const error = new Error('invalid cross reference id');
+      error.name = 'INVALID_CROSS_REFERENCE_KEY';
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockRejectedValueOnce(error);
+
+      await handlers.handleMessage({ command: 'getAvailableAgents' } as any);
+
+      expect(mockMessageSender.sendAuthError).toHaveBeenCalledWith(
+        'Unable to connect to org',
+        'Set a new default org or re-authenticate to continue.'
+      );
+      expect(mockState.setAuthError).toHaveBeenCalledWith(true);
+    });
+
+    it('sends authError when INVALID_SESSION_ID occurs', async () => {
+      const error = new Error('INVALID_SESSION_ID: Session expired or invalid');
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockRejectedValueOnce(error);
+
+      await handlers.handleMessage({ command: 'getAvailableAgents' } as any);
+
+      expect(mockMessageSender.sendAuthError).toHaveBeenCalled();
+      expect(mockState.setAuthError).toHaveBeenCalledWith(true);
+    });
+
+    it('sends authError when no default org is configured', async () => {
+      const error = new Error('No default org configured. Set a default org with: sf config set target-org=<username>');
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockRejectedValueOnce(error);
+
+      await handlers.handleMessage({ command: 'getAvailableAgents' } as any);
+
+      expect(mockMessageSender.sendAuthError).toHaveBeenCalled();
+      expect(mockState.setAuthError).toHaveBeenCalledWith(true);
+    });
+
+    it('sends empty agent list for non-connection errors', async () => {
+      const error = new Error('Some unexpected error');
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockRejectedValueOnce(error);
+
+      await handlers.handleMessage({ command: 'getAvailableAgents' } as any);
+
+      expect(mockMessageSender.sendAvailableAgents).toHaveBeenCalledWith([], undefined);
+      expect(mockMessageSender.sendAuthError).not.toHaveBeenCalled();
+      expect(mockState.setAuthError).not.toHaveBeenCalled();
+    });
+
+    it('sets hasAgents to false on any error', async () => {
+      const error = new Error('authentication failure');
+      (CoreExtensionService.getDefaultConnection as jest.Mock).mockRejectedValueOnce(error);
+
+      await handlers.handleMessage({ command: 'getAvailableAgents' } as any);
+
+      expect(mockState.setHasAgents).toHaveBeenCalledWith(false);
     });
   });
 });
