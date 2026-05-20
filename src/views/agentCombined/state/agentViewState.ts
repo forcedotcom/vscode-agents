@@ -255,6 +255,10 @@ export class AgentViewState {
     await vscode.commands.executeCommand('setContext', 'agentforceDX:hasAgents', hasAgents);
   }
 
+  async setAuthError(hasError: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'agentforceDX:authError', hasError);
+  }
+
   getExportDirectory(): string | undefined {
     return this.context.workspaceState.get<string>(AgentViewState.EXPORT_DIR_KEY);
   }

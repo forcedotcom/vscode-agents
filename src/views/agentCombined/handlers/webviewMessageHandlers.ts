@@ -312,6 +312,7 @@ export class WebviewMessageHandlers {
       this.messageSender.sendAvailableAgents(agentsWithVersions, selectAgentId);
 
       // Update context for command visibility
+      await this.state.setAuthError(false);
       await this.state.setHasAgents(mappedAgents.length > 0);
 
       // Clear the pending/current agent IDs after use
@@ -322,7 +323,29 @@ export class WebviewMessageHandlers {
     } catch (err) {
       console.error('Error getting available agents from org:', err);
       this.state.pendingSelectAgentId = undefined;
-      this.messageSender.sendAvailableAgents([], undefined);
+
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorName = err instanceof Error ? err.name : '';
+      const fullError = `${errorName}: ${errorMessage}`;
+      const isConnectionError =
+        errorName === 'RefreshTokenAuthError' ||
+        fullError.includes('RefreshTokenAuthError') ||
+        fullError.includes('authentication failure') ||
+        fullError.includes('expired') ||
+        fullError.includes('INVALID_CROSS_REFERENCE_KEY') ||
+        fullError.includes('invalid cross reference id') ||
+        fullError.includes('INVALID_SESSION_ID') ||
+        fullError.includes('No default org configured');
+
+      if (isConnectionError) {
+        this.messageSender.sendAuthError(
+          'Unable to connect to org',
+          'Set a new default org or re-authenticate to continue.'
+        );
+        await this.state.setAuthError(true);
+      } else {
+        this.messageSender.sendAvailableAgents([], undefined);
+      }
       await this.state.setHasAgents(false);
     }
   }
