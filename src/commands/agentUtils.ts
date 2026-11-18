@@ -49,6 +49,73 @@ export async function getConnectionAndProject() {
 }
 
 /**
+ * Redirect path for the new Agentforce Builder (Agent Script agents).
+ * The new builder follows the AiAuthoringBundle version, not the active BotVersion,
+ * so we open by project name only and never pass a version.
+ */
+export function getAuthoringBuilderRedirectUri(agentName: string): string {
+  return `AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=${encodeURIComponent(agentName)}`;
+}
+
+/** Redirect path for the legacy Agentforce Builder (copilotStudio). */
+export function getLegacyBuilderRedirectUri(botId: string): string {
+  return `AiCopilot/copilotStudio.app#/copilot/builder?copilotId=${botId}`;
+}
+
+/**
+ * Returns true if `bundleName` is an AiAuthoringBundle for `agentName`. The Metadata API names each
+ * bundle version `<DeveloperName>_<VersionNumber>` (e.g. `My_Agent_3`), and that suffix is kept on
+ * retrieve since API v68, so match both the bare name and its versioned form.
+ */
+export function isAuthoringBundleFor(bundleName: string, agentName: string): boolean {
+  if (bundleName === agentName) {
+    return true;
+  }
+  const suffix = bundleName.startsWith(`${agentName}_`) ? bundleName.slice(agentName.length + 1) : '';
+  return /^\d+$/.test(suffix);
+}
+
+/**
+ * Returns true if an aiAuthoringBundles/<agentName>[_<N>]/ folder with an .agent file exists in the workspace.
+ */
+export async function hasLocalAuthoringBundle(agentName: string): Promise<boolean> {
+  try {
+    const files = await vscode.workspace.findFiles(`**/aiAuthoringBundles/${agentName}*/*.agent`, '**/node_modules/**');
+    return (files ?? []).some(file => isAuthoringBundleFor(path.basename(path.dirname(file.fsPath)), agentName));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Returns true if the org has an AiAuthoringBundle (Agent Script agent) for this name, in any version.
+ * Uses the Metadata API listing because the AiAuthoringBundleDef sObject isn't exposed to
+ * customer orgs via SOQL. Failure-tolerant: any error is treated as "not an Agent Script agent"
+ * so callers can fall back to the legacy builder.
+ */
+export async function hasOrgAuthoringBundle(
+  conn: ReturnType<Org['getConnection']>,
+  agentName: string
+): Promise<boolean> {
+  try {
+    const props = await conn.metadata.list([{ type: 'AiAuthoringBundle' }]);
+    // jsforce can return a single object instead of an array when there's one result
+    const list = Array.isArray(props) ? props : props ? [props] : [];
+    return list.some(p => isAuthoringBundleFor(p.fullName, agentName));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Detects whether the agent is an Agent Script agent: a local aiAuthoringBundles/<name>[_<N>] folder
+ * first, then an AiAuthoringBundle in the org.
+ */
+export async function isAgentScriptAgent(conn: ReturnType<Org['getConnection']>, agentName: string): Promise<boolean> {
+  return (await hasLocalAuthoringBundle(agentName)) || (await hasOrgAuthoringBundle(conn, agentName));
+}
+
+/**
  * Prompts user to select an agent from the current DX project.
  * Returns undefined if no agent is selected or no agents are available.
  */
