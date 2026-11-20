@@ -280,14 +280,14 @@ describe('registerOpenAgentInOrgCommand', () => {
       );
     });
 
-    it('detects the org bundle without needing local files', async () => {
-      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue(undefined);
+    it('detects the org bundle without searching local files', async () => {
       mockConnection.metadata.list.mockResolvedValue([{ fullName: 'Agent1', type: 'AiAuthoringBundle' }]);
 
       registerOpenAgentInOrgCommand();
       await commandSpy.mock.calls[0][1]();
 
       expect(mockConnection.metadata.list).toHaveBeenCalled();
+      expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
       expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(authoringUrl);
     });
 
@@ -425,12 +425,12 @@ describe('registerOpenAgentInOrgCommand', () => {
       registerOpenAgentInOrgCommand();
       await commandSpy.mock.calls[0][1]();
 
-      expect(warnSpy).toHaveBeenCalledWith('Failed to list AiAuthoringBundle metadata in the org:', expect.any(Error));
+      expect(warnSpy).toHaveBeenCalledWith('Failed to list AiAuthoringBundle metadata in the org:', 'boom');
     });
 
     it('treats a hung org listing as unknown after the timeout and falls back to the local bundle', async () => {
       jest.useFakeTimers();
-      jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       mockConnection.metadata.list.mockReturnValue(new Promise(() => undefined));
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         { fsPath: '/ws/aiAuthoringBundles/Agent1/Agent1.agent' }
@@ -438,12 +438,16 @@ describe('registerOpenAgentInOrgCommand', () => {
       try {
         registerOpenAgentInOrgCommand();
         const run = commandSpy.mock.calls[0][1]();
-        await jest.advanceTimersByTimeAsync(10_000);
+        await jest.advanceTimersByTimeAsync(agentUtils.LIST_TIMEOUT_MS);
         await run;
       } finally {
         jest.useRealTimers();
       }
 
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Failed to list AiAuthoringBundle metadata in the org:',
+        'Timed out listing AiAuthoringBundle metadata'
+      );
       expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(authoringUrl);
     });
 
@@ -455,7 +459,7 @@ describe('registerOpenAgentInOrgCommand', () => {
       registerOpenAgentInOrgCommand();
       await commandSpy.mock.calls[0][1]();
 
-      expect(warnSpy).toHaveBeenCalledWith('Failed to search for local authoring bundles:', expect.any(Error));
+      expect(warnSpy).toHaveBeenCalledWith('Failed to search for local authoring bundles:', 'no workspace');
     });
 
     it('routes a legacy bot named like a bundle version (Sales_2) to the legacy builder', async () => {
@@ -487,6 +491,21 @@ describe('registerOpenAgentInOrgCommand', () => {
 
       expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(
         'AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=Sales_2'
+      );
+    });
+
+    it('routes a legacy bot Sales_2 to the legacy builder when only a local Sales_2 folder exists (fallback path)', async () => {
+      quickPickSpy.mockResolvedValue('Sales_2' as any);
+      mockConnection.metadata.list.mockRejectedValue(new Error('listing unavailable'));
+      (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
+        { fsPath: '/ws/aiAuthoringBundles/Sales_2/Sales_2.agent' }
+      ]);
+
+      registerOpenAgentInOrgCommand();
+      await commandSpy.mock.calls[0][1]();
+
+      expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(
+        'AiCopilot/copilotStudio.app#/copilot/builder?copilotId=0XxD60000004Cj2KAE'
       );
     });
 

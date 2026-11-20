@@ -20,7 +20,7 @@ import { ConfigAggregator, Org, SfError, SfProject } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 
 const UNSUPPORTED_AGENTS = ['Copilot_for_Salesforce'];
-const LIST_TIMEOUT_MS = 10_000;
+export const LIST_TIMEOUT_MS = 10_000;
 
 export interface PublishedAgentInfo {
   name: string;
@@ -85,6 +85,21 @@ function hasBundleFor(bundleNames: string[], agentName: string): boolean {
   return /_\d+$/.test(agentName) ? matches.some(name => name !== agentName) : matches.length > 0;
 }
 
+const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+/** Rejects if `promise` hasn't settled within `ms`. The underlying call is abandoned, not aborted (jsforce can't cancel it). */
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Returns true if an aiAuthoringBundles/<agentName>[_<N>]/ folder with an .agent file exists in the workspace.
  */
@@ -100,7 +115,7 @@ export async function hasLocalAuthoringBundle(agentName: string): Promise<boolea
       agentName
     );
   } catch (error) {
-    console.warn('Failed to search for local authoring bundles:', error);
+    console.warn('Failed to search for local authoring bundles:', errorMessage(error));
     return false;
   }
 }
@@ -115,12 +130,12 @@ export async function hasOrgAuthoringBundle(
   conn: ReturnType<Org['getConnection']>,
   agentName: string
 ): Promise<boolean | undefined> {
-  let timer: NodeJS.Timeout | undefined;
   try {
-    const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error('Timed out listing AiAuthoringBundle metadata')), LIST_TIMEOUT_MS);
-    });
-    const props = await Promise.race([conn.metadata.list([{ type: 'AiAuthoringBundle' }]), timeout]);
+    const props = await withTimeout(
+      conn.metadata.list([{ type: 'AiAuthoringBundle' }]),
+      LIST_TIMEOUT_MS,
+      'Timed out listing AiAuthoringBundle metadata'
+    );
     // jsforce can return a single object instead of an array when there's one result
     const list = Array.isArray(props) ? props : props ? [props] : [];
     return hasBundleFor(
@@ -128,10 +143,8 @@ export async function hasOrgAuthoringBundle(
       agentName
     );
   } catch (error) {
-    console.warn('Failed to list AiAuthoringBundle metadata in the org:', error);
+    console.warn('Failed to list AiAuthoringBundle metadata in the org:', errorMessage(error));
     return undefined;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
