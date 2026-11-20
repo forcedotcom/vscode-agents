@@ -17,7 +17,13 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAgentNameFromPath, selectAgentFromProject, getConnectionAndProject, handleCommandError } from './agentUtils';
+import {
+  getAgentNameFromPath,
+  selectAgentFromProject,
+  getConnectionAndProject,
+  handleCommandError,
+  getAuthoringBuilderRedirectUri
+} from './agentUtils';
 import { Logger } from '../utils/logger';
 
 export const registerOpenAuthoringBundleInOrgCommand = () => {
@@ -62,7 +68,7 @@ export const registerOpenAuthoringBundleInOrgCommand = () => {
 
           // For aiAuthoringBundles (.agent files), use the agent authoring builder URL
           // URL format: AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=AgentName
-          const redirectUri = `AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=${encodeURIComponent(agentName)}`;
+          const redirectUri = getAuthoringBuilderRedirectUri(agentName);
 
           // Generate frontdoor URL with authentication
           const frontdoorUrl = await org.getFrontDoorUrl(redirectUri);
