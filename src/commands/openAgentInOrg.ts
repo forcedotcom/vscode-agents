@@ -6,7 +6,7 @@ import {
   selectAgentFromProject,
   getConnectionAndProject,
   handleCommandError,
-  isAgentScriptAgent,
+  detectAgentScript,
   getAuthoringBuilderRedirectUri,
   getLegacyBuilderRedirectUri
 } from './agentUtils';
@@ -53,10 +53,14 @@ export const registerOpenAgentInOrgCommand = () => {
           const { conn, org } = await getConnectionAndProject();
 
           // Agent Script agents open in the new Agentforce Builder (by project name, no version).
-          // Detection order: local aiAuthoringBundles/<name> folder, then an AiAuthoringBundle in the org.
-          // Anything else falls back to the legacy builder.
+          // Detection: an AiAuthoringBundle in the org (a local aiAuthoringBundles/<name> folder is only
+          // consulted when the org can't be asked). Anything else falls back to the legacy builder.
           let redirectUri: string;
-          if (await isAgentScriptAgent(conn, agentName)) {
+          const detectedBy = await detectAgentScript(conn, agentName);
+          logger.debug(
+            `Opening "${agentName}" in the ${detectedBy ? 'new' : 'legacy'} builder (detectedBy: ${detectedBy ?? 'none'})`
+          );
+          if (detectedBy) {
             redirectUri = getAuthoringBuilderRedirectUri(agentName);
           } else {
             // Query BotDefinition to get the Bot ID (same as CLI does)

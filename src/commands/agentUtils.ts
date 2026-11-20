@@ -20,6 +20,7 @@ import { ConfigAggregator, Org, SfError, SfProject } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 
 const UNSUPPORTED_AGENTS = ['Copilot_for_Salesforce'];
+const LIST_TIMEOUT_MS = 10_000;
 
 export interface PublishedAgentInfo {
   name: string;
@@ -76,43 +77,79 @@ export function isAuthoringBundleFor(bundleName: string, agentName: string): boo
 }
 
 /**
+ * True if any of `bundleNames` is a bundle for `agentName`. A name that itself ends in `_<digits>` (e.g. a legacy
+ * bot `Sales_2`) is ambiguous with version 2 of `Sales`, so for those only a versioned match (`Sales_2_1`) counts.
+ */
+function hasBundleFor(bundleNames: string[], agentName: string): boolean {
+  const matches = bundleNames.filter(name => isAuthoringBundleFor(name, agentName));
+  return /_\d+$/.test(agentName) ? matches.some(name => name !== agentName) : matches.length > 0;
+}
+
+/**
  * Returns true if an aiAuthoringBundles/<agentName>[_<N>]/ folder with an .agent file exists in the workspace.
  */
 export async function hasLocalAuthoringBundle(agentName: string): Promise<boolean> {
+  // Agent developer names are word characters only; anything else would turn into glob metacharacters.
+  if (!/^\w+$/.test(agentName)) {
+    return false;
+  }
   try {
     const files = await vscode.workspace.findFiles(`**/aiAuthoringBundles/${agentName}*/*.agent`, '**/node_modules/**');
-    return (files ?? []).some(file => isAuthoringBundleFor(path.basename(path.dirname(file.fsPath)), agentName));
-  } catch {
+    return hasBundleFor(
+      (files ?? []).map(file => path.basename(path.dirname(file.fsPath))),
+      agentName
+    );
+  } catch (error) {
+    console.warn('Failed to search for local authoring bundles:', error);
     return false;
   }
 }
 
 /**
- * Returns true if the org has an AiAuthoringBundle (Agent Script agent) for this name, in any version.
+ * Returns whether the org has an AiAuthoringBundle (Agent Script agent) for this name, in any version, or
+ * undefined if the org couldn't be asked (error or timeout).
  * Uses the Metadata API listing because the AiAuthoringBundleDef sObject isn't exposed to
- * customer orgs via SOQL. Failure-tolerant: any error is treated as "not an Agent Script agent"
- * so callers can fall back to the legacy builder.
+ * customer orgs via SOQL.
  */
 export async function hasOrgAuthoringBundle(
   conn: ReturnType<Org['getConnection']>,
   agentName: string
-): Promise<boolean> {
+): Promise<boolean | undefined> {
+  let timer: NodeJS.Timeout | undefined;
   try {
-    const props = await conn.metadata.list([{ type: 'AiAuthoringBundle' }]);
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Timed out listing AiAuthoringBundle metadata')), LIST_TIMEOUT_MS);
+    });
+    const props = await Promise.race([conn.metadata.list([{ type: 'AiAuthoringBundle' }]), timeout]);
     // jsforce can return a single object instead of an array when there's one result
     const list = Array.isArray(props) ? props : props ? [props] : [];
-    return list.some(p => isAuthoringBundleFor(p.fullName, agentName));
-  } catch {
-    return false;
+    return hasBundleFor(
+      list.map(p => p.fullName),
+      agentName
+    );
+  } catch (error) {
+    console.warn('Failed to list AiAuthoringBundle metadata in the org:', error);
+    return undefined;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 /**
- * Detects whether the agent is an Agent Script agent: a local aiAuthoringBundles/<name>[_<N>] folder
- * first, then an AiAuthoringBundle in the org.
+ * Detects whether the agent is an Agent Script agent, and how. The org's AiAuthoringBundle listing is the
+ * authority when it succeeds, so a local bundle that isn't deployed to the default org still takes the legacy
+ * path (and its "not found in org" error). Only when the org can't be asked do we trust a local
+ * aiAuthoringBundles/<name>[_<N>] folder.
  */
-export async function isAgentScriptAgent(conn: ReturnType<Org['getConnection']>, agentName: string): Promise<boolean> {
-  return (await hasLocalAuthoringBundle(agentName)) || (await hasOrgAuthoringBundle(conn, agentName));
+export async function detectAgentScript(
+  conn: ReturnType<Org['getConnection']>,
+  agentName: string
+): Promise<'org' | 'local' | undefined> {
+  const inOrg = await hasOrgAuthoringBundle(conn, agentName);
+  if (inOrg !== undefined) {
+    return inOrg ? 'org' : undefined;
+  }
+  return (await hasLocalAuthoringBundle(agentName)) ? 'local' : undefined;
 }
 
 /**
