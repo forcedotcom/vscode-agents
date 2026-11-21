@@ -106,6 +106,44 @@ describe('registerOpenAuthoringBundleInOrgCommand', () => {
     expect(openExternalSpy).toHaveBeenCalled();
   });
 
+  it('opens the bundle version named by a versioned aiAuthoringBundles folder', async () => {
+    jest.spyOn(agentUtils, 'getAgentNameFromPath').mockResolvedValue('Agent_Frank_3');
+
+    const mockUri = { fsPath: '/path/to/aiAuthoringBundles/Agent_Frank_3/Agent_Frank_3.agent' } as vscode.Uri;
+
+    registerOpenAuthoringBundleInOrgCommand();
+    await commandSpy.mock.calls[0][1](mockUri);
+
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(
+      'AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=Agent_Frank&projectVersionNumber=3'
+    );
+    expect(quickPickSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not treat a picked bot name ending in digits as a version', async () => {
+    quickPickSpy.mockResolvedValue('Sales_2' as any);
+
+    registerOpenAuthoringBundleInOrgCommand();
+    await commandSpy.mock.calls[0][1]();
+
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(
+      'AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=Sales_2'
+    );
+  });
+
+  it('falls back to the picker without a version when the path cannot be resolved', async () => {
+    jest.spyOn(agentUtils, 'getAgentNameFromPath').mockRejectedValue(new Error('Invalid path'));
+    jest.spyOn(console, 'warn').mockImplementation();
+
+    registerOpenAuthoringBundleInOrgCommand();
+    await commandSpy.mock.calls[0][1]({ fsPath: '/path/to/aiAuthoringBundles/Agent_Frank_3' } as vscode.Uri);
+
+    expect(quickPickSpy).toHaveBeenCalled();
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(
+      'AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=Agent1'
+    );
+  });
+
   it('shows error when no agents found in project', async () => {
     jest.spyOn(Agent, 'list').mockResolvedValue([]);
 

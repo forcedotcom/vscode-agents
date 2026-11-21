@@ -177,6 +177,38 @@ function getAgentNameFromAuthoringBundlePath(targetPath: string): string | null 
   return getAgentNameFromBundlePath(targetPath, 'aiAuthoringBundles');
 }
 
+// Largest value Java's Integer.parseInt accepts; the platform parses the version suffix with it.
+const MAX_BUNDLE_VERSION_NUMBER = 2_147_483_647;
+
+export interface AuthoringBundleProject {
+  projectName: string;
+  projectVersionNumber?: number;
+}
+
+/**
+ * Splits an AiAuthoringBundle name (its metadata fullName, which is also the local folder name) into the
+ * bundle's DeveloperName and version number, the way the platform does: a trailing `_<digits>` is the
+ * version (`Agent_Frank_3` is version 3 of `Agent_Frank`). A name without that suffix (`Agent_Frank`, or a
+ * retrieve from before API 64.0, where the newest version has no suffix) has no version, and the Builder
+ * opens the latest one.
+ */
+export function parseAuthoringBundleName(bundleName: string): AuthoringBundleProject {
+  const match = /^(.+)_(\d+)$/.exec(bundleName);
+  if (match) {
+    const versionNumber = Number(match[2]);
+    if (versionNumber <= MAX_BUNDLE_VERSION_NUMBER) {
+      return { projectName: match[1], projectVersionNumber: versionNumber };
+    }
+  }
+  return { projectName: bundleName };
+}
+
+/** Redirect path that opens an authoring bundle (optionally a specific version) in the Agentforce Builder. */
+export function getAuthoringBundleRedirectUri({ projectName, projectVersionNumber }: AuthoringBundleProject): string {
+  const version = projectVersionNumber === undefined ? '' : `&projectVersionNumber=${projectVersionNumber}`;
+  return `AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=${encodeURIComponent(projectName)}${version}`;
+}
+
 /**
  * Helper to find .bot-meta.xml file in a directory and extract agent name.
  * Returns null if not found.
