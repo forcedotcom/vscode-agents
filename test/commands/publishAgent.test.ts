@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import { Commands } from '../../src/enums/commands';
 import { Agent, type CompilationError } from '@salesforce/agents';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
-import { SfProject, Lifecycle } from '@salesforce/core';
+import { SfProject, Lifecycle, SfError } from '@salesforce/core';
 import { registerPublishAgentCommand } from '../../src/commands';
+import { formatPublishedAgentFailure, getErrorActions, getPublishedAgent, toSentence } from '../../src/commands/publishAgent';
 
 describe('publishAgent', () => {
   let commandSpy: jest.SpyInstance;
@@ -381,6 +382,145 @@ describe('publishAgent', () => {
       expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
         expect.stringMatching(/\[debug\].*Metadata retrieved successfully/)
       );
+    });
+
+    describe('post-commit failures (SfError.actions and data.publishedAgent)', () => {
+      const recoveryAction =
+        "The agent was already published to the org as version 3 (BotVersion 0X9xx0000000003). Don't run the publish command again.";
+      const publishedAgent = {
+        developerName: 'TestAgent',
+        botId: '0Xxxx0000000001',
+        botVersionId: '0X9xx0000000003',
+        versionNumber: 3,
+        target: 'TestAgent.v3',
+        failedStep: 'bundleDeploy'
+      };
+
+      const makePostCommitError = (): SfError => {
+        const err = new SfError('Deploy failed: AiAuthoringBundle is invalid', 'AgentPublishError', [
+          recoveryAction,
+          'Check the bundle-meta.xml.'
+        ]);
+        err.setData({ publishedAgent });
+        return err;
+      };
+
+      beforeEach(() => {
+        mockAgentInstance.compile.mockResolvedValue({ status: 'success', errors: [] });
+      });
+
+      it('says the agent was published, warns against republishing, and logs the actions', async () => {
+        mockAgentInstance.publish.mockRejectedValue(makePostCommitError());
+
+        registerPublishAgentCommand();
+        await commandSpy.mock.calls[0][1](vscode.Uri.file('/test/TestAgent.agent'));
+
+        expect(errorMessageSpy).toHaveBeenCalledTimes(1);
+        const [message, ...buttons] = errorMessageSpy.mock.calls[0];
+        expect(message).toBe(
+          'Agent "TestAgent" was published to the org as version 3 (BotVersion 0X9xx0000000003), but the authoring ' +
+            "bundle deploy step failed: Deploy failed: AiAuthoringBundle is invalid. Don't publish again, because that " +
+            'creates a duplicate version. See the Output panel for next steps.'
+        );
+        expect(message).not.toMatch(/^Failed to publish agent/);
+        // No retry/republish button is offered.
+        expect(buttons).toHaveLength(0);
+
+        expect(fakeChannelService.appendLine).toHaveBeenCalledWith(expect.stringMatching(/\[error\].*Next steps:/));
+        expect(fakeChannelService.appendLine).toHaveBeenCalledWith(`\t1. ${recoveryAction}`);
+        expect(fakeChannelService.appendLine).toHaveBeenCalledWith('\t2. Check the bundle-meta.xml.');
+        expect(fakeChannelService.showChannelOutput).toHaveBeenCalled();
+        expect(progressReportSpy).toHaveBeenCalledWith({ message: 'Published, but a later step failed' });
+        expect(progressReportSpy).not.toHaveBeenCalledWith({ message: 'Publish failed' });
+        expect(infoMessageSpy).not.toHaveBeenCalled();
+        expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith(
+          'agent_publish_post_commit_failed',
+          'Deploy failed: AiAuthoringBundle is invalid'
+        );
+      });
+
+      it('points to the Output panel when a plain failure carries actions', async () => {
+        mockAgentInstance.publish.mockRejectedValue(
+          new SfError('Unauthorized', 'AuthError', ['Re-authorize the org with "sf org login web".'])
+        );
+
+        registerPublishAgentCommand();
+        await commandSpy.mock.calls[0][1](vscode.Uri.file('/test/TestAgent.agent'));
+
+        expect(errorMessageSpy).toHaveBeenCalledWith(
+          'Failed to publish agent: Unauthorized. See the Output panel for next steps.'
+        );
+        expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
+          '\t1. Re-authorize the org with "sf org login web".'
+        );
+        expect(fakeChannelService.showChannelOutput).not.toHaveBeenCalled();
+        expect(fakeTelemetryInstance.sendException).toHaveBeenCalledWith('agent_publish_failed', 'Unauthorized');
+      });
+
+      it('does not log a Next steps block when the error has no actions', async () => {
+        mockAgentInstance.publish.mockRejectedValue(new Error('boom'));
+
+        registerPublishAgentCommand();
+        await commandSpy.mock.calls[0][1](vscode.Uri.file('/test/TestAgent.agent'));
+
+        expect(fakeChannelService.appendLine).not.toHaveBeenCalledWith(expect.stringMatching(/Next steps:/));
+        expect(errorMessageSpy).toHaveBeenCalledWith('Failed to publish agent: boom');
+      });
+    });
+  });
+
+  describe('publish error helpers', () => {
+    it('getPublishedAgent reads data.publishedAgent from the wrapped or original error', () => {
+      const err = new SfError('x');
+      err.setData({ publishedAgent: { developerName: 'A', botId: 'b', botVersionId: 'v' } });
+      expect(getPublishedAgent(err, err)?.botVersionId).toBe('v');
+
+      // Original is a plain error-like object, wrapped error lost the data.
+      const original = {
+        message: 'x',
+        data: { publishedAgent: { developerName: 'A', botId: 'b', botVersionId: 'w' } }
+      };
+      expect(getPublishedAgent(original, new SfError('x'))?.botVersionId).toBe('w');
+    });
+
+    it('getPublishedAgent ignores missing or malformed data', () => {
+      const noData = new SfError('x');
+      expect(getPublishedAgent(noData, noData)).toBeUndefined();
+      const otherData = new SfError('x');
+      otherData.setData({ publishedAgent: { developerName: 'A' } });
+      expect(getPublishedAgent(otherData, otherData)).toBeUndefined();
+      const arrayData = new SfError('x');
+      arrayData.setData(['publishedAgent']);
+      expect(getPublishedAgent(arrayData, arrayData)).toBeUndefined();
+    });
+
+    it('getErrorActions returns string actions and falls back to the original error', () => {
+      const withActions = new SfError('x', 'E', ['do this', '  ']);
+      expect(getErrorActions(withActions, withActions)).toEqual(['do this']);
+      expect(getErrorActions({ actions: ['from original'] }, new SfError('x'))).toEqual(['from original']);
+      expect(getErrorActions(new Error('x'), new SfError('x'))).toEqual([]);
+    });
+
+    it('toSentence adds a period only when the text lacks sentence punctuation', () => {
+      expect(toSentence('Unauthorized')).toBe('Unauthorized.');
+      expect(toSentence('Deploy failed.  ')).toBe('Deploy failed.');
+      expect(toSentence('Really?')).toBe('Really?');
+    });
+
+    it('formatPublishedAgentFailure handles a failed version lookup (no version number or step label)', () => {
+      expect(
+        formatPublishedAgentFailure('A', { developerName: 'A', botId: 'b', botVersionId: '0X9' }, 'Lookup failed.')
+      ).toBe(
+        'Agent "A" was published to the org as BotVersion 0X9, but a later step failed: Lookup failed. ' +
+          "Don't publish again, because that creates a duplicate version. See the Output panel for next steps."
+      );
+      expect(
+        formatPublishedAgentFailure(
+          'A',
+          { developerName: 'A', botId: 'b', botVersionId: '0X9', failedStep: 'botVersionLookup' },
+          'Lookup failed.'
+        )
+      ).toContain('but the version lookup step failed');
     });
   });
 });
