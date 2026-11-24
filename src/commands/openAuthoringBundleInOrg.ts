@@ -22,7 +22,9 @@ import {
   selectAgentFromProject,
   getConnectionAndProject,
   handleCommandError,
-  getAuthoringBuilderRedirectUri
+  parseAuthoringBundleName,
+  getAuthoringBundleRedirectUri,
+  AuthoringBundleProject
 } from './agentUtils';
 import { Logger } from '../utils/logger';
 
@@ -35,11 +37,15 @@ export const registerOpenAuthoringBundleInOrgCommand = () => {
     telemetryService?.sendCommandEvent(commandName, hrstart, { commandName });
 
     let agentName: string | undefined;
+    let project: AuthoringBundleProject | undefined;
 
     // If called from context menu with a file/directory, use that to determine the agent
     if (uri?.fsPath) {
       try {
         agentName = await getAgentNameFromPath(uri.fsPath);
+        // The name comes from the aiAuthoringBundles/<name> folder, which carries the bundle version
+        // (e.g. Agent_Frank_3), so open that version rather than a project named "Agent_Frank_3".
+        project = agentName ? parseAuthoringBundleName(agentName) : undefined;
       } catch (error) {
         console.warn('Failed to get agent name from path, falling back to picker:', error);
       }
@@ -52,6 +58,9 @@ export const registerOpenAuthoringBundleInOrgCommand = () => {
         return;
       }
     }
+
+    // A name picked from the project list is a bot DeveloperName (no version), so it opens the latest version.
+    const target = project ?? { projectName: agentName };
 
     await vscode.window.withProgress(
       {
@@ -67,8 +76,8 @@ export const registerOpenAuthoringBundleInOrgCommand = () => {
           const { org } = await getConnectionAndProject();
 
           // For aiAuthoringBundles (.agent files), use the agent authoring builder URL
-          // URL format: AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=AgentName
-          const redirectUri = getAuthoringBuilderRedirectUri(agentName);
+          // URL format: AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=AgentName[&projectVersionNumber=N]
+          const redirectUri = getAuthoringBundleRedirectUri(target);
 
           // Generate frontdoor URL with authentication
           const frontdoorUrl = await org.getFrontDoorUrl(redirectUri);
