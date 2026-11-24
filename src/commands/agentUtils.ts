@@ -20,6 +20,7 @@ import { ConfigAggregator, Org, SfError, SfProject } from '@salesforce/core';
 import { Agent } from '@salesforce/agents';
 
 const UNSUPPORTED_AGENTS = ['Copilot_for_Salesforce'];
+export const LIST_TIMEOUT_MS = 10_000;
 
 export interface PublishedAgentInfo {
   name: string;
@@ -46,6 +47,122 @@ export async function getConnectionAndProject() {
 
   const org = await Org.create({ aliasOrUsername: targetOrg });
   return { conn: org.getConnection(), project: SfProject.getInstance(), org };
+}
+
+/**
+ * Redirect path for the new Agentforce Builder (Agent Script agents).
+ * The new builder follows the AiAuthoringBundle version, not the active BotVersion,
+ * so we open by project name only and never pass a version.
+ */
+export function getAuthoringBuilderRedirectUri(agentName: string): string {
+  return `AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=${encodeURIComponent(agentName)}`;
+}
+
+/** Redirect path for the legacy Agentforce Builder (copilotStudio). */
+export function getLegacyBuilderRedirectUri(botId: string): string {
+  return `AiCopilot/copilotStudio.app#/copilot/builder?copilotId=${botId}`;
+}
+
+/**
+ * Returns true if `bundleName` is an AiAuthoringBundle for `agentName`. The Metadata API names each
+ * bundle version `<DeveloperName>_<VersionNumber>` (e.g. `My_Agent_3`), and that suffix is kept on
+ * retrieve since API v68, so match both the bare name and its versioned form.
+ */
+export function isAuthoringBundleFor(bundleName: string, agentName: string): boolean {
+  if (bundleName === agentName) {
+    return true;
+  }
+  const suffix = bundleName.startsWith(`${agentName}_`) ? bundleName.slice(agentName.length + 1) : '';
+  return /^\d+$/.test(suffix);
+}
+
+/**
+ * True if any of `bundleNames` is a bundle for `agentName`. A name that itself ends in `_<digits>` (e.g. a legacy
+ * bot `Sales_2`) is ambiguous with version 2 of `Sales`, so for those only a versioned match (`Sales_2_1`) counts.
+ */
+function hasBundleFor(bundleNames: string[], agentName: string): boolean {
+  const matches = bundleNames.filter(name => isAuthoringBundleFor(name, agentName));
+  return /_\d+$/.test(agentName) ? matches.some(name => name !== agentName) : matches.length > 0;
+}
+
+const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+/** Rejects if `promise` hasn't settled within `ms`. The underlying call is abandoned, not aborted (jsforce can't cancel it). */
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Returns true if an aiAuthoringBundles/<agentName>[_<N>]/ folder with an .agent file exists in the workspace.
+ */
+export async function hasLocalAuthoringBundle(agentName: string): Promise<boolean> {
+  // Agent developer names are word characters only; anything else would turn into glob metacharacters.
+  if (!/^\w+$/.test(agentName)) {
+    return false;
+  }
+  try {
+    const files = await vscode.workspace.findFiles(`**/aiAuthoringBundles/${agentName}*/*.agent`, '**/node_modules/**');
+    return hasBundleFor(
+      (files ?? []).map(file => path.basename(path.dirname(file.fsPath))),
+      agentName
+    );
+  } catch (error) {
+    console.warn('Failed to search for local authoring bundles:', errorMessage(error));
+    return false;
+  }
+}
+
+/**
+ * Returns whether the org has an AiAuthoringBundle (Agent Script agent) for this name, in any version, or
+ * undefined if the org couldn't be asked (error or timeout).
+ * Uses the Metadata API listing because the AiAuthoringBundleDef sObject isn't exposed to
+ * customer orgs via SOQL.
+ */
+export async function hasOrgAuthoringBundle(
+  conn: ReturnType<Org['getConnection']>,
+  agentName: string
+): Promise<boolean | undefined> {
+  try {
+    const props = await withTimeout(
+      conn.metadata.list([{ type: 'AiAuthoringBundle' }]),
+      LIST_TIMEOUT_MS,
+      'Timed out listing AiAuthoringBundle metadata'
+    );
+    // jsforce can return a single object instead of an array when there's one result
+    const list = Array.isArray(props) ? props : props ? [props] : [];
+    return hasBundleFor(
+      list.map(p => p.fullName),
+      agentName
+    );
+  } catch (error) {
+    console.warn('Failed to list AiAuthoringBundle metadata in the org:', errorMessage(error));
+    return undefined;
+  }
+}
+
+/**
+ * Detects whether the agent is an Agent Script agent, and how. The org's AiAuthoringBundle listing is the
+ * authority when it succeeds, so a local bundle that isn't deployed to the default org still takes the legacy
+ * path (and its "not found in org" error). Only when the org can't be asked do we trust a local
+ * aiAuthoringBundles/<name>[_<N>] folder.
+ */
+export async function detectAgentScript(
+  conn: ReturnType<Org['getConnection']>,
+  agentName: string
+): Promise<'org' | 'local' | undefined> {
+  const inOrg = await hasOrgAuthoringBundle(conn, agentName);
+  if (inOrg !== undefined) {
+    return inOrg ? 'org' : undefined;
+  }
+  return (await hasLocalAuthoringBundle(agentName)) ? 'local' : undefined;
 }
 
 /**

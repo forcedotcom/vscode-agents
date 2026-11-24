@@ -1,7 +1,15 @@
 import * as vscode from 'vscode';
 import { Commands } from '../enums/commands';
 import { CoreExtensionService } from '../services/coreExtensionService';
-import { getAgentNameFromPath, selectAgentFromProject, getConnectionAndProject, handleCommandError } from './agentUtils';
+import {
+  getAgentNameFromPath,
+  selectAgentFromProject,
+  getConnectionAndProject,
+  handleCommandError,
+  detectAgentScript,
+  getAuthoringBuilderRedirectUri,
+  getLegacyBuilderRedirectUri
+} from './agentUtils';
 import { Logger } from '../utils/logger';
 
 export const registerOpenAgentInOrgCommand = () => {
@@ -44,26 +52,36 @@ export const registerOpenAgentInOrgCommand = () => {
           // Get org connection
           const { conn, org } = await getConnectionAndProject();
 
-          // Query BotDefinition to get the Bot ID (same as CLI does)
-          // Escape single quotes in agent name to prevent SQL injection
-          const escapedAgentName = agentName.replace(/'/g, "''");
-          const query = `SELECT Id FROM BotDefinition WHERE DeveloperName='${escapedAgentName}'`;
-          const result = await conn.singleRecordQuery<{ Id: string }>(query, { tooling: false });
+          // Agent Script agents open in the new Agentforce Builder (by project name, no version).
+          // Detection: an AiAuthoringBundle in the org (a local aiAuthoringBundles/<name> folder is only
+          // consulted when the org can't be asked). Anything else falls back to the legacy builder.
+          let redirectUri: string;
+          const detectedBy = await detectAgentScript(conn, agentName);
+          logger.debug(
+            `Opening "${agentName}" in the ${detectedBy ? 'new' : 'legacy'} builder (detectedBy: ${detectedBy ?? 'none'})`
+          );
+          if (detectedBy) {
+            redirectUri = getAuthoringBuilderRedirectUri(agentName);
+          } else {
+            // Query BotDefinition to get the Bot ID (same as CLI does)
+            // Escape single quotes in agent name to prevent SQL injection
+            const escapedAgentName = agentName.replace(/'/g, "''");
+            const query = `SELECT Id FROM BotDefinition WHERE DeveloperName='${escapedAgentName}'`;
+            const result = await conn.singleRecordQuery<{ Id: string }>(query, { tooling: false });
 
-          if (!result?.Id) {
-            vscode.window.showErrorMessage(`Agent "${agentName}" not found in org.`);
-            logger.error(`Agent "${agentName}" not found in org.`);
-            logger.debug(
-              'Suggestion: Ensure the agent is deployed to your org with the "project deploy start" CLI command.'
-            );
-            telemetryService?.sendException('agent_not_found', `Agent "${agentName}" not found in org`);
-            return;
+            if (!result?.Id) {
+              vscode.window.showErrorMessage(`Agent "${agentName}" not found in org.`);
+              logger.error(`Agent "${agentName}" not found in org.`);
+              logger.debug(
+                'Suggestion: Ensure the agent is deployed to your org with the "project deploy start" CLI command.'
+              );
+              telemetryService?.sendException('agent_not_found', `Agent "${agentName}" not found in org`);
+              return;
+            }
+
+            // Construct the legacy Agent Builder redirect URL (same as CLI)
+            redirectUri = getLegacyBuilderRedirectUri(result.Id);
           }
-
-          const botId = result.Id;
-
-          // Construct the Agent Builder redirect URL (same as CLI)
-          const redirectUri = `AiCopilot/copilotStudio.app#/copilot/builder?copilotId=${botId}`;
 
           // Generate frontdoor URL with authentication
           const frontdoorUrl = await org.getFrontDoorUrl(redirectUri);

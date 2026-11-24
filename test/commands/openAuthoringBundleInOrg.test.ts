@@ -39,7 +39,9 @@ describe('registerOpenAuthoringBundleInOrgCommand', () => {
     };
     mockOrg = {
       getConnection: jest.fn().mockReturnValue(mockConnection),
-      getFrontDoorUrl: jest.fn().mockResolvedValue('https://test.salesforce.com/secur/frontdoor.jsp?otp=xxx&startURL=yyy')
+      getFrontDoorUrl: jest
+        .fn()
+        .mockResolvedValue('https://test.salesforce.com/secur/frontdoor.jsp?otp=xxx&startURL=yyy')
     };
 
     jest.spyOn(CoreExtensionService, 'getTelemetryService').mockReturnValue(fakeTelemetryInstance);
@@ -79,8 +81,12 @@ describe('registerOpenAuthoringBundleInOrgCommand', () => {
     expect(projectSpy).toHaveBeenCalled();
     expect(quickPickSpy).toHaveBeenCalledWith(['Agent1', 'Agent2'], { placeHolder: 'Agent name (type to search)' });
     expect(configAggregatorSpy).toHaveBeenCalled();
-    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=Agent1');
-    expect(openExternalSpy).toHaveBeenCalledWith('https://test.salesforce.com/secur/frontdoor.jsp?otp=xxx&startURL=yyy');
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(
+      'AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=Agent1'
+    );
+    expect(openExternalSpy).toHaveBeenCalledWith(
+      'https://test.salesforce.com/secur/frontdoor.jsp?otp=xxx&startURL=yyy'
+    );
   });
 
   it('shows error message when opening agent fails', async () => {
@@ -102,8 +108,21 @@ describe('registerOpenAuthoringBundleInOrgCommand', () => {
 
     expect(agentUtils.getAgentNameFromPath).toHaveBeenCalledWith('/path/to/aiAuthoringBundles/MyAgent/MyAgent.agent');
     expect(quickPickSpy).not.toHaveBeenCalled();
-    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith('AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=MyAgent');
+    expect(mockOrg.getFrontDoorUrl).toHaveBeenCalledWith(
+      'AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=MyAgent'
+    );
     expect(openExternalSpy).toHaveBeenCalled();
+  });
+
+  it('opens by project name only, without a version parameter', async () => {
+    quickPickSpy.mockResolvedValue('My Agent/1');
+
+    registerOpenAuthoringBundleInOrgCommand();
+    await commandSpy.mock.calls[0][1]();
+
+    const redirect = mockOrg.getFrontDoorUrl.mock.calls[0][0] as string;
+    expect(redirect).toBe('AgentAuthoring/agentAuthoringBuilder.app#/project?projectName=My%20Agent%2F1');
+    expect(redirect).not.toContain('projectVersionNumber');
   });
 
   it('shows error when no agents found in project', async () => {
