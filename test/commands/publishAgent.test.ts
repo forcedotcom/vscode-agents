@@ -4,7 +4,7 @@ import { Agent, type CompilationError } from '@salesforce/agents';
 import { CoreExtensionService } from '../../src/services/coreExtensionService';
 import { SfProject, Lifecycle, SfError } from '@salesforce/core';
 import { registerPublishAgentCommand } from '../../src/commands';
-import { formatPublishedAgentFailure, getErrorActions, getPublishedAgent } from '../../src/commands/publishAgent';
+import { formatPublishedAgentFailure, getErrorActions, getPublishedAgent, toSentence } from '../../src/commands/publishAgent';
 
 describe('publishAgent', () => {
   let commandSpy: jest.SpyInstance;
@@ -448,7 +448,7 @@ describe('publishAgent', () => {
         await commandSpy.mock.calls[0][1](vscode.Uri.file('/test/TestAgent.agent'));
 
         expect(errorMessageSpy).toHaveBeenCalledWith(
-          'Failed to publish agent: Unauthorized See the Output panel for next steps.'
+          'Failed to publish agent: Unauthorized. See the Output panel for next steps.'
         );
         expect(fakeChannelService.appendLine).toHaveBeenCalledWith(
           '\t1. Re-authorize the org with "sf org login web".'
@@ -499,6 +499,12 @@ describe('publishAgent', () => {
       expect(getErrorActions(withActions, withActions)).toEqual(['do this']);
       expect(getErrorActions({ actions: ['from original'] }, new SfError('x'))).toEqual(['from original']);
       expect(getErrorActions(new Error('x'), new SfError('x'))).toEqual([]);
+    });
+
+    it('toSentence adds a period only when the text lacks sentence punctuation', () => {
+      expect(toSentence('Unauthorized')).toBe('Unauthorized.');
+      expect(toSentence('Deploy failed.  ')).toBe('Deploy failed.');
+      expect(toSentence('Really?')).toBe('Really?');
     });
 
     it('formatPublishedAgentFailure handles a failed version lookup (no version number or step label)', () => {

@@ -65,6 +65,12 @@ export const getPublishedAgent = (original: unknown, sfError: SfError): Publishe
   return undefined;
 };
 
+/** Trims the text and ends it with a period unless it already ends with sentence punctuation. */
+export const toSentence = (text: string): string => {
+  const trimmed = text.trim();
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+};
+
 export const formatPublishedAgentFailure = (
   fileName: string,
   publishedAgent: PublishedAgentInfo,
@@ -76,8 +82,7 @@ export const formatPublishedAgentFailure = (
       : `BotVersion ${publishedAgent.botVersionId}`;
   const label = publishedAgent.failedStep ? FAILED_STEP_LABELS[publishedAgent.failedStep] : undefined;
   const step = label ? `the ${label} step` : 'a later step';
-  const reason = errorMessage.trim();
-  const sentence = /[.!?]$/.test(reason) ? reason : `${reason}.`;
+  const sentence = toSentence(errorMessage);
   return (
     `Agent "${fileName}" was published to the org as ${publishedAs}, but ${step} failed: ${sentence} ` +
     `Don't publish again, because that creates a duplicate version. See the Output panel for next steps.`
@@ -219,8 +224,11 @@ export const registerPublishAgentCommand = () => {
 
             progress.report({ message: 'Publish failed' });
 
-            const nextSteps = actions.length > 0 ? ' See the Output panel for next steps.' : '';
-            vscode.window.showErrorMessage(`Failed to publish agent: ${sfError.message}${nextSteps}`);
+            vscode.window.showErrorMessage(
+              actions.length > 0
+                ? `Failed to publish agent: ${toSentence(sfError.message)} See the Output panel for next steps.`
+                : `Failed to publish agent: ${sfError.message}`
+            );
             telemetryService?.sendException('agent_publish_failed', sfError.message);
           }
         }
